@@ -157,7 +157,7 @@ Test yang tersedia saat ini mencakup bootstrap route, inisialisasi/migrasi datab
 Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai Milestone 14, cek minimal:
 
 1. Aplikasi terbuka tanpa error database atau crash.
-2. Bottom tab menampilkan Home, Transactions, Add, Claims, dan Settings; tombol Add membuka pilihan Enter Manually, Scan Receipt, dan Import Receipt.
+2. Bottom tab menampilkan Home, Transactions, Add, Claims, dan Settings; tombol Add langsung membuka form transaksi.
 3. Form transaksi baru default ke Expense; ketika Income dipilih, field Reimbursable dan Receipt tidak ditampilkan.
 4. Amount dan Category wajib diisi, serta tanggal/waktu masa depan ditolak.
 5. Expense dapat disimpan dengan Category, Payment Method opsional, Reimbursable, Merchant, Note, dan Receipt manual.
@@ -182,18 +182,18 @@ Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai M
 24. Recent transactions menampilkan maksimum lima transaksi terbaru dan membuka Transaction Detail ketika ditekan.
 25. Home menampilkan state kosong yang benar ketika belum ada transaksi atau belum ada Expense pada bulan berjalan.
 26. Home melakukan refetch setelah kembali dari Add/Edit/Delete dan pull-to-refresh dapat digunakan tanpa menggandakan data.
-27. Add Transaction menampilkan opsi Enter Manually, Scan Receipt, dan Import Receipt dalam urutan PRD; ketiganya membuka flow yang sesuai.
-28. Import Receipt membuka Android Photo Picker untuk satu image JPEG/PNG/WEBP dan kembali normal ketika picker dibatalkan.
+27. Add Transaction langsung membuka form Expense/Income tanpa layar pilihan perantara.
+28. Action Receipt pada form menawarkan Take Photo atau Choose from Gallery untuk satu image JPEG/PNG/WEBP dan kembali normal ketika picker dibatalkan.
 29. Image dengan MIME atau metadata yang tidak valid menghasilkan error yang recoverable dan dapat dipilih ulang.
-30. Image diproses on-device dengan ML Kit tanpa request jaringan dan selalu masuk ke Receipt Review ketika teks ditemukan.
-31. Receipt Review menampilkan thumbnail dan field Total, Merchant, Date & Time, Category, Payment Method, Reimbursable, dan Note yang dapat diedit.
-32. Hasil OCR partial menampilkan peringatan; total yang tidak terdeteksi wajib diisi sebelum Save.
-33. OCR kosong, native error, dan timeout menampilkan fallback yang recoverable; Enter Manually tetap mempertahankan receipt.
+30. Image diproses on-device dengan ML Kit tanpa request jaringan dan pengguna tetap berada di Add Transaction Form.
+31. Hasil OCR mengisi Amount, Merchant, dan Date yang masih kosong tanpa menimpa input pengguna.
+32. Hasil OCR partial menampilkan pemberitahuan dan field yang tidak terdeteksi tetap dapat diisi manual.
+33. OCR kosong, native error, dan timeout tetap mempertahankan receipt pada form dengan fallback manual.
 34. Transaction/Receipt baru dibuat hanya setelah final Save, dengan `processed`, `partial`, atau `failed` serta raw text/subtotal/tax yang sesuai.
-35. Camera permission baru diminta setelah Scan Receipt dipilih; denial menampilkan Open Settings dan Import Receipt.
-36. Camera membuka rear preview, flash dapat diubah, dan capture menampilkan preview dengan Retake serta Use Photo.
-37. Retake kembali ke live camera; Use Photo masuk ke OCR/Review pipeline yang sama dengan Gallery.
-38. Gallery shortcut dari Camera membuka single-image picker tanpa menjalankan parser lain.
+35. Camera permission baru diminta setelah Take Photo dipilih; penolakan tidak membuang isian form.
+36. Take Photo menghasilkan satu attachment yang divalidasi sebelum OCR.
+37. Camera dan Gallery menggunakan pipeline OCR serta penyimpanan receipt yang sama.
+38. Cancel Camera/Gallery kembali ke form tanpa mengubah attachment atau field yang ada.
 39. Setelah Save, `receipts.storage_key` berisi key relatif `receipts/<file>`, bukan URI gallery/camera atau absolute path.
 40. Receipt Viewer dari Transaction Detail menampilkan file yang disalin ke document storage.
 41. Force-stop dan buka ulang aplikasi; receipt yang sama tetap dapat dilihat.

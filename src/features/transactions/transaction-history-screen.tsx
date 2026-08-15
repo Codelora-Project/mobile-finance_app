@@ -244,7 +244,7 @@ export function TransactionHistoryScreen() {
                 <View style={styles.emptyAction}>
                   <AppButton
                     label="Add transaction"
-                    onPress={() => router.push('/add')}
+                    onPress={() => router.push('/transactions/new')}
                   />
                 </View>
               ) : null}

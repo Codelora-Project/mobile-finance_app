@@ -1,4 +1,7 @@
-import { pickReceiptImageFromGallery } from '@/features/receipts/receipt-image-picker';
+import {
+  pickReceiptImageFromCamera,
+  pickReceiptImageFromGallery,
+} from '@/features/receipts/receipt-image-picker';
 import type { ReceiptMimeType } from '@/features/receipts/receipt-types';
 
 export type ManualReceiptSelection = Readonly<{
@@ -11,8 +14,15 @@ export type ManualReceiptSelection = Readonly<{
   taxMinor?: number | null;
 }>;
 
-export async function pickManualReceipt(): Promise<ManualReceiptSelection | null> {
-  const image = await pickReceiptImageFromGallery();
+export type ManualReceiptSource = 'camera' | 'gallery';
+
+export async function pickManualReceipt(
+  source: ManualReceiptSource,
+): Promise<ManualReceiptSelection | null> {
+  const image =
+    source === 'camera'
+      ? await pickReceiptImageFromCamera()
+      : await pickReceiptImageFromGallery();
   return image
     ? {
         displayName: image.displayName,

@@ -128,7 +128,7 @@ describe('home screen', () => {
     await fireEvent.press(
       screen.getByRole('button', { name: 'Add your first transaction' }),
     );
-    expect(mockRouter.push).toHaveBeenCalledWith('/add');
+    expect(mockRouter.push).toHaveBeenCalledWith('/transactions/new');
   });
 
   it('offers a retry when the summary cannot be loaded', async () => {

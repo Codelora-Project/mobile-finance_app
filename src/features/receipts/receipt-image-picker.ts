@@ -139,3 +139,40 @@ export async function pickReceiptImageFromGallery(): Promise<ReceiptImageSelecti
     );
   }
 }
+
+export async function pickReceiptImageFromCamera(): Promise<ReceiptImageSelection | null> {
+  try {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      throw createCodedError(
+        'FILE_OPERATION_FAILED',
+        'Camera access is required to photograph a receipt.',
+      );
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      quality: 1,
+    });
+    if (result.canceled) {
+      return null;
+    }
+
+    const asset = result.assets[0];
+    if (!asset) {
+      throw createCodedError(
+        'FILE_OPERATION_FAILED',
+        'The captured receipt image is unavailable.',
+      );
+    }
+    return validateReceiptImage(asset, 'camera');
+  } catch (error) {
+    if (isCodedError(error)) {
+      throw error;
+    }
+    throw createCodedError(
+      'FILE_OPERATION_FAILED',
+      "We couldn't open the camera. Try again.",
+    );
+  }
+}

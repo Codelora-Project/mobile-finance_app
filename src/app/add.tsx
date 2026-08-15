@@ -1,5 +1,5 @@
-import { AddTransactionScreen } from '@/features/transactions/add-transaction-screen';
+import { Redirect } from 'expo-router';
 
 export default function AddTransactionRoute() {
-  return <AddTransactionScreen />;
+  return <Redirect href="/transactions/new" />;
 }

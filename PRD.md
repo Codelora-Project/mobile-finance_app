@@ -1206,15 +1206,17 @@ Tekan `+`:
 
 ```text
 
-Add Transaction
+Add Transaction Form
 
+```
 
+Form menampilkan satu action Receipt. Tekan action tersebut untuk memilih:
 
-Enter Manually
+```text
 
-Scan Receipt
+Take Photo
 
-Import Receipt
+Choose from Gallery
 
 ```
 
@@ -1245,8 +1247,6 @@ Tab bar tampil pada:
 Tab bar disembunyikan pada:
 
 
-
-\- Add Transaction;
 
 \- Manual Transaction;
 
@@ -3976,23 +3976,27 @@ Cancel picker bukan error.
 
 
 
-\# 83. Manual Receipt Attachment
+\# 83. Receipt Attachment from Transaction Form
 
 
 
-Jika user memilih Manual Transaction lalu attach receipt:
+Jika user memilih Take Photo atau Choose from Gallery dari form transaksi, receipt langsung dilampirkan dan OCR on-device berjalan tanpa membuka form transaksi kedua.
 
 
 
 ```text
 
-ocr\_status = not\_processed
+success lengkap â†’ ocr\_status = processed
+
+success parsial â†’ ocr\_status = partial
+
+failure â†’ ocr\_status = failed dan receipt tetap attached
 
 ```
 
 
 
-Jangan otomatis OCR.
+Detected Amount, Merchant, dan Date hanya mengisi field yang belum diisi user. User tetap wajib review sebelum Save.
 
 
 
@@ -4280,7 +4284,7 @@ S27 Settings
 
 TRANSACTION
 
-S04 Add Transaction Sheet
+S04 Add Transaction Form
 
 S05 Manual Transaction
 
@@ -4472,27 +4476,27 @@ Merchant
 
 
 
-\# 95. Add Transaction Sheet
+\# 95. Add Transaction Entry
 
 
 
-Options:
+Tekan `+` langsung membuka Add Transaction Form.
 
 
 
 ```text
 
-Enter Manually
+Expense / Income
 
-Scan Receipt
+Transaction fields
 
-Import Receipt
+Receipt action
 
 ```
 
 
 
-Order tidak berubah.
+Untuk Expense, Receipt action membuka pilihan Take Photo atau Choose from Gallery. Income tidak menampilkan Receipt action.
 
 
 
@@ -6806,7 +6810,11 @@ Must prove:
 
 \- unsaved changes guarded;
 
-\- manual attached Receipt stores `not\_processed`.
+\- Receipt action menawarkan Camera dan Gallery dari form yang sama;
+
+\- OCR mengisi field kosong tanpa membuang input user;
+
+\- OCR failure tetap mempertahankan attached Receipt.
 
 
 
@@ -7476,10 +7484,6 @@ Home
 
 ↓
 
-Enter Manually
-
-↓
-
 5000
 
 ↓
@@ -7524,11 +7528,11 @@ Transactions updated
 
 ↓
 
-Import Receipt
+Add Transaction Form
 
 ↓
 
-Gallery
+Receipt → Choose from Gallery
 
 ↓
 
@@ -7540,7 +7544,7 @@ OCR
 
 ↓
 
-Review
+Detected fields appear in the same form
 
 ↓
 

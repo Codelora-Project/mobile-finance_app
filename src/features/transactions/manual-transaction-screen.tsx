@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -22,6 +23,7 @@ import type { Category } from '@/features/categories/category-repository';
 import {
   pickManualReceipt,
   type ManualReceiptSelection,
+  type ManualReceiptSource,
 } from '@/features/transactions/manual-receipt-picker';
 import {
   createTransaction,
@@ -36,6 +38,8 @@ import {
 } from '@/features/transactions/transaction-repository';
 import { PaymentMethodPicker } from '@/features/payment-methods/payment-method-picker';
 import type { PaymentMethod } from '@/features/payment-methods/payment-method-repository';
+import { recognizeReceipt } from '@/features/receipts/ocr-service';
+import { parseReceipt } from '@/features/receipts/receipt-parser';
 import {
   getTimezoneOffsetMinutes,
   parseLocalDateTimeInput,
@@ -276,6 +280,8 @@ export function ManualTransactionScreen({
   const [claimMembership, setClaimMembership] =
     useState<TransactionClaimMembership | null>(null);
   const [selectingReceipt, setSelectingReceipt] = useState(false);
+  const [receiptNotice, setReceiptNotice] = useState<string | null>(null);
+  const [receiptSourceVisible, setReceiptSourceVisible] = useState(false);
 
   const isEditing = transactionId !== undefined;
   const isDirty = serializeForm(form) !== initialSnapshot.current;
@@ -423,12 +429,52 @@ export function ManualTransactionScreen({
     applyType(type);
   }
 
-  async function selectReceipt() {
+  async function selectReceipt(source: ManualReceiptSource) {
     setSelectingReceipt(true);
     try {
-      const receipt = await pickManualReceipt();
+      const receipt = await pickManualReceipt(source);
       if (receipt) {
-        updateForm({ receipt });
+        try {
+          const result = await recognizeReceipt(receipt.sourceImageUri);
+          const parsed = parseReceipt(result.rawText);
+          const ocrStatus =
+            parsed.totalMinor === null
+              ? ('partial' as const)
+              : ('processed' as const);
+          updateForm({
+            amount:
+              form.amount.trim() || parsed.totalMinor === null
+                ? form.amount
+                : formatMoneyInput(parsed.totalMinor, 'IDR'),
+            counterparty:
+              form.counterparty.trim() || !parsed.merchant
+                ? form.counterparty
+                : parsed.merchant,
+            date: parsed.localDate ?? form.date,
+            receipt: {
+              ...receipt,
+              ocrRawText: result.rawText,
+              ocrStatus,
+              subtotalMinor: parsed.subtotalMinor,
+              taxMinor: parsed.taxMinor,
+            },
+          });
+          setReceiptNotice(
+            ocrStatus === 'processed'
+              ? 'Receipt attached and detected details were filled in. Review them before saving.'
+              : 'Receipt attached. Some details could not be detected, so review the form.',
+          );
+        } catch {
+          updateForm({
+            receipt: {
+              ...receipt,
+              ocrStatus: 'failed',
+            },
+          });
+          setReceiptNotice(
+            'Receipt attached, but its details could not be read. Fill them in manually.',
+          );
+        }
       }
     } catch (error) {
       if (__DEV__ && !isCodedError(error)) {
@@ -443,11 +489,23 @@ export function ManualTransactionScreen({
     }
   }
 
+  function chooseReceiptSource() {
+    setReceiptSourceVisible(true);
+  }
+
+  function chooseReceipt(source: ManualReceiptSource) {
+    setReceiptSourceVisible(false);
+    void selectReceipt(source);
+  }
+
   function removeReceipt() {
     Alert.alert('Remove receipt?', 'The receipt will be detached.', [
       { style: 'cancel', text: 'Cancel' },
       {
-        onPress: () => updateForm({ receipt: null }),
+        onPress: () => {
+          updateForm({ receipt: null });
+          setReceiptNotice(null);
+        },
         style: 'destructive',
         text: 'Remove',
       },
@@ -568,7 +626,7 @@ export function ManualTransactionScreen({
       <View style={styles.header}>
         <AppButton label="Back" onPress={requestExit} variant="ghost" />
         <Text accessibilityRole="header" style={styles.title}>
-          {isEditing ? 'Edit Transaction' : 'Manual Transaction'}
+          {isEditing ? 'Edit Transaction' : 'Add Transaction'}
         </Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -710,7 +768,15 @@ export function ManualTransactionScreen({
                   <Text numberOfLines={1} style={styles.selectionValue}>
                     {form.receipt.displayName}
                   </Text>
-                  <Text style={styles.helper}>OCR not processed</Text>
+                  <Text style={styles.helper}>
+                    {form.receipt.ocrStatus === 'processed'
+                      ? 'Receipt details detected'
+                      : form.receipt.ocrStatus === 'partial'
+                        ? 'Some receipt details detected'
+                        : form.receipt.ocrStatus === 'failed'
+                          ? 'Receipt attached · Enter details manually'
+                          : 'Receipt attached'}
+                  </Text>
                 </View>
                 <AppButton
                   label="Remove"
@@ -719,13 +785,49 @@ export function ManualTransactionScreen({
                 />
               </View>
             ) : (
-              <AppButton
-                label="Attach receipt"
-                loading={selectingReceipt}
-                onPress={() => void selectReceipt()}
-                variant="secondary"
-              />
+              <Pressable
+                accessibilityLabel="Add receipt"
+                accessibilityRole="button"
+                accessibilityState={{
+                  busy: selectingReceipt,
+                  disabled: selectingReceipt,
+                }}
+                disabled={selectingReceipt}
+                onPress={chooseReceiptSource}
+                style={({ pressed }) => [
+                  styles.receiptPicker,
+                  selectingReceipt ? styles.disabled : null,
+                  pressed ? styles.pressed : null,
+                ]}
+              >
+                {selectingReceipt ? (
+                  <ActivityIndicator color={colors.primary} />
+                ) : (
+                  <MaterialCommunityIcons
+                    accessibilityElementsHidden
+                    color={colors.primary}
+                    importantForAccessibility="no-hide-descendants"
+                    name="camera-plus-outline"
+                    size={26}
+                  />
+                )}
+                <View style={styles.receiptPickerText}>
+                  <Text style={styles.receiptPickerTitle}>Add receipt</Text>
+                  <Text style={styles.helper}>
+                    Take a photo or choose from gallery
+                  </Text>
+                </View>
+                <Text style={styles.chevron}>›</Text>
+              </Pressable>
             )}
+            {form.receipt && receiptNotice ? (
+              <Text
+                accessibilityLiveRegion="polite"
+                style={styles.receiptNotice}
+              >
+                {receiptNotice}
+              </Text>
+            ) : null}
           </View>
         ) : null}
 
@@ -754,6 +856,79 @@ export function ManualTransactionScreen({
           ) : null}
         </View>
       </ScrollView>
+
+      <Modal
+        animationType="fade"
+        onRequestClose={() => setReceiptSourceVisible(false)}
+        transparent
+        visible={receiptSourceVisible}
+      >
+        <View style={styles.sourceOverlay}>
+          <Pressable
+            accessibilityLabel="Close receipt options"
+            accessibilityRole="button"
+            onPress={() => setReceiptSourceVisible(false)}
+            style={StyleSheet.absoluteFill}
+          />
+          <View accessibilityViewIsModal style={styles.sourceSheet}>
+            <Text accessibilityRole="header" style={styles.sourceTitle}>
+              Add receipt
+            </Text>
+            <Text style={styles.sourceDescription}>
+              Take a new photo or choose an existing image.
+            </Text>
+            <Pressable
+              accessibilityLabel="Take photo"
+              accessibilityRole="button"
+              onPress={() => chooseReceipt('camera')}
+              style={({ pressed }) => [
+                styles.sourceOption,
+                pressed ? styles.pressed : null,
+              ]}
+            >
+              <MaterialCommunityIcons
+                accessibilityElementsHidden
+                color={colors.primary}
+                importantForAccessibility="no-hide-descendants"
+                name="camera-outline"
+                size={26}
+              />
+              <View style={styles.sourceOptionText}>
+                <Text style={styles.sourceOptionTitle}>Take photo</Text>
+                <Text style={styles.helper}>Open the camera</Text>
+              </View>
+            </Pressable>
+            <Pressable
+              accessibilityLabel="Choose from gallery"
+              accessibilityRole="button"
+              onPress={() => chooseReceipt('gallery')}
+              style={({ pressed }) => [
+                styles.sourceOption,
+                pressed ? styles.pressed : null,
+              ]}
+            >
+              <MaterialCommunityIcons
+                accessibilityElementsHidden
+                color={colors.primary}
+                importantForAccessibility="no-hide-descendants"
+                name="image-outline"
+                size={26}
+              />
+              <View style={styles.sourceOptionText}>
+                <Text style={styles.sourceOptionTitle}>
+                  Choose from gallery
+                </Text>
+                <Text style={styles.helper}>Select one receipt image</Text>
+              </View>
+            </Pressable>
+            <AppButton
+              label="Cancel"
+              onPress={() => setReceiptSourceVisible(false)}
+              variant="ghost"
+            />
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         animationType="slide"
@@ -954,6 +1129,33 @@ const styles = StyleSheet.create({
   receiptText: {
     flex: 1,
   },
+  receiptPicker: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    minHeight: 72,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  receiptPickerText: {
+    flex: 1,
+  },
+  receiptPickerTitle: {
+    color: colors.textPrimary,
+    fontSize: typography.body.fontSize,
+    fontWeight: '600',
+    lineHeight: typography.body.lineHeight,
+  },
+  receiptNotice: {
+    color: colors.textSecondary,
+    fontSize: typography.secondary.fontSize,
+    lineHeight: typography.secondary.lineHeight,
+    marginTop: spacing.sm,
+  },
   submitError: {
     backgroundColor: colors.surfaceSecondary,
     borderRadius: radius.md,
@@ -967,6 +1169,54 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.72,
+  },
+  disabled: {
+    opacity: 0.5,
+  },
+  sourceOverlay: {
+    backgroundColor: 'rgba(15, 23, 42, 0.48)',
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  sourceSheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    gap: spacing.sm,
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
+  sourceTitle: {
+    color: colors.textPrimary,
+    fontSize: typography.sectionTitle.fontSize,
+    fontWeight: typography.sectionTitle.fontWeight,
+    lineHeight: typography.sectionTitle.lineHeight,
+  },
+  sourceDescription: {
+    color: colors.textSecondary,
+    fontSize: typography.secondary.fontSize,
+    lineHeight: typography.secondary.lineHeight,
+    marginBottom: spacing.sm,
+  },
+  sourceOption: {
+    alignItems: 'center',
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    minHeight: 72,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  sourceOptionText: {
+    flex: 1,
+  },
+  sourceOptionTitle: {
+    color: colors.textPrimary,
+    fontSize: typography.body.fontSize,
+    fontWeight: '600',
+    lineHeight: typography.body.lineHeight,
   },
   modalHeader: {
     alignItems: 'center',

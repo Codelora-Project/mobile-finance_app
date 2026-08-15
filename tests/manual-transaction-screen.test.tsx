@@ -15,6 +15,11 @@ const mockRouter = {
   dismissTo: jest.fn(),
 };
 const mockCreateTransaction = jest.fn();
+const mockPickManualReceipt =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockRecognizeReceipt =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockParseReceipt = jest.fn<(...args: unknown[]) => unknown>();
 
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
@@ -23,6 +28,13 @@ jest.mock('expo-router', () => ({
 jest.mock('expo-sqlite', () => ({
   useSQLiteContext: () => ({}),
 }));
+
+jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
+  const ReactNative = require('react-native');
+  return (props: { name: string }) => (
+    <ReactNative.Text>{props.name}</ReactNative.Text>
+  );
+});
 
 jest.mock('@/features/transactions/transaction-repository', () => ({
   createTransaction: (...args: unknown[]) => mockCreateTransaction(...args),
@@ -35,7 +47,15 @@ jest.mock('@/features/transactions/transaction-repository', () => ({
 }));
 
 jest.mock('@/features/transactions/manual-receipt-picker', () => ({
-  pickManualReceipt: jest.fn(),
+  pickManualReceipt: (...args: unknown[]) => mockPickManualReceipt(...args),
+}));
+
+jest.mock('@/features/receipts/ocr-service', () => ({
+  recognizeReceipt: (...args: unknown[]) => mockRecognizeReceipt(...args),
+}));
+
+jest.mock('@/features/receipts/receipt-parser', () => ({
+  parseReceipt: (...args: unknown[]) => mockParseReceipt(...args),
 }));
 
 jest.mock('@/features/categories/category-picker', () => {
@@ -67,6 +87,9 @@ describe('manual transaction form', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockCreateTransaction.mockReset();
+    mockPickManualReceipt.mockReset();
+    mockRecognizeReceipt.mockReset();
+    mockParseReceipt.mockReset();
   });
 
   it('defaults to Expense and removes expense-only controls for Income', async () => {
@@ -77,7 +100,7 @@ describe('manual transaction form', () => {
     ).toEqual({ selected: true });
     expect(screen.getByLabelText('Reimbursable')).toBeOnTheScreen();
     expect(
-      screen.getByRole('button', { name: 'Attach receipt' }),
+      screen.getByRole('button', { name: 'Add receipt' }),
     ).toBeOnTheScreen();
 
     await fireEvent.press(screen.getByRole('tab', { name: 'Income' }));
@@ -88,12 +111,64 @@ describe('manual transaction form', () => {
       ).toEqual({ selected: true });
       expect(screen.queryByLabelText('Reimbursable')).not.toBeOnTheScreen();
       expect(
-        screen.queryByRole('button', { name: 'Attach receipt' }),
+        screen.queryByRole('button', { name: 'Add receipt' }),
       ).not.toBeOnTheScreen();
     });
     expect(
       screen.getByRole('button', { name: 'Save Income' }),
     ).toBeOnTheScreen();
+  });
+
+  it('offers camera and gallery from one receipt action', async () => {
+    mockPickManualReceipt.mockResolvedValue(null);
+    await render(<ManualTransactionScreen />);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Add receipt' }));
+
+    expect(
+      screen.getByRole('button', { name: 'Take photo' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Choose from gallery' }),
+    ).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Take photo' }));
+    expect(mockPickManualReceipt).toHaveBeenCalledWith('camera');
+  });
+
+  it('attaches a gallery receipt and fills empty fields from OCR', async () => {
+    mockPickManualReceipt.mockResolvedValue({
+      displayName: 'receipt.jpg',
+      mimeType: 'image/jpeg',
+      sourceImageUri: 'file:///cache/receipt.jpg',
+    });
+    mockRecognizeReceipt.mockResolvedValue({ rawText: 'TOKO\nTOTAL 45000' });
+    mockParseReceipt.mockReturnValue({
+      localDate: '2026-08-14',
+      merchant: 'Toko',
+      subtotalMinor: 40_000,
+      taxMinor: 5_000,
+      totalMinor: 45_000,
+      warnings: [],
+    });
+    await render(<ManualTransactionScreen />);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Add receipt' }));
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Choose from gallery' }),
+    );
+
+    await waitFor(() => {
+      expect(mockPickManualReceipt).toHaveBeenCalledWith('gallery');
+      expect(mockRecognizeReceipt).toHaveBeenCalledWith(
+        'file:///cache/receipt.jpg',
+      );
+      expect(screen.getByText('receipt.jpg')).toBeOnTheScreen();
+      expect(screen.getByLabelText('Merchant').props.value).toBe('Toko');
+      expect(screen.getByLabelText('Transaction date').props.value).toBe(
+        '2026-08-14',
+      );
+    });
   });
 
   it('shows required amount and category errors before saving', async () => {

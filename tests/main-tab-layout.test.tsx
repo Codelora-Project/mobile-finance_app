@@ -60,6 +60,6 @@ describe('main tab layout', () => {
     await fireEvent.press(
       screen.getByRole('button', { name: 'Add transaction' }),
     );
-    expect(mockRouter.push).toHaveBeenCalledWith('/add');
+    expect(mockRouter.push).toHaveBeenCalledWith('/transactions/new');
   });
 });

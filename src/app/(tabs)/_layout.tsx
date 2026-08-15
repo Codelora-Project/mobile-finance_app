@@ -30,7 +30,7 @@ function AddActionButton() {
       accessibilityLabel="Add transaction"
       accessibilityRole="button"
       hitSlop={8}
-      onPress={() => router.push('/add')}
+      onPress={() => router.push('/transactions/new')}
       style={({ pressed }) => [
         styles.addAction,
         pressed ? styles.addActionPressed : null,
