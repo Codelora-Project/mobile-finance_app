@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '@/components/ui/app-button';
@@ -9,6 +9,16 @@ import { typography } from '@/theme/typography';
 
 export default function BootstrapRoute() {
   const router = useRouter();
+  const { feedback, savedTransactionId } = useLocalSearchParams<{
+    feedback?: string | string[];
+    savedTransactionId?: string | string[];
+  }>();
+  const feedbackMessage = Array.isArray(feedback) ? feedback[0] : feedback;
+  const savedIdValue = Array.isArray(savedTransactionId)
+    ? savedTransactionId[0]
+    : savedTransactionId;
+  const savedId = Number(savedIdValue);
+  const canEditSavedTransaction = Number.isSafeInteger(savedId) && savedId > 0;
 
   return (
     <Screen>
@@ -18,15 +28,33 @@ export default function BootstrapRoute() {
             Personal Finance
           </Text>
           <Text style={styles.message}>
-            Set up the categories and payment methods used to organize your
-            transactions.
+            Record expenses and income, or manage the categories and payment
+            methods used to organize them.
           </Text>
         </View>
 
+        {feedbackMessage ? (
+          <Text accessibilityLiveRegion="polite" style={styles.feedback}>
+            {feedbackMessage}
+          </Text>
+        ) : null}
+
         <View style={styles.actions}>
+          <AppButton
+            label="Add transaction"
+            onPress={() => router.push('/transactions/new')}
+          />
+          {canEditSavedTransaction ? (
+            <AppButton
+              label="Edit saved transaction"
+              onPress={() => router.push(`/transactions/${savedId}/edit`)}
+              variant="secondary"
+            />
+          ) : null}
           <AppButton
             label="Categories"
             onPress={() => router.push('/categories')}
+            variant="secondary"
           />
           <AppButton
             label="Payment methods"
@@ -61,5 +89,14 @@ const styles = StyleSheet.create({
   actions: {
     gap: spacing.sm,
     marginTop: spacing.xl,
+  },
+  feedback: {
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: 8,
+    color: colors.positive,
+    fontSize: typography.body.fontSize,
+    lineHeight: typography.body.lineHeight,
+    marginTop: spacing.lg,
+    padding: spacing.md,
   },
 });

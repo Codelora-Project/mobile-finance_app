@@ -17,6 +17,28 @@ function padDatePart(value: number) {
   return String(value).padStart(2, '0');
 }
 
+function parseDatePart(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    day: Number(match[3]),
+    month: Number(match[2]),
+    year: Number(match[1]),
+  };
+}
+
+function parseTimePart(value: string) {
+  const match = /^(\d{2}):(\d{2})$/.exec(value);
+  if (!match) {
+    return null;
+  }
+
+  return { hour: Number(match[1]), minute: Number(match[2]) };
+}
+
 export function getTimezoneOffsetMinutes(unixMilliseconds = Date.now()) {
   return -getValidDate(unixMilliseconds).getTimezoneOffset();
 }
@@ -42,21 +64,73 @@ export function toLocalDate(
 }
 
 export function isLocalDate(value: string) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) {
+  const parts = parseDatePart(value);
+  if (!parts) {
     return false;
   }
 
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
   const date = new Date(0);
   date.setUTCHours(0, 0, 0, 0);
-  date.setUTCFullYear(year, month - 1, day);
+  date.setUTCFullYear(parts.year, parts.month - 1, parts.day);
 
   return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
+    date.getUTCFullYear() === parts.year &&
+    date.getUTCMonth() === parts.month - 1 &&
+    date.getUTCDate() === parts.day
   );
+}
+
+export function toLocalDateTimeInput(
+  unixMilliseconds: number,
+  timezoneOffsetMinutes: number,
+) {
+  getValidDate(unixMilliseconds);
+  if (!Number.isInteger(timezoneOffsetMinutes)) {
+    throw new RangeError('Timezone offset must use whole minutes.');
+  }
+
+  const shiftedTimestamp =
+    unixMilliseconds + timezoneOffsetMinutes * MILLISECONDS_PER_MINUTE;
+  const shiftedDate = getValidDate(shiftedTimestamp);
+
+  return {
+    date: [
+      shiftedDate.getUTCFullYear(),
+      padDatePart(shiftedDate.getUTCMonth() + 1),
+      padDatePart(shiftedDate.getUTCDate()),
+    ].join('-'),
+    time: [
+      padDatePart(shiftedDate.getUTCHours()),
+      padDatePart(shiftedDate.getUTCMinutes()),
+    ].join(':'),
+  };
+}
+
+export function parseLocalDateTimeInput(dateValue: string, timeValue: string) {
+  const dateParts = parseDatePart(dateValue.trim());
+  const timeParts = parseTimePart(timeValue.trim());
+  if (!dateParts || !timeParts || !isLocalDate(dateValue.trim())) {
+    throw new RangeError('Enter a valid date and time.');
+  }
+
+  const localDate = new Date(0);
+  localDate.setFullYear(dateParts.year, dateParts.month - 1, dateParts.day);
+  localDate.setHours(timeParts.hour, timeParts.minute, 0, 0);
+
+  if (
+    localDate.getFullYear() !== dateParts.year ||
+    localDate.getMonth() !== dateParts.month - 1 ||
+    localDate.getDate() !== dateParts.day ||
+    localDate.getHours() !== timeParts.hour ||
+    localDate.getMinutes() !== timeParts.minute
+  ) {
+    throw new RangeError('Enter a valid date and time.');
+  }
+
+  const occurredAt = localDate.getTime();
+  return {
+    localDate: dateValue.trim(),
+    occurredAt,
+    timezoneOffsetMinutes: getTimezoneOffsetMinutes(occurredAt),
+  };
 }

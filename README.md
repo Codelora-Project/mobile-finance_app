@@ -1,6 +1,6 @@
 # Personal Finance
 
-Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo Development Build, React Native, TypeScript, Expo Router, dan SQLite. Proyek ini masih dalam tahap pengembangan; implementasi saat ini telah mencapai **Milestone 3** (fondasi database/utilitas serta pengelolaan kategori dan metode pembayaran).
+Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo Development Build, React Native, TypeScript, Expo Router, dan SQLite. Proyek ini masih dalam tahap pengembangan; implementasi saat ini telah mencapai **Milestone 4** (transaksi expense/income manual, validasi, receipt manual, persistence, edit, dan delete).
 
 `PRD.md` adalah **single source of truth** untuk requirement, arsitektur, urutan implementasi, dan acceptance criteria. Jangan mengimplementasikan phase berikutnya sebelum milestone sebelumnya selesai dan terverifikasi.
 
@@ -12,6 +12,7 @@ Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo 
 - TypeScript strict
 - Expo Router
 - `expo-sqlite`
+- `expo-image-picker`
 - Jest + `jest-expo` + Testing Library
 - ESLint + Prettier
 - npm
@@ -30,7 +31,7 @@ Siapkan:
    - Android SDK Platform-Tools (`adb`);
    - Android Emulator;
    - Pixel 7 AVD dengan Android 16 / API 36 Google Play image.
-4. JDK yang kompatibel dengan Android Gradle Plugin. JDK bawaan Android Studio (`jbr`) dapat digunakan.
+4. JDK 17. Toolchain Android proyek ini telah diverifikasi dengan Eclipse Temurin 17. JBR 25 bawaan Android Studio versi terbaru tidak kompatibel dengan native build yang digunakan proyek ini.
 
 Pastikan perintah berikut dapat dijalankan dari terminal:
 
@@ -44,12 +45,12 @@ adb version
 Jika `java` atau `adb` tidak ditemukan, atur `JAVA_HOME`, `ANDROID_HOME`, dan `Path` ke instalasi lokal Android Studio/SDK. Contoh untuk sesi PowerShell saat ini dengan lokasi instalasi Windows yang umum:
 
 ```powershell
-$env:JAVA_HOME = 'C:\Program Files\Android\Android Studio\jbr'
+$env:JAVA_HOME = 'C:\Program Files\Eclipse Adoptium\jdk-17'
 $env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
 $env:Path = "$env:JAVA_HOME\bin;$env:ANDROID_HOME\platform-tools;$env:ANDROID_HOME\emulator;$env:Path"
 ```
 
-Lokasi aktual dapat berbeda. Perintah di atas hanya berlaku pada terminal aktif; tambahkan nilai yang sama melalui Windows Environment Variables agar permanen, lalu buka terminal baru.
+Lokasi aktual dapat berbeda. Perintah di atas hanya berlaku pada terminal aktif; tambahkan nilai yang sama melalui Windows Environment Variables agar permanen, lalu buka terminal baru. Pastikan `java -version` menampilkan versi 17 sebelum menjalankan native build.
 
 ## Instalasi
 
@@ -82,6 +83,12 @@ npm run android
 ```
 
 Perintah tersebut menjalankan `expo run:android`, mengompilasi aplikasi native, memasangnya ke emulator, dan memulai Metro.
+
+Jika port 8081 sedang dipakai proses lain, gunakan port berbeda:
+
+```powershell
+npx expo run:android --port 8082
+```
 
 ### 3. Menjalankan sesi development berikutnya
 
@@ -135,22 +142,26 @@ Untuk menjalankan satu test suite:
 npm test -- tests/money.test.ts
 ```
 
-Test yang tersedia saat ini mencakup bootstrap route, inisialisasi/migrasi database, utilitas money/date/text/error, serta repository kategori dan metode pembayaran.
+Test yang tersedia saat ini mencakup bootstrap route, inisialisasi/migrasi database, utilitas money/date/text/error, repository kategori dan metode pembayaran, repository transaksi, serta form transaksi manual.
 
 ## Verifikasi manual saat ini
 
-Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai Milestone 3, cek minimal:
+Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai Milestone 4, cek minimal:
 
 1. Aplikasi terbuka tanpa error database atau crash.
-2. Halaman Categories dan Payment Methods dapat dibuka dari halaman utama.
-3. Custom expense dan income category dapat dibuat serta diedit.
-4. Nama kategori duplikat tanpa membedakan kapitalisasi ditolak dalam tipe yang sama.
-5. Nama kategori yang sama dapat digunakan pada tipe expense dan income yang berbeda.
-6. Default/fallback category tidak dapat diedit atau dihapus.
-7. Custom payment method dapat dibuat, diedit, dan dihapus.
-8. Default payment method tidak dapat diedit atau dihapus.
-9. Data custom tetap tersedia setelah aplikasi ditutup paksa lalu dibuka kembali.
-10. Empty, loading, validation, confirmation, dan failure state yang relevan tampil dengan benar.
+2. Halaman Manual Transaction, Categories, dan Payment Methods dapat dibuka dari halaman utama.
+3. Form transaksi baru default ke Expense; ketika Income dipilih, field Reimbursable dan Receipt tidak ditampilkan.
+4. Amount dan Category wajib diisi, serta tanggal/waktu masa depan ditolak.
+5. Expense dapat disimpan dengan Category, Payment Method opsional, Reimbursable, Merchant, Note, dan Receipt manual.
+6. Receipt hanya menerima JPEG/PNG/WEBP dan tampil dengan status `OCR not processed`.
+7. Income dapat disimpan, tetapi tidak dapat reimbursable atau memiliki Receipt.
+8. Tombol save tidak menghasilkan transaksi ganda ketika ditekan berulang saat proses save berlangsung.
+9. Tombol Back dan hardware Back menampilkan konfirmasi ketika ada perubahan yang belum disimpan.
+10. Transaksi yang baru disimpan dapat dibuka melalui **Edit saved transaction**, diedit, dan dihapus dengan konfirmasi.
+11. Transaksi dan receipt tetap tersedia setelah aplikasi ditutup paksa lalu dibuka kembali.
+12. Delete transaksi juga menghapus row receipt terkait tanpa foreign-key violation.
+13. Aturan custom/default/fallback category dan payment method dari Milestone 3 tetap berlaku.
+14. Loading, validation, confirmation, success, dan failure state yang relevan tampil dengan benar.
 
 Untuk mengecek persistence melalui terminal:
 
@@ -184,6 +195,20 @@ Jika Metro menampilkan pesan bahwa development build tidak ditemukan, pastikan e
 ```powershell
 npm run android
 ```
+
+### `Unknown command: "expo"`
+
+`expo` bukan subcommand npm, jadi jangan menjalankan `npm expo start`. Gunakan salah satu command berikut:
+
+```powershell
+npm start
+# atau
+npx expo start --dev-client
+```
+
+### Native build gagal dengan Java 25
+
+Jika output Gradle/CMake menyebut Java 25 atau restricted `System` method, hentikan proses, arahkan `JAVA_HOME` ke JDK 17, lalu jalankan kembali `npm run android`.
 
 ### Metro cache bermasalah
 
@@ -230,6 +255,7 @@ src/
   db/                     SQLite provider, migrations, dan seeds
   features/categories/    category management dan picker
   features/payment-methods/
+  features/transactions/  manual transaction form, receipt picker, repository
   lib/                    pure TypeScript utilities
   theme/                  design tokens
 tests/                    Jest unit/component/integration tests

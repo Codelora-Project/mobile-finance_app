@@ -3,7 +3,9 @@ import { describe, expect, it } from '@jest/globals';
 import {
   getTimezoneOffsetMinutes,
   isLocalDate,
+  parseLocalDateTimeInput,
   toLocalDate,
+  toLocalDateTimeInput,
 } from '@/lib/dates';
 
 describe('date utilities', () => {
@@ -36,5 +38,23 @@ describe('date utilities', () => {
   it('rejects invalid timestamps and fractional timezone offsets', () => {
     expect(() => toLocalDate(Number.MAX_SAFE_INTEGER, 0)).toThrow(RangeError);
     expect(() => toLocalDate(Date.now(), 420.5)).toThrow(RangeError);
+  });
+
+  it('round-trips an editable local date and time', () => {
+    const parsed = parseLocalDateTimeInput('2026-08-15', '09:30');
+
+    expect(
+      toLocalDateTimeInput(parsed.occurredAt, parsed.timezoneOffsetMinutes),
+    ).toEqual({ date: '2026-08-15', time: '09:30' });
+    expect(parsed.localDate).toBe('2026-08-15');
+  });
+
+  it('rejects invalid local date and time input', () => {
+    expect(() => parseLocalDateTimeInput('2026-02-30', '09:30')).toThrow(
+      RangeError,
+    );
+    expect(() => parseLocalDateTimeInput('2026-08-15', '25:00')).toThrow(
+      RangeError,
+    );
   });
 });
