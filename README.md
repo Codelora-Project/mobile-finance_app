@@ -1,6 +1,6 @@
 # Personal Finance
 
-Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo Development Build, React Native, TypeScript, Expo Router, dan SQLite. Proyek ini masih dalam tahap pengembangan; implementasi saat ini telah mencapai **Milestone 4** (transaksi expense/income manual, validasi, receipt manual, persistence, edit, dan delete).
+Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo Development Build, React Native, TypeScript, Expo Router, dan SQLite. Proyek ini masih dalam tahap pengembangan; implementasi saat ini telah mencapai **Milestone 5** (riwayat transaksi, pagination, search, filter, detail, edit, delete, dan refetch setelah mutasi).
 
 `PRD.md` adalah **single source of truth** untuk requirement, arsitektur, urutan implementasi, dan acceptance criteria. Jangan mengimplementasikan phase berikutnya sebelum milestone sebelumnya selesai dan terverifikasi.
 
@@ -142,14 +142,14 @@ Untuk menjalankan satu test suite:
 npm test -- tests/money.test.ts
 ```
 
-Test yang tersedia saat ini mencakup bootstrap route, inisialisasi/migrasi database, utilitas money/date/text/error, repository kategori dan metode pembayaran, repository transaksi, serta form transaksi manual.
+Test yang tersedia saat ini mencakup bootstrap route, inisialisasi/migrasi database, utilitas money/date/text/error, repository kategori dan metode pembayaran, repository transaksi termasuk pagination/read model tanpa N+1, form transaksi manual, riwayat transaksi, filter, serta detail transaksi.
 
 ## Verifikasi manual saat ini
 
-Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai Milestone 4, cek minimal:
+Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai Milestone 5, cek minimal:
 
 1. Aplikasi terbuka tanpa error database atau crash.
-2. Halaman Manual Transaction, Categories, dan Payment Methods dapat dibuka dari halaman utama.
+2. Halaman Transactions, Manual Transaction, Categories, dan Payment Methods dapat dibuka dari halaman utama.
 3. Form transaksi baru default ke Expense; ketika Income dipilih, field Reimbursable dan Receipt tidak ditampilkan.
 4. Amount dan Category wajib diisi, serta tanggal/waktu masa depan ditolak.
 5. Expense dapat disimpan dengan Category, Payment Method opsional, Reimbursable, Merchant, Note, dan Receipt manual.
@@ -162,6 +162,12 @@ Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai M
 12. Delete transaksi juga menghapus row receipt terkait tanpa foreign-key violation.
 13. Aturan custom/default/fallback category dan payment method dari Milestone 3 tetap berlaku.
 14. Loading, validation, confirmation, success, dan failure state yang relevan tampil dengan benar.
+15. Daftar Transactions menampilkan transaksi terbaru terlebih dahulu dan memuat halaman berikutnya saat mendekati akhir daftar.
+16. Search menemukan transaksi berdasarkan Merchant/Source, Note, dan nama Category tanpa membedakan kapitalisasi.
+17. Filter Type, Category, Date Range, Payment Method, Reimbursable, dan Has Receipt dapat diterapkan dan di-reset.
+18. Kombinasi search/filter tanpa hasil menampilkan `No matching transactions`, bukan empty state data baru.
+19. Transaction Detail menampilkan seluruh field yang relevan; Edit, Delete, dan Add mengembalikan pengguna ke daftar yang sudah ter-refetch.
+20. Edit transaksi tanpa mengubah amount tidak mengubah nilai minor-unit yang tersimpan.
 
 Untuk mengecek persistence melalui terminal:
 
@@ -255,7 +261,7 @@ src/
   db/                     SQLite provider, migrations, dan seeds
   features/categories/    category management dan picker
   features/payment-methods/
-  features/transactions/  manual transaction form, receipt picker, repository
+  features/transactions/  manual form, history, filters, detail, receipt picker, repository
   lib/                    pure TypeScript utilities
   theme/                  design tokens
 tests/                    Jest unit/component/integration tests

@@ -4,11 +4,14 @@ import { describe, expect, it } from '@jest/globals';
 import BootstrapRoute from '@/app/index';
 
 describe('application entry route', () => {
-  it('renders the project identity and Phase 4 entry points', async () => {
+  it('renders the project identity and Phase 5 entry points', async () => {
     await render(<BootstrapRoute />);
 
     expect(
       screen.getByRole('header', { name: 'Personal Finance' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Transactions' }),
     ).toBeOnTheScreen();
     expect(
       screen.getByRole('button', { name: 'Add transaction' }),

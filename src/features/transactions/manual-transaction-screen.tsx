@@ -40,7 +40,7 @@ import {
   toLocalDateTimeInput,
 } from '@/lib/dates';
 import { isCodedError, mapError } from '@/lib/errors';
-import { parseMoneyInput } from '@/lib/money';
+import { formatMoneyInput, parseMoneyInput } from '@/lib/money';
 import { colors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -99,7 +99,7 @@ function formFromTransaction(transaction: Transaction): FormState {
     transaction.timezoneOffsetMinutes,
   );
   return {
-    amount: String(transaction.amountMinor),
+    amount: formatMoneyInput(transaction.amountMinor, transaction.currencyCode),
     category: {
       id: transaction.categoryId,
       name: transaction.categoryName,
@@ -434,9 +434,8 @@ export function ManualTransactionScreen({
       router.dismissTo({
         params: {
           feedback: `${saved.type === 'expense' ? 'Expense' : 'Income'} saved.`,
-          savedTransactionId: String(saved.id),
         },
-        pathname: '/',
+        pathname: '/transactions',
       });
     } catch (error) {
       if (__DEV__ && !isCodedError(error)) {
@@ -465,7 +464,7 @@ export function ManualTransactionScreen({
               initialSnapshot.current = serializeForm(form);
               router.dismissTo({
                 params: { feedback: 'Transaction deleted.' },
-                pathname: '/',
+                pathname: '/transactions',
               });
             })
             .catch((error: unknown) => {

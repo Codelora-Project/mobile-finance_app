@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   assertMoney,
   formatMoney,
+  formatMoneyInput,
   getCurrencyFractionDigits,
   parseMoneyInput,
   sumMoney,
@@ -42,6 +43,14 @@ describe('money utilities', () => {
     expect(formatMoney(Number.MAX_SAFE_INTEGER, 'USD', 'en-US')).toBe(
       '$90,071,992,547,409.91',
     );
+  });
+
+  it('formats editable amounts without changing their minor-unit value', () => {
+    expect(formatMoneyInput(1_250, 'USD')).toBe('12.50');
+    expect(parseMoneyInput(formatMoneyInput(1_250, 'USD'), 'USD')).toBe(1_250);
+    expect(
+      parseMoneyInput(formatMoneyInput(Number.MAX_SAFE_INTEGER, 'USD'), 'USD'),
+    ).toBe(Number.MAX_SAFE_INTEGER);
   });
 
   it('rejects invalid, non-positive, fractional, and unsafe amounts', () => {

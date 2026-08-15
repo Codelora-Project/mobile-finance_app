@@ -205,11 +205,26 @@ export function formatMoney(
   const formatter = getCurrencyFormatter(normalizedCurrencyCode, locale);
 
   return formatter
-    .formatToParts(major)
+    .formatToParts(Number(major))
     .map((part) =>
       part.type === 'fraction' ? localizeDigits(fraction, locale) : part.value,
     )
     .join('');
+}
+
+export function formatMoneyInput(amountMinor: number, currencyCode: string) {
+  assertNonNegativeSafeInteger(amountMinor);
+  const fractionDigits = getCurrencyFractionDigits(currencyCode);
+  const scale = 10n ** BigInt(fractionDigits);
+  const amount = BigInt(amountMinor);
+  const major = amount / scale;
+
+  if (fractionDigits === 0) {
+    return major.toString();
+  }
+
+  const fraction = (amount % scale).toString().padStart(fractionDigits, '0');
+  return `${major}.${fraction}`;
 }
 
 export function sumMoney(amountsMinor: readonly number[]) {

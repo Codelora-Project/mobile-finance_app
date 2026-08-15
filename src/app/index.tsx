@@ -41,8 +41,13 @@ export default function BootstrapRoute() {
 
         <View style={styles.actions}>
           <AppButton
+            label="Transactions"
+            onPress={() => router.push('/transactions')}
+          />
+          <AppButton
             label="Add transaction"
             onPress={() => router.push('/transactions/new')}
+            variant="secondary"
           />
           {canEditSavedTransaction ? (
             <AppButton

@@ -9,6 +9,8 @@ import {
   createTransaction,
   deleteTransaction,
   getTransaction,
+  listTransactions,
+  TRANSACTION_PAGE_SIZE,
   updateTransaction,
   type SaveTransactionInput,
 } from '@/features/transactions/transaction-repository';
@@ -236,6 +238,37 @@ class TransactionDatabase {
   }
 }
 
+class TransactionListDatabase {
+  readonly calls: Array<{
+    parameters: readonly SQLiteBindValue[];
+    sql: string;
+  }> = [];
+  readonly rows = Array.from({ length: 120 }, (_, index) => ({
+    amount_minor: 120_000 - index,
+    category_name: index % 2 === 0 ? 'Food & Drink' : 'Salary',
+    counterparty: index % 2 === 0 ? `Merchant ${index}` : `Source ${index}`,
+    currency_code: 'IDR',
+    has_receipt: index % 3 === 0 ? 1 : 0,
+    id: 120 - index,
+    is_reimbursable: index % 4 === 0 ? 1 : 0,
+    local_date: index < 60 ? '2026-08-15' : '2026-08-14',
+    occurred_at: 2_000_000 - index,
+    timezone_offset_minutes: 420,
+    type: index % 2 === 0 ? ('expense' as const) : ('income' as const),
+  }));
+
+  asSQLiteDatabase() {
+    return this as unknown as SQLiteDatabase;
+  }
+
+  async getAllAsync<T>(source: string, ...params: SQLiteBindValue[]) {
+    this.calls.push({ parameters: params, sql: source });
+    const limit = Number(params.at(-2));
+    const offset = Number(params.at(-1));
+    return this.rows.slice(offset, offset + limit) as T[];
+  }
+}
+
 function validInput(
   overrides: Partial<SaveTransactionInput> = {},
 ): SaveTransactionInput {
@@ -389,5 +422,100 @@ describe('manual transaction repository', () => {
       getTransaction(database.asSQLiteDatabase(), created.id),
     ).resolves.toBeNull();
     expect(database.receipts).toHaveLength(0);
+  });
+});
+
+describe('transaction history repository', () => {
+  it('uses a single newest-first JOIN query and paginates 100+ rows', async () => {
+    const database = new TransactionListDatabase();
+
+    const first = await listTransactions(database.asSQLiteDatabase());
+    const second = await listTransactions(database.asSQLiteDatabase(), {
+      offset: first.nextOffset,
+    });
+    const third = await listTransactions(database.asSQLiteDatabase(), {
+      offset: second.nextOffset,
+    });
+
+    expect(first.items).toHaveLength(TRANSACTION_PAGE_SIZE);
+    expect(second.items).toHaveLength(TRANSACTION_PAGE_SIZE);
+    expect(third.items).toHaveLength(20);
+    expect(first.hasMore).toBe(true);
+    expect(second.hasMore).toBe(true);
+    expect(third.hasMore).toBe(false);
+    expect([...first.items, ...second.items, ...third.items]).toHaveLength(120);
+    expect(first.items[0]?.id).toBe(120);
+    expect(third.items.at(-1)?.id).toBe(1);
+
+    expect(database.calls).toHaveLength(3);
+    expect(database.calls[0]?.sql).toContain(
+      'ORDER BY t.occurred_at DESC, t.id DESC',
+    );
+    expect(database.calls[0]?.sql).toContain(
+      'JOIN categories c ON c.id = t.category_id',
+    );
+    expect(database.calls[0]?.sql).toContain(
+      'LEFT JOIN receipts r ON r.transaction_id = t.id',
+    );
+    expect(database.calls[0]?.parameters).toEqual([51, 0]);
+    expect(database.calls[1]?.parameters).toEqual([51, 50]);
+    expect(database.calls[2]?.parameters).toEqual([51, 100]);
+  });
+
+  it('searches merchant, note, and category and applies every MVP filter', async () => {
+    const database = new TransactionListDatabase();
+
+    await listTransactions(database.asSQLiteDatabase(), {
+      filters: {
+        categoryId: 2,
+        dateFrom: '2026-08-01',
+        dateTo: '2026-08-31',
+        hasReceipt: true,
+        isReimbursable: true,
+        paymentMethodId: 10,
+        type: 'expense',
+      },
+      search: '  Coffee  ',
+    });
+
+    const call = database.calls[0];
+    expect(call?.sql).toContain('t.counterparty LIKE ?');
+    expect(call?.sql).toContain('t.note LIKE ?');
+    expect(call?.sql).toContain('c.name LIKE ?');
+    expect(call?.sql).toContain('t.type = ?');
+    expect(call?.sql).toContain('t.category_id = ?');
+    expect(call?.sql).toContain('t.local_date >= ?');
+    expect(call?.sql).toContain('t.local_date <= ?');
+    expect(call?.sql).toContain('t.payment_method_id = ?');
+    expect(call?.sql).toContain('t.is_reimbursable = ?');
+    expect(call?.sql).toContain('r.id IS NOT NULL');
+    expect(call?.parameters).toEqual([
+      '%Coffee%',
+      '%Coffee%',
+      '%Coffee%',
+      'expense',
+      2,
+      '2026-08-01',
+      '2026-08-31',
+      10,
+      1,
+      51,
+      0,
+    ]);
+  });
+
+  it('rejects invalid page and date-range filters', async () => {
+    const database = new TransactionListDatabase();
+
+    await expect(
+      listTransactions(database.asSQLiteDatabase(), { offset: -1 }),
+    ).rejects.toMatchObject({ message: 'Page offset is invalid.' });
+    await expect(
+      listTransactions(database.asSQLiteDatabase(), {
+        filters: { dateFrom: '2026-09-01', dateTo: '2026-08-01' },
+      }),
+    ).rejects.toMatchObject({
+      message: 'Start date must be on or before end date.',
+    });
   });
 });
