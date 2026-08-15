@@ -1,5 +1,10 @@
 const DEFAULT_LOCALE = 'id-ID';
 const CURRENCY_CODE_PATTERN = /^[A-Z]{3}$/;
+const CURRENCY_FRACTION_DIGIT_OVERRIDES: Readonly<Record<string, number>> = {
+  // Android's Intl data can report two fraction digits for IDR, while the MVP
+  // contract stores and displays rupiah as whole minor units (35000 = Rp35.000).
+  IDR: 0,
+};
 
 const fractionDigitsCache = new Map<string, number>();
 const currencyFormatterCache = new Map<string, Intl.NumberFormat>();
@@ -15,8 +20,12 @@ function normalizeCurrencyCode(currencyCode: string) {
   return normalized;
 }
 
-function getCurrencyFormatter(currencyCode: string, locale: string) {
-  const cacheKey = `${locale}\u0000${currencyCode}`;
+function getCurrencyFormatter(
+  currencyCode: string,
+  locale: string,
+  fractionDigits: number,
+) {
+  const cacheKey = `${locale}\u0000${currencyCode}\u0000${fractionDigits}`;
   const cached = currencyFormatterCache.get(cacheKey);
   if (cached) {
     return cached;
@@ -24,6 +33,8 @@ function getCurrencyFormatter(currencyCode: string, locale: string) {
 
   const formatter = new Intl.NumberFormat(locale, {
     currency: currencyCode,
+    maximumFractionDigits: fractionDigits,
+    minimumFractionDigits: fractionDigits,
     style: 'currency',
   });
   currencyFormatterCache.set(cacheKey, formatter);
@@ -147,6 +158,10 @@ function splitMoneyInput(value: string, fractionDigits: number) {
 
 export function getCurrencyFractionDigits(currencyCode: string) {
   const normalizedCurrencyCode = normalizeCurrencyCode(currencyCode);
+  const override = CURRENCY_FRACTION_DIGIT_OVERRIDES[normalizedCurrencyCode];
+  if (override !== undefined) {
+    return override;
+  }
   const cached = fractionDigitsCache.get(normalizedCurrencyCode);
   if (cached !== undefined) {
     return cached;
@@ -202,7 +217,11 @@ export function formatMoney(
   const amount = BigInt(amountMinor);
   const major = amount / scale;
   const fraction = (amount % scale).toString().padStart(fractionDigits, '0');
-  const formatter = getCurrencyFormatter(normalizedCurrencyCode, locale);
+  const formatter = getCurrencyFormatter(
+    normalizedCurrencyCode,
+    locale,
+    fractionDigits,
+  );
 
   return formatter
     .formatToParts(Number(major))

@@ -1,6 +1,6 @@
 # Personal Finance
 
-Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo Development Build, React Native, TypeScript, Expo Router, dan SQLite. Proyek ini masih dalam tahap pengembangan; implementasi saat ini telah mencapai **Milestone 5** (riwayat transaksi, pagination, search, filter, detail, edit, delete, dan refetch setelah mutasi).
+Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo Development Build, React Native, TypeScript, Expo Router, dan SQLite. Proyek ini masih dalam tahap pengembangan; implementasi saat ini telah mencapai **Milestone 6** (Home dengan agregasi expense/income/net bulanan, breakdown kategori, lima transaksi terbaru, serta seluruh fitur transaksi dari milestone sebelumnya).
 
 `PRD.md` adalah **single source of truth** untuk requirement, arsitektur, urutan implementasi, dan acceptance criteria. Jangan mengimplementasikan phase berikutnya sebelum milestone sebelumnya selesai dan terverifikasi.
 
@@ -142,11 +142,11 @@ Untuk menjalankan satu test suite:
 npm test -- tests/money.test.ts
 ```
 
-Test yang tersedia saat ini mencakup bootstrap route, inisialisasi/migrasi database, utilitas money/date/text/error, repository kategori dan metode pembayaran, repository transaksi termasuk pagination/read model tanpa N+1, form transaksi manual, riwayat transaksi, filter, serta detail transaksi.
+Test yang tersedia saat ini mencakup bootstrap route, inisialisasi/migrasi database, utilitas money/date/text/error, repository kategori dan metode pembayaran, repository transaksi termasuk pagination/read model tanpa N+1, form transaksi manual, riwayat transaksi, filter, detail transaksi, agregasi Home, month-boundary, serta loading/error/empty/data state Home.
 
 ## Verifikasi manual saat ini
 
-Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai Milestone 5, cek minimal:
+Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai Milestone 6, cek minimal:
 
 1. Aplikasi terbuka tanpa error database atau crash.
 2. Halaman Transactions, Manual Transaction, Categories, dan Payment Methods dapat dibuka dari halaman utama.
@@ -168,6 +168,12 @@ Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai M
 18. Kombinasi search/filter tanpa hasil menampilkan `No matching transactions`, bukan empty state data baru.
 19. Transaction Detail menampilkan seluruh field yang relevan; Edit, Delete, dan Add mengembalikan pengguna ke daftar yang sudah ter-refetch.
 20. Edit transaksi tanpa mengubah amount tidak mengubah nilai minor-unit yang tersimpan.
+21. Home menampilkan bulan lokal saat ini serta total Expense, Income, dan Net dari data SQLite bulan tersebut.
+22. Net menggunakan rumus Income dikurangi Expense dan tetap menampilkan tanda yang benar ketika hasilnya negatif.
+23. Spending by category hanya menghitung Expense dalam currency Home, diurutkan berdasarkan jumlah terbesar, dan menampilkan maksimum lima bar horizontal beserta nominalnya.
+24. Recent transactions menampilkan maksimum lima transaksi terbaru dan membuka Transaction Detail ketika ditekan.
+25. Home menampilkan state kosong yang benar ketika belum ada transaksi atau belum ada Expense pada bulan berjalan.
+26. Home melakukan refetch setelah kembali dari Add/Edit/Delete dan pull-to-refresh dapat digunakan tanpa menggandakan data.
 
 Untuk mengecek persistence melalui terminal:
 
@@ -259,6 +265,7 @@ src/
   app/                    Expo Router routes
   components/ui/          shared UI primitives
   db/                     SQLite provider, migrations, dan seeds
+  features/home/          targeted SQL aggregation dan Home screen
   features/categories/    category management dan picker
   features/payment-methods/
   features/transactions/  manual form, history, filters, detail, receipt picker, repository
