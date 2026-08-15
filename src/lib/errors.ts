@@ -17,6 +17,8 @@ export type UserFacingError = Readonly<{
   message: string;
 }>;
 
+export type CodedError = Error & { code: AppErrorCode };
+
 const errorDefinitions: Record<AppErrorCode, Omit<UserFacingError, 'code'>> = {
   VALIDATION_FAILED: {
     title: 'Check your information',
@@ -57,6 +59,19 @@ export function isAppErrorCode(value: unknown): value is AppErrorCode {
   return (
     typeof value === 'string' &&
     appErrorCodes.some((errorCode) => errorCode === value)
+  );
+}
+
+export function createCodedError(
+  code: AppErrorCode,
+  message: string,
+): CodedError {
+  return Object.assign(new Error(message), { code });
+}
+
+export function isCodedError(error: unknown): error is CodedError {
+  return (
+    error instanceof Error && 'code' in error && isAppErrorCode(error.code)
   );
 }
 

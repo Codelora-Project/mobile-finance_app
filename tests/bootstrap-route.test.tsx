@@ -3,13 +3,18 @@ import { describe, expect, it } from '@jest/globals';
 
 import BootstrapRoute from '@/app/index';
 
-describe('bootstrap route', () => {
-  it('renders the project identity and readiness state', async () => {
+describe('application entry route', () => {
+  it('renders the project identity and Phase 3 management entry points', async () => {
     await render(<BootstrapRoute />);
 
     expect(
       screen.getByRole('header', { name: 'Personal Finance' }),
     ).toBeOnTheScreen();
-    expect(screen.getByText('Project foundation is ready.')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Categories' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Payment methods' }),
+    ).toBeOnTheScreen();
   });
 });
