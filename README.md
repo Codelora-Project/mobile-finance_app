@@ -1,6 +1,6 @@
 # Personal Finance
 
-Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo Development Build, React Native, TypeScript, Expo Router, dan SQLite. Proyek ini masih dalam tahap pengembangan; implementasi saat ini telah mencapai **Milestone 7** (Gallery Receipt Pipeline dengan single-image picker, validasi JPEG/PNG/WEBP, preview URI sementara, Context khusus receipt flow, serta seluruh fitur milestone sebelumnya).
+Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo Development Build, React Native, TypeScript, Expo Router, dan SQLite. Proyek ini masih dalam tahap pengembangan; implementasi saat ini telah mencapai **Milestone 8** (Gallery Receipt OCR on-device, parser deterministik, Receipt Review wajib, fallback manual, serta seluruh fitur milestone sebelumnya).
 
 `PRD.md` adalah **single source of truth** untuk requirement, arsitektur, urutan implementasi, dan acceptance criteria. Jangan mengimplementasikan phase berikutnya sebelum milestone sebelumnya selesai dan terverifikasi.
 
@@ -13,6 +13,7 @@ Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo 
 - Expo Router
 - `expo-sqlite`
 - `expo-image-picker`
+- `@infinitered/react-native-mlkit-text-recognition`
 - Jest + `jest-expo` + Testing Library
 - ESLint + Prettier
 - npm
@@ -142,11 +143,11 @@ Untuk menjalankan satu test suite:
 npm test -- tests/money.test.ts
 ```
 
-Test yang tersedia saat ini mencakup bootstrap route, inisialisasi/migrasi database, utilitas money/date/text/error, repository kategori dan metode pembayaran, repository transaksi termasuk pagination/read model tanpa N+1, form transaksi manual, riwayat transaksi, filter, detail transaksi, Home, Add Transaction sheet, validasi gallery image, cancel/error/retry Import Receipt, serta persistensi in-memory Receipt Flow Context.
+Test yang tersedia saat ini mencakup bootstrap route, inisialisasi/migrasi database, utilitas money/date/text/error, repository kategori dan metode pembayaran, repository transaksi termasuk metadata OCR dan pagination/read model tanpa N+1, form transaksi manual, riwayat transaksi, filter, detail transaksi, Home, Add Transaction sheet, validasi gallery image, OCR success/error/timeout, fixture parser receipt, Receipt Review, serta persistensi in-memory Receipt Flow Context.
 
 ## Verifikasi manual saat ini
 
-Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai Milestone 7, cek minimal:
+Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai Milestone 8, cek minimal:
 
 1. Aplikasi terbuka tanpa error database atau crash.
 2. Halaman Transactions, Manual Transaction, Categories, dan Payment Methods dapat dibuka dari halaman utama.
@@ -175,9 +176,13 @@ Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai M
 25. Home menampilkan state kosong yang benar ketika belum ada transaksi atau belum ada Expense pada bulan berjalan.
 26. Home melakukan refetch setelah kembali dari Add/Edit/Delete dan pull-to-refresh dapat digunakan tanpa menggandakan data.
 27. Add Transaction menampilkan opsi Enter Manually, Scan Receipt, dan Import Receipt dalam urutan PRD; Scan Receipt tetap nonaktif sampai Camera phase diimplementasikan.
-28. Import Receipt membuka Android Photo Picker untuk satu image, menampilkan preview JPEG/PNG/WEBP yang valid, dan kembali normal ketika picker dibatalkan.
+28. Import Receipt membuka Android Photo Picker untuk satu image JPEG/PNG/WEBP dan kembali normal ketika picker dibatalkan.
 29. Image dengan MIME atau metadata yang tidak valid menghasilkan error yang recoverable dan dapat dipilih ulang.
-30. Image terpilih tetap tersedia selama receipt flow aktif, dibersihkan ketika flow ditutup, dan tidak membuat Transaction/Receipt sebelum final Save pada phase berikutnya.
+30. Image diproses on-device dengan ML Kit tanpa request jaringan dan selalu masuk ke Receipt Review ketika teks ditemukan.
+31. Receipt Review menampilkan thumbnail dan field Total, Merchant, Date & Time, Category, Payment Method, Reimbursable, dan Note yang dapat diedit.
+32. Hasil OCR partial menampilkan peringatan; total yang tidak terdeteksi wajib diisi sebelum Save.
+33. OCR kosong, native error, dan timeout menampilkan fallback yang recoverable; Enter Manually tetap mempertahankan receipt.
+34. Transaction/Receipt baru dibuat hanya setelah final Save, dengan `processed`, `partial`, atau `failed` serta raw text/subtotal/tax yang sesuai.
 
 Untuk mengecek persistence melalui terminal:
 
@@ -270,7 +275,7 @@ src/
   components/ui/          shared UI primitives
   db/                     SQLite provider, migrations, dan seeds
   features/home/          targeted SQL aggregation dan Home screen
-  features/receipts/      gallery validation, temporary flow Context, dan preview
+  features/receipts/      gallery, ML Kit boundary, parser, flow Context, dan Receipt Review
   features/categories/    category management dan picker
   features/payment-methods/
   features/transactions/  manual form, history, filters, detail, receipt picker, repository

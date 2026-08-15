@@ -23,15 +23,24 @@ const selectedImage = {
 };
 
 function FlowProbe() {
-  const { clearImage, image, setImage } = useReceiptFlow();
+  const { clearImage, image, ocr, setImage, setOcr } = useReceiptFlow();
   return (
     <>
       <Text>{image?.sourceImageUri ?? 'No image'}</Text>
+      <Text>{ocr.status}</Text>
       <Pressable
         accessibilityRole="button"
         onPress={() => setImage(selectedImage)}
       >
         <Text>Select image</Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() =>
+          setOcr({ parsed: null, rawText: null, status: 'processing' })
+        }
+      >
+        <Text>Process image</Text>
       </Pressable>
       <Pressable accessibilityRole="button" onPress={() => clearImage()}>
         <Text>Exit flow</Text>
@@ -53,6 +62,10 @@ describe('receipt flow context', () => {
     await waitFor(() =>
       expect(screen.getByText('file:///cache/receipt.jpg')).toBeOnTheScreen(),
     );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Process image' }),
+    );
+    expect(screen.getByText('processing')).toBeOnTheScreen();
 
     await view.rerender(
       <ReceiptFlowProvider>
@@ -63,5 +76,6 @@ describe('receipt flow context', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: 'Exit flow' }));
     await waitFor(() => expect(screen.getByText('No image')).toBeOnTheScreen());
+    expect(screen.getByText('idle')).toBeOnTheScreen();
   });
 });

@@ -16,6 +16,9 @@ export type TransactionReceipt = Readonly<{
   storageKey: string;
   mimeType: ReceiptMimeType;
   ocrStatus: 'not_processed' | 'processed' | 'partial' | 'failed';
+  ocrRawText: string | null;
+  subtotalMinor: number | null;
+  taxMinor: number | null;
 }>;
 
 export type Transaction = Readonly<{
@@ -53,6 +56,10 @@ export type SaveTransactionInput = Readonly<{
   receipt: Readonly<{
     sourceImageUri: string;
     mimeType: ReceiptMimeType;
+    ocrStatus?: TransactionReceipt['ocrStatus'];
+    ocrRawText?: string | null;
+    subtotalMinor?: number | null;
+    taxMinor?: number | null;
   }> | null;
 }>;
 
@@ -114,6 +121,9 @@ type TransactionRow = {
   receipt_storage_key: string | null;
   receipt_mime_type: ReceiptMimeType | null;
   receipt_ocr_status: TransactionReceipt['ocrStatus'] | null;
+  receipt_ocr_raw_text: string | null;
+  receipt_subtotal_minor: number | null;
+  receipt_tax_minor: number | null;
   created_at: number;
   updated_at: number;
 };
@@ -152,6 +162,9 @@ const TRANSACTION_SELECT = `
     r.storage_key AS receipt_storage_key,
     r.mime_type AS receipt_mime_type,
     r.ocr_status AS receipt_ocr_status,
+    r.ocr_raw_text AS receipt_ocr_raw_text,
+    r.subtotal_minor AS receipt_subtotal_minor,
+    r.tax_minor AS receipt_tax_minor,
     t.created_at,
     t.updated_at
   FROM transactions t
@@ -205,7 +218,10 @@ function mapTransaction(row: TransactionRow): Transaction {
           id: row.receipt_id as number,
           mimeType: row.receipt_mime_type as ReceiptMimeType,
           ocrStatus: row.receipt_ocr_status as TransactionReceipt['ocrStatus'],
+          ocrRawText: row.receipt_ocr_raw_text,
           storageKey: row.receipt_storage_key as string,
+          subtotalMinor: row.receipt_subtotal_minor,
+          taxMinor: row.receipt_tax_minor,
         }
       : null,
     timezoneOffsetMinutes: row.timezone_offset_minutes,
@@ -358,7 +374,31 @@ function normalizeReceipt(input: SaveTransactionInput['receipt']) {
       'Choose a JPEG, PNG, or WEBP receipt image.',
     );
   }
-  return { mimeType: input.mimeType, sourceImageUri };
+  const ocrStatus = input.ocrStatus ?? 'not_processed';
+  if (
+    !['not_processed', 'processed', 'partial', 'failed'].includes(ocrStatus)
+  ) {
+    throw createCodedError(
+      'VALIDATION_FAILED',
+      'Receipt OCR status is invalid.',
+    );
+  }
+  const ocrRawText = input.ocrRawText?.normalize('NFC').trim() || null;
+  const normalizeOptionalMoney = (value: number | null | undefined) => {
+    if (value === null || value === undefined) return null;
+    if (!Number.isSafeInteger(value) || value < 0) {
+      throw createCodedError('VALIDATION_FAILED', 'Receipt amount is invalid.');
+    }
+    return value;
+  };
+  return {
+    mimeType: input.mimeType,
+    ocrRawText,
+    ocrStatus,
+    sourceImageUri,
+    subtotalMinor: normalizeOptionalMoney(input.subtotalMinor),
+    taxMinor: normalizeOptionalMoney(input.taxMinor),
+  };
 }
 
 function normalizeInput(input: SaveTransactionInput, now: number) {
@@ -480,12 +520,16 @@ async function writeReceipt(
   if (existingReceipt) {
     await database.runAsync(
       `UPDATE receipts
-       SET storage_key = ?, mime_type = ?, ocr_status = 'not_processed',
-           ocr_raw_text = NULL, subtotal_minor = NULL, tax_minor = NULL,
+       SET storage_key = ?, mime_type = ?, ocr_status = ?,
+           ocr_raw_text = ?, subtotal_minor = ?, tax_minor = ?,
            updated_at = ?
        WHERE transaction_id = ?`,
       receipt.sourceImageUri,
       receipt.mimeType,
+      receipt.ocrStatus,
+      receipt.ocrRawText,
+      receipt.subtotalMinor,
+      receipt.taxMinor,
       timestamp,
       transactionId,
     );
@@ -503,10 +547,14 @@ async function writeReceipt(
       tax_minor,
       created_at,
       updated_at
-    ) VALUES (?, ?, ?, 'not_processed', NULL, NULL, NULL, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     transactionId,
     receipt.sourceImageUri,
     receipt.mimeType,
+    receipt.ocrStatus,
+    receipt.ocrRawText,
+    receipt.subtotalMinor,
+    receipt.taxMinor,
     timestamp,
     timestamp,
   );

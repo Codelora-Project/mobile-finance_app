@@ -120,7 +120,11 @@ function formFromTransaction(transaction: Transaction): FormState {
       ? {
           displayName: getReceiptDisplayName(transaction.receipt.storageKey),
           mimeType: transaction.receipt.mimeType,
+          ocrRawText: transaction.receipt.ocrRawText,
+          ocrStatus: transaction.receipt.ocrStatus,
           sourceImageUri: transaction.receipt.storageKey,
+          subtotalMinor: transaction.receipt.subtotalMinor,
+          taxMinor: transaction.receipt.taxMinor,
         }
       : null,
     time: dateTime.time,
@@ -134,7 +138,14 @@ function serializeForm(form: FormState) {
     category: form.category?.id ?? null,
     paymentMethod: form.paymentMethod?.id ?? null,
     receipt: form.receipt
-      ? [form.receipt.sourceImageUri, form.receipt.mimeType]
+      ? [
+          form.receipt.sourceImageUri,
+          form.receipt.mimeType,
+          form.receipt.ocrStatus,
+          form.receipt.ocrRawText,
+          form.receipt.subtotalMinor,
+          form.receipt.taxMinor,
+        ]
       : null,
   });
 }
@@ -194,7 +205,11 @@ function buildSaveInput(form: FormState) {
       form.type === 'expense' && form.receipt
         ? {
             mimeType: form.receipt.mimeType,
+            ocrRawText: form.receipt.ocrRawText,
+            ocrStatus: form.receipt.ocrStatus,
             sourceImageUri: form.receipt.sourceImageUri,
+            subtotalMinor: form.receipt.subtotalMinor,
+            taxMinor: form.receipt.taxMinor,
           }
         : null,
     timezoneOffsetMinutes: dateTime.timezoneOffsetMinutes,

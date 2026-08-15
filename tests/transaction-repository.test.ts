@@ -38,7 +38,10 @@ type StoredReceipt = {
   transactionId: number;
   storageKey: string;
   mimeType: 'image/jpeg' | 'image/png' | 'image/webp';
-  ocrStatus: 'not_processed';
+  ocrStatus: 'not_processed' | 'processed' | 'partial' | 'failed';
+  ocrRawText: string | null;
+  subtotalMinor: number | null;
+  taxMinor: number | null;
   createdAt: number;
   updatedAt: number;
 };
@@ -120,7 +123,10 @@ class TransactionDatabase {
           receipt_id: receipt?.id ?? null,
           receipt_mime_type: receipt?.mimeType ?? null,
           receipt_ocr_status: receipt?.ocrStatus ?? null,
+          receipt_ocr_raw_text: receipt?.ocrRawText ?? null,
           receipt_storage_key: receipt?.storageKey ?? null,
+          receipt_subtotal_minor: receipt?.subtotalMinor ?? null,
+          receipt_tax_minor: receipt?.taxMinor ?? null,
           timezone_offset_minutes: transaction.timezoneOffsetMinutes,
           type: transaction.type,
           updated_at: transaction.updatedAt,
@@ -163,13 +169,16 @@ class TransactionDatabase {
     if (sql.startsWith('INSERT INTO receipts')) {
       const id = this.nextReceiptId++;
       this.receipts.push({
-        createdAt: Number(params[3]),
+        createdAt: Number(params[7]),
         id,
         mimeType: params[2] as StoredReceipt['mimeType'],
-        ocrStatus: 'not_processed',
+        ocrRawText: params[4] == null ? null : String(params[4]),
+        ocrStatus: params[3] as StoredReceipt['ocrStatus'],
         storageKey: String(params[1]),
+        subtotalMinor: params[5] == null ? null : Number(params[5]),
+        taxMinor: params[6] == null ? null : Number(params[6]),
         transactionId: Number(params[0]),
-        updatedAt: Number(params[4]),
+        updatedAt: Number(params[8]),
       });
       return { changes: 1, lastInsertRowId: id };
     }
@@ -199,13 +208,16 @@ class TransactionDatabase {
 
     if (sql.startsWith('UPDATE receipts SET storage_key = ?')) {
       const receipt = this.receipts.find(
-        (candidate) => candidate.transactionId === params[3],
+        (candidate) => candidate.transactionId === params[7],
       );
       if (receipt) {
         receipt.storageKey = String(params[0]);
         receipt.mimeType = params[1] as StoredReceipt['mimeType'];
-        receipt.ocrStatus = 'not_processed';
-        receipt.updatedAt = Number(params[2]);
+        receipt.ocrStatus = params[2] as StoredReceipt['ocrStatus'];
+        receipt.ocrRawText = params[3] == null ? null : String(params[3]);
+        receipt.subtotalMinor = params[4] == null ? null : Number(params[4]);
+        receipt.taxMinor = params[5] == null ? null : Number(params[5]);
+        receipt.updatedAt = Number(params[6]);
       }
       return { changes: receipt ? 1 : 0, lastInsertRowId: 0 };
     }
@@ -351,6 +363,30 @@ describe('manual transaction repository', () => {
     ).rejects.toMatchObject({
       code: 'VALIDATION_FAILED',
       message: 'Income cannot have a receipt.',
+    });
+  });
+
+  it('persists parsed OCR metadata with the receipt', async () => {
+    const database = new TransactionDatabase();
+    const saved = await createTransaction(
+      database.asSQLiteDatabase(),
+      validInput({
+        receipt: {
+          mimeType: 'image/png',
+          ocrRawText: 'SHOP\nSUBTOTAL 30.000\nPPN 3.000\nTOTAL 33.000',
+          ocrStatus: 'processed',
+          sourceImageUri: 'file:///cache/ocr.png',
+          subtotalMinor: 30_000,
+          taxMinor: 3_000,
+        },
+      }),
+    );
+
+    expect(saved.receipt).toMatchObject({
+      ocrRawText: 'SHOP\nSUBTOTAL 30.000\nPPN 3.000\nTOTAL 33.000',
+      ocrStatus: 'processed',
+      subtotalMinor: 30_000,
+      taxMinor: 3_000,
     });
   });
 

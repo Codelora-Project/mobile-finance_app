@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -7,22 +8,30 @@ import {
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { ImportReceiptScreen } from '@/features/receipts/import-receipt-screen';
+import { OcrError } from '@/features/receipts/ocr-service';
 import { ReceiptFlowProvider } from '@/features/receipts/receipt-flow-context';
 import { createCodedError } from '@/lib/errors';
 
-const mockRouter = {
-  back: jest.fn(),
-};
+const mockRouter = { back: jest.fn(), replace: jest.fn() };
 const mockPickReceiptImage =
   jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockRecognizeReceipt =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
-jest.mock('expo-router', () => ({
-  useRouter: () => mockRouter,
-}));
-
+jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
 jest.mock('@/features/receipts/receipt-image-picker', () => ({
   pickReceiptImageFromGallery: (...args: unknown[]) =>
     mockPickReceiptImage(...args),
+}));
+jest.mock('@/features/receipts/ocr-service', () => ({
+  OcrError: class OcrError extends Error {
+    code: string;
+    constructor(mockCode: string) {
+      super(mockCode);
+      this.code = mockCode;
+    }
+  },
+  recognizeReceipt: (...args: unknown[]) => mockRecognizeReceipt(...args),
 }));
 
 const selectedImage = {
@@ -34,6 +43,16 @@ const selectedImage = {
   sourceImageUri: 'file:///cache/gallery-receipt.png',
   width: 1200,
 };
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (error: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, reject, resolve };
+}
 
 function renderScreen() {
   return render(
@@ -47,58 +66,82 @@ describe('import receipt screen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockPickReceiptImage.mockReset();
+    mockRecognizeReceipt.mockReset();
   });
 
-  it('opens the gallery and previews a valid temporary image', async () => {
-    mockPickReceiptImage.mockResolvedValue(selectedImage);
+  it('processes a gallery image and always routes to review', async () => {
+    const picker = deferred<typeof selectedImage>();
+    mockPickReceiptImage.mockReturnValue(picker.promise);
+    mockRecognizeReceipt.mockResolvedValue({ rawText: 'SHOP\nTOTAL 35.000' });
     await renderScreen();
-
-    expect(
-      await screen.findByRole('header', { name: 'Receipt Image' }),
-    ).toBeOnTheScreen();
-    expect(screen.getByText('gallery-receipt.png')).toBeOnTheScreen();
-    expect(screen.getByText('PNG · 1200 × 1600')).toBeOnTheScreen();
-    expect(screen.getByLabelText('Selected receipt image')).toBeOnTheScreen();
-    expect(
-      screen.getByText(/It has not been saved as a transaction/),
-    ).toBeOnTheScreen();
-    expect(mockPickReceiptImage).toHaveBeenCalledTimes(1);
-
-    await fireEvent.press(screen.getAllByRole('button', { name: 'Close' })[0]);
-    expect(mockRouter.back).toHaveBeenCalledTimes(1);
+    await act(async () => picker.resolve(selectedImage));
+    await waitFor(() =>
+      expect(mockRouter.replace).toHaveBeenCalledWith('/receipt/review'),
+    );
+    expect(mockRecognizeReceipt).toHaveBeenCalledWith(
+      selectedImage.sourceImageUri,
+    );
   });
 
   it('returns normally when the initial picker is canceled', async () => {
-    mockPickReceiptImage.mockResolvedValue(null);
+    const picker = deferred<null>();
+    mockPickReceiptImage.mockReturnValue(picker.promise);
     await renderScreen();
-
+    await act(async () => picker.resolve(null));
     await waitFor(() => expect(mockRouter.back).toHaveBeenCalledTimes(1));
   });
 
   it('shows a recoverable validation error and can retry', async () => {
+    const picker = deferred<unknown>();
     mockPickReceiptImage
-      .mockRejectedValueOnce(
+      .mockReturnValueOnce(picker.promise)
+      .mockResolvedValueOnce(selectedImage);
+    mockRecognizeReceipt.mockResolvedValue({ rawText: 'SHOP\nTOTAL 10.000' });
+    await renderScreen();
+    await act(async () => {
+      picker.reject(
         createCodedError(
           'VALIDATION_FAILED',
           'Choose a JPEG, PNG, or WEBP receipt image.',
         ),
-      )
-      .mockResolvedValueOnce(selectedImage);
-    await renderScreen();
-
+      );
+      await picker.promise.catch(() => undefined);
+    });
     expect(
-      await screen.findByRole('header', { name: 'Receipt unavailable' }),
+      await screen.findByText('Choose a JPEG, PNG, or WEBP receipt image.'),
     ).toBeOnTheScreen();
-    expect(
-      screen.getByText('Choose a JPEG, PNG, or WEBP receipt image.'),
-    ).toBeOnTheScreen();
-
-    await fireEvent.press(
-      screen.getByRole('button', { name: 'Choose another image' }),
+    fireEvent.press(screen.getByRole('button', { name: 'Try Another Image' }));
+    await waitFor(() =>
+      expect(mockRouter.replace).toHaveBeenCalledWith('/receipt/review'),
     );
+  });
+
+  it('keeps the receipt attached for manual fallback after native failure', async () => {
+    const picker = deferred<typeof selectedImage>();
+    mockPickReceiptImage.mockReturnValue(picker.promise);
+    mockRecognizeReceipt.mockRejectedValue(new Error('native'));
+    await renderScreen();
+    await act(async () => picker.resolve(selectedImage));
+    fireEvent.press(
+      await screen.findByRole('button', { name: 'Enter Manually' }),
+    );
+    expect(mockRouter.replace).toHaveBeenCalledWith('/receipt/review');
+  });
+
+  it('shows timeout recovery without fake progress', async () => {
+    const picker = deferred<typeof selectedImage>();
+    mockPickReceiptImage.mockReturnValue(picker.promise);
+    mockRecognizeReceipt.mockRejectedValue(new OcrError('OCR_TIMEOUT'));
+    await renderScreen();
+    await act(async () => picker.resolve(selectedImage));
     expect(
-      await screen.findByRole('header', { name: 'Receipt Image' }),
+      await screen.findByRole('header', {
+        name: 'Receipt processing is taking longer than expected.',
+      }),
     ).toBeOnTheScreen();
-    expect(mockPickReceiptImage).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole('button', { name: 'Try Again' })).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Enter Manually' }),
+    ).toBeOnTheScreen();
   });
 });
