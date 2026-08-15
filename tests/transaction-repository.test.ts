@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type {
   SQLiteBindValue,
   SQLiteDatabase,
@@ -15,6 +15,18 @@ import {
   type SaveTransactionInput,
 } from '@/features/transactions/transaction-repository';
 import { getTimezoneOffsetMinutes, toLocalDate } from '@/lib/dates';
+
+const mockCopyReceiptToStorage =
+  jest.fn<(sourceImageUri: string, mimeType: string) => Promise<string>>();
+const mockRemoveReceiptFile = jest.fn<(storageKey: string) => void>();
+
+jest.mock('@/features/receipts/receipt-storage', () => ({
+  copyReceiptToStorage: (sourceImageUri: string, mimeType: string) =>
+    mockCopyReceiptToStorage(sourceImageUri, mimeType),
+  isReceiptStorageKey: (value: string) => value.startsWith('receipts/'),
+  receiptFileExists: () => true,
+  removeReceiptFile: (storageKey: string) => mockRemoveReceiptFile(storageKey),
+}));
 
 type StoredTransaction = {
   id: number;
@@ -89,6 +101,13 @@ class TransactionDatabase {
         (candidate) => candidate.transactionId === params[0],
       );
       row = receipt ? { id: receipt.id } : null;
+    } else if (
+      sql === 'SELECT storage_key FROM receipts WHERE transaction_id = ?'
+    ) {
+      const receipt = this.receipts.find(
+        (candidate) => candidate.transactionId === params[0],
+      );
+      row = receipt ? { storage_key: receipt.storageKey } : null;
     } else if (
       sql.includes('FROM transactions t') &&
       sql.includes('t.id = ?')
@@ -307,6 +326,14 @@ function validInput(
 }
 
 describe('manual transaction repository', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockCopyReceiptToStorage.mockImplementation(async (sourceImageUri) => {
+      const fileName = sourceImageUri.split('/').at(-1) ?? 'receipt.jpg';
+      return `receipts/${fileName}`;
+    });
+  });
+
   it('saves an expense atomically with a manual not_processed receipt', async () => {
     const database = new TransactionDatabase();
     const saved = await createTransaction(
@@ -326,8 +353,12 @@ describe('manual transaction repository', () => {
     expect(saved.receipt).toMatchObject({
       mimeType: 'image/jpeg',
       ocrStatus: 'not_processed',
-      storageKey: 'file:///cache/receipt.jpg',
+      storageKey: 'receipts/receipt.jpg',
     });
+    expect(mockCopyReceiptToStorage).toHaveBeenCalledWith(
+      'file:///cache/receipt.jpg',
+      'image/jpeg',
+    );
   });
 
   it('saves valid income and blocks expense-only flags', async () => {
@@ -458,6 +489,121 @@ describe('manual transaction repository', () => {
       getTransaction(database.asSQLiteDatabase(), created.id),
     ).resolves.toBeNull();
     expect(database.receipts).toHaveLength(0);
+    expect(mockRemoveReceiptFile).toHaveBeenCalledWith('receipts/receipt.jpg');
+  });
+
+  it('removes a newly copied file when the database write fails', async () => {
+    const database = new TransactionDatabase();
+    const originalRunAsync = database.runAsync.bind(database);
+    database.runAsync = async (source, ...params) => {
+      if (
+        source.replace(/\s+/g, ' ').trim().startsWith('INSERT INTO receipts')
+      ) {
+        throw new Error('simulated receipt insert failure');
+      }
+      return originalRunAsync(source, ...params);
+    };
+
+    await expect(
+      createTransaction(database.asSQLiteDatabase(), validInput()),
+    ).rejects.toThrow('simulated receipt insert failure');
+    expect(mockRemoveReceiptFile).toHaveBeenCalledWith('receipts/receipt.jpg');
+  });
+
+  it('keeps the old receipt and cleans the new file when replacement fails', async () => {
+    const database = new TransactionDatabase();
+    const created = await createTransaction(
+      database.asSQLiteDatabase(),
+      validInput(),
+    );
+    mockCopyReceiptToStorage.mockResolvedValueOnce('receipts/replacement.png');
+    const originalRunAsync = database.runAsync.bind(database);
+    database.runAsync = async (source, ...params) => {
+      if (source.replace(/\s+/g, ' ').trim().startsWith('UPDATE receipts')) {
+        throw new Error('simulated receipt update failure');
+      }
+      return originalRunAsync(source, ...params);
+    };
+
+    await expect(
+      updateTransaction(
+        database.asSQLiteDatabase(),
+        created.id,
+        validInput({
+          receipt: {
+            mimeType: 'image/png',
+            sourceImageUri: 'file:///cache/replacement.png',
+          },
+        }),
+      ),
+    ).rejects.toThrow('simulated receipt update failure');
+    expect(database.receipts[0]?.storageKey).toBe('receipts/receipt.jpg');
+    expect(mockRemoveReceiptFile).toHaveBeenCalledWith(
+      'receipts/replacement.png',
+    );
+    expect(mockRemoveReceiptFile).not.toHaveBeenCalledWith(
+      'receipts/receipt.jpg',
+    );
+  });
+
+  it('commits a replacement before cleaning the old receipt file', async () => {
+    const database = new TransactionDatabase();
+    const created = await createTransaction(
+      database.asSQLiteDatabase(),
+      validInput(),
+    );
+    mockCopyReceiptToStorage.mockResolvedValueOnce('receipts/replacement.png');
+
+    const updated = await updateTransaction(
+      database.asSQLiteDatabase(),
+      created.id,
+      validInput({
+        receipt: {
+          mimeType: 'image/png',
+          sourceImageUri: 'file:///cache/replacement.png',
+        },
+      }),
+    );
+
+    expect(updated.receipt?.storageKey).toBe('receipts/replacement.png');
+    expect(mockRemoveReceiptFile).toHaveBeenCalledWith('receipts/receipt.jpg');
+    expect(mockRemoveReceiptFile).not.toHaveBeenCalledWith(
+      'receipts/replacement.png',
+    );
+  });
+
+  it('deletes the receipt row before cleaning its persistent file', async () => {
+    const database = new TransactionDatabase();
+    const created = await createTransaction(
+      database.asSQLiteDatabase(),
+      validInput(),
+    );
+
+    await deleteTransaction(database.asSQLiteDatabase(), created.id);
+
+    expect(database.receipts).toHaveLength(0);
+    expect(database.transactions).toHaveLength(0);
+    expect(mockRemoveReceiptFile).toHaveBeenCalledWith('receipts/receipt.jpg');
+  });
+
+  it('keeps the database consistent when post-commit file cleanup fails', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const database = new TransactionDatabase();
+    const created = await createTransaction(
+      database.asSQLiteDatabase(),
+      validInput(),
+    );
+    mockRemoveReceiptFile.mockImplementationOnce(() => {
+      throw new Error('simulated file delete failure');
+    });
+
+    await expect(
+      deleteTransaction(database.asSQLiteDatabase(), created.id),
+    ).resolves.toBeUndefined();
+    expect(database.receipts).toHaveLength(0);
+    expect(database.transactions).toHaveLength(0);
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 });
 

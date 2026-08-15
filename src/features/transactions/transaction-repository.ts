@@ -4,6 +4,12 @@ import {
   supportedReceiptMimeTypes,
   type ReceiptMimeType,
 } from '@/features/receipts/receipt-types';
+import {
+  copyReceiptToStorage,
+  isReceiptStorageKey,
+  receiptFileExists,
+  removeReceiptFile,
+} from '@/features/receipts/receipt-storage';
 import { isLocalDate, toLocalDate } from '@/lib/dates';
 import { createCodedError } from '@/lib/errors';
 import { assertMoney } from '@/lib/money';
@@ -502,7 +508,14 @@ async function validateReferences(
 async function writeReceipt(
   database: SQLiteDatabase,
   transactionId: number,
-  receipt: ReturnType<typeof normalizeReceipt>,
+  receipt:
+    | (Omit<
+        NonNullable<ReturnType<typeof normalizeReceipt>>,
+        'sourceImageUri'
+      > & {
+        storageKey: string;
+      })
+    | null,
   timestamp: number,
 ) {
   if (!receipt) {
@@ -524,7 +537,7 @@ async function writeReceipt(
            ocr_raw_text = ?, subtotal_minor = ?, tax_minor = ?,
            updated_at = ?
        WHERE transaction_id = ?`,
-      receipt.sourceImageUri,
+      receipt.storageKey,
       receipt.mimeType,
       receipt.ocrStatus,
       receipt.ocrRawText,
@@ -549,7 +562,7 @@ async function writeReceipt(
       updated_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     transactionId,
-    receipt.sourceImageUri,
+    receipt.storageKey,
     receipt.mimeType,
     receipt.ocrStatus,
     receipt.ocrRawText,
@@ -558,6 +571,53 @@ async function writeReceipt(
     timestamp,
     timestamp,
   );
+}
+
+type PreparedReceipt = Parameters<typeof writeReceipt>[2];
+
+async function prepareReceipt(
+  receipt: ReturnType<typeof normalizeReceipt>,
+): Promise<{ copiedStorageKey: string | null; receipt: PreparedReceipt }> {
+  if (!receipt) {
+    return { copiedStorageKey: null, receipt: null };
+  }
+
+  if (isReceiptStorageKey(receipt.sourceImageUri)) {
+    if (!receiptFileExists(receipt.sourceImageUri)) {
+      throw createCodedError(
+        'FILE_OPERATION_FAILED',
+        'The stored receipt image is unavailable.',
+      );
+    }
+    const { sourceImageUri: storageKey, ...metadata } = receipt;
+    return {
+      copiedStorageKey: null,
+      receipt: { ...metadata, storageKey },
+    };
+  }
+
+  const storageKey = await copyReceiptToStorage(
+    receipt.sourceImageUri,
+    receipt.mimeType,
+  );
+  const { sourceImageUri: _sourceImageUri, ...metadata } = receipt;
+  return {
+    copiedStorageKey: storageKey,
+    receipt: { ...metadata, storageKey },
+  };
+}
+
+function cleanupReceiptFile(storageKey: string | null) {
+  if (!storageKey) {
+    return;
+  }
+  try {
+    removeReceiptFile(storageKey);
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('Receipt file cleanup failed.', error);
+    }
+  }
 }
 
 export async function getTransaction(database: SQLiteDatabase, id: number) {
@@ -594,13 +654,16 @@ export async function createTransaction(
   now = Date.now(),
 ) {
   const normalized = normalizeInput(input, now);
+  await validateReferences(database, normalized);
+  const prepared = await prepareReceipt(normalized.receipt);
   let createdId: number | null = null;
 
-  await database.withExclusiveTransactionAsync(async (transaction) => {
-    await validateReferences(transaction, normalized);
-    const timestamp = Date.now();
-    const result = await transaction.runAsync(
-      `INSERT INTO transactions (
+  try {
+    await database.withExclusiveTransactionAsync(async (transaction) => {
+      await validateReferences(transaction, normalized);
+      const timestamp = Date.now();
+      const result = await transaction.runAsync(
+        `INSERT INTO transactions (
         type,
         amount_minor,
         currency_code,
@@ -615,28 +678,32 @@ export async function createTransaction(
         created_at,
         updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      normalized.type,
-      normalized.amountMinor,
-      normalized.currencyCode,
-      normalized.categoryId,
-      normalized.paymentMethodId,
-      normalized.counterparty,
-      normalized.note,
-      normalized.occurredAt,
-      normalized.timezoneOffsetMinutes,
-      normalized.localDate,
-      normalized.isReimbursable ? 1 : 0,
-      timestamp,
-      timestamp,
-    );
-    createdId = result.lastInsertRowId;
-    await writeReceipt(
-      transaction,
-      result.lastInsertRowId,
-      normalized.receipt,
-      timestamp,
-    );
-  });
+        normalized.type,
+        normalized.amountMinor,
+        normalized.currencyCode,
+        normalized.categoryId,
+        normalized.paymentMethodId,
+        normalized.counterparty,
+        normalized.note,
+        normalized.occurredAt,
+        normalized.timezoneOffsetMinutes,
+        normalized.localDate,
+        normalized.isReimbursable ? 1 : 0,
+        timestamp,
+        timestamp,
+      );
+      createdId = result.lastInsertRowId;
+      await writeReceipt(
+        transaction,
+        result.lastInsertRowId,
+        prepared.receipt,
+        timestamp,
+      );
+    });
+  } catch (error) {
+    cleanupReceiptFile(prepared.copiedStorageKey);
+    throw error;
+  }
 
   const saved =
     createdId === null ? null : await getTransaction(database, createdId);
@@ -656,43 +723,67 @@ export async function updateTransaction(
   now = Date.now(),
 ) {
   const normalized = normalizeInput(input, now);
-
-  await database.withExclusiveTransactionAsync(async (transaction) => {
-    const existing = await transaction.getFirstAsync<{ id: number }>(
-      'SELECT id FROM transactions WHERE id = ?',
-      id,
+  const existing = await database.getFirstAsync<{ id: number }>(
+    'SELECT id FROM transactions WHERE id = ?',
+    id,
+  );
+  if (!existing) {
+    throw createCodedError(
+      'VALIDATION_FAILED',
+      'Transaction no longer exists.',
     );
-    if (!existing) {
-      throw createCodedError(
-        'VALIDATION_FAILED',
-        'Transaction no longer exists.',
-      );
-    }
-    await validateReferences(transaction, normalized);
-    const timestamp = Date.now();
-    await transaction.runAsync(
-      `UPDATE transactions
+  }
+  await validateReferences(database, normalized);
+  const oldReceipt = await database.getFirstAsync<{ storage_key: string }>(
+    'SELECT storage_key FROM receipts WHERE transaction_id = ?',
+    id,
+  );
+  const prepared = await prepareReceipt(normalized.receipt);
+
+  try {
+    await database.withExclusiveTransactionAsync(async (transaction) => {
+      const transactionStillExists = await transaction.getFirstAsync<{
+        id: number;
+      }>('SELECT id FROM transactions WHERE id = ?', id);
+      if (!transactionStillExists) {
+        throw createCodedError(
+          'VALIDATION_FAILED',
+          'Transaction no longer exists.',
+        );
+      }
+      await validateReferences(transaction, normalized);
+      const timestamp = Date.now();
+      await transaction.runAsync(
+        `UPDATE transactions
        SET type = ?, amount_minor = ?, currency_code = ?, category_id = ?,
            payment_method_id = ?, counterparty = ?, note = ?, occurred_at = ?,
            timezone_offset_minutes = ?, local_date = ?, is_reimbursable = ?,
            updated_at = ?
        WHERE id = ?`,
-      normalized.type,
-      normalized.amountMinor,
-      normalized.currencyCode,
-      normalized.categoryId,
-      normalized.paymentMethodId,
-      normalized.counterparty,
-      normalized.note,
-      normalized.occurredAt,
-      normalized.timezoneOffsetMinutes,
-      normalized.localDate,
-      normalized.isReimbursable ? 1 : 0,
-      timestamp,
-      id,
-    );
-    await writeReceipt(transaction, id, normalized.receipt, timestamp);
-  });
+        normalized.type,
+        normalized.amountMinor,
+        normalized.currencyCode,
+        normalized.categoryId,
+        normalized.paymentMethodId,
+        normalized.counterparty,
+        normalized.note,
+        normalized.occurredAt,
+        normalized.timezoneOffsetMinutes,
+        normalized.localDate,
+        normalized.isReimbursable ? 1 : 0,
+        timestamp,
+        id,
+      );
+      await writeReceipt(transaction, id, prepared.receipt, timestamp);
+    });
+  } catch (error) {
+    cleanupReceiptFile(prepared.copiedStorageKey);
+    throw error;
+  }
+
+  if (oldReceipt && oldReceipt.storage_key !== prepared.receipt?.storageKey) {
+    cleanupReceiptFile(oldReceipt.storage_key);
+  }
 
   const saved = await getTransaction(database, id);
   if (!saved) {
@@ -705,6 +796,10 @@ export async function updateTransaction(
 }
 
 export async function deleteTransaction(database: SQLiteDatabase, id: number) {
+  const receipt = await database.getFirstAsync<{ storage_key: string }>(
+    'SELECT storage_key FROM receipts WHERE transaction_id = ?',
+    id,
+  );
   await database.withExclusiveTransactionAsync(async (transaction) => {
     const existing = await transaction.getFirstAsync<{ id: number }>(
       'SELECT id FROM transactions WHERE id = ?',
@@ -735,4 +830,5 @@ export async function deleteTransaction(database: SQLiteDatabase, id: number) {
       );
     }
   });
+  cleanupReceiptFile(receipt?.storage_key ?? null);
 }

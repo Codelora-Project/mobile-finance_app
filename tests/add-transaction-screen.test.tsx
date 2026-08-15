@@ -17,7 +17,7 @@ describe('add transaction screen', () => {
     jest.clearAllMocks();
   });
 
-  it('keeps the PRD option order and opens manual or gallery flows', async () => {
+  it('keeps the PRD option order and opens manual, camera, or gallery flows', async () => {
     await render(<AddTransactionScreen />);
 
     expect(
@@ -30,15 +30,13 @@ describe('add transaction screen', () => {
       'Scan Receipt',
       'Import Receipt',
     ]);
-    expect(
-      screen.getByRole('button', { name: 'Scan Receipt' }).props
-        .accessibilityState,
-    ).toEqual({ busy: false, disabled: true });
-
     await fireEvent.press(
       screen.getByRole('button', { name: 'Enter Manually' }),
     );
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/new');
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Scan Receipt' }));
+    expect(mockRouter.push).toHaveBeenCalledWith('/receipt/camera');
 
     await fireEvent.press(
       screen.getByRole('button', { name: 'Import Receipt' }),

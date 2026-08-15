@@ -33,7 +33,9 @@ function getSelectionError(error: unknown) {
 export function ImportReceiptScreen() {
   const router = useRouter();
   const { clearImage, image, setImage, setOcr } = useReceiptFlow();
-  const [state, setState] = useState<ViewState>('selecting');
+  const [state, setState] = useState<ViewState>(
+    image ? 'processing' : 'selecting',
+  );
   const [error, setError] = useState<string | null>(null);
   const startedRef = useRef(false);
   const runIdRef = useRef(0);

@@ -11,7 +11,7 @@ export type ReceiptImageSelection = Readonly<{
   fileSize: number | null;
   height: number;
   mimeType: ReceiptMimeType;
-  source: 'gallery';
+  source: 'camera' | 'gallery';
   sourceImageUri: string;
   width: number;
 }>;
@@ -70,6 +70,7 @@ function getDisplayName(fileName: string | null | undefined, uri: string) {
 
 export function validateReceiptImage(
   candidate: ReceiptImageCandidate,
+  source: ReceiptImageSelection['source'] = 'gallery',
 ): ReceiptImageSelection {
   const sourceImageUri = candidate.uri.trim();
   if (!sourceImageUri) {
@@ -102,7 +103,7 @@ export function validateReceiptImage(
       candidate.fileName,
       sourceImageUri,
     ),
-    source: 'gallery',
+    source,
     sourceImageUri,
     width: candidate.width,
   };

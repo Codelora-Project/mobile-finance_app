@@ -54,7 +54,7 @@ const savedTransaction = {
     id: 7,
     mimeType: 'image/jpeg',
     ocrStatus: 'not_processed',
-    storageKey: 'file:///cache/receipt.jpg',
+    storageKey: 'receipts/receipt.jpg',
   },
   timezoneOffsetMinutes: 420,
   type: 'expense',
@@ -85,6 +85,9 @@ describe('transaction detail screen', () => {
       screen.getByRole('button', { name: 'Edit transaction' }),
     );
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/42/edit');
+
+    await fireEvent.press(screen.getByRole('button', { name: 'View receipt' }));
+    expect(mockRouter.push).toHaveBeenCalledWith('/transactions/42/receipt');
   });
 
   it('deletes with confirmation and returns to the refetching list', async () => {

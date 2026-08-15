@@ -1,6 +1,6 @@
 # Personal Finance
 
-Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo Development Build, React Native, TypeScript, Expo Router, dan SQLite. Proyek ini masih dalam tahap pengembangan; implementasi saat ini telah mencapai **Milestone 8** (Gallery Receipt OCR on-device, parser deterministik, Receipt Review wajib, fallback manual, serta seluruh fitur milestone sebelumnya).
+Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo Development Build, React Native, TypeScript, Expo Router, dan SQLite. Proyek ini masih dalam tahap pengembangan; implementasi saat ini telah mencapai **Milestone 10** (receipt disalin ke document storage, key relatif di SQLite, kompensasi create/replace/delete, serta persistent Receipt Viewer).
 
 `PRD.md` adalah **single source of truth** untuk requirement, arsitektur, urutan implementasi, dan acceptance criteria. Jangan mengimplementasikan phase berikutnya sebelum milestone sebelumnya selesai dan terverifikasi.
 
@@ -13,6 +13,8 @@ Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo 
 - Expo Router
 - `expo-sqlite`
 - `expo-image-picker`
+- `expo-camera`
+- `expo-file-system`
 - `@infinitered/react-native-mlkit-text-recognition`
 - Jest + `jest-expo` + Testing Library
 - ESLint + Prettier
@@ -143,11 +145,11 @@ Untuk menjalankan satu test suite:
 npm test -- tests/money.test.ts
 ```
 
-Test yang tersedia saat ini mencakup bootstrap route, inisialisasi/migrasi database, utilitas money/date/text/error, repository kategori dan metode pembayaran, repository transaksi termasuk metadata OCR dan pagination/read model tanpa N+1, form transaksi manual, riwayat transaksi, filter, detail transaksi, Home, Add Transaction sheet, validasi gallery image, OCR success/error/timeout, fixture parser receipt, Receipt Review, serta persistensi in-memory Receipt Flow Context.
+Test yang tersedia saat ini mencakup bootstrap route, inisialisasi/migrasi database, utilitas money/date/text/error, repository kategori dan metode pembayaran, repository transaksi termasuk metadata OCR dan pagination/read model tanpa N+1, form transaksi manual, riwayat transaksi, filter, detail transaksi, Home, Add Transaction sheet, Camera permission/flash/capture/Retake/Use Photo, validasi gallery image, OCR success/error/timeout, fixture parser receipt, Receipt Review, persistensi in-memory Receipt Flow Context, document storage receipt, kompensasi kegagalan DB, cleanup file, dan Receipt Viewer.
 
 ## Verifikasi manual saat ini
 
-Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai Milestone 8, cek minimal:
+Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai Milestone 10, cek minimal:
 
 1. Aplikasi terbuka tanpa error database atau crash.
 2. Halaman Transactions, Manual Transaction, Categories, dan Payment Methods dapat dibuka dari halaman utama.
@@ -175,7 +177,7 @@ Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai M
 24. Recent transactions menampilkan maksimum lima transaksi terbaru dan membuka Transaction Detail ketika ditekan.
 25. Home menampilkan state kosong yang benar ketika belum ada transaksi atau belum ada Expense pada bulan berjalan.
 26. Home melakukan refetch setelah kembali dari Add/Edit/Delete dan pull-to-refresh dapat digunakan tanpa menggandakan data.
-27. Add Transaction menampilkan opsi Enter Manually, Scan Receipt, dan Import Receipt dalam urutan PRD; Scan Receipt tetap nonaktif sampai Camera phase diimplementasikan.
+27. Add Transaction menampilkan opsi Enter Manually, Scan Receipt, dan Import Receipt dalam urutan PRD; ketiganya membuka flow yang sesuai.
 28. Import Receipt membuka Android Photo Picker untuk satu image JPEG/PNG/WEBP dan kembali normal ketika picker dibatalkan.
 29. Image dengan MIME atau metadata yang tidak valid menghasilkan error yang recoverable dan dapat dipilih ulang.
 30. Image diproses on-device dengan ML Kit tanpa request jaringan dan selalu masuk ke Receipt Review ketika teks ditemukan.
@@ -183,6 +185,16 @@ Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai M
 32. Hasil OCR partial menampilkan peringatan; total yang tidak terdeteksi wajib diisi sebelum Save.
 33. OCR kosong, native error, dan timeout menampilkan fallback yang recoverable; Enter Manually tetap mempertahankan receipt.
 34. Transaction/Receipt baru dibuat hanya setelah final Save, dengan `processed`, `partial`, atau `failed` serta raw text/subtotal/tax yang sesuai.
+35. Camera permission baru diminta setelah Scan Receipt dipilih; denial menampilkan Open Settings dan Import Receipt.
+36. Camera membuka rear preview, flash dapat diubah, dan capture menampilkan preview dengan Retake serta Use Photo.
+37. Retake kembali ke live camera; Use Photo masuk ke OCR/Review pipeline yang sama dengan Gallery.
+38. Gallery shortcut dari Camera membuka single-image picker tanpa menjalankan parser lain.
+39. Setelah Save, `receipts.storage_key` berisi key relatif `receipts/<file>`, bukan URI gallery/camera atau absolute path.
+40. Receipt Viewer dari Transaction Detail menampilkan file yang disalin ke document storage.
+41. Force-stop dan buka ulang aplikasi; receipt yang sama tetap dapat dilihat.
+42. Mengganti receipt menampilkan file baru dan membersihkan file lama hanya setelah DB update berhasil.
+43. Melepas receipt atau menghapus transaction membersihkan row receipt dan file persistent terkait.
+44. Simulasi kegagalan DB setelah copy membersihkan file baru; kegagalan replace tidak menghilangkan file lama.
 
 Untuk mengecek persistence melalui terminal:
 
@@ -275,7 +287,7 @@ src/
   components/ui/          shared UI primitives
   db/                     SQLite provider, migrations, dan seeds
   features/home/          targeted SQL aggregation dan Home screen
-  features/receipts/      gallery, ML Kit boundary, parser, flow Context, dan Receipt Review
+  features/receipts/      Camera/Gallery, ML Kit boundary, parser, flow Context, dan Receipt Review
   features/categories/    category management dan picker
   features/payment-methods/
   features/transactions/  manual form, history, filters, detail, receipt picker, repository

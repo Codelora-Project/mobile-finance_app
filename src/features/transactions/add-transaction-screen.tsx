@@ -62,8 +62,8 @@ export function AddTransactionScreen() {
           />
           <AddOption
             description="Capture a receipt with the camera."
-            disabled
             label="Scan Receipt"
+            onPress={() => router.push('/receipt/camera')}
           />
           <AddOption
             description="Choose one receipt image from your gallery."

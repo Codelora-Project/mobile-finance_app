@@ -11,7 +11,14 @@
       "expo-router",
       "expo-dev-client",
       "expo-status-bar",
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-camera",
+        {
+          "barcodeScannerEnabled": false,
+          "recordAudioAndroid": false
+        }
+      ]
     ],
     "android": {
       "package": "com.personalfinance.app",

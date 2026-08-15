@@ -216,6 +216,15 @@ export function TransactionDetailScreen({
         ) : null}
 
         <View style={styles.actions}>
+          {transaction.receipt ? (
+            <AppButton
+              label="View receipt"
+              onPress={() =>
+                router.push(`/transactions/${transaction.id}/receipt`)
+              }
+              variant="secondary"
+            />
+          ) : null}
           <AppButton
             disabled={deleting}
             label="Edit transaction"
