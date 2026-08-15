@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -154,5 +155,24 @@ describe('receipt camera screen', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Gallery' }));
     expect(mockClearImage).toHaveBeenCalled();
     expect(mockRouter.replace).toHaveBeenCalledWith('/receipt/import');
+  });
+
+  it('starts only one native capture for rapid shutter taps', async () => {
+    await render(<ReceiptCameraScreen />);
+    await screen.findByRole('button', { name: 'Capture' });
+    const capture = screen.getByTestId('capture-receipt');
+    await waitFor(() =>
+      expect(capture.props.accessibilityState.disabled).toBe(false),
+    );
+
+    await act(async () => {
+      capture.props.onClick({ nativeEvent: {} });
+      capture.props.onClick({ nativeEvent: {} });
+      await Promise.resolve();
+    });
+    expect(mockTakePicture).toHaveBeenCalledTimes(1);
+    expect(
+      await screen.findByLabelText('Captured receipt preview'),
+    ).toBeOnTheScreen();
   });
 });

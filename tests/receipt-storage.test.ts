@@ -5,6 +5,7 @@ import {
   getReceiptFileUri,
   isReceiptStorageKey,
   readReceiptBase64,
+  removeAllReceiptFiles,
   receiptFileExists,
   removeReceiptFile,
 } from '@/features/receipts/receipt-storage';
@@ -27,6 +28,13 @@ jest.mock('expo-file-system', () => {
 
     create() {
       mockDirectories.add(this.uri);
+    }
+
+    delete() {
+      mockDirectories.delete(this.uri);
+      for (const file of [...mockFiles]) {
+        if (file.startsWith(this.uri)) mockFiles.delete(file);
+      }
     }
   }
 
@@ -119,5 +127,17 @@ describe('receipt storage', () => {
       code: 'VALIDATION_FAILED',
       message: 'The receipt image is no longer available.',
     });
+  });
+
+  it('recursively clears the managed receipt directory', () => {
+    mockDirectories.add('file:///documents/receipts/');
+    mockFiles.add('file:///documents/receipts/one.jpg');
+    mockFiles.add('file:///documents/receipts/two.png');
+
+    removeAllReceiptFiles();
+
+    expect(mockDirectories.has('file:///documents/receipts/')).toBe(false);
+    expect(mockFiles.size).toBe(0);
+    expect(() => removeAllReceiptFiles()).not.toThrow();
   });
 });

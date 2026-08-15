@@ -3,6 +3,7 @@ import type { SQLiteBindValue, SQLiteDatabase } from 'expo-sqlite';
 import type { ReceiptMimeType } from '@/features/receipts/receipt-types';
 import { isLocalDate } from '@/lib/dates';
 import { createCodedError } from '@/lib/errors';
+import { sumMoney } from '@/lib/money';
 import { normalizeOptionalText, normalizeText } from '@/lib/strings';
 
 export type ClaimStatus = 'draft' | 'submitted' | 'reimbursed' | 'rejected';
@@ -118,6 +119,12 @@ const CLAIM_SUMMARY_SELECT = `
 `;
 
 function mapSummary(row: ClaimSummaryRow): ClaimSummary {
+  if (!Number.isSafeInteger(row.total_minor) || row.total_minor < 0) {
+    throw createCodedError(
+      'DATABASE_WRITE_FAILED',
+      'The claim total is outside the supported range.',
+    );
+  }
   return {
     createdAt: row.created_at,
     currencyCode: row.currency_code,
@@ -287,6 +294,14 @@ async function loadSelectedExpenses(
     throw createCodedError(
       'CLAIM_CURRENCY_MISMATCH',
       'This expense uses a different currency.',
+    );
+  }
+  try {
+    sumMoney(rows.map((row) => row.amount_minor));
+  } catch {
+    throw createCodedError(
+      'VALIDATION_FAILED',
+      'The selected expense total is too large.',
     );
   }
   return rows;

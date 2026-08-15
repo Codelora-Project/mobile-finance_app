@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -44,6 +44,8 @@ function getOperationMessage(error: unknown) {
 export function CategoryManagementScreen() {
   const database = useSQLiteContext();
   const router = useRouter();
+  const savingRef = useRef(false);
+  const deletingRef = useRef(false);
   const [categories, setCategories] = useState<readonly Category[]>([]);
   const [selectedType, setSelectedType] = useState<CategoryType>('expense');
   const [loading, setLoading] = useState(true);
@@ -135,9 +137,10 @@ export function CategoryManagementScreen() {
   }
 
   async function saveCategory() {
-    if (!editor || saving) {
+    if (!editor || savingRef.current) {
       return;
     }
+    savingRef.current = true;
     setFormError(null);
     setSaving(true);
     try {
@@ -154,14 +157,16 @@ export function CategoryManagementScreen() {
       }
       setFormError(getOperationMessage(error));
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   }
 
   async function confirmDelete(category: Category) {
-    if (deletingId !== null) {
+    if (deletingRef.current) {
       return;
     }
+    deletingRef.current = true;
     setScreenError(null);
     setDeletingId(category.id);
     try {
@@ -173,6 +178,7 @@ export function CategoryManagementScreen() {
       }
       setScreenError(getOperationMessage(error));
     } finally {
+      deletingRef.current = false;
       setDeletingId(null);
     }
   }

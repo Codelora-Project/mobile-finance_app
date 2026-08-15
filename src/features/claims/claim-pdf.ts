@@ -40,6 +40,13 @@ export type GeneratedClaimPdf = Readonly<{
 
 const EXPORT_DIRECTORY = 'exports';
 
+export function removeCachedClaimPdfs() {
+  const directory = new Directory(Paths.cache, EXPORT_DIRECTORY);
+  if (directory.exists) {
+    directory.delete();
+  }
+}
+
 export function slugClaimTitle(title: string) {
   const slug = title
     .normalize('NFKD')

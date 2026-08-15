@@ -355,6 +355,11 @@ export function HomeScreen() {
             onPress={() => router.push('/payment-methods')}
             variant="ghost"
           />
+          <AppButton
+            label="Settings"
+            onPress={() => router.push('/settings')}
+            variant="ghost"
+          />
         </View>
       </ScrollView>
     </Screen>
@@ -555,6 +560,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   manageActions: {
+    flexWrap: 'wrap',
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: spacing.lg,

@@ -266,6 +266,7 @@ export function ManualTransactionScreen({
   const [form, setForm] = useState<FormState>(createDefaultForm);
   const initialSnapshot = useRef(serializeForm(form));
   const savingRef = useRef(false);
+  const deletingRef = useRef(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [picker, setPicker] = useState<PickerState>(null);
   const [loading, setLoading] = useState(transactionId !== undefined);
@@ -490,7 +491,7 @@ export function ManualTransactionScreen({
   }
 
   function confirmDelete() {
-    if (transactionId === undefined) {
+    if (transactionId === undefined || deletingRef.current) {
       return;
     }
     const warning = claimMembership
@@ -500,6 +501,8 @@ export function ManualTransactionScreen({
       { style: 'cancel', text: 'Cancel' },
       {
         onPress: () => {
+          if (deletingRef.current) return;
+          deletingRef.current = true;
           setDeleting(true);
           deleteTransaction(database, transactionId)
             .then(() => {
@@ -510,6 +513,7 @@ export function ManualTransactionScreen({
               });
             })
             .catch((error: unknown) => {
+              deletingRef.current = false;
               if (__DEV__ && !isCodedError(error)) {
                 console.error('Manual transaction delete failed.', error);
               }
@@ -571,6 +575,7 @@ export function ManualTransactionScreen({
 
       <ScrollView
         contentContainerStyle={styles.form}
+        keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       >
         <View accessibilityRole="tablist" style={styles.segment}>

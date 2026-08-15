@@ -57,6 +57,13 @@ export function ImportReceiptScreen() {
     return () => subscription.remove();
   }, [closeFlow]);
 
+  useEffect(
+    () => () => {
+      runIdRef.current += 1;
+    },
+    [],
+  );
+
   const processImage = useCallback(
     async (sourceImageUri: string) => {
       const runId = ++runIdRef.current;

@@ -102,6 +102,9 @@ describe('home screen', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Claims' }));
     expect(mockRouter.push).toHaveBeenCalledWith('/claims');
 
+    await fireEvent.press(screen.getByRole('button', { name: 'Settings' }));
+    expect(mockRouter.push).toHaveBeenCalledWith('/settings');
+
     await act(async () => {
       mockFocusedEffect?.();
       await Promise.resolve();

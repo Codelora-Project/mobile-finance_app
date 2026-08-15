@@ -5,6 +5,7 @@ import {
   waitFor,
 } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { Alert } from 'react-native';
 
 import { ClaimFormScreen } from '@/features/claims/claim-form-screen';
 
@@ -115,5 +116,42 @@ describe('claim form screen', () => {
       screen.getByText('This expense uses a different currency.'),
     ).toBeOnTheScreen();
     expect(screen.getByText('1 selected')).toBeOnTheScreen();
+  });
+
+  it('rejects a selection whose aggregate exceeds the safe money range', async () => {
+    mockListEligible.mockResolvedValueOnce([
+      { ...eligible[0], amountMinor: Number.MAX_SAFE_INTEGER },
+      { ...eligible[1], amountMinor: 1 },
+    ]);
+    await render(<ClaimFormScreen />);
+    await screen.findByRole('header', { name: 'New Claim' });
+    await fireEvent.changeText(screen.getByLabelText('Title *'), 'Large');
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Select Expenses' }),
+    );
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Taxi, IDR' }));
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Train, IDR' }));
+
+    expect(
+      screen.getByText('The selected expense total is too large.'),
+    ).toBeOnTheScreen();
+    expect(screen.getByText('1 selected')).toBeOnTheScreen();
+  });
+
+  it('protects unsaved claim details when leaving from the first step', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    await render(<ClaimFormScreen />);
+    await screen.findByRole('header', { name: 'New Claim' });
+
+    await fireEvent.changeText(screen.getByLabelText('Title *'), 'Unsaved');
+    await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
+
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Discard changes?',
+      'Your unsaved changes will be lost.',
+      expect.any(Array),
+    );
+    expect(mockRouter.back).not.toHaveBeenCalled();
+    alertSpy.mockRestore();
   });
 });

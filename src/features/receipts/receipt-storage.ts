@@ -94,3 +94,10 @@ export function removeReceiptFile(storageKey: string) {
     file.delete();
   }
 }
+
+export function removeAllReceiptFiles() {
+  const directory = receiptDirectory();
+  if (directory.exists) {
+    directory.delete();
+  }
+}

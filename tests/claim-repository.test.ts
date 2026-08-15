@@ -176,6 +176,26 @@ describe('claim repository', () => {
     ).rejects.toMatchObject({ code: 'CLAIM_CURRENCY_MISMATCH' });
   });
 
+  it('rejects a selected expense total outside the safe money range', async () => {
+    getAllAsync.mockResolvedValueOnce([
+      { ...expense, amount_minor: Number.MAX_SAFE_INTEGER },
+      { ...expense, amount_minor: 1, id: 2 },
+    ]);
+
+    await expect(
+      createClaim(database, {
+        description: '',
+        periodMode: 'auto',
+        title: 'Too large',
+        transactionIds: [1, 2],
+      }),
+    ).rejects.toMatchObject({
+      code: 'VALIDATION_FAILED',
+      message: 'The selected expense total is too large.',
+    });
+    expect(runAsync).not.toHaveBeenCalled();
+  });
+
   it('derives total and receipt counts in one aggregate query', async () => {
     getFirstAsync.mockResolvedValueOnce({
       created_at: 1,

@@ -1,8 +1,10 @@
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  BackHandler,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -32,10 +34,43 @@ import { typography } from '@/theme/typography';
 
 type ClaimFormScreenProps = { claimId?: number };
 
+type ClaimFormSnapshot = Readonly<{
+  description: string;
+  periodEnd: string;
+  periodMode: ClaimPeriodMode;
+  periodStart: string;
+  selectedIds: readonly number[];
+  title: string;
+}>;
+
+function serializeClaimForm(snapshot: ClaimFormSnapshot) {
+  return JSON.stringify(snapshot);
+}
+
+function calculateClaimTotal(expenses: readonly ClaimExpense[]) {
+  try {
+    return sumMoney(expenses.map((expense) => expense.amountMinor));
+  } catch {
+    return null;
+  }
+}
+
 export function ClaimFormScreen({ claimId }: ClaimFormScreenProps) {
   const database = useSQLiteContext();
   const router = useRouter();
   const savingRef = useRef(false);
+  const [initialSnapshot, setInitialSnapshot] = useState<string | null>(
+    claimId === undefined
+      ? serializeClaimForm({
+          description: '',
+          periodEnd: '',
+          periodMode: 'auto',
+          periodStart: '',
+          selectedIds: [],
+          title: '',
+        })
+      : null,
+  );
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -73,7 +108,18 @@ export function ClaimFormScreen({ claimId }: ClaimFormScreenProps) {
           setPeriodMode(claim.periodMode);
           setPeriodStart(claim.periodStart ?? '');
           setPeriodEnd(claim.periodEnd ?? '');
-          setSelectedIds(claim.expenses.map((expense) => expense.id));
+          const claimExpenseIds = claim.expenses.map((expense) => expense.id);
+          setSelectedIds(claimExpenseIds);
+          setInitialSnapshot(
+            serializeClaimForm({
+              description: claim.description ?? '',
+              periodEnd: claim.periodEnd ?? '',
+              periodMode: claim.periodMode,
+              periodStart: claim.periodStart ?? '',
+              selectedIds: claimExpenseIds,
+              title: claim.title,
+            }),
+          );
         }
       })
       .catch((loadError: unknown) => {
@@ -94,12 +140,47 @@ export function ClaimFormScreen({ claimId }: ClaimFormScreenProps) {
     [expenses, selectedIds],
   );
   const selectedCurrency = selectedExpenses[0]?.currencyCode ?? null;
-  const totalMinor = sumMoney(
-    selectedExpenses.map((expense) => expense.amountMinor),
-  );
+  const totalMinor = calculateClaimTotal(selectedExpenses);
   const attachedCount = selectedExpenses.filter(
     (expense) => expense.hasReceipt,
   ).length;
+  const currentSnapshot = serializeClaimForm({
+    description,
+    periodEnd,
+    periodMode,
+    periodStart,
+    selectedIds,
+    title,
+  });
+  const isDirty =
+    initialSnapshot !== null && initialSnapshot !== currentSnapshot;
+
+  const requestBack = useCallback(() => {
+    if (savingRef.current) return;
+    if (step > 1) {
+      setStep((step - 1) as 1 | 2);
+      return;
+    }
+    if (!isDirty) {
+      router.back();
+      return;
+    }
+    Alert.alert('Discard changes?', 'Your unsaved changes will be lost.', [
+      { style: 'cancel', text: 'Keep Editing' },
+      { onPress: () => router.back(), style: 'destructive', text: 'Discard' },
+    ]);
+  }, [isDirty, router, step]);
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        requestBack();
+        return true;
+      },
+    );
+    return () => subscription.remove();
+  }, [requestBack]);
 
   function validateDetails() {
     const normalizedTitle = normalizeText(title);
@@ -138,6 +219,10 @@ export function ClaimFormScreen({ claimId }: ClaimFormScreenProps) {
       setError('This expense uses a different currency.');
       return;
     }
+    if (calculateClaimTotal([...selectedExpenses, expense]) === null) {
+      setError('The selected expense total is too large.');
+      return;
+    }
     setSelectedIds((current) => [...current, expense.id]);
     setError(null);
   }
@@ -146,6 +231,10 @@ export function ClaimFormScreen({ claimId }: ClaimFormScreenProps) {
     if (savingRef.current || !validateDetails()) return;
     if (selectedIds.length === 0) {
       setError('Select at least one reimbursable expense.');
+      return;
+    }
+    if (totalMinor === null) {
+      setError('The selected expense total is too large.');
       return;
     }
     savingRef.current = true;
@@ -192,9 +281,7 @@ export function ClaimFormScreen({ claimId }: ClaimFormScreenProps) {
       <View style={styles.header}>
         <AppButton
           label={step === 1 ? 'Back' : 'Previous'}
-          onPress={() =>
-            step === 1 ? router.back() : setStep((step - 1) as 1 | 2)
-          }
+          onPress={requestBack}
           variant="ghost"
         />
         <Text accessibilityRole="header" style={styles.title}>
@@ -203,7 +290,11 @@ export function ClaimFormScreen({ claimId }: ClaimFormScreenProps) {
         <Text style={styles.step}>Step {step} of 3</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+      >
         {error ? (
           <Text accessibilityLiveRegion="assertive" style={styles.error}>
             {error}
@@ -301,7 +392,7 @@ export function ClaimFormScreen({ claimId }: ClaimFormScreenProps) {
                     ]}
                   >
                     <View style={styles.expenseText}>
-                      <Text style={styles.expenseTitle}>
+                      <Text numberOfLines={2} style={styles.expenseTitle}>
                         {expense.counterparty ?? expense.categoryName}
                       </Text>
                       <Text style={styles.metadata}>
@@ -328,6 +419,8 @@ export function ClaimFormScreen({ claimId }: ClaimFormScreenProps) {
               onPress={() => {
                 if (selectedIds.length === 0) {
                   setError('Select at least one reimbursable expense.');
+                } else if (totalMinor === null) {
+                  setError('The selected expense total is too large.');
                 } else {
                   setError(null);
                   setStep(3);
@@ -353,7 +446,7 @@ export function ClaimFormScreen({ claimId }: ClaimFormScreenProps) {
             </Text>
             {selectedExpenses.map((expense) => (
               <View key={expense.id} style={styles.reviewRow}>
-                <Text style={styles.expenseTitle}>
+                <Text numberOfLines={2} style={styles.expenseTitle}>
                   {expense.counterparty ?? expense.categoryName}
                 </Text>
                 <Text style={styles.expenseAmount}>
@@ -364,7 +457,7 @@ export function ClaimFormScreen({ claimId }: ClaimFormScreenProps) {
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Total</Text>
               <Text style={styles.totalAmount}>
-                {selectedCurrency
+                {selectedCurrency && totalMinor !== null
                   ? formatMoney(totalMinor, selectedCurrency)
                   : '—'}
               </Text>
@@ -435,7 +528,11 @@ const styles = StyleSheet.create({
   expenseSelected: { borderColor: colors.primary, borderWidth: 2 },
   expenseText: { flex: 1 },
   expenseTitle: { color: colors.textPrimary, fontWeight: '700' },
-  expenseAmount: { color: colors.textPrimary, fontWeight: '700' },
+  expenseAmount: {
+    color: colors.textPrimary,
+    flexShrink: 0,
+    fontWeight: '700',
+  },
   metadata: {
     color: colors.textSecondary,
     fontSize: typography.metadata.fontSize,

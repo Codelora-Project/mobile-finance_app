@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -164,5 +165,35 @@ describe('claim detail screen', () => {
         expect(mockShareClaimPdf).toHaveBeenCalledWith(expect.anything(), 9),
       );
     }
+  });
+
+  it('prevents duplicate status writes from rapid confirmation taps', async () => {
+    let resolveTransition: (() => void) | undefined;
+    mockTransition.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveTransition = resolve;
+        }),
+    );
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    await render(<ClaimDetailScreen claimId={9} />);
+    await screen.findByText('Travel Claim');
+
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Mark Submitted' }),
+    );
+    const confirm = alertSpy.mock.calls[0]?.[2]?.find(
+      (button) => button.text === 'Confirm',
+    )?.onPress;
+    await act(async () => {
+      confirm?.();
+      confirm?.();
+      await Promise.resolve();
+    });
+
+    expect(mockTransition).toHaveBeenCalledTimes(1);
+    await act(async () => resolveTransition?.());
+    await waitFor(() => expect(mockGetClaim).toHaveBeenCalledTimes(2));
+    alertSpy.mockRestore();
   });
 });

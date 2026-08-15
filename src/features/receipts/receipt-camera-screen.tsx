@@ -28,6 +28,7 @@ export function ReceiptCameraScreen() {
   const { clearImage, setImage, setOcr } = useReceiptFlow();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView | null>(null);
+  const capturingRef = useRef(false);
   const requestedRef = useRef(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [capturing, setCapturing] = useState(false);
@@ -71,7 +72,8 @@ export function ReceiptCameraScreen() {
   }, [permission, requestPermission]);
 
   async function capture() {
-    if (!cameraReady || capturing || !cameraRef.current) return;
+    if (!cameraReady || capturingRef.current || !cameraRef.current) return;
+    capturingRef.current = true;
     setCapturing(true);
     setError(null);
     try {
@@ -85,6 +87,7 @@ export function ReceiptCameraScreen() {
     } catch {
       setError("We couldn't capture this receipt. Try again.");
     } finally {
+      capturingRef.current = false;
       setCapturing(false);
     }
   }
@@ -228,6 +231,7 @@ export function ReceiptCameraScreen() {
               !cameraReady || capturing ? styles.disabled : null,
               pressed ? styles.pressed : null,
             ]}
+            testID="capture-receipt"
           >
             {capturing ? (
               <ActivityIndicator color={colors.surface} />

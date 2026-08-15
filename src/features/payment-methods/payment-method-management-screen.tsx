@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -36,6 +36,8 @@ function getOperationMessage(error: unknown) {
 export function PaymentMethodManagementScreen() {
   const database = useSQLiteContext();
   const router = useRouter();
+  const savingRef = useRef(false);
+  const deletingRef = useRef(false);
   const [paymentMethods, setPaymentMethods] = useState<
     readonly PaymentMethod[]
   >([]);
@@ -122,9 +124,10 @@ export function PaymentMethodManagementScreen() {
   }
 
   async function savePaymentMethod() {
-    if (!editor || saving) {
+    if (!editor || savingRef.current) {
       return;
     }
+    savingRef.current = true;
     setFormError(null);
     setSaving(true);
     try {
@@ -141,14 +144,16 @@ export function PaymentMethodManagementScreen() {
       }
       setFormError(getOperationMessage(error));
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   }
 
   async function confirmDelete(paymentMethod: PaymentMethod) {
-    if (deletingId !== null) {
+    if (deletingRef.current) {
       return;
     }
+    deletingRef.current = true;
     setScreenError(null);
     setDeletingId(paymentMethod.id);
     try {
@@ -160,6 +165,7 @@ export function PaymentMethodManagementScreen() {
       }
       setScreenError(getOperationMessage(error));
     } finally {
+      deletingRef.current = false;
       setDeletingId(null);
     }
   }

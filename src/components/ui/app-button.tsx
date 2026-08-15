@@ -65,6 +65,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 48,
     paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   primary: {
     backgroundColor: colors.primary,
@@ -92,6 +93,7 @@ const styles = StyleSheet.create({
     fontSize: typography.body.fontSize,
     fontWeight: '600',
     lineHeight: typography.body.lineHeight,
+    textAlign: 'center',
   },
   primaryLabel: {
     color: colors.surface,

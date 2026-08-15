@@ -1,6 +1,6 @@
 # Personal Finance
 
-Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo Development Build, React Native, TypeScript, Expo Router, dan SQLite. Proyek ini masih dalam tahap pengembangan; implementasi saat ini telah mencapai **Milestone 12** (offline Claim PDF generation, escaped HTML, embedded receipt attachments, cache export, dan native local-file sharing).
+Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo Development Build, React Native, TypeScript, Expo Router, dan SQLite. Proyek ini masih dalam tahap pengembangan; implementasi saat ini telah mencapai **Milestone 14** (edge-case hardening untuk interrupted OCR, rapid actions, Android Back, large amounts, long content, keyboard/font scaling, restart persistence, dan penggunaan offline).
 
 `PRD.md` adalah **single source of truth** untuk requirement, arsitektur, urutan implementasi, dan acceptance criteria. Jangan mengimplementasikan phase berikutnya sebelum milestone sebelumnya selesai dan terverifikasi.
 
@@ -17,6 +17,7 @@ Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo 
 - `expo-file-system`
 - `expo-print`
 - `expo-sharing`
+- `expo-splash-screen`
 - `@infinitered/react-native-mlkit-text-recognition`
 - Jest + `jest-expo` + Testing Library
 - ESLint + Prettier
@@ -147,11 +148,11 @@ Untuk menjalankan satu test suite:
 npm test -- tests/money.test.ts
 ```
 
-Test yang tersedia saat ini mencakup bootstrap route, inisialisasi/migrasi database, utilitas money/date/text/error/HTML, repository kategori dan metode pembayaran, repository transaksi termasuk metadata OCR, pagination/read model, dan Claim locks, form transaksi manual, riwayat transaksi, filter, detail transaksi, Home, Camera/Gallery/OCR/Receipt flow, persistent receipt storage, repository dan layar Claims, serta ClaimPdfModel, escaped HTML renderer, receipt base64 embedding, Expo Print boundary, filename/cache export, offline behavior, dan Expo Sharing boundary.
+Test yang tersedia saat ini mencakup bootstrap route, inisialisasi/migrasi database, utilitas money/date/text/error/HTML, repository kategori dan metode pembayaran, repository transaksi termasuk metadata OCR, pagination/read model, dan Claim locks, form transaksi manual, riwayat transaksi, filter, detail transaksi, Home, Camera/Gallery/OCR/Receipt flow, persistent receipt storage, repository dan layar Claims, ClaimPdfModel, escaped HTML renderer, receipt base64 embedding, Expo Print/Sharing boundary, Settings dan reset database/file dengan default re-seeding, serta hardening Milestone 14 untuk interrupted OCR, rapid actions, unsaved Claim Back, dan aggregate money overflow.
 
 ## Verifikasi manual saat ini
 
-Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai Milestone 12, cek minimal:
+Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai Milestone 14, cek minimal:
 
 1. Aplikasi terbuka tanpa error database atau crash.
 2. Halaman Transactions, Manual Transaction, Categories, dan Payment Methods dapat dibuka dari halaman utama.
@@ -214,6 +215,21 @@ Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai M
 59. Nama file mengikuti `expense-claim-<slug-title>-<date>.pdf` dan hasil berada di `cache/exports`, bukan database atau document storage.
 60. Export failure menampilkan error recoverable tanpa mengubah Claim atau membership.
 61. Pada Reimbursed Claim, Share PDF membuka native share sheet dengan MIME `application/pdf` dan local `file://` URI.
+62. Settings dapat dibuka dari Home dan menyediakan link menuju Categories serta Payment Methods.
+63. Currency menampilkan `Indonesian Rupiah (IDR)` sebagai read-only dan tidak menyediakan kontrol perubahan currency.
+64. About menampilkan nama aplikasi, versi, sifat offline-first/local-only, dan OCR on-device.
+65. Menekan Delete All Data belum menghapus data pada dialog pertama; pengguna harus memilih Continue lalu Delete All Data pada dialog kedua.
+66. Membatalkan salah satu dialog konfirmasi mempertahankan seluruh data.
+67. Setelah konfirmasi final, Transactions, Receipts, Claims, Claim Items, custom Categories, custom Payment Methods, receipt files, dan `cache/exports` terhapus.
+68. Setelah reset, default Categories, Payment Methods, `welcome_seen`, dan currency IDR tersedia kembali; Home terbuka dalam empty state yang valid.
+69. Hasil OCR yang selesai setelah Import Receipt ditutup diabaikan dan tidak mengubah flow berikutnya.
+70. Rapid tap pada save, capture, Claim status/delete/PDF, transaction delete, management save/delete, dan reset data tidak menjalankan operasi native/database ganda.
+71. Total Claim yang melampaui safe integer ditolak secara recoverable di UI dan repository tanpa crash atau partial write.
+72. Back/hardware Back pada Claim Form mundur satu step; pada step pertama dengan perubahan, tampil konfirmasi discard.
+73. Merchant panjang membungkus maksimal dua baris tanpa mendorong amount keluar dari row; tombol tetap terbaca pada font scaling Android.
+74. Drag pada form yang berisi input menutup keyboard dan tap pada kontrol tetap dapat diproses.
+75. Empty history dan daftar berisi 100+ Transactions/Claims tetap memiliki state, urutan, dan pagination yang benar.
+76. Force-stop/relaunch mempertahankan Transaction dan Receipt yang tersimpan; navigasi serta PDF lokal tetap bekerja ketika jaringan dimatikan.
 
 Untuk mengecek persistence melalui terminal:
 
@@ -223,6 +239,10 @@ adb shell am start -n com.personalfinance.app/.MainActivity
 ```
 
 ## Reset data lokal
+
+Reset yang sesuai flow aplikasi tersedia melalui **Home > Settings > Delete All Data**. Flow ini memakai dua tahap konfirmasi, membersihkan database dan file yang dikelola aplikasi, menanam ulang default, lalu kembali ke Home.
+
+Untuk reset tingkat package ketika debugging bootstrap/migration:
 
 Untuk mengulang pengujian dari database bersih:
 
@@ -308,6 +328,7 @@ src/
   features/home/          targeted SQL aggregation dan Home screen
   features/receipts/      Camera/Gallery, ML Kit boundary, parser, flow Context, dan Receipt Review
   features/claims/        Claims domain/UI serta offline PDF generation dan sharing
+  features/settings/      Settings overview, read-only currency, dan transactional data reset
   features/categories/    category management dan picker
   features/payment-methods/
   features/transactions/  manual form, history, filters, detail, receipt picker, repository

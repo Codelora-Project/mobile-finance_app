@@ -144,4 +144,19 @@ describe('import receipt screen', () => {
       screen.getByRole('button', { name: 'Enter Manually' }),
     ).toBeOnTheScreen();
   });
+
+  it('ignores an OCR result that completes after the screen is interrupted', async () => {
+    const picker = deferred<typeof selectedImage>();
+    const ocr = deferred<{ rawText: string }>();
+    mockPickReceiptImage.mockReturnValue(picker.promise);
+    mockRecognizeReceipt.mockReturnValue(ocr.promise);
+    const view = await renderScreen();
+    await act(async () => picker.resolve(selectedImage));
+    await waitFor(() => expect(mockRecognizeReceipt).toHaveBeenCalledTimes(1));
+
+    await view.unmount();
+    await act(async () => ocr.resolve({ rawText: 'LATE\nTOTAL 10.000' }));
+
+    expect(mockRouter.replace).not.toHaveBeenCalled();
+  });
 });

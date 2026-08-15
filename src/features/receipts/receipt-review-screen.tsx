@@ -203,6 +203,7 @@ export function ReceiptReviewScreen() {
       </View>
       <ScrollView
         contentContainerStyle={styles.form}
+        keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       >
         <Image

@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -35,6 +35,8 @@ function statusLabel(status: ClaimStatus) {
 export function ClaimDetailScreen({ claimId }: { claimId: number }) {
   const database = useSQLiteContext();
   const router = useRouter();
+  const workingRef = useRef(false);
+  const pdfActionRef = useRef(false);
   const [claim, setClaim] = useState<ClaimDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
@@ -61,7 +63,8 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
   );
 
   async function transition(nextStatus: ClaimStatus) {
-    if (working) return;
+    if (workingRef.current || pdfActionRef.current) return;
+    workingRef.current = true;
     setWorking(true);
     setError(null);
     try {
@@ -75,6 +78,7 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
           : mapError(transitionError, 'DATABASE_WRITE_FAILED').message,
       );
     } finally {
+      workingRef.current = false;
       setWorking(false);
     }
   }
@@ -100,6 +104,8 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
         { style: 'cancel', text: 'Cancel' },
         {
           onPress: () => {
+            if (workingRef.current || pdfActionRef.current) return;
+            workingRef.current = true;
             setWorking(true);
             deleteDraftClaim(database, claimId)
               .then(() =>
@@ -114,6 +120,7 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
                     ? deleteError.message
                     : mapError(deleteError, 'DATABASE_WRITE_FAILED').message,
                 );
+                workingRef.current = false;
                 setWorking(false);
               });
           },
@@ -125,7 +132,8 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
   }
 
   async function exportPdf() {
-    if (pdfAction) return;
+    if (pdfActionRef.current || workingRef.current) return;
+    pdfActionRef.current = true;
     setPdfAction('export');
     setError(null);
     try {
@@ -138,12 +146,14 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
           : mapError(pdfError, 'PDF_GENERATION_FAILED').message,
       );
     } finally {
+      pdfActionRef.current = false;
       setPdfAction(null);
     }
   }
 
   async function sharePdf() {
-    if (pdfAction) return;
+    if (pdfActionRef.current || workingRef.current) return;
+    pdfActionRef.current = true;
     setPdfAction('share');
     setError(null);
     try {
@@ -156,6 +166,7 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
           : mapError(shareError, 'FILE_OPERATION_FAILED').message,
       );
     } finally {
+      pdfActionRef.current = false;
       setPdfAction(null);
     }
   }
@@ -241,7 +252,7 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
               ]}
             >
               <View style={styles.expenseText}>
-                <Text style={styles.expenseTitle}>
+                <Text numberOfLines={2} style={styles.expenseTitle}>
                   {expense.counterparty ?? expense.categoryName}
                 </Text>
                 <Text style={styles.metadata}>
@@ -393,7 +404,11 @@ const styles = StyleSheet.create({
   },
   expenseText: { flex: 1 },
   expenseTitle: { color: colors.textPrimary, fontWeight: '700' },
-  expenseAmount: { color: colors.textPrimary, fontWeight: '700' },
+  expenseAmount: {
+    color: colors.textPrimary,
+    flexShrink: 0,
+    fontWeight: '700',
+  },
   metadata: {
     color: colors.textSecondary,
     fontSize: typography.metadata.fontSize,

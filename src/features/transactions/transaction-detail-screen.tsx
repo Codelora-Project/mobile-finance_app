@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -49,6 +49,7 @@ export function TransactionDetailScreen({
 }) {
   const database = useSQLiteContext();
   const router = useRouter();
+  const deletingRef = useRef(false);
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [claimMembership, setClaimMembership] =
     useState<TransactionClaimMembership | null>(null);
@@ -85,7 +86,7 @@ export function TransactionDetailScreen({
   );
 
   function confirmDelete() {
-    if (!transaction || deleting) {
+    if (!transaction || deletingRef.current) {
       return;
     }
     const warning = claimMembership
@@ -95,6 +96,8 @@ export function TransactionDetailScreen({
       { style: 'cancel', text: 'Cancel' },
       {
         onPress: () => {
+          if (deletingRef.current) return;
+          deletingRef.current = true;
           setDeleting(true);
           deleteTransaction(database, transaction.id)
             .then(() => {
@@ -104,6 +107,7 @@ export function TransactionDetailScreen({
               });
             })
             .catch((deleteError: unknown) => {
+              deletingRef.current = false;
               setError(
                 isCodedError(deleteError)
                   ? deleteError.message

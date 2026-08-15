@@ -73,13 +73,14 @@ const defaultSettings = [
   { key: 'default_currency_code', value: 'IDR' },
 ] as const;
 
-export async function seedDefaults(database: SQLiteDatabase) {
+type SeedDatabase = Pick<SQLiteDatabase, 'runAsync'>;
+
+export async function seedDefaultsInTransaction(database: SeedDatabase) {
   const timestamp = Date.now();
 
-  await database.withExclusiveTransactionAsync(async (transaction) => {
-    for (const [sortOrder, category] of defaultCategories.entries()) {
-      await transaction.runAsync(
-        `INSERT OR IGNORE INTO categories (
+  for (const [sortOrder, category] of defaultCategories.entries()) {
+    await database.runAsync(
+      `INSERT OR IGNORE INTO categories (
           name,
           type,
           icon_key,
@@ -90,21 +91,21 @@ export async function seedDefaults(database: SQLiteDatabase) {
           created_at,
           updated_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        category.name,
-        category.type,
-        null,
-        category.systemKey,
-        1,
-        category.isFallback ? 1 : 0,
-        sortOrder,
-        timestamp,
-        timestamp,
-      );
-    }
+      category.name,
+      category.type,
+      null,
+      category.systemKey,
+      1,
+      category.isFallback ? 1 : 0,
+      sortOrder,
+      timestamp,
+      timestamp,
+    );
+  }
 
-    for (const [sortOrder, paymentMethod] of defaultPaymentMethods.entries()) {
-      await transaction.runAsync(
-        `INSERT OR IGNORE INTO payment_methods (
+  for (const [sortOrder, paymentMethod] of defaultPaymentMethods.entries()) {
+    await database.runAsync(
+      `INSERT OR IGNORE INTO payment_methods (
           name,
           system_key,
           is_default,
@@ -113,24 +114,29 @@ export async function seedDefaults(database: SQLiteDatabase) {
           created_at,
           updated_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        paymentMethod.name,
-        paymentMethod.systemKey,
-        1,
-        paymentMethod.isFallback ? 1 : 0,
-        sortOrder,
-        timestamp,
-        timestamp,
-      );
-    }
+      paymentMethod.name,
+      paymentMethod.systemKey,
+      1,
+      paymentMethod.isFallback ? 1 : 0,
+      sortOrder,
+      timestamp,
+      timestamp,
+    );
+  }
 
-    for (const setting of defaultSettings) {
-      await transaction.runAsync(
-        `INSERT OR IGNORE INTO app_settings (key, value, updated_at)
-         VALUES (?, ?, ?)`,
-        setting.key,
-        setting.value,
-        timestamp,
-      );
-    }
+  for (const setting of defaultSettings) {
+    await database.runAsync(
+      `INSERT OR IGNORE INTO app_settings (key, value, updated_at)
+       VALUES (?, ?, ?)`,
+      setting.key,
+      setting.value,
+      timestamp,
+    );
+  }
+}
+
+export async function seedDefaults(database: SQLiteDatabase) {
+  await database.withExclusiveTransactionAsync(async (transaction) => {
+    await seedDefaultsInTransaction(transaction);
   });
 }

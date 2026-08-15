@@ -5,6 +5,7 @@ import {
   generateClaimPdf,
   getClaimPdfFileName,
   renderClaimPdfHtml,
+  removeCachedClaimPdfs,
   shareClaimPdf,
   slugClaimTitle,
 } from '@/features/claims/claim-pdf';
@@ -18,6 +19,7 @@ const mockPrintToFileAsync =
 const mockIsSharingAvailable = jest.fn<() => Promise<boolean>>();
 const mockShareAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockExistingFiles = new Set<string>();
+const mockExistingDirectories = new Set<string>();
 
 jest.mock('@/features/claims/claim-repository', () => ({
   getClaim: (...args: unknown[]) => mockGetClaim(...args),
@@ -41,6 +43,17 @@ jest.mock('expo-file-system', () => {
     }
 
     create() {}
+
+    get exists() {
+      return mockExistingDirectories.has(this.uri);
+    }
+
+    delete() {
+      mockExistingDirectories.delete(this.uri);
+      for (const file of [...mockExistingFiles]) {
+        if (file.startsWith(this.uri)) mockExistingFiles.delete(file);
+      }
+    }
   }
 
   class MockFile {
@@ -123,6 +136,7 @@ describe('claim PDF pipeline', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockExistingFiles.clear();
+    mockExistingDirectories.clear();
     mockGetClaim.mockResolvedValue(claim);
     mockReadReceiptBase64.mockResolvedValue('aW1hZ2U=');
     mockIsSharingAvailable.mockResolvedValue(true);
@@ -224,5 +238,19 @@ describe('claim PDF pipeline', () => {
     expect(getClaimPdfFileName('A/B', '2026-08-14')).toBe(
       'expense-claim-a-b-2026-08-14.pdf',
     );
+  });
+
+  it('recursively clears generated PDF cache without touching other cache files', () => {
+    mockExistingDirectories.add('file:///cache/exports/');
+    mockExistingFiles.add('file:///cache/exports/claim.pdf');
+    mockExistingFiles.add('file:///cache/other.tmp');
+
+    removeCachedClaimPdfs();
+
+    expect(mockExistingFiles.has('file:///cache/exports/claim.pdf')).toBe(
+      false,
+    );
+    expect(mockExistingFiles.has('file:///cache/other.tmp')).toBe(true);
+    expect(() => removeCachedClaimPdfs()).not.toThrow();
   });
 });
