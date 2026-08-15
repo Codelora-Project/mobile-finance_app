@@ -163,7 +163,7 @@ export function HomeScreen() {
           </View>
           <AppButton
             label="Add transaction"
-            onPress={() => router.push('/transactions/new')}
+            onPress={() => router.push('/add')}
           />
         </View>
 
@@ -275,7 +275,7 @@ export function HomeScreen() {
               <View style={styles.emptyAction}>
                 <AppButton
                   label="Add your first transaction"
-                  onPress={() => router.push('/transactions/new')}
+                  onPress={() => router.push('/add')}
                   variant="secondary"
                 />
               </View>

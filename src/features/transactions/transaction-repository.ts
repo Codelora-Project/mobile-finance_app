@@ -3,7 +3,7 @@ import type { SQLiteBindValue, SQLiteDatabase } from 'expo-sqlite';
 import {
   supportedReceiptMimeTypes,
   type ReceiptMimeType,
-} from '@/features/transactions/receipt-types';
+} from '@/features/receipts/receipt-types';
 import { isLocalDate, toLocalDate } from '@/lib/dates';
 import { createCodedError } from '@/lib/errors';
 import { assertMoney } from '@/lib/money';
