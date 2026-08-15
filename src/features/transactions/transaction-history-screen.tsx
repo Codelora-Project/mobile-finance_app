@@ -185,15 +185,9 @@ export function TransactionHistoryScreen() {
   return (
     <Screen>
       <View style={styles.header}>
-        <AppButton label="Back" onPress={() => router.back()} variant="ghost" />
         <Text accessibilityRole="header" style={styles.title}>
           Transactions
         </Text>
-        <AppButton
-          label="Add"
-          onPress={() => router.push('/add')}
-          variant="ghost"
-        />
       </View>
 
       <View style={styles.controls}>
@@ -338,19 +332,17 @@ export function TransactionHistoryScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    alignItems: 'center',
     borderBottomColor: colors.border,
     borderBottomWidth: 1,
-    flexDirection: 'row',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+    paddingTop: spacing.md,
   },
   title: {
     color: colors.textPrimary,
-    flex: 1,
-    fontSize: typography.sectionTitle.fontSize,
-    fontWeight: typography.sectionTitle.fontWeight,
-    textAlign: 'center',
+    fontSize: typography.pageTitle.fontSize,
+    fontWeight: typography.pageTitle.fontWeight,
+    lineHeight: typography.pageTitle.lineHeight,
   },
   controls: {
     gap: spacing.sm,

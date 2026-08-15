@@ -71,7 +71,6 @@ export function ClaimsScreen() {
   return (
     <Screen>
       <View style={styles.header}>
-        <AppButton label="Back" onPress={() => router.back()} variant="ghost" />
         <Text accessibilityRole="header" style={styles.title}>
           Claims
         </Text>
@@ -193,15 +192,17 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     borderBottomWidth: 1,
     flexDirection: 'row',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+    paddingTop: spacing.sm,
   },
   title: {
     color: colors.textPrimary,
     flex: 1,
-    fontSize: typography.sectionTitle.fontSize,
-    fontWeight: typography.sectionTitle.fontWeight,
-    textAlign: 'center',
+    fontSize: typography.pageTitle.fontSize,
+    fontWeight: typography.pageTitle.fontWeight,
+    lineHeight: typography.pageTitle.lineHeight,
   },
   filters: {
     flexDirection: 'row',

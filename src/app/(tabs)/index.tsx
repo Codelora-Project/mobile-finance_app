@@ -1,5 +1,5 @@
 import { HomeScreen } from '@/features/home/home-screen';
 
-export default function BootstrapRoute() {
+export default function HomeRoute() {
   return <HomeScreen />;
 }

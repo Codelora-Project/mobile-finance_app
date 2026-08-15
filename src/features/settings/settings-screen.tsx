@@ -109,11 +109,6 @@ export function SettingsScreen() {
     <Screen>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <AppButton
-            label="Back"
-            onPress={() => router.back()}
-            variant="ghost"
-          />
           <Text accessibilityRole="header" style={styles.title}>
             Settings
           </Text>
@@ -217,14 +212,14 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    paddingHorizontal: spacing.sm,
-    paddingTop: spacing.sm,
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+    paddingTop: spacing.md,
   },
   title: {
     color: colors.textPrimary,
-    flex: 1,
     fontSize: typography.pageTitle.fontSize,
     fontWeight: typography.pageTitle.fontWeight,
     lineHeight: typography.pageTitle.lineHeight,

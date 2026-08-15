@@ -155,16 +155,10 @@ export function HomeScreen() {
         }
       >
         <View style={styles.header}>
-          <View style={styles.headerText}>
-            <Text accessibilityRole="header" style={styles.title}>
-              Personal Finance
-            </Text>
-            <Text style={styles.month}>{formatMonth(summary.monthStart)}</Text>
-          </View>
-          <AppButton
-            label="Add transaction"
-            onPress={() => router.push('/add')}
-          />
+          <Text accessibilityRole="header" style={styles.title}>
+            Personal Finance
+          </Text>
+          <Text style={styles.month}>{formatMonth(summary.monthStart)}</Text>
         </View>
 
         {error ? (
@@ -192,8 +186,8 @@ export function HomeScreen() {
               <Text
                 style={
                   summary.netMinor < 0
-                    ? styles.expenseTotal
-                    : styles.incomeTotal
+                    ? styles.secondaryExpenseTotal
+                    : styles.secondaryIncomeTotal
                 }
               >
                 {formatNet(summary.netMinor, summary.currencyCode)}
@@ -338,29 +332,6 @@ export function HomeScreen() {
             </View>
           )}
         </View>
-
-        <View style={styles.manageActions}>
-          <AppButton
-            label="Claims"
-            onPress={() => router.push('/claims')}
-            variant="ghost"
-          />
-          <AppButton
-            label="Categories"
-            onPress={() => router.push('/categories')}
-            variant="ghost"
-          />
-          <AppButton
-            label="Payment methods"
-            onPress={() => router.push('/payment-methods')}
-            variant="ghost"
-          />
-          <AppButton
-            label="Settings"
-            onPress={() => router.push('/settings')}
-            variant="ghost"
-          />
-        </View>
       </ScrollView>
     </Screen>
   );
@@ -371,14 +342,9 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.md,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  headerText: {
-    flex: 1,
+    paddingBottom: spacing.lg,
+    paddingTop: spacing.md,
   },
   title: {
     color: colors.textPrimary,
@@ -423,14 +389,30 @@ const styles = StyleSheet.create({
   },
   expenseTotal: {
     color: colors.destructive,
-    fontSize: typography.sectionTitle.fontSize,
-    fontWeight: '700',
+    fontSize: typography.displayAmount.fontSize,
+    fontWeight: typography.displayAmount.fontWeight,
+    lineHeight: typography.displayAmount.lineHeight,
     marginTop: spacing.xs,
   },
   incomeTotal: {
     color: colors.positive,
-    fontSize: typography.sectionTitle.fontSize,
+    fontSize: 22,
     fontWeight: '700',
+    lineHeight: 28,
+    marginTop: spacing.xs,
+  },
+  secondaryExpenseTotal: {
+    color: colors.destructive,
+    fontSize: 22,
+    fontWeight: '700',
+    lineHeight: 28,
+    marginTop: spacing.xs,
+  },
+  secondaryIncomeTotal: {
+    color: colors.positive,
+    fontSize: 22,
+    fontWeight: '700',
+    lineHeight: 28,
     marginTop: spacing.xs,
   },
   section: {
@@ -558,12 +540,6 @@ const styles = StyleSheet.create({
   emptyAction: {
     marginTop: spacing.md,
     width: '100%',
-  },
-  manageActions: {
-    flexWrap: 'wrap',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: spacing.lg,
   },
   centeredState: {
     alignItems: 'center',

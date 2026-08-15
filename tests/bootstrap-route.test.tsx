@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
 
-import BootstrapRoute from '@/app/index';
+import BootstrapRoute from '@/app/(tabs)/index';
 
 jest.mock('@/features/home/home-screen', () => {
   const ReactNative = require('react-native');

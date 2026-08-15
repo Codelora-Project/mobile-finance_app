@@ -99,11 +99,8 @@ describe('home screen', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'View all' }));
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions');
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Claims' }));
-    expect(mockRouter.push).toHaveBeenCalledWith('/claims');
-
-    await fireEvent.press(screen.getByRole('button', { name: 'Settings' }));
-    expect(mockRouter.push).toHaveBeenCalledWith('/settings');
+    expect(screen.queryByRole('button', { name: 'Claims' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Settings' })).toBeNull();
 
     await act(async () => {
       mockFocusedEffect?.();

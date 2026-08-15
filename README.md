@@ -11,6 +11,8 @@ Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo 
 - React 19
 - TypeScript strict
 - Expo Router
+- `@expo/vector-icons`
+- `expo-font`
 - `expo-sqlite`
 - `expo-image-picker`
 - `expo-camera`
@@ -155,7 +157,7 @@ Test yang tersedia saat ini mencakup bootstrap route, inisialisasi/migrasi datab
 Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai Milestone 14, cek minimal:
 
 1. Aplikasi terbuka tanpa error database atau crash.
-2. Halaman Transactions, Manual Transaction, Categories, dan Payment Methods dapat dibuka dari halaman utama.
+2. Bottom tab menampilkan Home, Transactions, Add, Claims, dan Settings; tombol Add membuka pilihan Enter Manually, Scan Receipt, dan Import Receipt.
 3. Form transaksi baru default ke Expense; ketika Income dipilih, field Reimbursable dan Receipt tidak ditampilkan.
 4. Amount dan Category wajib diisi, serta tanggal/waktu masa depan ditolak.
 5. Expense dapat disimpan dengan Category, Payment Method opsional, Reimbursable, Merchant, Note, dan Receipt manual.
@@ -215,7 +217,7 @@ Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai M
 59. Nama file mengikuti `expense-claim-<slug-title>-<date>.pdf` dan hasil berada di `cache/exports`, bukan database atau document storage.
 60. Export failure menampilkan error recoverable tanpa mengubah Claim atau membership.
 61. Pada Reimbursed Claim, Share PDF membuka native share sheet dengan MIME `application/pdf` dan local `file://` URI.
-62. Settings dapat dibuka dari Home dan menyediakan link menuju Categories serta Payment Methods.
+62. Settings dapat dibuka dari bottom tab dan menyediakan link menuju Categories serta Payment Methods.
 63. Currency menampilkan `Indonesian Rupiah (IDR)` sebagai read-only dan tidak menyediakan kontrol perubahan currency.
 64. About menampilkan nama aplikasi, versi, sifat offline-first/local-only, dan OCR on-device.
 65. Menekan Delete All Data belum menghapus data pada dialog pertama; pengguna harus memilih Continue lalu Delete All Data pada dialog kedua.
