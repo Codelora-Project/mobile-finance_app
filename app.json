@@ -7,7 +7,12 @@
     "icon": "./assets/icon.png",
     "scheme": "personal-finance",
     "userInterfaceStyle": "light",
-    "plugins": ["expo-router", "expo-dev-client", "expo-status-bar"],
+    "plugins": [
+      "expo-router",
+      "expo-dev-client",
+      "expo-status-bar",
+      "expo-sqlite"
+    ],
     "android": {
       "package": "com.personalfinance.app",
       "adaptiveIcon": {
