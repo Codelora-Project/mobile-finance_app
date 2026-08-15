@@ -66,11 +66,26 @@ class TransactionDatabase {
   readonly paymentMethods = [{ id: 10, name: 'Cash' }];
   readonly transactions: StoredTransaction[] = [];
   readonly receipts: StoredReceipt[] = [];
+  readonly claims: Array<{
+    id: number;
+    status: 'draft' | 'submitted' | 'reimbursed' | 'rejected';
+    title: string;
+  }> = [];
+  readonly claimItems: Array<{ claimId: number; transactionId: number }> = [];
   private nextTransactionId = 100;
   private nextReceiptId = 200;
 
   asSQLiteDatabase() {
     return this as unknown as SQLiteDatabase;
+  }
+
+  attachClaim(
+    transactionId: number,
+    status: 'draft' | 'submitted' | 'reimbursed' | 'rejected',
+  ) {
+    const id = this.claims.length + 1;
+    this.claims.push({ id, status, title: 'Travel Claim' });
+    this.claimItems.push({ claimId: id, transactionId });
   }
 
   async withExclusiveTransactionAsync(
@@ -108,6 +123,35 @@ class TransactionDatabase {
         (candidate) => candidate.transactionId === params[0],
       );
       row = receipt ? { storage_key: receipt.storageKey } : null;
+    } else if (
+      sql.includes('FROM claim_items ci JOIN claims c ON c.id = ci.claim_id')
+    ) {
+      const item = this.claimItems.find(
+        (candidate) => candidate.transactionId === params[0],
+      );
+      const claim = this.claims.find(
+        (candidate) => candidate.id === item?.claimId,
+      );
+      row = claim
+        ? {
+            claim_id: claim.id,
+            claim_status: claim.status,
+            claim_title: claim.title,
+          }
+        : null;
+    } else if (sql.includes('FROM claim_items ci JOIN transactions t')) {
+      const claimId = Number(params[0]);
+      const excludedTransactionId = Number(params[1]);
+      const currencyCode = String(params[2]);
+      const item = this.claimItems.find(
+        (candidate) =>
+          candidate.claimId === claimId &&
+          candidate.transactionId !== excludedTransactionId &&
+          this.transactions.find(
+            (transaction) => transaction.id === candidate.transactionId,
+          )?.currencyCode !== currencyCode,
+      );
+      row = item ? { id: item.transactionId } : null;
     } else if (
       sql.includes('FROM transactions t') &&
       sql.includes('t.id = ?')
@@ -259,6 +303,18 @@ class TransactionDatabase {
         this.transactions.splice(index, 1);
       }
       return { changes: index >= 0 ? 1 : 0, lastInsertRowId: 0 };
+    }
+
+    if (sql === 'DELETE FROM claim_items WHERE transaction_id = ?') {
+      const index = this.claimItems.findIndex(
+        (item) => item.transactionId === params[0],
+      );
+      if (index >= 0) this.claimItems.splice(index, 1);
+      return { changes: index >= 0 ? 1 : 0, lastInsertRowId: 0 };
+    }
+
+    if (sql.startsWith('UPDATE claims SET period_start = (')) {
+      return { changes: 1, lastInsertRowId: 0 };
     }
 
     throw new Error(`Unsupported runAsync SQL: ${sql}`);
@@ -604,6 +660,57 @@ describe('manual transaction repository', () => {
     expect(database.transactions).toHaveLength(0);
     expect(warnSpy).toHaveBeenCalled();
     warnSpy.mockRestore();
+  });
+
+  it('allows a Draft claim transaction to update and removes membership on delete', async () => {
+    const database = new TransactionDatabase();
+    const created = await createTransaction(
+      database.asSQLiteDatabase(),
+      validInput(),
+    );
+    database.attachClaim(created.id, 'draft');
+
+    await expect(
+      updateTransaction(
+        database.asSQLiteDatabase(),
+        created.id,
+        validInput({
+          amountMinor: 40_000,
+          receipt: created.receipt
+            ? {
+                mimeType: created.receipt.mimeType,
+                sourceImageUri: created.receipt.storageKey,
+              }
+            : null,
+        }),
+      ),
+    ).resolves.toMatchObject({ amountMinor: 40_000 });
+    expect(database.claimItems).toHaveLength(1);
+
+    await deleteTransaction(database.asSQLiteDatabase(), created.id);
+    expect(database.claimItems).toHaveLength(0);
+    expect(database.transactions).toHaveLength(0);
+  });
+
+  it('blocks update and delete for a submitted claim transaction', async () => {
+    const database = new TransactionDatabase();
+    const created = await createTransaction(
+      database.asSQLiteDatabase(),
+      validInput(),
+    );
+    database.attachClaim(created.id, 'submitted');
+
+    await expect(
+      updateTransaction(
+        database.asSQLiteDatabase(),
+        created.id,
+        validInput({ amountMinor: 40_000 }),
+      ),
+    ).rejects.toMatchObject({ code: 'CLAIM_LOCKED' });
+    await expect(
+      deleteTransaction(database.asSQLiteDatabase(), created.id),
+    ).rejects.toMatchObject({ code: 'CLAIM_LOCKED' });
+    expect(database.transactions).toHaveLength(1);
   });
 });
 

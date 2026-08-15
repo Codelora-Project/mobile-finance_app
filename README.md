@@ -1,6 +1,6 @@
 # Personal Finance
 
-Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo Development Build, React Native, TypeScript, Expo Router, dan SQLite. Proyek ini masih dalam tahap pengembangan; implementasi saat ini telah mencapai **Milestone 10** (receipt disalin ke document storage, key relatif di SQLite, kompensasi create/replace/delete, serta persistent Receipt Viewer).
+Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo Development Build, React Native, TypeScript, Expo Router, dan SQLite. Proyek ini masih dalam tahap pengembangan; implementasi saat ini telah mencapai **Milestone 12** (offline Claim PDF generation, escaped HTML, embedded receipt attachments, cache export, dan native local-file sharing).
 
 `PRD.md` adalah **single source of truth** untuk requirement, arsitektur, urutan implementasi, dan acceptance criteria. Jangan mengimplementasikan phase berikutnya sebelum milestone sebelumnya selesai dan terverifikasi.
 
@@ -15,6 +15,8 @@ Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo 
 - `expo-image-picker`
 - `expo-camera`
 - `expo-file-system`
+- `expo-print`
+- `expo-sharing`
 - `@infinitered/react-native-mlkit-text-recognition`
 - Jest + `jest-expo` + Testing Library
 - ESLint + Prettier
@@ -145,11 +147,11 @@ Untuk menjalankan satu test suite:
 npm test -- tests/money.test.ts
 ```
 
-Test yang tersedia saat ini mencakup bootstrap route, inisialisasi/migrasi database, utilitas money/date/text/error, repository kategori dan metode pembayaran, repository transaksi termasuk metadata OCR dan pagination/read model tanpa N+1, form transaksi manual, riwayat transaksi, filter, detail transaksi, Home, Add Transaction sheet, Camera permission/flash/capture/Retake/Use Photo, validasi gallery image, OCR success/error/timeout, fixture parser receipt, Receipt Review, persistensi in-memory Receipt Flow Context, document storage receipt, kompensasi kegagalan DB, cleanup file, dan Receipt Viewer.
+Test yang tersedia saat ini mencakup bootstrap route, inisialisasi/migrasi database, utilitas money/date/text/error/HTML, repository kategori dan metode pembayaran, repository transaksi termasuk metadata OCR, pagination/read model, dan Claim locks, form transaksi manual, riwayat transaksi, filter, detail transaksi, Home, Camera/Gallery/OCR/Receipt flow, persistent receipt storage, repository dan layar Claims, serta ClaimPdfModel, escaped HTML renderer, receipt base64 embedding, Expo Print boundary, filename/cache export, offline behavior, dan Expo Sharing boundary.
 
 ## Verifikasi manual saat ini
 
-Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai Milestone 10, cek minimal:
+Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai Milestone 12, cek minimal:
 
 1. Aplikasi terbuka tanpa error database atau crash.
 2. Halaman Transactions, Manual Transaction, Categories, dan Payment Methods dapat dibuka dari halaman utama.
@@ -195,6 +197,23 @@ Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai M
 42. Mengganti receipt menampilkan file baru dan membersihkan file lama hanya setelah DB update berhasil.
 43. Melepas receipt atau menghapus transaction membersihkan row receipt dan file persistent terkait.
 44. Simulasi kegagalan DB setelah copy membersihkan file baru; kegagalan replace tidak menghilangkan file lama.
+45. Claims hanya menawarkan Expense dengan `is_reimbursable = true` yang belum menjadi anggota Claim lain; receipt tidak wajib.
+46. New Claim memvalidasi Title maksimum 100 karakter, Description maksimum 500 karakter, serta manual period yang valid.
+47. IDR dapat digabung dengan IDR dan USD dengan USD; pemilihan currency berbeda menampilkan `This expense uses a different currency.`
+48. Claim Review menampilkan expense rows, total derived dari transaksi, serta jumlah receipt attached/missing sebelum Save Draft.
+49. Draft Claim dapat diedit, expense dapat ditambah/dihapus, dapat ditandai Submitted, dan dapat dihapus tanpa menghapus transaksi.
+50. Submitted Claim terkunci, tetapi dapat dipindahkan kembali ke Draft, ditandai Reimbursed, atau ditandai Rejected.
+51. Rejected Claim dapat dipindahkan kembali ke Draft; Reimbursed Claim bersifat terminal dan read-only.
+52. Satu Transaction tidak dapat menjadi anggota dua Claims dan Income/non-reimbursable Expense ditolak oleh repository meskipun dipanggil di luar UI.
+53. Edit amount/date pada transaction anggota Draft Claim memperbarui total/auto period secara derived; membuatnya tidak eligible ditolak sampai membership dilepas.
+54. Delete transaction anggota Draft menampilkan warning dan melepas membership; delete/edit pada Submitted, Rejected, atau Reimbursed Claim diblokir.
+55. Export PDF bekerja ketika koneksi jaringan emulator dimatikan dan tidak melakukan request HTTP.
+56. PDF menampilkan title, period, generated date, expense table, currency-aware amount, dan total Claim yang benar.
+57. Merchant, note, category, title, dan description dengan karakter HTML ditampilkan sebagai teks aman, bukan markup executable.
+58. Receipt persistent muncul pada Receipt Attachments; expense tanpa receipt tetap muncul dengan `Receipt not attached`.
+59. Nama file mengikuti `expense-claim-<slug-title>-<date>.pdf` dan hasil berada di `cache/exports`, bukan database atau document storage.
+60. Export failure menampilkan error recoverable tanpa mengubah Claim atau membership.
+61. Pada Reimbursed Claim, Share PDF membuka native share sheet dengan MIME `application/pdf` dan local `file://` URI.
 
 Untuk mengecek persistence melalui terminal:
 
@@ -288,6 +307,7 @@ src/
   db/                     SQLite provider, migrations, dan seeds
   features/home/          targeted SQL aggregation dan Home screen
   features/receipts/      Camera/Gallery, ML Kit boundary, parser, flow Context, dan Receipt Review
+  features/claims/        Claims domain/UI serta offline PDF generation dan sharing
   features/categories/    category management dan picker
   features/payment-methods/
   features/transactions/  manual form, history, filters, detail, receipt picker, repository

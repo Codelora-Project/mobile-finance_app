@@ -28,6 +28,9 @@ jest.mock('@/features/transactions/transaction-repository', () => ({
   createTransaction: (...args: unknown[]) => mockCreateTransaction(...args),
   deleteTransaction: jest.fn(),
   getTransaction: jest.fn(),
+  getTransactionClaimMembership: jest
+    .fn<() => Promise<null>>()
+    .mockResolvedValue(null),
   updateTransaction: jest.fn(),
 }));
 

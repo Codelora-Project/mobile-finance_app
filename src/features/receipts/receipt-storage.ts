@@ -50,6 +50,11 @@ export function receiptFileExists(storageKey: string) {
   return receiptFile(storageKey).exists;
 }
 
+export async function readReceiptBase64(storageKey: string) {
+  const file = receiptFile(storageKey);
+  return file.exists ? file.base64() : null;
+}
+
 export async function copyReceiptToStorage(
   sourceImageUri: string,
   mimeType: ReceiptMimeType,

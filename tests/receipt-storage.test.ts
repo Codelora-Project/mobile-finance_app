@@ -4,6 +4,7 @@ import {
   copyReceiptToStorage,
   getReceiptFileUri,
   isReceiptStorageKey,
+  readReceiptBase64,
   receiptFileExists,
   removeReceiptFile,
 } from '@/features/receipts/receipt-storage';
@@ -46,6 +47,11 @@ jest.mock('expo-file-system', () => {
         throw new Error('source missing');
       }
       mockFiles.add(destination.uri);
+    }
+
+    async base64() {
+      if (!this.exists) throw new Error('source missing');
+      return 'aW1hZ2U=';
     }
 
     delete() {
@@ -96,6 +102,14 @@ describe('receipt storage', () => {
     expect(() => getReceiptFileUri('../outside.jpg')).toThrow(
       'The stored receipt path is invalid.',
     );
+  });
+
+  it('reads a stored receipt as base64 for temporary PDF embedding', async () => {
+    mockFiles.add('file:///documents/receipts/receipt.jpg');
+    await expect(readReceiptBase64('receipts/receipt.jpg')).resolves.toBe(
+      'aW1hZ2U=',
+    );
+    await expect(readReceiptBase64('receipts/missing.jpg')).resolves.toBeNull();
   });
 
   it('does not create a persistent record for a missing source file', async () => {

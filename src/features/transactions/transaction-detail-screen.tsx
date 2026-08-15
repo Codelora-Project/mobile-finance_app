@@ -15,7 +15,9 @@ import { Screen } from '@/components/ui/screen';
 import {
   deleteTransaction,
   getTransaction,
+  getTransactionClaimMembership,
   type Transaction,
+  type TransactionClaimMembership,
 } from '@/features/transactions/transaction-repository';
 import { toLocalDateTimeInput } from '@/lib/dates';
 import { isCodedError, mapError } from '@/lib/errors';
@@ -48,6 +50,8 @@ export function TransactionDetailScreen({
   const database = useSQLiteContext();
   const router = useRouter();
   const [transaction, setTransaction] = useState<Transaction | null>(null);
+  const [claimMembership, setClaimMembership] =
+    useState<TransactionClaimMembership | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,13 +60,17 @@ export function TransactionDetailScreen({
     setLoading(true);
     setError(null);
     try {
-      const nextTransaction = await getTransaction(database, transactionId);
+      const [nextTransaction, nextMembership] = await Promise.all([
+        getTransaction(database, transactionId),
+        getTransactionClaimMembership(database, transactionId),
+      ]);
       if (!nextTransaction) {
         setTransaction(null);
         setError('Transaction not found.');
         return;
       }
       setTransaction(nextTransaction);
+      setClaimMembership(nextMembership);
     } catch (loadError) {
       setError(mapError(loadError, 'DATABASE_WRITE_FAILED').message);
     } finally {
@@ -80,7 +88,10 @@ export function TransactionDetailScreen({
     if (!transaction || deleting) {
       return;
     }
-    Alert.alert('Delete transaction?', 'This action cannot be undone.', [
+    const warning = claimMembership
+      ? `This will remove the transaction from Draft claim “${claimMembership.claimTitle}” and delete it.`
+      : 'This action cannot be undone.';
+    Alert.alert('Delete transaction?', warning, [
       { style: 'cancel', text: 'Cancel' },
       {
         onPress: () => {
@@ -207,6 +218,12 @@ export function TransactionDetailScreen({
                   : 'Not reimbursable'
             }
           />
+          {claimMembership ? (
+            <DetailField
+              label="Claim"
+              value={`${claimMembership.claimTitle} · ${claimMembership.claimStatus}`}
+            />
+          ) : null}
         </View>
 
         {error ? (
@@ -225,18 +242,29 @@ export function TransactionDetailScreen({
               variant="secondary"
             />
           ) : null}
-          <AppButton
-            disabled={deleting}
-            label="Edit transaction"
-            onPress={() => router.push(`/transactions/${transaction.id}/edit`)}
-            variant="secondary"
-          />
-          <AppButton
-            label="Delete transaction"
-            loading={deleting}
-            onPress={confirmDelete}
-            variant="destructive"
-          />
+          {claimMembership && claimMembership.claimStatus !== 'draft' ? (
+            <Text style={styles.locked}>
+              This transaction is locked by a {claimMembership.claimStatus}{' '}
+              claim. Move the claim back to Draft before editing or deleting it.
+            </Text>
+          ) : (
+            <>
+              <AppButton
+                disabled={deleting}
+                label="Edit transaction"
+                onPress={() =>
+                  router.push(`/transactions/${transaction.id}/edit`)
+                }
+                variant="secondary"
+              />
+              <AppButton
+                label="Delete transaction"
+                loading={deleting}
+                onPress={confirmDelete}
+                variant="destructive"
+              />
+            </>
+          )}
         </View>
       </ScrollView>
     </Screen>
@@ -312,6 +340,10 @@ const styles = StyleSheet.create({
   error: {
     color: colors.destructive,
     fontSize: typography.body.fontSize,
+  },
+  locked: {
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   actions: {
     gap: spacing.sm,

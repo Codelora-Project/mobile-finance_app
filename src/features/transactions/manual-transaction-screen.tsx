@@ -27,9 +27,11 @@ import {
   createTransaction,
   deleteTransaction,
   getTransaction,
+  getTransactionClaimMembership,
   updateTransaction,
   type SaveTransactionInput,
   type Transaction,
+  type TransactionClaimMembership,
   type TransactionType,
 } from '@/features/transactions/transaction-repository';
 import { PaymentMethodPicker } from '@/features/payment-methods/payment-method-picker';
@@ -270,6 +272,8 @@ export function ManualTransactionScreen({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [claimMembership, setClaimMembership] =
+    useState<TransactionClaimMembership | null>(null);
   const [selectingReceipt, setSelectingReceipt] = useState(false);
 
   const isEditing = transactionId !== undefined;
@@ -280,11 +284,21 @@ export function ManualTransactionScreen({
       return;
     }
     try {
-      const transaction = await getTransaction(database, transactionId);
+      const [transaction, membership] = await Promise.all([
+        getTransaction(database, transactionId),
+        getTransactionClaimMembership(database, transactionId),
+      ]);
       if (!transaction) {
         setLoadError('Transaction not found.');
         return;
       }
+      if (membership && membership.claimStatus !== 'draft') {
+        setLoadError(
+          `This transaction is locked by the ${membership.claimStatus} claim “${membership.claimTitle}”. Move it back to Draft first.`,
+        );
+        return;
+      }
+      setClaimMembership(membership);
       const nextForm = formFromTransaction(transaction);
       setForm(nextForm);
       initialSnapshot.current = serializeForm(nextForm);
@@ -304,11 +318,21 @@ export function ManualTransactionScreen({
       return;
     }
     let active = true;
-    getTransaction(database, transactionId)
-      .then((transaction) => {
+    Promise.all([
+      getTransaction(database, transactionId),
+      getTransactionClaimMembership(database, transactionId),
+    ])
+      .then(([transaction, membership]) => {
         if (!active) {
           return;
         }
+        if (membership && membership.claimStatus !== 'draft') {
+          setLoadError(
+            `This transaction is locked by the ${membership.claimStatus} claim “${membership.claimTitle}”. Move it back to Draft first.`,
+          );
+          return;
+        }
+        setClaimMembership(membership);
         if (!transaction) {
           setLoadError('Transaction not found.');
           return;
@@ -469,7 +493,10 @@ export function ManualTransactionScreen({
     if (transactionId === undefined) {
       return;
     }
-    Alert.alert('Delete transaction?', 'This action cannot be undone.', [
+    const warning = claimMembership
+      ? `This will remove the transaction from Draft claim “${claimMembership.claimTitle}” and delete it.`
+      : 'This action cannot be undone.';
+    Alert.alert('Delete transaction?', warning, [
       { style: 'cancel', text: 'Cancel' },
       {
         onPress: () => {

@@ -341,6 +341,11 @@ export function HomeScreen() {
 
         <View style={styles.manageActions}>
           <AppButton
+            label="Claims"
+            onPress={() => router.push('/claims')}
+            variant="ghost"
+          />
+          <AppButton
             label="Categories"
             onPress={() => router.push('/categories')}
             variant="ghost"

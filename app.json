@@ -18,7 +18,8 @@
           "barcodeScannerEnabled": false,
           "recordAudioAndroid": false
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "android": {
       "package": "com.personalfinance.app",

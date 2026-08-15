@@ -17,6 +17,8 @@ const mockRouter = {
 const mockDatabase = {};
 const mockDeleteTransaction = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockGetTransaction = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockGetTransactionClaimMembership =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
 jest.mock('expo-router', () => {
   const React = require('react');
@@ -34,6 +36,8 @@ jest.mock('expo-sqlite', () => ({
 jest.mock('@/features/transactions/transaction-repository', () => ({
   deleteTransaction: (...args: unknown[]) => mockDeleteTransaction(...args),
   getTransaction: (...args: unknown[]) => mockGetTransaction(...args),
+  getTransactionClaimMembership: (...args: unknown[]) =>
+    mockGetTransactionClaimMembership(...args),
 }));
 
 const savedTransaction = {
@@ -65,6 +69,7 @@ describe('transaction detail screen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockGetTransaction.mockResolvedValue(savedTransaction);
+    mockGetTransactionClaimMembership.mockResolvedValue(null);
     mockDeleteTransaction.mockResolvedValue(undefined);
   });
 
@@ -121,5 +126,25 @@ describe('transaction detail screen', () => {
       expect.any(Array),
     );
     alertSpy.mockRestore();
+  });
+
+  it('locks edit and delete while the transaction is in a submitted claim', async () => {
+    mockGetTransactionClaimMembership.mockResolvedValue({
+      claimId: 9,
+      claimStatus: 'submitted',
+      claimTitle: 'Travel Claim',
+    });
+
+    await render(<TransactionDetailScreen transactionId={42} />);
+
+    expect(
+      await screen.findByText(/locked by a submitted claim/i),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Edit transaction' }),
+    ).not.toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Delete transaction' }),
+    ).not.toBeOnTheScreen();
   });
 });

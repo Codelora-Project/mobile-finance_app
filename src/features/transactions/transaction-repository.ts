@@ -1,6 +1,10 @@
 import type { SQLiteBindValue, SQLiteDatabase } from 'expo-sqlite';
 
 import {
+  recalculateAutoClaimPeriod,
+  type ClaimStatus,
+} from '@/features/claims/claim-repository';
+import {
   supportedReceiptMimeTypes,
   type ReceiptMimeType,
 } from '@/features/receipts/receipt-types';
@@ -16,6 +20,12 @@ import { assertMoney } from '@/lib/money';
 import { normalizeOptionalText } from '@/lib/strings';
 
 export type TransactionType = 'expense' | 'income';
+
+export type TransactionClaimMembership = Readonly<{
+  claimId: number;
+  claimTitle: string;
+  claimStatus: ClaimStatus;
+}>;
 
 export type TransactionReceipt = Readonly<{
   id: number;
@@ -628,6 +638,36 @@ export async function getTransaction(database: SQLiteDatabase, id: number) {
   return row ? mapTransaction(row) : null;
 }
 
+export async function getTransactionClaimMembership(
+  database: SQLiteDatabase,
+  transactionId: number,
+) {
+  return database
+    .getFirstAsync<{
+      claim_id: number;
+      claim_title: string;
+      claim_status: ClaimStatus;
+    }>(
+      `SELECT
+       c.id AS claim_id,
+       c.title AS claim_title,
+       c.status AS claim_status
+     FROM claim_items ci
+     JOIN claims c ON c.id = ci.claim_id
+     WHERE ci.transaction_id = ?`,
+      transactionId,
+    )
+    .then((row): TransactionClaimMembership | null =>
+      row
+        ? {
+            claimId: row.claim_id,
+            claimStatus: row.claim_status,
+            claimTitle: row.claim_title,
+          }
+        : null,
+    );
+}
+
 export async function listTransactions(
   database: SQLiteDatabase,
   input: ListTransactionsInput = {},
@@ -733,6 +773,22 @@ export async function updateTransaction(
       'Transaction no longer exists.',
     );
   }
+  const membership = await getTransactionClaimMembership(database, id);
+  if (membership && membership.claimStatus !== 'draft') {
+    throw createCodedError(
+      'CLAIM_LOCKED',
+      'Move the claim back to Draft before editing this transaction.',
+    );
+  }
+  if (
+    membership &&
+    (normalized.type !== 'expense' || !normalized.isReimbursable)
+  ) {
+    throw createCodedError(
+      'VALIDATION_FAILED',
+      'Remove this transaction from its Draft claim before making it ineligible.',
+    );
+  }
   await validateReferences(database, normalized);
   const oldReceipt = await database.getFirstAsync<{ storage_key: string }>(
     'SELECT storage_key FROM receipts WHERE transaction_id = ?',
@@ -750,6 +806,39 @@ export async function updateTransaction(
           'VALIDATION_FAILED',
           'Transaction no longer exists.',
         );
+      }
+      const currentMembership = await getTransactionClaimMembership(
+        transaction,
+        id,
+      );
+      if (
+        currentMembership?.claimId !== membership?.claimId ||
+        currentMembership?.claimStatus !== membership?.claimStatus
+      ) {
+        throw createCodedError(
+          'CLAIM_LOCKED',
+          'Claim status changed. Reload before editing this transaction.',
+        );
+      }
+      if (currentMembership) {
+        const differentCurrency = await transaction.getFirstAsync<{
+          id: number;
+        }>(
+          `SELECT t.id
+           FROM claim_items ci
+           JOIN transactions t ON t.id = ci.transaction_id
+           WHERE ci.claim_id = ? AND t.id <> ? AND t.currency_code <> ?
+           LIMIT 1`,
+          currentMembership.claimId,
+          id,
+          normalized.currencyCode,
+        );
+        if (differentCurrency) {
+          throw createCodedError(
+            'CLAIM_CURRENCY_MISMATCH',
+            'This expense uses a different currency.',
+          );
+        }
       }
       await validateReferences(transaction, normalized);
       const timestamp = Date.now();
@@ -775,6 +864,13 @@ export async function updateTransaction(
         id,
       );
       await writeReceipt(transaction, id, prepared.receipt, timestamp);
+      if (currentMembership) {
+        await recalculateAutoClaimPeriod(
+          transaction,
+          currentMembership.claimId,
+          timestamp,
+        );
+      }
     });
   } catch (error) {
     cleanupReceiptFile(prepared.copiedStorageKey);
@@ -810,6 +906,21 @@ export async function deleteTransaction(database: SQLiteDatabase, id: number) {
         'VALIDATION_FAILED',
         'Transaction no longer exists.',
       );
+    }
+
+    const membership = await getTransactionClaimMembership(transaction, id);
+    if (membership && membership.claimStatus !== 'draft') {
+      throw createCodedError(
+        'CLAIM_LOCKED',
+        'Move the claim back to Draft before deleting this transaction.',
+      );
+    }
+    if (membership) {
+      await transaction.runAsync(
+        'DELETE FROM claim_items WHERE transaction_id = ?',
+        id,
+      );
+      await recalculateAutoClaimPeriod(transaction, membership.claimId);
     }
 
     // Foreign-key enforcement is connection-scoped in SQLite. Delete the
