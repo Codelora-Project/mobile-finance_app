@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { CategoryBudget } from '@/features/budgets/budget-repository';
 import { getCategoryMeta } from '@/features/categories/category-meta';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -19,6 +20,7 @@ export function BudgetProgressCard({
   currencyCode,
   onPressSetBudget,
 }: BudgetProgressCardProps) {
+  const { t } = useLanguage();
   const { colors, isDark } = useTheme();
   const meta = getCategoryMeta(budget.categoryName, 'expense', isDark);
 
@@ -30,21 +32,24 @@ export function BudgetProgressCard({
           badgeBg: isDark ? '#7F1D1D' : '#FEE2E2',
           badgeText: '#EF4444',
           barColor: '#EF4444',
-          label: budget.status === 'overbudget' ? 'Overbudget!' : 'Kritis',
+          label:
+            budget.status === 'overbudget'
+              ? t.budgets.statusOverbudget
+              : t.budgets.statusDanger,
         };
       case 'warning':
         return {
           badgeBg: isDark ? '#78350F' : '#FEF3C7',
           badgeText: '#F59E0B',
           barColor: '#F59E0B',
-          label: 'Waspada',
+          label: t.budgets.statusWarning,
         };
       default:
         return {
           badgeBg: isDark ? '#14532D' : '#DCFCE7',
           badgeText: colors.positive,
           barColor: colors.positive,
-          label: 'Aman',
+          label: t.budgets.statusSafe,
         };
     }
   };
@@ -90,7 +95,8 @@ export function BudgetProgressCard({
             <Text
               style={[styles.spentSubtitle, { color: colors.textSecondary }]}
             >
-              Terpakai: {formatMoney(budget.spentMinor, currencyCode)}
+              {t.budgets.spentPrefix}{' '}
+              {formatMoney(budget.spentMinor, currencyCode)}
             </Text>
           </View>
         </View>
@@ -127,7 +133,7 @@ export function BudgetProgressCard({
               size={14}
             />
             <Text style={[styles.setBudgetBtnText, { color: colors.primary }]}>
-              Pasang Limit
+              {t.budgets.setBudget}
             </Text>
           </Pressable>
         )}
@@ -159,7 +165,8 @@ export function BudgetProgressCard({
           {/* Details Row */}
           <View style={styles.detailsRow}>
             <Text style={[styles.detailText, { color: colors.textSecondary }]}>
-              Limit: {formatMoney(budget.monthlyLimitMinor ?? 0, currencyCode)}
+              {t.budgets.limitPrefix}{' '}
+              {formatMoney(budget.monthlyLimitMinor ?? 0, currencyCode)}
             </Text>
 
             <Text
@@ -174,8 +181,8 @@ export function BudgetProgressCard({
               ]}
             >
               {budget.remainingMinor !== null && budget.remainingMinor >= 0
-                ? `Sisa: ${formatMoney(budget.remainingMinor, currencyCode)}`
-                : `Over: ${formatMoney(
+                ? `${t.budgets.remainingPrefix} ${formatMoney(budget.remainingMinor, currencyCode)}`
+                : `${t.budgets.overbudgetPrefix} ${formatMoney(
                     Math.abs(budget.remainingMinor ?? 0),
                     currencyCode,
                   )}`}
@@ -201,11 +208,11 @@ export function BudgetProgressCard({
               <Text
                 style={[styles.allowanceText, { color: colors.textSecondary }]}
               >
-                Kamu masih bisa jajan{' '}
+                {t.budgets.dailyAllowancePill}{' '}
                 <Text style={{ color: colors.textPrimary, fontWeight: '800' }}>
                   {formatMoney(budget.dailyAllowanceMinor, currencyCode)}/hari
                 </Text>{' '}
-                bulan ini
+                {t.budgets.perDayThisMonth}
               </Text>
             </View>
           ) : (
@@ -223,7 +230,7 @@ export function BudgetProgressCard({
                 size={16}
               />
               <Text style={[styles.allowanceTextOver, { color: '#EF4444' }]}>
-                Anggaran kategori ini telah terlampaui!
+                {t.budgets.overbudgetNotice}
               </Text>
             </View>
           )}
@@ -235,7 +242,7 @@ export function BudgetProgressCard({
             style={styles.editAction}
           >
             <Text style={[styles.editText, { color: colors.primary }]}>
-              Ubah Batas Anggaran ›
+              {t.budgets.changeBudgetLimit}
             </Text>
           </Pressable>
         </View>

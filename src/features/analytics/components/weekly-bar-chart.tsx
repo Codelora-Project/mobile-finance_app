@@ -2,6 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { WeeklyComparison } from '@/features/analytics/analytics-repository';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -16,6 +17,7 @@ export function WeeklyBarChart({
   weeklyData,
   currencyCode,
 }: WeeklyBarChartProps) {
+  const { t } = useLanguage();
   const { colors, isDark } = useTheme();
 
   const maxAmount = Math.max(
@@ -43,10 +45,10 @@ export function WeeklyBarChart({
       <View style={styles.headerRow}>
         <View style={styles.headerTitles}>
           <Text style={[styles.title, { color: colors.textPrimary }]}>
-            Perbandingan Mingguan
+            {t.analytics.weeklyComparison}
           </Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            7 Hari Terakhir vs 7 Hari Sebelumnya
+            {t.analytics.last7DaysVsPrevious}
           </Text>
         </View>
 
@@ -89,7 +91,7 @@ export function WeeklyBarChart({
             style={[styles.legendDot, { backgroundColor: colors.primary }]}
           />
           <Text style={[styles.legendLabel, { color: colors.textSecondary }]}>
-            Minggu Ini:{' '}
+            {t.analytics.thisWeek}:{' '}
             <Text style={[styles.legendValue, { color: colors.textPrimary }]}>
               {formatMoney(weeklyData.thisWeekTotalMinor, currencyCode)}
             </Text>
@@ -104,7 +106,7 @@ export function WeeklyBarChart({
             ]}
           />
           <Text style={[styles.legendLabel, { color: colors.textSecondary }]}>
-            Minggu Lalu:{' '}
+            {t.analytics.lastWeek}:{' '}
             <Text style={[styles.legendValue, { color: colors.textPrimary }]}>
               {formatMoney(weeklyData.lastWeekTotalMinor, currencyCode)}
             </Text>

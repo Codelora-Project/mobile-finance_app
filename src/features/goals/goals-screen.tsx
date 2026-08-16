@@ -218,7 +218,7 @@ export function GoalsScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator color={colors.primary} size="large" />
           <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-            Memuat Celengan Impian…
+            {t.goals.loadingGoals}
           </Text>
         </View>
       ) : (
@@ -282,7 +282,7 @@ export function GoalsScreen() {
                             { color: colors.textPrimary },
                           ]}
                         >
-                          {habitStats.currentStreak} Hari
+                          {habitStats.currentStreak} {t.goals.daysUnit}
                         </Text>
                         <Text
                           style={[
@@ -327,7 +327,7 @@ export function GoalsScreen() {
                             { color: colors.textPrimary },
                           ]}
                         >
-                          {habitStats.noSpendDaysThisMonth} Hari
+                          {habitStats.noSpendDaysThisMonth} {t.goals.daysUnit}
                         </Text>
                         <Text
                           style={[
@@ -345,7 +345,7 @@ export function GoalsScreen() {
                         { color: colors.textSecondary },
                       ]}
                     >
-                      Bulan ini
+                      {t.goals.thisMonth}
                     </Text>
                   </View>
                 </View>
@@ -366,7 +366,7 @@ export function GoalsScreen() {
                   <View style={styles.summaryTopRow}>
                     <View>
                       <Text style={styles.summarySubLabel}>
-                        Total Tabungan Terkumpul
+                        {t.goals.totalSavingsCollected}
                       </Text>
                       <Text style={styles.summaryTotalValue}>
                         {formatMoney(summary.totalSavedMinor, 'IDR')}

@@ -429,7 +429,7 @@ export function HomeScreen() {
                   { color: colors.textSecondary },
                 ]}
               >
-                Grafik Komposisi, Anggaran & Arus Kas
+                {t.analytics.subtitle}
               </Text>
             </View>
           </View>
@@ -466,7 +466,7 @@ export function HomeScreen() {
                       { color: colors.textPrimary },
                     ]}
                   >
-                    {habitStats.currentStreak} Hari Beruntun 🔥
+                    {habitStats.currentStreak} {t.habits.streakDays} 🔥
                   </Text>
                   <Text
                     style={[
@@ -475,7 +475,7 @@ export function HomeScreen() {
                     ]}
                   >
                     {habitStats.currentBadge.title} ·{' '}
-                    {habitStats.noSpendDaysThisMonth} Hari Hemat
+                    {habitStats.noSpendDaysThisMonth} {t.habits.noSpendDays}
                   </Text>
                 </View>
               </View>
@@ -570,7 +570,7 @@ export function HomeScreen() {
             </Text>
             <Pressable hitSlop={8} onPress={() => router.push('/analytics')}>
               <Text style={[styles.viewAllText, { color: colors.primary }]}>
-                Atur Anggaran ›
+                {t.budgets.manageBudgets} ›
               </Text>
             </Pressable>
           </View>
@@ -732,8 +732,8 @@ export function HomeScreen() {
                             ]}
                           >
                             {catBudget.status === 'overbudget'
-                              ? 'Overbudget!'
-                              : `Sisa jajan: ${formatMoney(catBudget.dailyAllowanceMinor, summary.currencyCode)}/hari`}
+                              ? t.budgets.statusOverbudget
+                              : `${t.budgets.dailyAllowancePill}: ${formatMoney(catBudget.dailyAllowanceMinor, summary.currencyCode)}/hari`}
                           </Text>
                         </View>
                       ) : null}

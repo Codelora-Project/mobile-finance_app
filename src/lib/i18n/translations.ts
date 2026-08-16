@@ -95,6 +95,11 @@ export type TranslationSchema = {
     withdrawSuccess: string;
     deleteGoal: string;
     deleteConfirm: string;
+    loadingGoals: string;
+    thisMonth: string;
+    totalSavingsCollected: string;
+    targetNotFound: string;
+    daysUnit: string;
   };
   habits: {
     streakTitle: string;
@@ -127,6 +132,12 @@ export type TranslationSchema = {
     noDataYet: string;
     noDataDesc: string;
     viewAnalytics: string;
+    ofTotal: string;
+    last7DaysVsPrevious: string;
+    cashFlowSubtitle: string;
+    incomePrefix: string;
+    expensePrefix: string;
+    loadingAnalytics: string;
   };
   budgets: {
     title: string;
@@ -150,6 +161,19 @@ export type TranslationSchema = {
     saveBudgetSuccess: string;
     deleteBudgetConfirm: string;
     manageBudgets: string;
+    spentPrefix: string;
+    limitPrefix: string;
+    remainingPrefix: string;
+    overbudgetPrefix: string;
+    overbudgetNotice: string;
+    dailyAllowancePill: string;
+    perDayThisMonth: string;
+    changeBudgetLimit: string;
+    currentMonthSpent: string;
+    invalidAmountError: string;
+    categoryLabel: string;
+    saveBudgetLimit: string;
+    deleteBudgetBtn: string;
   };
   common: {
     save: string;
@@ -274,6 +298,11 @@ export const translations: Record<Language, TranslationSchema> = {
       withdrawSuccess: 'Berhasil menarik tabungan!',
       deleteGoal: 'Hapus Target',
       deleteConfirm: 'Apakah kamu yakin ingin menghapus target tabungan ini?',
+      loadingGoals: 'Memuat Celengan Impian…',
+      thisMonth: 'Bulan ini',
+      totalSavingsCollected: 'Total Tabungan Terkumpul',
+      targetNotFound: 'Target tabungan tidak ditemukan.',
+      daysUnit: 'Hari',
     },
     // Habits & Streaks
     habits: {
@@ -309,6 +338,12 @@ export const translations: Record<Language, TranslationSchema> = {
       noDataYet: 'Belum ada data pengeluaran',
       noDataDesc: 'Catat transaksi pengeluaran untuk melihat grafik analitik.',
       viewAnalytics: 'Lihat Analisis & Grafik Lengkap',
+      ofTotal: 'dari Total',
+      last7DaysVsPrevious: '7 Hari Terakhir vs 7 Hari Sebelumnya',
+      cashFlowSubtitle: 'Arus kas uang masuk vs uang keluar per bulan',
+      incomePrefix: 'Masuk',
+      expensePrefix: 'Keluar',
+      loadingAnalytics: 'Memuat analisis finansial...',
     },
     // Budgets
     budgets: {
@@ -335,6 +370,19 @@ export const translations: Record<Language, TranslationSchema> = {
       deleteBudgetConfirm:
         'Apakah kamu yakin ingin menghapus anggaran kategori ini?',
       manageBudgets: 'Kelola Anggaran',
+      spentPrefix: 'Terpakai:',
+      limitPrefix: 'Limit:',
+      remainingPrefix: 'Sisa:',
+      overbudgetPrefix: 'Over:',
+      overbudgetNotice: 'Anggaran kategori ini telah terlampaui!',
+      dailyAllowancePill: 'Kamu masih bisa jajan',
+      perDayThisMonth: '/hari bulan ini',
+      changeBudgetLimit: 'Ubah Batas Anggaran ›',
+      currentMonthSpent: 'Pengeluaran Bulan Ini',
+      invalidAmountError: 'Masukkan nominal batas anggaran yang valid.',
+      categoryLabel: 'Kategori:',
+      saveBudgetLimit: 'Simpan Batas Anggaran',
+      deleteBudgetBtn: 'Hapus Anggaran Kategori',
     },
     // Common
     common: {
@@ -458,6 +506,11 @@ export const translations: Record<Language, TranslationSchema> = {
       withdrawSuccess: 'Withdrawal successful!',
       deleteGoal: 'Delete Goal',
       deleteConfirm: 'Are you sure you want to delete this savings goal?',
+      loadingGoals: 'Loading Savings Goals…',
+      thisMonth: 'This month',
+      totalSavingsCollected: 'Total Savings Accumulated',
+      targetNotFound: 'Savings goal not found.',
+      daysUnit: 'Days',
     },
     // Habits & Streaks
     habits: {
@@ -493,6 +546,12 @@ export const translations: Record<Language, TranslationSchema> = {
       noDataYet: 'No expense data yet',
       noDataDesc: 'Log your expenses to see detailed visual analytics.',
       viewAnalytics: 'View Full Analytics & Charts',
+      ofTotal: 'of Total',
+      last7DaysVsPrevious: 'Last 7 Days vs Previous 7 Days',
+      cashFlowSubtitle: 'Monthly cash flow: Money in vs Money out',
+      incomePrefix: 'Income',
+      expensePrefix: 'Expense',
+      loadingAnalytics: 'Loading financial analytics...',
     },
     // Budgets
     budgets: {
@@ -520,6 +579,19 @@ export const translations: Record<Language, TranslationSchema> = {
       deleteBudgetConfirm:
         'Are you sure you want to delete this category budget?',
       manageBudgets: 'Manage Budgets',
+      spentPrefix: 'Spent:',
+      limitPrefix: 'Limit:',
+      remainingPrefix: 'Remaining:',
+      overbudgetPrefix: 'Over:',
+      overbudgetNotice: 'Budget for this category has been exceeded!',
+      dailyAllowancePill: 'You can safely spend',
+      perDayThisMonth: '/day this month',
+      changeBudgetLimit: 'Edit Budget Limit ›',
+      currentMonthSpent: "This Month's Spending",
+      invalidAmountError: 'Enter a valid monthly budget limit.',
+      categoryLabel: 'Category:',
+      saveBudgetLimit: 'Save Budget Limit',
+      deleteBudgetBtn: 'Delete Category Budget',
     },
     // Common
     common: {

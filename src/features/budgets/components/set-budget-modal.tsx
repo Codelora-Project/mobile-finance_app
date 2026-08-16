@@ -11,6 +11,7 @@ import {
 
 import { AppButton } from '@/components/ui/app-button';
 import type { CategoryBudget } from '@/features/budgets/budget-repository';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -35,6 +36,7 @@ export function SetBudgetModal({
   onSave,
   onDelete,
 }: SetBudgetModalProps) {
+  const { t } = useLanguage();
   const { colors, isDark } = useTheme();
   const [amountStr, setAmountStr] = useState('');
   const [saving, setSaving] = useState(false);
@@ -54,7 +56,7 @@ export function SetBudgetModal({
     if (!budget) return;
     const parsed = Number(amountStr.replace(/\D/g, ''));
     if (!parsed || parsed <= 0) {
-      setError('Masukkan nominal batas anggaran yang valid.');
+      setError(t.budgets.invalidAmountError);
       return;
     }
 
@@ -64,7 +66,7 @@ export function SetBudgetModal({
       await onSave(budget.categoryId, parsed);
       onClose();
     } catch (err) {
-      setError((err as Error).message || 'Gagal menyimpan anggaran.');
+      setError((err as Error).message || t.budgets.saveBudgetSuccess);
     } finally {
       setSaving(false);
     }
@@ -77,7 +79,7 @@ export function SetBudgetModal({
       await onDelete(budget.categoryId);
       onClose();
     } catch (err) {
-      setError((err as Error).message || 'Gagal menghapus anggaran.');
+      setError((err as Error).message || 'Error');
     } finally {
       setSaving(false);
     }
@@ -111,10 +113,10 @@ export function SetBudgetModal({
                 accessibilityRole="header"
                 style={[styles.title, { color: colors.textPrimary }]}
               >
-                Atur Anggaran Bulanan
+                {budget.hasBudget ? t.budgets.editBudget : t.budgets.setBudget}
               </Text>
               <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                Kategori: {budget.categoryName}
+                {t.budgets.categoryLabel} {budget.categoryName}
               </Text>
             </View>
             <Pressable hitSlop={8} onPress={onClose}>
@@ -137,7 +139,7 @@ export function SetBudgetModal({
             ]}
           >
             <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
-              Pengeluaran Bulan Ini
+              {t.budgets.currentMonthSpent}
             </Text>
             <Text style={[styles.infoValue, { color: colors.textPrimary }]}>
               {formatMoney(budget.spentMinor, currencyCode)}
@@ -147,7 +149,7 @@ export function SetBudgetModal({
           {/* Input Nominal */}
           <View style={styles.inputGroup}>
             <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
-              Batas Anggaran Bulanan
+              {t.budgets.budgetLimit}
             </Text>
             <View
               style={[
@@ -224,7 +226,7 @@ export function SetBudgetModal({
           <View style={styles.actions}>
             <AppButton
               disabled={saving}
-              label="Simpan Batas Anggaran"
+              label={t.budgets.saveBudgetLimit}
               loading={saving}
               onPress={() => void handleSave()}
             />
@@ -232,7 +234,7 @@ export function SetBudgetModal({
             {budget.hasBudget && onDelete ? (
               <AppButton
                 disabled={saving}
-                label="Hapus Anggaran Kategori"
+                label={t.budgets.deleteBudgetBtn}
                 onPress={() => void handleDelete()}
                 variant="destructive"
               />

@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { CategoryBreakdownItem } from '@/features/analytics/analytics-repository';
 import { getCategoryMeta } from '@/features/categories/category-meta';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -20,6 +21,7 @@ export function DonutBreakdownChart({
   totalExpenseMinor,
   currencyCode,
 }: DonutBreakdownChartProps) {
+  const { t } = useLanguage();
   const { colors, isDark } = useTheme();
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     items[0]?.categoryId ?? null,
@@ -84,7 +86,7 @@ export function DonutBreakdownChart({
           ]}
         >
           <Text style={[styles.percentageText, { color: colors.primary }]}>
-            {selectedItem.percentage}% dari Total
+            {selectedItem.percentage}% {t.analytics.ofTotal}
           </Text>
         </View>
       </View>

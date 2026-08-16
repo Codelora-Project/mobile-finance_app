@@ -130,7 +130,7 @@ export function AnalyticsScreen() {
         <View style={styles.centeredState}>
           <ActivityIndicator color={colors.primary} size="large" />
           <Text style={[styles.stateText, { color: colors.textSecondary }]}>
-            Memuat analisis finansial...
+            {t.analytics.loadingAnalytics}
           </Text>
         </View>
       </Screen>
@@ -471,7 +471,7 @@ export function AnalyticsScreen() {
                   { color: colors.textSecondary },
                 ]}
               >
-                Arus kas uang masuk vs uang keluar per bulan
+                {t.analytics.cashFlowSubtitle}
               </Text>
 
               <View style={styles.cashFlowList}>
@@ -524,7 +524,8 @@ export function AnalyticsScreen() {
                             { color: colors.positive },
                           ]}
                         >
-                          Masuk: {formatMoney(flow.incomeMinor, currencyCode)}
+                          {t.analytics.incomePrefix}:{' '}
+                          {formatMoney(flow.incomeMinor, currencyCode)}
                         </Text>
                         <View
                           style={[
@@ -556,7 +557,8 @@ export function AnalyticsScreen() {
                             { color: colors.destructive },
                           ]}
                         >
-                          Keluar: {formatMoney(flow.expenseMinor, currencyCode)}
+                          {t.analytics.expensePrefix}:{' '}
+                          {formatMoney(flow.expenseMinor, currencyCode)}
                         </Text>
                         <View
                           style={[

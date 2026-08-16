@@ -31,12 +31,15 @@ import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 
-function formatTxDate(timestamp: number) {
-  return new Date(timestamp).toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+function formatTxDate(timestamp: number, language: string) {
+  return new Date(timestamp).toLocaleDateString(
+    language === 'id' ? 'id-ID' : 'en-US',
+    {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    },
+  );
 }
 
 type GoalDetailScreenProps = {
@@ -46,7 +49,7 @@ type GoalDetailScreenProps = {
 export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
   const database = useSQLiteContext();
   const router = useRouter();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const { colors, isDark } = useTheme();
 
   const [loading, setLoading] = useState(true);
@@ -71,7 +74,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
     try {
       const data = await getSavingsGoal(database, goalId);
       if (!data) {
-        setError('Target tabungan tidak ditemukan.');
+        setError(t.goals.targetNotFound);
         return;
       }
       setGoal(data.goal);
@@ -81,7 +84,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
     } finally {
       setLoading(false);
     }
-  }, [database, goalId]);
+  }, [database, goalId, t.goals.targetNotFound]);
 
   useFocusEffect(
     useCallback(() => {
@@ -244,7 +247,8 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
                         { color: colors.textSecondary },
                       ]}
                     >
-                      Target: {formatMoney(goal.targetAmountMinor, 'IDR')}
+                      {t.goals.target}:{' '}
+                      {formatMoney(goal.targetAmountMinor, 'IDR')}
                     </Text>
                   </View>
                   <View
@@ -308,7 +312,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
                         { color: colors.textSecondary },
                       ]}
                     >
-                      Terkumpul:
+                      {t.goals.saved}:
                     </Text>
                     <Text
                       style={[
@@ -330,7 +334,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
                         { color: colors.textSecondary },
                       ]}
                     >
-                      {goal.isCompleted ? 'Status:' : 'Kurang:'}
+                      {goal.isCompleted ? 'Status:' : `${t.goals.remaining}:`}
                     </Text>
                     <Text
                       style={[
@@ -341,7 +345,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
                       ]}
                     >
                       {goal.isCompleted
-                        ? 'Tercapai 🎉'
+                        ? t.goals.completed
                         : formatMoney(
                             goal.targetAmountMinor - goal.currentAmountMinor,
                             'IDR',
@@ -371,7 +375,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
                     name="plus-circle"
                     size={20}
                   />
-                  <Text style={styles.actionBtnText}>+ Nabung</Text>
+                  <Text style={styles.actionBtnText}>+ {t.goals.deposit}</Text>
                 </Pressable>
 
                 {goal.currentAmountMinor > 0 ? (
@@ -405,7 +409,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
                         { color: colors.textPrimary },
                       ]}
                     >
-                      - Tarik Dana
+                      - {t.goals.withdraw}
                     </Text>
                   </Pressable>
                 ) : null}
@@ -461,12 +465,14 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
                 <View>
                   <Text style={[styles.txNote, { color: colors.textPrimary }]}>
                     {tx.note ||
-                      (tx.type === 'deposit' ? 'Setoran' : 'Penarikan')}
+                      (tx.type === 'deposit'
+                        ? t.goals.deposit
+                        : t.goals.withdraw)}
                   </Text>
                   <Text
                     style={[styles.txDate, { color: colors.textSecondary }]}
                   >
-                    {formatTxDate(tx.occurredAt)}
+                    {formatTxDate(tx.occurredAt, language)}
                   </Text>
                 </View>
               </View>

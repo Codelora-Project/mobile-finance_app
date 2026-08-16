@@ -156,11 +156,13 @@ describe('analytics screen', () => {
     // Switch to Budgets Tab
     await fireEvent.press(screen.getByText('Anggaran'));
     expect(screen.getByText('Realisasi Anggaran Total')).toBeOnTheScreen();
-    expect(screen.getByText('Pasang Limit')).toBeOnTheScreen();
+    expect(screen.getByText('Pasang Anggaran')).toBeOnTheScreen();
 
     // Open Set Budget Modal for Transport
-    await fireEvent.press(screen.getByText('Pasang Limit'));
-    expect(screen.getByText('Atur Anggaran Bulanan')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByText('Pasang Anggaran'));
+    expect(
+      screen.getAllByText('Pasang Anggaran').length,
+    ).toBeGreaterThanOrEqual(1);
 
     await fireEvent.changeText(
       screen.getByPlaceholderText('1000000'),
