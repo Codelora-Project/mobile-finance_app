@@ -6,7 +6,7 @@ import {
   type TextInputProps,
 } from 'react-native';
 
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -17,17 +17,30 @@ type AppInputProps = TextInputProps & {
 };
 
 export function AppInput({ error, label, style, ...props }: AppInputProps) {
+  const { colors } = useTheme();
+
   return (
     <View>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { color: colors.textPrimary }]}>{label}</Text>
       <TextInput
         accessibilityLabel={label}
         placeholderTextColor={colors.textSecondary}
-        style={[styles.input, error ? styles.inputError : null, style]}
+        style={[
+          styles.input,
+          {
+            backgroundColor: colors.surface,
+            borderColor: error ? colors.destructive : colors.border,
+            color: colors.textPrimary,
+          },
+          style,
+        ]}
         {...props}
       />
       {error ? (
-        <Text accessibilityLiveRegion="polite" style={styles.error}>
+        <Text
+          accessibilityLiveRegion="polite"
+          style={[styles.error, { color: colors.destructive }]}
+        >
           {error}
         </Text>
       ) : null}
@@ -37,28 +50,20 @@ export function AppInput({ error, label, style, ...props }: AppInputProps) {
 
 const styles = StyleSheet.create({
   label: {
-    color: colors.textPrimary,
     fontSize: typography.secondary.fontSize,
     fontWeight: '600',
     lineHeight: typography.secondary.lineHeight,
     marginBottom: spacing.xs,
   },
   input: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
     borderRadius: radius.md,
     borderWidth: 1,
-    color: colors.textPrimary,
     fontSize: typography.body.fontSize,
     minHeight: 48,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  inputError: {
-    borderColor: colors.destructive,
-  },
   error: {
-    color: colors.destructive,
     fontSize: typography.secondary.fontSize,
     lineHeight: typography.secondary.lineHeight,
     marginTop: spacing.xs,

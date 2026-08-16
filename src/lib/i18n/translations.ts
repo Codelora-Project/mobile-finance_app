@@ -1,6 +1,86 @@
 export type Language = 'id' | 'en';
 
-export const translations = {
+export type TranslationSchema = {
+  tabs: {
+    home: string;
+    transactions: string;
+    add: string;
+    claims: string;
+    settings: string;
+  };
+  home: {
+    greeting: string;
+    appTitle: string;
+    net: string;
+    income: string;
+    expensesThisMonth: string;
+    quickAddTransaction: string;
+    quickScanReceipt: string;
+    spendingByCategory: string;
+    noExpensesThisMonth: string;
+    recentTransactions: string;
+    viewAll: string;
+    noTransactionsYet: string;
+    noTransactionsDesc: string;
+    addFirstTransaction: string;
+    receiptBadge: string;
+    ofExpenses: string;
+    overviewUnavailable: string;
+    loadFailed: string;
+    tryAgain: string;
+    loading: string;
+  };
+  settings: {
+    title: string;
+    loading: string;
+    themeSection: string;
+    themeDesc: string;
+    themeLight: string;
+    themeDark: string;
+    themeSystem: string;
+    shortcutsSection: string;
+    shortcutsDesc: string;
+    editShortcuts: string;
+    addShortcut: string;
+    resetShortcuts: string;
+    enterShortcutAmount: string;
+    shortcutLimit: string;
+    languageSection: string;
+    languageDesc: string;
+    langIndonesian: string;
+    langEnglish: string;
+    manageSection: string;
+    categories: string;
+    paymentMethods: string;
+    currencySection: string;
+    readOnly: string;
+    dataSection: string;
+    dataDesc: string;
+    deleteAllData: string;
+    aboutSection: string;
+    version: string;
+    aboutDesc: string;
+    deleteDialogTitle: string;
+    deleteDialogDesc: string;
+    permanentDeleteTitle: string;
+    permanentDeleteDesc: string;
+    dataDeletedTitle: string;
+    dataDeletedDesc: string;
+    cancel: string;
+    continue: string;
+    done: string;
+  };
+  common: {
+    save: string;
+    cancel: string;
+    delete: string;
+    edit: string;
+    back: string;
+    tryAgain: string;
+  };
+};
+
+export const translations: Record<Language, TranslationSchema> = {
   id: {
     // Navigation Tabs
     tabs: {
@@ -18,7 +98,7 @@ export const translations = {
       income: 'Uang Masuk',
       expensesThisMonth: 'Uang Keluar',
       quickAddTransaction: '+ Catat Transaksi',
-      quickScanReceipt: 'Pindai Struk',
+      quickScanReceipt: 'Foto Struk',
       spendingByCategory: 'Pengeluaran per Kategori',
       noExpensesThisMonth: 'Belum ada pengeluaran bulan ini.',
       recentTransactions: 'Transaksi Terakhir',
@@ -38,10 +118,27 @@ export const translations = {
     settings: {
       title: 'Pengaturan',
       loading: 'Memuat pengaturan…',
+      // Theme Section
+      themeSection: 'Tema Tampilan',
+      themeDesc: 'Pilih mode terang, gelap (OLED), atau ikuti setelan sistem.',
+      themeLight: 'Terang',
+      themeDark: 'Gelap',
+      themeSystem: 'Ikuti Sistem',
+      // Quick Shortcuts Customization Section
+      shortcutsSection: 'Shortcut Nominal Cepat',
+      shortcutsDesc:
+        'Sesuaikan tombol nominal cepat (+2k, +5k, dll.) yang tampil di popup catat transaksi.',
+      editShortcuts: 'Kustomisasi Shortcut',
+      addShortcut: '+ Tambah Nominal',
+      resetShortcuts: 'Reset ke Default',
+      enterShortcutAmount: 'Masukkan nominal baru (misal: 15000):',
+      shortcutLimit: 'Maksimal 8 tombol shortcut.',
+      // Language Section
       languageSection: 'Bahasa / Language',
       languageDesc: 'Pilih bahasa tampilan aplikasi.',
       langIndonesian: 'Bahasa Indonesia',
       langEnglish: 'English',
+      // Management
       manageSection: 'Kelola',
       categories: 'Kategori',
       paymentMethods: 'Metode Pembayaran',
@@ -54,7 +151,7 @@ export const translations = {
       aboutSection: 'Tentang Aplikasi',
       version: 'Versi',
       aboutDesc:
-        'Aplikasi keuangan pribadi offline untuk Android dengan pemindaian struk langsung di perangkat.',
+        'Aplikasi keuangan pribadi offline untuk Android dengan pencatatan instan dan lampiran foto struk langsung di perangkat.',
       deleteDialogTitle: 'Hapus semua data?',
       deleteDialogDesc:
         'Transaksi, tanda terima, klaim, kategori kustom, metode pembayaran kustom, dan PDF yang dibuat akan dihapus.',
@@ -95,7 +192,7 @@ export const translations = {
       income: 'Income',
       expensesThisMonth: 'Expenses this month',
       quickAddTransaction: '+ Add Transaction',
-      quickScanReceipt: 'Scan Receipt',
+      quickScanReceipt: 'Photo Receipt',
       spendingByCategory: 'Spending by category',
       noExpensesThisMonth: 'No expenses this month.',
       recentTransactions: 'Recent transactions',
@@ -115,10 +212,27 @@ export const translations = {
     settings: {
       title: 'Settings',
       loading: 'Loading settings…',
-      languageSection: 'Language / Bahasa',
-      languageDesc: 'Choose the application display language.',
+      // Theme Section
+      themeSection: 'Appearance Theme',
+      themeDesc: 'Choose light mode, dark mode (OLED), or follow system.',
+      themeLight: 'Light',
+      themeDark: 'Dark',
+      themeSystem: 'Follow System',
+      // Quick Shortcuts Customization Section
+      shortcutsSection: 'Quick Amount Shortcuts',
+      shortcutsDesc:
+        'Customize the quick increment buttons (+2k, +5k, etc.) shown on the quick-entry sheet.',
+      editShortcuts: 'Customize Shortcuts',
+      addShortcut: '+ Add Amount',
+      resetShortcuts: 'Reset to Default',
+      enterShortcutAmount: 'Enter new amount (e.g. 15000):',
+      shortcutLimit: 'Maximum 8 shortcut chips.',
+      // Language Section
+      languageSection: 'Language',
+      languageDesc: 'Choose the display language.',
       langIndonesian: 'Bahasa Indonesia',
       langEnglish: 'English',
+      // Management
       manageSection: 'Manage',
       categories: 'Categories',
       paymentMethods: 'Payment Methods',
@@ -128,19 +242,19 @@ export const translations = {
       dataDesc:
         'All information stays on this device. No account, cloud, or telemetry is used.',
       deleteAllData: 'Delete All Data',
-      aboutSection: 'About',
+      aboutSection: 'About App',
       version: 'Version',
       aboutDesc:
-        'Offline-first personal finance for Android. Receipt OCR runs on-device.',
+        'Offline-first Android personal finance app with instant speed logging and receipt photo attachments.',
       deleteDialogTitle: 'Delete all data?',
       deleteDialogDesc:
         'Transactions, receipts, claims, custom categories, custom payment methods, and generated PDFs will be deleted.',
-      permanentDeleteTitle: 'Permanently delete all data?',
+      permanentDeleteTitle: 'Delete all data permanently?',
       permanentDeleteDesc:
-        'This cannot be undone. Default categories, payment methods, and IDR settings will be restored.',
+        'This action cannot be undone. Default categories, payment methods, and IDR settings will be restored.',
       dataDeletedTitle: 'Data deleted',
       dataDeletedDesc:
-        'Transactions, receipts, claims, custom options, and cached exports were removed. Defaults are ready to use.',
+        'Transactions, receipts, claims, custom options, and cached exports have been deleted. Default settings are ready.',
       cancel: 'Cancel',
       continue: 'Continue',
       done: 'Done',
@@ -155,10 +269,4 @@ export const translations = {
       tryAgain: 'Try again',
     },
   },
-} as const;
-
-type DeepStringRecord<T> = {
-  [K in keyof T]: T[K] extends string ? string : DeepStringRecord<T[K]>;
 };
-
-export type TranslationSchema = DeepStringRecord<typeof translations.id>;

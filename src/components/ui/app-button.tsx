@@ -4,9 +4,12 @@ import {
   StyleSheet,
   Text,
   type PressableProps,
+  type StyleProp,
+  type ViewStyle,
+  type TextStyle,
 } from 'react-native';
 
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -29,9 +32,44 @@ export function AppButton({
   testID,
   variant = 'primary',
 }: AppButtonProps) {
+  const { colors } = useTheme();
   const isDisabled = disabled || loading;
   const indicatorColor =
     variant === 'primary' ? colors.surface : colors.primary;
+
+  const variantStyle: StyleProp<ViewStyle> = {
+    primary: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    secondary: {
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+    },
+    destructive: {
+      backgroundColor: colors.surface,
+      borderColor: colors.destructive,
+    },
+    ghost: {
+      backgroundColor: 'transparent',
+      borderColor: 'transparent',
+    },
+  }[variant];
+
+  const labelStyle: StyleProp<TextStyle> = {
+    primary: {
+      color: '#FFFFFF',
+    },
+    secondary: {
+      color: colors.textPrimary,
+    },
+    destructive: {
+      color: colors.destructive,
+    },
+    ghost: {
+      color: colors.primary,
+    },
+  }[variant];
 
   return (
     <Pressable
@@ -42,7 +80,7 @@ export function AppButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
-        styles[variant],
+        variantStyle,
         pressed && !isDisabled ? styles.pressed : null,
         isDisabled ? styles.disabled : null,
       ]}
@@ -51,7 +89,7 @@ export function AppButton({
       {loading ? (
         <ActivityIndicator color={indicatorColor} />
       ) : (
-        <Text style={[styles.label, styles[`${variant}Label`]]}>{label}</Text>
+        <Text style={[styles.label, labelStyle]}>{label}</Text>
       )}
     </Pressable>
   );
@@ -67,22 +105,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  primary: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  secondary: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-  },
-  destructive: {
-    backgroundColor: colors.surface,
-    borderColor: colors.destructive,
-  },
-  ghost: {
-    backgroundColor: 'transparent',
-    borderColor: 'transparent',
-  },
   pressed: {
     opacity: 0.72,
   },
@@ -94,17 +116,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: typography.body.lineHeight,
     textAlign: 'center',
-  },
-  primaryLabel: {
-    color: colors.surface,
-  },
-  secondaryLabel: {
-    color: colors.textPrimary,
-  },
-  destructiveLabel: {
-    color: colors.destructive,
-  },
-  ghostLabel: {
-    color: colors.primary,
   },
 });

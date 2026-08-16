@@ -22,7 +22,7 @@ import {
   type PaymentMethod,
 } from '@/features/payment-methods/payment-method-repository';
 import { isCodedError, mapError } from '@/lib/errors';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/lib/theme/theme-context';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
@@ -36,6 +36,7 @@ function getOperationMessage(error: unknown) {
 export function PaymentMethodManagementScreen() {
   const database = useSQLiteContext();
   const router = useRouter();
+  const { colors } = useTheme();
   const savingRef = useRef(false);
   const deletingRef = useRef(false);
   const [paymentMethods, setPaymentMethods] = useState<
@@ -99,28 +100,26 @@ export function PaymentMethodManagementScreen() {
   }, [database]);
 
   function retryLoad() {
-    setScreenError(null);
     setLoading(true);
     void loadPaymentMethods();
   }
 
   function openAddEditor() {
-    setEditor('new');
     setName('');
     setFormError(null);
+    setEditor('new');
   }
 
   function openEditEditor(paymentMethod: PaymentMethod) {
-    setEditor(paymentMethod);
     setName(paymentMethod.name);
     setFormError(null);
+    setEditor(paymentMethod);
   }
 
   function closeEditor() {
-    if (!saving) {
-      setEditor(null);
-      setFormError(null);
-    }
+    setEditor(null);
+    setName('');
+    setFormError(null);
   }
 
   async function savePaymentMethod() {
@@ -128,8 +127,8 @@ export function PaymentMethodManagementScreen() {
       return;
     }
     savingRef.current = true;
-    setFormError(null);
     setSaving(true);
+    setFormError(null);
     try {
       if (editor === 'new') {
         await createPaymentMethod(database, { name });
@@ -173,7 +172,7 @@ export function PaymentMethodManagementScreen() {
   function requestDelete(paymentMethod: PaymentMethod) {
     Alert.alert(
       'Delete payment method?',
-      `Transactions using ${paymentMethod.name} will be moved to Other.`,
+      `Transactions using ${paymentMethod.name} will be moved to the default payment method.`,
       [
         { style: 'cancel', text: 'Cancel' },
         {
@@ -187,21 +186,32 @@ export function PaymentMethodManagementScreen() {
 
   return (
     <Screen>
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <AppButton label="Back" onPress={() => router.back()} variant="ghost" />
-        <Text accessibilityRole="header" style={styles.title}>
-          Payment methods
+        <Text
+          accessibilityRole="header"
+          style={[styles.title, { color: colors.textPrimary }]}
+        >
+          Payment Methods
         </Text>
         <AppButton label="Add" onPress={openAddEditor} variant="ghost" />
       </View>
 
-      <Text style={styles.description}>
-        Payment methods are labels only. They do not track balances.
+      <Text style={[styles.description, { color: colors.textSecondary }]}>
+        Manage cash, bank accounts, and cards available for transactions.
       </Text>
 
       {screenError ? (
-        <View accessibilityLiveRegion="assertive" style={styles.errorBanner}>
-          <Text style={styles.errorText}>{screenError}</Text>
+        <View
+          accessibilityLiveRegion="assertive"
+          style={[
+            styles.errorBanner,
+            { backgroundColor: '#FEE2E2', borderColor: '#FCA5A5' },
+          ]}
+        >
+          <Text style={[styles.errorText, { color: colors.destructive }]}>
+            {screenError}
+          </Text>
           <AppButton label="Try again" onPress={retryLoad} variant="ghost" />
         </View>
       ) : null}
@@ -209,7 +219,9 @@ export function PaymentMethodManagementScreen() {
       {loading ? (
         <View accessibilityLiveRegion="polite" style={styles.loadingState}>
           <ActivityIndicator color={colors.primary} size="large" />
-          <Text style={styles.secondaryText}>Loading payment methods…</Text>
+          <Text style={[styles.secondaryText, { color: colors.textSecondary }]}>
+            Loading payment methods…
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -218,17 +230,33 @@ export function PaymentMethodManagementScreen() {
           keyExtractor={(paymentMethod) => String(paymentMethod.id)}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>No payment methods</Text>
-              <Text style={styles.secondaryText}>
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+                No payment methods
+              </Text>
+              <Text
+                style={[styles.secondaryText, { color: colors.textSecondary }]}
+              >
                 Add a payment method to get started.
               </Text>
             </View>
           }
           renderItem={({ item }) => (
-            <View style={styles.row}>
+            <View
+              style={[
+                styles.row,
+                {
+                  backgroundColor: colors.surface,
+                  borderBottomColor: colors.border,
+                },
+              ]}
+            >
               <View style={styles.rowText}>
-                <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.metadata}>
+                <Text style={[styles.name, { color: colors.textPrimary }]}>
+                  {item.name}
+                </Text>
+                <Text
+                  style={[styles.metadata, { color: colors.textSecondary }]}
+                >
                   {item.isFallback
                     ? 'Default · Fallback'
                     : item.isDefault
@@ -263,7 +291,10 @@ export function PaymentMethodManagementScreen() {
         visible={editor !== null}
       >
         <Screen style={styles.editorScreen}>
-          <Text accessibilityRole="header" style={styles.title}>
+          <Text
+            accessibilityRole="header"
+            style={[styles.title, { color: colors.textPrimary }]}
+          >
             {editor === 'new' ? 'Add payment method' : 'Edit payment method'}
           </Text>
 
@@ -306,13 +337,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   title: {
-    color: colors.textPrimary,
     fontSize: typography.pageTitle.fontSize,
     fontWeight: typography.pageTitle.fontWeight,
     lineHeight: typography.pageTitle.lineHeight,
   },
   description: {
-    color: colors.textSecondary,
     fontSize: typography.secondary.fontSize,
     lineHeight: typography.secondary.lineHeight,
     paddingHorizontal: spacing.md,
@@ -320,13 +349,13 @@ const styles = StyleSheet.create({
   },
   errorBanner: {
     alignItems: 'center',
-    backgroundColor: '#FEF3F2',
+    borderRadius: 8,
+    borderWidth: 1,
     marginHorizontal: spacing.md,
     marginTop: spacing.md,
     padding: spacing.sm,
   },
   errorText: {
-    color: colors.destructive,
     fontSize: typography.secondary.fontSize,
     lineHeight: typography.secondary.lineHeight,
     textAlign: 'center',
@@ -338,7 +367,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   secondaryText: {
-    color: colors.textSecondary,
     fontSize: typography.secondary.fontSize,
     lineHeight: typography.secondary.lineHeight,
     textAlign: 'center',
@@ -354,15 +382,12 @@ const styles = StyleSheet.create({
     minHeight: 320,
   },
   emptyTitle: {
-    color: colors.textPrimary,
     fontSize: typography.sectionTitle.fontSize,
     fontWeight: typography.sectionTitle.fontWeight,
     lineHeight: typography.sectionTitle.lineHeight,
   },
   row: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderBottomColor: colors.border,
     borderBottomWidth: 1,
     flexDirection: 'row',
     minHeight: 72,
@@ -373,12 +398,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   name: {
-    color: colors.textPrimary,
     fontSize: typography.body.fontSize,
     lineHeight: typography.body.lineHeight,
   },
   metadata: {
-    color: colors.textSecondary,
     fontSize: typography.metadata.fontSize,
     lineHeight: typography.metadata.lineHeight,
   },

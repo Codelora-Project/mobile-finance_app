@@ -22,16 +22,20 @@ import {
 import { toLocalDateTimeInput } from '@/lib/dates';
 import { isCodedError, mapError } from '@/lib/errors';
 import { formatMoney } from '@/lib/money';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
 function DetailField({ label, value }: { label: string; value: string }) {
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
-      <Text selectable style={styles.value}>
+    <View style={[styles.field, { borderBottomColor: colors.border }]}>
+      <Text style={[styles.label, { color: colors.textSecondary }]}>
+        {label}
+      </Text>
+      <Text selectable style={[styles.value, { color: colors.textPrimary }]}>
         {value}
       </Text>
     </View>
@@ -49,6 +53,7 @@ export function TransactionDetailScreen({
 }) {
   const database = useSQLiteContext();
   const router = useRouter();
+  const { colors } = useTheme();
   const deletingRef = useRef(false);
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [claimMembership, setClaimMembership] =
@@ -99,20 +104,21 @@ export function TransactionDetailScreen({
           if (deletingRef.current) return;
           deletingRef.current = true;
           setDeleting(true);
-          deleteTransaction(database, transaction.id)
+          deleteTransaction(database, transactionId)
             .then(() => {
               router.dismissTo({
                 params: { feedback: 'Transaction deleted.' },
                 pathname: '/transactions',
               });
             })
-            .catch((deleteError: unknown) => {
+            .catch((deleteError) => {
+              const message = isCodedError(deleteError)
+                ? deleteError.message
+                : mapError(deleteError, 'DATABASE_WRITE_FAILED').message;
+              setError(message);
+            })
+            .finally(() => {
               deletingRef.current = false;
-              setError(
-                isCodedError(deleteError)
-                  ? deleteError.message
-                  : mapError(deleteError, 'DATABASE_WRITE_FAILED').message,
-              );
               setDeleting(false);
             });
         },
@@ -122,31 +128,43 @@ export function TransactionDetailScreen({
     ]);
   }
 
-  if (loading) {
+  if (loading && !transaction) {
     return (
-      <Screen style={styles.state}>
-        <ActivityIndicator color={colors.primary} size="large" />
-        <Text style={styles.stateText}>Loading transaction…</Text>
+      <Screen>
+        <View style={styles.state}>
+          <ActivityIndicator color={colors.primary} size="large" />
+          <Text style={[styles.stateText, { color: colors.textSecondary }]}>
+            Loading transaction…
+          </Text>
+        </View>
       </Screen>
     );
   }
 
   if (!transaction) {
     return (
-      <Screen style={styles.state}>
-        <Text accessibilityRole="header" style={styles.title}>
-          Transaction unavailable
-        </Text>
-        <Text accessibilityLiveRegion="assertive" style={styles.stateText}>
-          {error ?? 'Transaction not found.'}
-        </Text>
-        <View style={styles.stateActions}>
-          <AppButton label="Try again" onPress={() => void load()} />
-          <AppButton
-            label="Back"
-            onPress={() => router.back()}
-            variant="secondary"
-          />
+      <Screen>
+        <View style={styles.state}>
+          <Text
+            accessibilityRole="header"
+            style={[styles.title, { color: colors.textPrimary }]}
+          >
+            Transaction not found
+          </Text>
+          <Text
+            accessibilityLiveRegion="assertive"
+            style={[styles.stateText, { color: colors.textSecondary }]}
+          >
+            {error ??
+              'The requested transaction could not be loaded or was removed.'}
+          </Text>
+          <View style={styles.stateActions}>
+            <AppButton
+              label="Back to transactions"
+              onPress={() => router.replace('/transactions')}
+              variant="secondary"
+            />
+          </View>
         </View>
       </Screen>
     );
@@ -161,9 +179,12 @@ export function TransactionDetailScreen({
 
   return (
     <Screen>
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <AppButton label="Back" onPress={() => router.back()} variant="ghost" />
-        <Text accessibilityRole="header" style={styles.headerTitle}>
+        <Text
+          accessibilityRole="header"
+          style={[styles.headerTitle, { color: colors.textPrimary }]}
+        >
           Transaction Detail
         </Text>
         <View style={styles.headerSpacer} />
@@ -171,14 +192,14 @@ export function TransactionDetailScreen({
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.summary}>
-          <Text style={styles.type}>
+          <Text style={[styles.type, { color: colors.textSecondary }]}>
             {transaction.type === 'expense' ? 'Expense' : 'Income'}
           </Text>
           <Text
             style={
               transaction.type === 'expense'
-                ? styles.expenseAmount
-                : styles.incomeAmount
+                ? [styles.expenseAmount, { color: colors.destructive }]
+                : [styles.incomeAmount, { color: colors.positive }]
             }
           >
             {transaction.type === 'expense' ? '−' : '+'}
@@ -186,7 +207,15 @@ export function TransactionDetailScreen({
           </Text>
         </View>
 
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
           <DetailField
             label={counterpartyLabel}
             value={
@@ -231,7 +260,10 @@ export function TransactionDetailScreen({
         </View>
 
         {error ? (
-          <Text accessibilityLiveRegion="assertive" style={styles.error}>
+          <Text
+            accessibilityLiveRegion="assertive"
+            style={[styles.error, { color: colors.destructive }]}
+          >
             {error}
           </Text>
         ) : null}
@@ -247,21 +279,20 @@ export function TransactionDetailScreen({
             />
           ) : null}
           {claimMembership && claimMembership.claimStatus !== 'draft' ? (
-            <Text style={styles.locked}>
+            <Text style={[styles.locked, { color: colors.textSecondary }]}>
               This transaction is locked by a {claimMembership.claimStatus}{' '}
-              claim. Move the claim back to Draft before editing or deleting it.
+              claim and cannot be edited or deleted.
             </Text>
           ) : (
             <>
               <AppButton
-                disabled={deleting}
                 label="Edit transaction"
                 onPress={() =>
                   router.push(`/transactions/${transaction.id}/edit`)
                 }
-                variant="secondary"
               />
               <AppButton
+                disabled={deleting}
                 label="Delete transaction"
                 loading={deleting}
                 onPress={confirmDelete}
@@ -278,15 +309,13 @@ export function TransactionDetailScreen({
 const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
-    borderBottomColor: colors.border,
     borderBottomWidth: 1,
     flexDirection: 'row',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   headerTitle: {
-    color: colors.textPrimary,
-    flex: 1,
     fontSize: typography.sectionTitle.fontSize,
     fontWeight: typography.sectionTitle.fontWeight,
     textAlign: 'center',
@@ -304,49 +333,39 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
   },
   type: {
-    color: colors.textSecondary,
     fontSize: typography.secondary.fontSize,
     fontWeight: '600',
   },
   expenseAmount: {
-    color: colors.destructive,
     fontSize: 32,
     fontWeight: '700',
     marginTop: spacing.xs,
   },
   incomeAmount: {
-    color: colors.positive,
     fontSize: 32,
     fontWeight: '700',
     marginTop: spacing.xs,
   },
   card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
     borderRadius: radius.md,
     borderWidth: 1,
     paddingHorizontal: spacing.md,
   },
   field: {
-    borderBottomColor: colors.border,
     borderBottomWidth: 1,
     paddingVertical: spacing.md,
   },
   label: {
-    color: colors.textSecondary,
     fontSize: typography.metadata.fontSize,
   },
   value: {
-    color: colors.textPrimary,
     fontSize: typography.body.fontSize,
     marginTop: spacing.xs,
   },
   error: {
-    color: colors.destructive,
     fontSize: typography.body.fontSize,
   },
   locked: {
-    color: colors.textSecondary,
     textAlign: 'center',
   },
   actions: {
@@ -358,12 +377,10 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   title: {
-    color: colors.textPrimary,
     fontSize: typography.sectionTitle.fontSize,
     fontWeight: typography.sectionTitle.fontWeight,
   },
   stateText: {
-    color: colors.textSecondary,
     fontSize: typography.body.fontSize,
     marginTop: spacing.sm,
     textAlign: 'center',

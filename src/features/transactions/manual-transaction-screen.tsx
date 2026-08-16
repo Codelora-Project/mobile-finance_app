@@ -30,8 +30,6 @@ import {
   type PaymentMethod,
 } from '@/features/payment-methods/payment-method-repository';
 import { PaymentMethodPicker } from '@/features/payment-methods/payment-method-picker';
-import { recognizeReceipt } from '@/features/receipts/ocr-service';
-import { parseReceipt } from '@/features/receipts/receipt-parser';
 import {
   pickManualReceipt,
   type ManualReceiptSelection,
@@ -53,13 +51,29 @@ import {
   parseLocalDateTimeInput,
   toLocalDateTimeInput,
 } from '@/lib/dates';
+import {
+  DEFAULT_QUICK_SHORTCUTS,
+  getQuickShortcuts,
+} from '@/features/settings/settings-repository';
 import { isCodedError, mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney, formatMoneyInput, parseMoneyInput } from '@/lib/money';
+import { useTheme } from '@/lib/theme/theme-context';
 import { colors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
+
+function formatShortcutLabel(amount: number): string {
+  if (amount >= 1_000_000) {
+    return `+${amount / 1_000_000}M`;
+  }
+  if (amount >= 1_000) {
+    const k = amount / 1_000;
+    return `+${Number.isInteger(k) ? k : k.toFixed(1)}k`;
+  }
+  return `+${amount}`;
+}
 
 type SelectedReference = Readonly<{ id: number; name: string }>;
 
@@ -85,15 +99,6 @@ type PickerState = 'category' | 'paymentMethod' | null;
 type ManualTransactionScreenProps = {
   transactionId?: number;
 };
-
-const QUICK_INCREMENTS = [
-  { label: '+2k', value: 2_000 },
-  { label: '+5k', value: 5_000 },
-  { label: '+10k', value: 10_000 },
-  { label: '+20k', value: 20_000 },
-  { label: '+50k', value: 50_000 },
-  { label: '+100k', value: 100_000 },
-] as const;
 
 function createDefaultForm(): FormState {
   const now = Date.now();
@@ -248,6 +253,7 @@ export function ManualTransactionScreen({
   const database = useSQLiteContext();
   const router = useRouter();
   const { language, t } = useLanguage();
+  const { colors, isDark } = useTheme();
   const isEditMode = typeof transactionId === 'number';
 
   const [form, setForm] = useState<FormState>(createDefaultForm);
@@ -256,12 +262,14 @@ export function ManualTransactionScreen({
   const [paymentMethodsList, setPaymentMethodsList] = useState<PaymentMethod[]>(
     [],
   );
+  const [quickShortcuts, setQuickShortcuts] = useState<number[]>([
+    ...DEFAULT_QUICK_SHORTCUTS,
+  ]);
   const [claimMembership, setClaimMembership] =
     useState<TransactionClaimMembership | null>(null);
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [ocrLoading, setOcrLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [picker, setPicker] = useState<PickerState>(null);
   const [receiptMenuVisible, setReceiptMenuVisible] = useState(false);
@@ -276,16 +284,18 @@ export function ManualTransactionScreen({
     [form, initialForm],
   );
 
-  // Load Categories & Payment Methods
+  // Load Categories, Payment Methods & Custom Shortcuts
   const loadEntities = useCallback(
     async (type: TransactionType) => {
       try {
-        const [cats, pms] = await Promise.all([
+        const [cats, pms, userShortcuts] = await Promise.all([
           listCategories(database, type),
           listPaymentMethods(database),
+          getQuickShortcuts(database),
         ]);
         setCategoriesList(cats);
         setPaymentMethodsList(pms);
+        setQuickShortcuts(userShortcuts);
       } catch (err) {
         if (__DEV__) console.warn('Could not load categories or methods', err);
       }
@@ -393,7 +403,7 @@ export function ManualTransactionScreen({
     }));
   }, []);
 
-  // Receipt Actions
+  // Direct Photo Attachment Actions
   const handleSelectReceiptSource = useCallback(
     async (source: ManualReceiptSource) => {
       setReceiptMenuVisible(false);
@@ -405,47 +415,6 @@ export function ManualTransactionScreen({
           ...curr,
           receipt: selection,
         }));
-
-        setOcrLoading(true);
-        try {
-          const ocrResult = await recognizeReceipt(selection.sourceImageUri);
-          const parsed = parseReceipt(ocrResult.rawText);
-
-          setForm((curr) => ({
-            ...curr,
-            amount:
-              !curr.amount && parsed.totalMinor !== null
-                ? formatMoneyInput(parsed.totalMinor, 'IDR')
-                : curr.amount,
-            counterparty:
-              !curr.counterparty && parsed.merchant
-                ? parsed.merchant
-                : curr.counterparty,
-            date:
-              curr.date === initialForm.date && parsed.localDate
-                ? parsed.localDate
-                : curr.date,
-            receipt: curr.receipt
-              ? {
-                  ...curr.receipt,
-                  ocrRawText: ocrResult.rawText,
-                  ocrStatus:
-                    parsed.totalMinor !== null ? 'processed' : 'partial',
-                  subtotalMinor: parsed.subtotalMinor,
-                  taxMinor: parsed.taxMinor,
-                }
-              : null,
-          }));
-        } catch {
-          setForm((curr) => ({
-            ...curr,
-            receipt: curr.receipt
-              ? { ...curr.receipt, ocrStatus: 'failed' }
-              : null,
-          }));
-        } finally {
-          setOcrLoading(false);
-        }
       } catch (receiptError) {
         setErrors((curr) => ({
           ...curr,
@@ -453,7 +422,7 @@ export function ManualTransactionScreen({
         }));
       }
     },
-    [initialForm.date],
+    [],
   );
 
   // Save Transaction
@@ -655,27 +624,43 @@ export function ManualTransactionScreen({
             <Text style={styles.errorBanner}>{errors.amount}</Text>
           ) : null}
 
-          {/* Quick Cash Shortcuts (+2k, +5k, +10k, +50k...) */}
+          {/* Quick Cash Shortcuts (Customizable) */}
           <View style={styles.quickShortcutsRow}>
             <ScrollView
               contentContainerStyle={styles.shortcutsList}
               horizontal
               showsHorizontalScrollIndicator={false}
             >
-              {QUICK_INCREMENTS.map((item) => (
-                <Pressable
-                  accessibilityLabel={`Add ${item.label}`}
-                  accessibilityRole="button"
-                  key={item.value}
-                  onPress={() => handleAddIncrement(item.value)}
-                  style={({ pressed }) => [
-                    styles.shortcutChip,
-                    pressed && styles.shortcutChipPressed,
-                  ]}
-                >
-                  <Text style={styles.shortcutChipText}>{item.label}</Text>
-                </Pressable>
-              ))}
+              {quickShortcuts.map((amount) => {
+                const label = formatShortcutLabel(amount);
+                return (
+                  <Pressable
+                    accessibilityLabel={`Add ${label}`}
+                    accessibilityRole="button"
+                    key={amount}
+                    onPress={() => handleAddIncrement(amount)}
+                    style={({ pressed }) => [
+                      styles.shortcutChip,
+                      {
+                        backgroundColor: isDark
+                          ? colors.surfaceSecondary
+                          : '#EFF6FF',
+                        borderColor: isDark ? colors.border : '#BFDBFE',
+                      },
+                      pressed && styles.shortcutChipPressed,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.shortcutChipText,
+                        { color: colors.primary },
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
               <Pressable
                 accessibilityLabel="Reset amount"
                 accessibilityRole="button"
@@ -683,10 +668,23 @@ export function ManualTransactionScreen({
                 style={({ pressed }) => [
                   styles.shortcutChip,
                   styles.shortcutChipClear,
+                  {
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : '#F1F5F9',
+                    borderColor: colors.border,
+                  },
                   pressed && styles.shortcutChipPressed,
                 ]}
               >
-                <Text style={styles.shortcutChipClearText}>⌫ Reset</Text>
+                <Text
+                  style={[
+                    styles.shortcutChipClearText,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  ⌫ Reset
+                </Text>
               </Pressable>
             </ScrollView>
           </View>
@@ -847,15 +845,11 @@ export function ManualTransactionScreen({
                     form.receipt ? styles.receiptActionChipActive : null,
                   ]}
                 >
-                  {ocrLoading ? (
-                    <ActivityIndicator color={colors.primary} size="small" />
-                  ) : (
-                    <MaterialCommunityIcons
-                      color={form.receipt ? colors.primary : '#64748B'}
-                      name={form.receipt ? 'paperclip' : 'camera-plus-outline'}
-                      size={20}
-                    />
-                  )}
+                  <MaterialCommunityIcons
+                    color={form.receipt ? colors.primary : '#64748B'}
+                    name={form.receipt ? 'image-check' : 'camera-plus-outline'}
+                    size={20}
+                  />
                   <Text
                     numberOfLines={1}
                     style={[
@@ -863,13 +857,11 @@ export function ManualTransactionScreen({
                       form.receipt ? styles.receiptActionChipTextActive : null,
                     ]}
                   >
-                    {ocrLoading
-                      ? 'Scanning…'
-                      : form.receipt
-                        ? form.receipt.displayName
-                        : language === 'id'
-                          ? '+ Struk'
-                          : '+ Receipt'}
+                    {form.receipt
+                      ? form.receipt.displayName
+                      : language === 'id'
+                        ? '+ Foto'
+                        : '+ Photo'}
                   </Text>
                 </Pressable>
               ) : null}
@@ -1091,10 +1083,10 @@ export function ManualTransactionScreen({
         >
           <View style={styles.actionSheetContent}>
             <Text style={styles.actionSheetTitle}>
-              {language === 'id' ? 'Bukti Struk' : 'Attach Receipt'}
+              {language === 'id' ? 'Foto Bukti / Struk' : 'Attach Photo Proof'}
             </Text>
             <AppButton
-              label={language === 'id' ? 'Ambil Foto' : 'Take photo'}
+              label={language === 'id' ? 'Ambil Foto (Kamera)' : 'Take photo'}
               onPress={() => void handleSelectReceiptSource('camera')}
               variant="secondary"
             />
@@ -1107,7 +1099,7 @@ export function ManualTransactionScreen({
             />
             {form.receipt ? (
               <AppButton
-                label={language === 'id' ? 'Hapus Struk' : 'Remove Receipt'}
+                label={language === 'id' ? 'Hapus Foto' : 'Remove Photo'}
                 onPress={() => {
                   setForm((c) => ({ ...c, receipt: null }));
                   setReceiptMenuVisible(false);

@@ -24,7 +24,7 @@ import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
 import type { Language } from '@/lib/i18n/translations';
 import { formatMoney } from '@/lib/money';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -82,6 +82,8 @@ export function HomeScreen() {
   const database = useSQLiteContext();
   const router = useRouter();
   const { language, t } = useLanguage();
+  const { colors, isDark } = useTheme();
+
   const [summary, setSummary] = useState<HomeSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -135,7 +137,9 @@ export function HomeScreen() {
       <Screen>
         <View style={styles.centeredState}>
           <ActivityIndicator color={colors.primary} size="large" />
-          <Text style={styles.stateText}>{t.home.loading}</Text>
+          <Text style={[styles.stateText, { color: colors.textSecondary }]}>
+            {t.home.loading}
+          </Text>
         </View>
       </Screen>
     );
@@ -145,10 +149,16 @@ export function HomeScreen() {
     return (
       <Screen>
         <View style={styles.centeredState}>
-          <Text accessibilityRole="header" style={styles.stateTitle}>
+          <Text
+            accessibilityRole="header"
+            style={[styles.stateTitle, { color: colors.textPrimary }]}
+          >
             {t.home.overviewUnavailable}
           </Text>
-          <Text accessibilityLiveRegion="assertive" style={styles.stateText}>
+          <Text
+            accessibilityLiveRegion="assertive"
+            style={[styles.stateText, { color: colors.textSecondary }]}
+          >
             {error}
           </Text>
           <View style={styles.stateAction}>
@@ -162,57 +172,105 @@ export function HomeScreen() {
     );
   }
 
+  const isPositiveNet = summary.netMinor >= 0;
+
   return (
     <Screen>
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl
+            colors={[colors.primary]}
             onRefresh={() => void loadSummary('refresh')}
             refreshing={refreshing}
             tintColor={colors.primary}
           />
         }
-        showsVerticalScrollIndicator={false}
       >
-        {/* Header Bar - Large & High Contrast */}
+        {/* Header Section */}
         <View style={styles.header}>
           <View style={styles.headerTitles}>
-            <Text style={styles.greeting}>{t.home.greeting}</Text>
-            <Text accessibilityRole="header" style={styles.title}>
+            <Text style={[styles.greeting, { color: colors.textSecondary }]}>
+              {t.home.greeting}
+            </Text>
+            <Text
+              accessibilityRole="header"
+              style={[styles.title, { color: colors.textPrimary }]}
+            >
               {t.home.appTitle}
             </Text>
           </View>
-          <View style={styles.monthBadge}>
+
+          <View
+            style={[
+              styles.monthBadge,
+              {
+                backgroundColor: isDark ? colors.surfaceSecondary : '#EEF2FF',
+                borderColor: isDark ? colors.border : '#C7D2FE',
+              },
+            ]}
+          >
             <MaterialCommunityIcons
               color={colors.primary}
               name="calendar-month-outline"
               size={18}
             />
-            <Text style={styles.month}>
+            <Text style={[styles.month, { color: colors.primary }]}>
               {formatMonth(summary.monthStart, language)}
             </Text>
           </View>
         </View>
 
         {error ? (
-          <Text accessibilityLiveRegion="assertive" style={styles.errorBanner}>
+          <Text
+            accessibilityLiveRegion="assertive"
+            style={[
+              styles.errorBanner,
+              {
+                backgroundColor: isDark ? '#450A0A' : '#FEF3F2',
+                borderColor: isDark ? '#7F1D1D' : '#FECDCA',
+                color: colors.destructive,
+              },
+            ]}
+          >
             {error}
           </Text>
         ) : null}
 
-        {/* Hero Financial Overview Card */}
-        <View style={styles.heroCard}>
+        {/* Hero Card: Financial Balance & Income/Expense Pill */}
+        <View
+          style={[
+            styles.heroCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              shadowColor: colors.textPrimary,
+            },
+          ]}
+        >
           <View style={styles.heroHeader}>
             <View style={styles.heroLabelRow}>
-              <View style={styles.heroIconBubble}>
+              <View
+                style={[
+                  styles.heroIconBubble,
+                  {
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : '#EFF6FF',
+                  },
+                ]}
+              >
                 <MaterialCommunityIcons
                   color={colors.primary}
-                  name="wallet"
+                  name="wallet-outline"
                   size={18}
                 />
               </View>
-              <Text style={styles.heroNetLabel}>{t.home.net}</Text>
+              <Text
+                style={[styles.heroNetLabel, { color: colors.textSecondary }]}
+              >
+                {t.home.net}
+              </Text>
             </View>
           </View>
 
@@ -221,35 +279,47 @@ export function HomeScreen() {
             numberOfLines={1}
             style={[
               styles.heroAmount,
-              summary.netMinor < 0
-                ? styles.heroAmountNegative
-                : styles.heroAmountPositive,
+              {
+                color: isPositiveNet ? colors.textPrimary : colors.destructive,
+              },
             ]}
           >
             {formatNet(summary.netMinor, summary.currencyCode)}
           </Text>
 
-          {/* High Contrast Divider */}
-          <View style={styles.cardDivider} />
+          <View
+            style={[styles.cardDivider, { backgroundColor: colors.border }]}
+          />
 
-          {/* Vertically Stacked Income & Expenses Rows */}
           <View style={styles.summaryRows}>
             {/* Income Row */}
             <View style={styles.summaryRowItem}>
               <View style={styles.summaryRowLeft}>
-                <View style={styles.iconCircleIncome}>
+                <View
+                  style={[
+                    styles.iconCircleIncome,
+                    { backgroundColor: isDark ? '#14532D' : '#DCFCE7' },
+                  ]}
+                >
                   <MaterialCommunityIcons
-                    color="#15803D"
+                    color={colors.positive}
                     name="arrow-bottom-left"
                     size={20}
                   />
                 </View>
-                <Text style={styles.summaryRowLabel}>{t.home.income}</Text>
+                <Text
+                  style={[
+                    styles.summaryRowLabel,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  {t.home.income}
+                </Text>
               </View>
               <Text
                 adjustsFontSizeToFit
                 numberOfLines={1}
-                style={styles.summaryIncomeValue}
+                style={[styles.summaryIncomeValue, { color: colors.positive }]}
               >
                 {formatMoney(summary.incomeMinor, summary.currencyCode)}
               </Text>
@@ -258,21 +328,34 @@ export function HomeScreen() {
             {/* Expense Row */}
             <View style={styles.summaryRowItem}>
               <View style={styles.summaryRowLeft}>
-                <View style={styles.iconCircleExpense}>
+                <View
+                  style={[
+                    styles.iconCircleExpense,
+                    { backgroundColor: isDark ? '#7F1D1D' : '#FEE2E2' },
+                  ]}
+                >
                   <MaterialCommunityIcons
-                    color="#B42318"
+                    color={colors.destructive}
                     name="arrow-top-right"
                     size={20}
                   />
                 </View>
-                <Text style={styles.summaryRowLabel}>
+                <Text
+                  style={[
+                    styles.summaryRowLabel,
+                    { color: colors.textSecondary },
+                  ]}
+                >
                   {t.home.expensesThisMonth}
                 </Text>
               </View>
               <Text
                 adjustsFontSizeToFit
                 numberOfLines={1}
-                style={styles.summaryExpenseValue}
+                style={[
+                  styles.summaryExpenseValue,
+                  { color: colors.destructive },
+                ]}
               >
                 {formatMoney(summary.expenseMinor, summary.currencyCode)}
               </Text>
@@ -280,7 +363,7 @@ export function HomeScreen() {
           </View>
         </View>
 
-        {/* Large Quick Action Buttons (Senior Touch-Friendly) */}
+        {/* Quick Action Buttons */}
         <View style={styles.quickActionsContainer}>
           <Pressable
             accessibilityLabel={t.home.quickAddTransaction}
@@ -288,6 +371,7 @@ export function HomeScreen() {
             onPress={() => router.push('/transactions/new')}
             style={({ pressed }) => [
               styles.quickActionButtonPrimary,
+              { backgroundColor: colors.primary },
               pressed ? styles.pressed : null,
             ]}
           >
@@ -305,17 +389,33 @@ export function HomeScreen() {
             onPress={() => router.push('/receipt/camera')}
             style={({ pressed }) => [
               styles.quickActionButtonSecondary,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
               pressed ? styles.pressed : null,
             ]}
           >
-            <View style={styles.quickActionIconCircleSecondary}>
+            <View
+              style={[
+                styles.quickActionIconCircleSecondary,
+                {
+                  backgroundColor: isDark ? colors.surfaceSecondary : '#EFF6FF',
+                },
+              ]}
+            >
               <MaterialCommunityIcons
                 color={colors.primary}
                 name="camera-outline"
                 size={20}
               />
             </View>
-            <Text style={styles.quickActionTextSecondary}>
+            <Text
+              style={[
+                styles.quickActionTextSecondary,
+                { color: colors.textPrimary },
+              ]}
+            >
               {t.home.quickScanReceipt}
             </Text>
           </Pressable>
@@ -323,19 +423,48 @@ export function HomeScreen() {
 
         {/* Spending by Category Section */}
         <View style={styles.section}>
-          <Text accessibilityRole="header" style={styles.sectionTitle}>
+          <Text
+            accessibilityRole="header"
+            style={[styles.sectionTitle, { color: colors.textPrimary }]}
+          >
             {t.home.spendingByCategory}
           </Text>
           {summary.categoryTotals.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptySectionText}>
+            <View
+              style={[
+                styles.emptyCard,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.emptySectionText,
+                  { color: colors.textSecondary },
+                ]}
+              >
                 {t.home.noExpensesThisMonth}
               </Text>
             </View>
           ) : (
-            <View style={styles.card}>
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  shadowColor: colors.textPrimary,
+                },
+              ]}
+            >
               {summary.categoryTotals.map((category) => {
-                const meta = getCategoryMeta(category.categoryName, 'expense');
+                const meta = getCategoryMeta(
+                  category.categoryName,
+                  'expense',
+                  isDark,
+                );
                 const percentage =
                   summary.expenseMinor === 0
                     ? 0
@@ -367,23 +496,57 @@ export function HomeScreen() {
                     <View style={styles.categoryInfo}>
                       <View style={styles.categoryLabels}>
                         <View style={styles.categoryTitleGroup}>
-                          <Text numberOfLines={1} style={styles.categoryName}>
+                          <Text
+                            numberOfLines={1}
+                            style={[
+                              styles.categoryName,
+                              { color: colors.textPrimary },
+                            ]}
+                          >
                             {category.categoryName}
                           </Text>
-                          <View style={styles.percentBadge}>
-                            <Text style={styles.percentText}>
+                          <View
+                            style={[
+                              styles.percentBadge,
+                              {
+                                backgroundColor: isDark
+                                  ? colors.surfaceSecondary
+                                  : '#E2E8F0',
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.percentText,
+                                { color: colors.textSecondary },
+                              ]}
+                            >
                               {percentage}%
                             </Text>
                           </View>
                         </View>
-                        <Text style={styles.categoryAmount}>
+                        <Text
+                          style={[
+                            styles.categoryAmount,
+                            { color: colors.textPrimary },
+                          ]}
+                        >
                           {formatMoney(
                             category.amountMinor,
                             summary.currencyCode,
                           )}
                         </Text>
                       </View>
-                      <View style={styles.barTrack}>
+                      <View
+                        style={[
+                          styles.barTrack,
+                          {
+                            backgroundColor: isDark
+                              ? colors.surfaceSecondary
+                              : '#F1F5F9',
+                          },
+                        ]}
+                      >
                         <View
                           style={[
                             styles.barFill,
@@ -405,7 +568,10 @@ export function HomeScreen() {
         {/* Recent Transactions Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text accessibilityRole="header" style={styles.sectionTitle}>
+            <Text
+              accessibilityRole="header"
+              style={[styles.sectionTitle, { color: colors.textPrimary }]}
+            >
               {t.home.recentTransactions}
             </Text>
             {summary.recentTransactions.length > 0 ? (
@@ -417,18 +583,46 @@ export function HomeScreen() {
             ) : null}
           </View>
           {summary.recentTransactions.length === 0 ? (
-            <View style={styles.emptyRecentCard}>
-              <View style={styles.emptyIconCircle}>
+            <View
+              style={[
+                styles.emptyRecentCard,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  shadowColor: colors.textPrimary,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.emptyIconCircle,
+                  {
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : '#F1F5F9',
+                  },
+                ]}
+              >
                 <MaterialCommunityIcons
                   color={colors.textSecondary}
                   name="receipt-text-plus-outline"
                   size={36}
                 />
               </View>
-              <Text style={styles.emptySectionTitle}>
+              <Text
+                style={[
+                  styles.emptySectionTitle,
+                  { color: colors.textPrimary },
+                ]}
+              >
                 {t.home.noTransactionsYet}
               </Text>
-              <Text style={styles.emptySectionText}>
+              <Text
+                style={[
+                  styles.emptySectionText,
+                  { color: colors.textSecondary },
+                ]}
+              >
                 {t.home.noTransactionsDesc}
               </Text>
               <View style={styles.emptyAction}>
@@ -440,12 +634,22 @@ export function HomeScreen() {
               </View>
             </View>
           ) : (
-            <View style={styles.cardList}>
+            <View
+              style={[
+                styles.cardList,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  shadowColor: colors.textPrimary,
+                },
+              ]}
+            >
               {summary.recentTransactions.map((transaction, index) => {
                 const title = transactionTitle(transaction, language);
                 const meta = getCategoryMeta(
                   transaction.categoryName,
                   transaction.type,
+                  isDark,
                 );
                 const isLast = index === summary.recentTransactions.length - 1;
 
@@ -462,6 +666,10 @@ export function HomeScreen() {
                     }
                     style={({ pressed }) => [
                       styles.transactionRow,
+                      {
+                        backgroundColor: colors.surface,
+                        borderBottomColor: colors.border,
+                      },
                       isLast ? styles.transactionRowLast : null,
                       pressed ? styles.pressed : null,
                     ]}
@@ -479,11 +687,22 @@ export function HomeScreen() {
                       />
                     </View>
                     <View style={styles.transactionText}>
-                      <Text numberOfLines={1} style={styles.transactionTitle}>
+                      <Text
+                        numberOfLines={1}
+                        style={[
+                          styles.transactionTitle,
+                          { color: colors.textPrimary },
+                        ]}
+                      >
                         {title}
                       </Text>
                       <View style={styles.transactionMetaRow}>
-                        <Text style={styles.transactionMetadata}>
+                        <Text
+                          style={[
+                            styles.transactionMetadata,
+                            { color: colors.textSecondary },
+                          ]}
+                        >
                           {transaction.categoryName} ·{' '}
                           {formatTransactionDate(
                             transaction.localDate,
@@ -491,13 +710,28 @@ export function HomeScreen() {
                           )}
                         </Text>
                         {transaction.hasReceipt ? (
-                          <View style={styles.receiptBadge}>
+                          <View
+                            style={[
+                              styles.receiptBadge,
+                              {
+                                backgroundColor: isDark
+                                  ? colors.surfaceSecondary
+                                  : '#EFF6FF',
+                                borderColor: isDark ? colors.border : '#DBEAFE',
+                              },
+                            ]}
+                          >
                             <MaterialCommunityIcons
                               color={colors.primary}
                               name="paperclip"
                               size={12}
                             />
-                            <Text style={styles.receiptBadgeText}>
+                            <Text
+                              style={[
+                                styles.receiptBadgeText,
+                                { color: colors.primary },
+                              ]}
+                            >
                               {t.home.receiptBadge}
                             </Text>
                           </View>
@@ -508,8 +742,11 @@ export function HomeScreen() {
                       <Text
                         style={
                           transaction.type === 'expense'
-                            ? styles.expenseAmount
-                            : styles.incomeAmount
+                            ? [
+                                styles.expenseAmount,
+                                { color: colors.destructive },
+                              ]
+                            : [styles.incomeAmount, { color: colors.positive }]
                         }
                       >
                         {transaction.type === 'expense' ? '−' : '+'}
@@ -520,7 +757,7 @@ export function HomeScreen() {
                       </Text>
                     </View>
                     <MaterialCommunityIcons
-                      color="#94A3B8"
+                      color={colors.textSecondary}
                       name="chevron-right"
                       size={22}
                     />
@@ -551,13 +788,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   greeting: {
-    color: '#475569',
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.8,
   },
   title: {
-    color: colors.textPrimary,
     fontSize: 24,
     fontWeight: '800',
     lineHeight: 30,
@@ -565,8 +800,6 @@ const styles = StyleSheet.create({
   },
   monthBadge: {
     alignItems: 'center',
-    backgroundColor: '#EEF2FF',
-    borderColor: '#C7D2FE',
     borderRadius: radius.pill,
     borderWidth: 1.5,
     flexDirection: 'row',
@@ -575,16 +808,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs + 3,
   },
   month: {
-    color: colors.primary,
     fontSize: 14,
     fontWeight: '700',
   },
   errorBanner: {
-    backgroundColor: '#FEF3F2',
-    borderColor: '#FECDCA',
     borderRadius: radius.md,
     borderWidth: 1.5,
-    color: colors.destructive,
     fontSize: 14,
     fontWeight: '600',
     marginHorizontal: spacing.lg,
@@ -592,14 +821,11 @@ const styles = StyleSheet.create({
     padding: spacing.sm + 4,
   },
   heroCard: {
-    backgroundColor: colors.surface,
-    borderColor: '#CBD5E1',
     borderRadius: 20,
     borderWidth: 1.5,
     elevation: 3,
     marginHorizontal: spacing.lg,
     padding: spacing.lg,
-    shadowColor: '#0F172A',
     shadowOffset: { height: 4, width: 0 },
     shadowOpacity: 0.08,
     shadowRadius: 10,
@@ -616,14 +842,12 @@ const styles = StyleSheet.create({
   },
   heroIconBubble: {
     alignItems: 'center',
-    backgroundColor: '#EFF6FF',
     borderRadius: radius.pill,
     height: 30,
     justifyContent: 'center',
     width: 30,
   },
   heroNetLabel: {
-    color: '#475569',
     fontSize: 15,
     fontWeight: '700',
     letterSpacing: 0.3,
@@ -634,14 +858,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     marginVertical: spacing.xs + 4,
   },
-  heroAmountPositive: {
-    color: colors.textPrimary,
-  },
-  heroAmountNegative: {
-    color: colors.destructive,
-  },
   cardDivider: {
-    backgroundColor: '#E2E8F0',
     height: 1.5,
     marginVertical: spacing.sm + 2,
   },
@@ -662,7 +879,6 @@ const styles = StyleSheet.create({
   },
   iconCircleIncome: {
     alignItems: 'center',
-    backgroundColor: '#DCFCE7',
     borderRadius: radius.pill,
     height: 32,
     justifyContent: 'center',
@@ -670,24 +886,20 @@ const styles = StyleSheet.create({
   },
   iconCircleExpense: {
     alignItems: 'center',
-    backgroundColor: '#FEE2E2',
     borderRadius: radius.pill,
     height: 32,
     justifyContent: 'center',
     width: 32,
   },
   summaryRowLabel: {
-    color: '#334155',
     fontSize: 14,
     fontWeight: '600',
   },
   summaryIncomeValue: {
-    color: '#15803D',
     fontSize: 17,
     fontWeight: '800',
   },
   summaryExpenseValue: {
-    color: '#B42318',
     fontSize: 17,
     fontWeight: '800',
   },
@@ -699,7 +911,6 @@ const styles = StyleSheet.create({
   },
   quickActionButtonPrimary: {
     alignItems: 'center',
-    backgroundColor: colors.primary,
     borderRadius: 14,
     elevation: 2,
     flex: 1,
@@ -708,7 +919,6 @@ const styles = StyleSheet.create({
     height: 52,
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
-    shadowColor: colors.primary,
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -728,8 +938,6 @@ const styles = StyleSheet.create({
   },
   quickActionButtonSecondary: {
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderColor: '#CBD5E1',
     borderRadius: 14,
     borderWidth: 1.5,
     elevation: 1,
@@ -742,14 +950,12 @@ const styles = StyleSheet.create({
   },
   quickActionIconCircleSecondary: {
     alignItems: 'center',
-    backgroundColor: '#EFF6FF',
     borderRadius: radius.pill,
     height: 28,
     justifyContent: 'center',
     width: 28,
   },
   quickActionTextSecondary: {
-    color: colors.textPrimary,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -764,14 +970,11 @@ const styles = StyleSheet.create({
     paddingRight: spacing.sm,
   },
   sectionTitle: {
-    color: colors.textPrimary,
     fontSize: 18,
     fontWeight: '800',
     paddingHorizontal: spacing.lg,
   },
   card: {
-    backgroundColor: colors.surface,
-    borderColor: '#CBD5E1',
     borderRadius: 18,
     borderWidth: 1.5,
     elevation: 2,
@@ -779,14 +982,11 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.lg,
     marginTop: spacing.sm,
     padding: spacing.md + 2,
-    shadowColor: '#0F172A',
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
   },
   emptyCard: {
-    backgroundColor: colors.surface,
-    borderColor: '#CBD5E1',
     borderRadius: 18,
     borderWidth: 1.5,
     marginHorizontal: spacing.lg,
@@ -821,28 +1021,23 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryName: {
-    color: colors.textPrimary,
     fontSize: 15,
     fontWeight: '700',
   },
   percentBadge: {
-    backgroundColor: '#E2E8F0',
     borderRadius: radius.pill,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
   percentText: {
-    color: '#334155',
     fontSize: 11,
     fontWeight: '800',
   },
   categoryAmount: {
-    color: colors.textPrimary,
     fontSize: 15,
     fontWeight: '800',
   },
   barTrack: {
-    backgroundColor: '#F1F5F9',
     borderRadius: radius.pill,
     height: 10,
     overflow: 'hidden',
@@ -852,23 +1047,18 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   cardList: {
-    backgroundColor: colors.surface,
-    borderColor: '#CBD5E1',
     borderRadius: 18,
     borderWidth: 1.5,
     elevation: 2,
     marginHorizontal: spacing.lg,
     marginTop: spacing.sm,
     overflow: 'hidden',
-    shadowColor: '#0F172A',
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
   },
   transactionRow: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderBottomColor: '#F1F5F9',
     borderBottomWidth: 1.5,
     flexDirection: 'row',
     gap: 12,
@@ -890,7 +1080,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   transactionTitle: {
-    color: colors.textPrimary,
     fontSize: 16,
     fontWeight: '700',
   },
@@ -901,14 +1090,11 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   transactionMetadata: {
-    color: '#475569',
     fontSize: 13,
     fontWeight: '500',
   },
   receiptBadge: {
     alignItems: 'center',
-    backgroundColor: '#EFF6FF',
-    borderColor: '#DBEAFE',
     borderRadius: 4,
     borderWidth: 1,
     flexDirection: 'row',
@@ -917,7 +1103,6 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
   },
   receiptBadgeText: {
-    color: colors.primary,
     fontSize: 10,
     fontWeight: '700',
   },
@@ -925,33 +1110,27 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   expenseAmount: {
-    color: colors.destructive,
     fontSize: 16,
     fontWeight: '800',
   },
   incomeAmount: {
-    color: colors.positive,
     fontSize: 16,
     fontWeight: '800',
   },
   emptyRecentCard: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: '#CBD5E1',
     borderRadius: 18,
     borderWidth: 1.5,
     elevation: 2,
     marginHorizontal: spacing.lg,
     marginTop: spacing.sm,
     padding: spacing.xl,
-    shadowColor: '#0F172A',
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
   },
   emptyIconCircle: {
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
     borderRadius: radius.pill,
     height: 68,
     justifyContent: 'center',
@@ -959,12 +1138,10 @@ const styles = StyleSheet.create({
     width: 68,
   },
   emptySectionTitle: {
-    color: colors.textPrimary,
     fontSize: 17,
     fontWeight: '800',
   },
   emptySectionText: {
-    color: '#475569',
     fontSize: 14,
     fontWeight: '500',
     marginTop: spacing.xs,
@@ -982,12 +1159,10 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   stateTitle: {
-    color: colors.textPrimary,
     fontSize: typography.sectionTitle.fontSize,
     fontWeight: typography.sectionTitle.fontWeight,
   },
   stateText: {
-    color: '#475569',
     fontSize: typography.body.fontSize,
     marginTop: spacing.sm,
     textAlign: 'center',

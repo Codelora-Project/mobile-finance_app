@@ -192,7 +192,7 @@ describe('home screen', () => {
     expect(screen.getByText('Uang Keluar')).toBeOnTheScreen();
     expect(screen.getByText('Sisa Saldo')).toBeOnTheScreen();
     expect(screen.getByText('+ Catat Transaksi')).toBeOnTheScreen();
-    expect(screen.getByText('Pindai Struk')).toBeOnTheScreen();
+    expect(screen.getByText('Foto Struk')).toBeOnTheScreen();
     expect(screen.getByText('Pengeluaran per Kategori')).toBeOnTheScreen();
     expect(screen.getByText('Transaksi Terakhir')).toBeOnTheScreen();
   });

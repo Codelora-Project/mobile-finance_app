@@ -24,7 +24,7 @@ import {
   type CategoryType,
 } from '@/features/categories/category-repository';
 import { isCodedError, mapError } from '@/lib/errors';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -44,6 +44,7 @@ function getOperationMessage(error: unknown) {
 export function CategoryManagementScreen() {
   const database = useSQLiteContext();
   const router = useRouter();
+  const { colors } = useTheme();
   const savingRef = useRef(false);
   const deletingRef = useRef(false);
   const [categories, setCategories] = useState<readonly Category[]>([]);
@@ -102,50 +103,47 @@ export function CategoryManagementScreen() {
     };
   }, [database, selectedType]);
 
-  function retryLoad() {
+  function selectType(type: CategoryType) {
+    setSelectedType(type);
+    setLoading(true);
     setScreenError(null);
+  }
+
+  function retryLoad() {
     setLoading(true);
     void loadCategories();
   }
 
-  function selectType(type: CategoryType) {
-    if (type !== selectedType) {
-      setScreenError(null);
-      setCategories([]);
-      setLoading(true);
-      setSelectedType(type);
-    }
+  function openAddEditor() {
+    setName('');
+    setFormError(null);
+    setEditor({ category: null, type: selectedType });
   }
 
-  function openAddEditor() {
-    setEditor({ category: null, type: selectedType });
+  function openEditEditor(category: Category) {
+    setName(category.name);
+    setFormError(null);
+    setEditor({ category, type: category.type });
+  }
+
+  function closeEditor() {
+    setEditor(null);
     setName('');
     setFormError(null);
   }
 
-  function openEditEditor(category: Category) {
-    setEditor({ category, type: category.type });
-    setName(category.name);
-    setFormError(null);
-  }
-
-  function closeEditor() {
-    if (!saving) {
-      setEditor(null);
-      setFormError(null);
-    }
-  }
-
-  async function saveCategory() {
+  async function saveEditor() {
     if (!editor || savingRef.current) {
       return;
     }
     savingRef.current = true;
-    setFormError(null);
     setSaving(true);
+    setFormError(null);
     try {
       if (editor.category) {
-        await updateCategory(database, editor.category.id, { name });
+        await updateCategory(database, editor.category.id, {
+          name,
+        });
       } else {
         await createCategory(database, { name, type: editor.type });
       }
@@ -200,15 +198,21 @@ export function CategoryManagementScreen() {
 
   return (
     <Screen>
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <AppButton label="Back" onPress={() => router.back()} variant="ghost" />
-        <Text accessibilityRole="header" style={styles.title}>
+        <Text
+          accessibilityRole="header"
+          style={[styles.title, { color: colors.textPrimary }]}
+        >
           Categories
         </Text>
         <AppButton label="Add" onPress={openAddEditor} variant="ghost" />
       </View>
 
-      <View accessibilityRole="tablist" style={styles.tabs}>
+      <View
+        accessibilityRole="tablist"
+        style={[styles.tabs, { backgroundColor: colors.surfaceSecondary }]}
+      >
         {(['expense', 'income'] as const).map((type) => {
           const selected = selectedType === type;
           return (
@@ -217,10 +221,19 @@ export function CategoryManagementScreen() {
               accessibilityState={{ selected }}
               key={type}
               onPress={() => selectType(type)}
-              style={[styles.tab, selected ? styles.selectedTab : null]}
+              style={[
+                styles.tab,
+                selected
+                  ? [styles.selectedTab, { backgroundColor: colors.surface }]
+                  : null,
+              ]}
             >
               <Text
-                style={selected ? styles.selectedTabLabel : styles.tabLabel}
+                style={[
+                  styles.tabLabel,
+                  { color: selected ? colors.primary : colors.textSecondary },
+                  selected ? styles.selectedTabLabel : null,
+                ]}
               >
                 {type === 'expense' ? 'Expense' : 'Income'}
               </Text>
@@ -230,8 +243,16 @@ export function CategoryManagementScreen() {
       </View>
 
       {screenError ? (
-        <View accessibilityLiveRegion="assertive" style={styles.errorBanner}>
-          <Text style={styles.errorText}>{screenError}</Text>
+        <View
+          accessibilityLiveRegion="assertive"
+          style={[
+            styles.errorBanner,
+            { backgroundColor: '#FEE2E2', borderColor: '#FCA5A5' },
+          ]}
+        >
+          <Text style={[styles.errorText, { color: colors.destructive }]}>
+            {screenError}
+          </Text>
           <AppButton label="Try again" onPress={retryLoad} variant="ghost" />
         </View>
       ) : null}
@@ -239,7 +260,9 @@ export function CategoryManagementScreen() {
       {loading ? (
         <View accessibilityLiveRegion="polite" style={styles.loadingState}>
           <ActivityIndicator color={colors.primary} size="large" />
-          <Text style={styles.secondaryText}>Loading categories…</Text>
+          <Text style={[styles.secondaryText, { color: colors.textSecondary }]}>
+            Loading categories…
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -248,41 +271,67 @@ export function CategoryManagementScreen() {
           keyExtractor={(category) => String(category.id)}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>No categories</Text>
-              <Text style={styles.secondaryText}>
-                Add a {selectedType} category to get started.
+              <Text
+                accessibilityRole="header"
+                style={[styles.emptyTitle, { color: colors.textPrimary }]}
+              >
+                No {selectedType} categories
+              </Text>
+              <Text
+                style={[styles.secondaryText, { color: colors.textSecondary }]}
+              >
+                Add your first custom {selectedType} category to keep your
+                spending organized.
               </Text>
             </View>
           }
-          renderItem={({ item }) => (
-            <View style={styles.row}>
-              <View style={styles.rowText}>
-                <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.metadata}>
-                  {item.isFallback
-                    ? 'Default · Fallback'
-                    : item.isDefault
-                      ? 'Default'
-                      : 'Custom'}
-                </Text>
-              </View>
-              {!item.isDefault ? (
-                <View style={styles.actions}>
-                  <AppButton
-                    label="Edit"
-                    onPress={() => openEditEditor(item)}
-                    variant="ghost"
-                  />
-                  <AppButton
-                    disabled={deletingId !== null}
-                    label={deletingId === item.id ? 'Deleting…' : 'Delete'}
-                    onPress={() => requestDelete(item)}
-                    variant="destructive"
-                  />
+          renderItem={({ item: category }) => {
+            const isDeleting = deletingId === category.id;
+            return (
+              <View
+                accessibilityLabel={`${category.name}, ${category.isDefault ? 'Default category' : 'Custom category'}`}
+                style={[
+                  styles.row,
+                  {
+                    backgroundColor: colors.surface,
+                    borderBottomColor: colors.border,
+                  },
+                ]}
+              >
+                <View style={styles.rowText}>
+                  <Text style={[styles.name, { color: colors.textPrimary }]}>
+                    {category.name}
+                  </Text>
+                  <Text
+                    style={[styles.metadata, { color: colors.textSecondary }]}
+                  >
+                    {category.isDefault
+                      ? 'Default category'
+                      : 'Custom category'}
+                  </Text>
                 </View>
-              ) : null}
-            </View>
-          )}
+                {!category.isDefault ? (
+                  <View style={styles.actions}>
+                    <AppButton
+                      accessibilityLabel={`Edit ${category.name}`}
+                      disabled={isDeleting}
+                      label="Edit"
+                      onPress={() => openEditEditor(category)}
+                      variant="ghost"
+                    />
+                    <AppButton
+                      accessibilityLabel={`Delete ${category.name}`}
+                      disabled={isDeleting}
+                      label="Delete"
+                      loading={isDeleting}
+                      onPress={() => requestDelete(category)}
+                      variant="destructive"
+                    />
+                  </View>
+                ) : null}
+              </View>
+            );
+          }}
         />
       )}
 
@@ -292,14 +341,41 @@ export function CategoryManagementScreen() {
         presentationStyle="pageSheet"
         visible={editor !== null}
       >
-        <Screen style={styles.editorScreen}>
-          <Text accessibilityRole="header" style={styles.title}>
-            {editor?.category ? 'Edit category' : 'Add category'}
-          </Text>
+        <Screen>
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
+            <AppButton
+              disabled={saving}
+              label="Cancel"
+              onPress={closeEditor}
+              variant="ghost"
+            />
+            <Text
+              accessibilityRole="header"
+              style={[styles.title, { color: colors.textPrimary }]}
+            >
+              {editor?.category ? 'Edit Category' : 'New Category'}
+            </Text>
+            <View style={styles.headerSpacer} />
+          </View>
 
-          {!editor?.category ? (
+          <View style={styles.editorScreen}>
+            <AppInput
+              autoFocus
+              error={formError}
+              label="Name"
+              maxLength={40}
+              onChangeText={(nextName) => {
+                setName(nextName);
+                if (formError) setFormError(null);
+              }}
+              placeholder="e.g. Subscriptions"
+              value={name}
+            />
+
             <View>
-              <Text style={styles.fieldLabel}>Type</Text>
+              <Text style={[styles.fieldLabel, { color: colors.textPrimary }]}>
+                Type
+              </Text>
               <View style={styles.editorTypeRow}>
                 {(['expense', 'income'] as const).map((type) => {
                   const selected = editor?.type === type;
@@ -307,23 +383,37 @@ export function CategoryManagementScreen() {
                     <Pressable
                       accessibilityRole="radio"
                       accessibilityState={{ checked: selected }}
+                      disabled={saving}
                       key={type}
                       onPress={() =>
                         setEditor((current) =>
-                          current ? { ...current, type } : current,
+                          current ? { ...current, type } : null,
                         )
                       }
                       style={[
                         styles.typeOption,
-                        selected ? styles.selectedTypeOption : null,
+                        {
+                          backgroundColor: colors.surface,
+                          borderColor: colors.border,
+                        },
+                        selected
+                          ? [
+                              styles.selectedTypeOption,
+                              { borderColor: colors.primary },
+                            ]
+                          : null,
                       ]}
                     >
                       <Text
-                        style={
-                          selected
-                            ? styles.selectedTypeLabel
-                            : styles.typeOptionLabel
-                        }
+                        style={[
+                          styles.typeOptionLabel,
+                          {
+                            color: selected
+                              ? colors.primary
+                              : colors.textSecondary,
+                          },
+                          selected ? styles.selectedTypeLabel : null,
+                        ]}
                       >
                         {type === 'expense' ? 'Expense' : 'Income'}
                       </Text>
@@ -332,35 +422,15 @@ export function CategoryManagementScreen() {
                 })}
               </View>
             </View>
-          ) : (
-            <Text style={styles.secondaryText}>
-              Type: {editor.type === 'expense' ? 'Expense' : 'Income'}
-            </Text>
-          )}
 
-          <AppInput
-            autoFocus
-            error={formError}
-            label="Category name"
-            maxLength={40}
-            onChangeText={setName}
-            placeholder="e.g. Pet care"
-            returnKeyType="done"
-            value={name}
-          />
-
-          <View style={styles.editorActions}>
-            <AppButton
-              disabled={saving}
-              label="Cancel"
-              onPress={closeEditor}
-              variant="secondary"
-            />
-            <AppButton
-              label="Save category"
-              loading={saving}
-              onPress={saveCategory}
-            />
+            <View style={styles.editorActions}>
+              <AppButton
+                disabled={saving || name.trim().length === 0}
+                label="Save Category"
+                loading={saving}
+                onPress={() => void saveEditor()}
+              />
+            </View>
           </View>
         </Screen>
       </Modal>
@@ -371,22 +441,25 @@ export function CategoryManagementScreen() {
 const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
+    borderBottomWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
+  headerSpacer: {
+    width: 64,
+  },
   title: {
-    color: colors.textPrimary,
-    fontSize: typography.pageTitle.fontSize,
-    fontWeight: typography.pageTitle.fontWeight,
-    lineHeight: typography.pageTitle.lineHeight,
+    fontSize: typography.sectionTitle.fontSize,
+    fontWeight: typography.sectionTitle.fontWeight,
+    lineHeight: typography.sectionTitle.lineHeight,
   },
   tabs: {
-    backgroundColor: colors.surfaceSecondary,
     borderRadius: radius.md,
     flexDirection: 'row',
     marginHorizontal: spacing.md,
+    marginTop: spacing.md,
     padding: spacing.xs,
   },
   tab: {
@@ -394,29 +467,31 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     flex: 1,
     justifyContent: 'center',
-    minHeight: 48,
+    minHeight: 40,
+    paddingVertical: spacing.xs,
   },
   selectedTab: {
-    backgroundColor: colors.surface,
+    elevation: 1,
+    shadowOffset: { height: 1, width: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   tabLabel: {
-    color: colors.textSecondary,
     fontSize: typography.body.fontSize,
   },
   selectedTabLabel: {
-    color: colors.primary,
     fontSize: typography.body.fontSize,
     fontWeight: '600',
   },
   errorBanner: {
     alignItems: 'center',
-    backgroundColor: '#FEF3F2',
+    borderRadius: radius.md,
+    borderWidth: 1,
     marginHorizontal: spacing.md,
     marginTop: spacing.md,
     padding: spacing.sm,
   },
   errorText: {
-    color: colors.destructive,
     fontSize: typography.secondary.fontSize,
     lineHeight: typography.secondary.lineHeight,
     textAlign: 'center',
@@ -438,21 +513,17 @@ const styles = StyleSheet.create({
     minHeight: 320,
   },
   emptyTitle: {
-    color: colors.textPrimary,
     fontSize: typography.sectionTitle.fontSize,
     fontWeight: typography.sectionTitle.fontWeight,
     lineHeight: typography.sectionTitle.lineHeight,
   },
   secondaryText: {
-    color: colors.textSecondary,
     fontSize: typography.secondary.fontSize,
     lineHeight: typography.secondary.lineHeight,
     textAlign: 'center',
   },
   row: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderBottomColor: colors.border,
     borderBottomWidth: 1,
     flexDirection: 'row',
     minHeight: 72,
@@ -463,12 +534,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   name: {
-    color: colors.textPrimary,
     fontSize: typography.body.fontSize,
     lineHeight: typography.body.lineHeight,
   },
   metadata: {
-    color: colors.textSecondary,
     fontSize: typography.metadata.fontSize,
     lineHeight: typography.metadata.lineHeight,
   },
@@ -482,7 +551,6 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   fieldLabel: {
-    color: colors.textPrimary,
     fontSize: typography.secondary.fontSize,
     fontWeight: '600',
     lineHeight: typography.secondary.lineHeight,
@@ -494,8 +562,6 @@ const styles = StyleSheet.create({
   },
   typeOption: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
     borderRadius: radius.md,
     borderWidth: 1,
     flex: 1,
@@ -503,14 +569,12 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   selectedTypeOption: {
-    borderColor: colors.primary,
+    borderWidth: 1.5,
   },
   typeOptionLabel: {
-    color: colors.textSecondary,
     fontSize: typography.body.fontSize,
   },
   selectedTypeLabel: {
-    color: colors.primary,
     fontSize: typography.body.fontSize,
     fontWeight: '600',
   },

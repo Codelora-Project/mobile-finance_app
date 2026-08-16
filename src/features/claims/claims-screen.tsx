@@ -19,7 +19,7 @@ import {
 } from '@/features/claims/claim-repository';
 import { mapError } from '@/lib/errors';
 import { formatMoney } from '@/lib/money';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/lib/theme/theme-context';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
@@ -41,6 +41,7 @@ function statusLabel(status: ClaimStatus) {
 export function ClaimsScreen() {
   const database = useSQLiteContext();
   const router = useRouter();
+  const { colors } = useTheme();
   const params = useLocalSearchParams<{ feedback?: string | string[] }>();
   const feedback = Array.isArray(params.feedback)
     ? params.feedback[0]
@@ -70,8 +71,11 @@ export function ClaimsScreen() {
 
   return (
     <Screen>
-      <View style={styles.header}>
-        <Text accessibilityRole="header" style={styles.title}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <Text
+          accessibilityRole="header"
+          style={[styles.title, { color: colors.textPrimary }]}
+        >
           Claims
         </Text>
         <AppButton
@@ -82,101 +86,124 @@ export function ClaimsScreen() {
       </View>
 
       <View style={styles.filters}>
-        {filters.map((filter) => (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ selected: filter.value === status }}
-            key={filter.label}
-            onPress={() => setStatus(filter.value)}
-            style={[
-              styles.filter,
-              filter.value === status ? styles.filterSelected : null,
-            ]}
-          >
-            <Text
-              style={
-                filter.value === status
-                  ? styles.filterTextSelected
-                  : styles.filterText
-              }
+        {filters.map((filter) => {
+          const isSelected = filter.value === status;
+          return (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: isSelected }}
+              key={filter.label}
+              onPress={() => setStatus(filter.value)}
+              style={[
+                styles.filter,
+                {
+                  backgroundColor: isSelected ? colors.primary : colors.surface,
+                  borderColor: isSelected ? colors.primary : colors.border,
+                },
+              ]}
             >
-              {filter.label}
-            </Text>
-          </Pressable>
-        ))}
+              <Text
+                style={[
+                  styles.filterText,
+                  {
+                    color: isSelected ? '#FFFFFF' : colors.textPrimary,
+                    fontWeight: isSelected ? '700' : '400',
+                  },
+                ]}
+              >
+                {filter.label}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
 
       {feedback ? (
-        <Text accessibilityLiveRegion="polite" style={styles.feedback}>
+        <Text
+          accessibilityLiveRegion="polite"
+          style={[styles.feedback, { color: colors.positive }]}
+        >
           {feedback}
         </Text>
       ) : null}
       {error ? (
-        <Text accessibilityLiveRegion="assertive" style={styles.error}>
+        <Text
+          accessibilityLiveRegion="assertive"
+          style={[styles.error, { color: colors.destructive }]}
+        >
           {error}
         </Text>
       ) : null}
 
-      {loading ? (
+      {loading && claims.length === 0 ? (
         <View style={styles.state}>
           <ActivityIndicator color={colors.primary} size="large" />
-          <Text style={styles.stateText}>Loading claims…</Text>
+          <Text style={[styles.stateText, { color: colors.textSecondary }]}>
+            Loading claims…
+          </Text>
         </View>
       ) : (
         <FlatList
-          contentContainerStyle={
-            claims.length === 0 ? styles.emptyList : styles.list
-          }
+          contentContainerStyle={[
+            styles.list,
+            claims.length === 0 ? styles.emptyList : null,
+          ]}
           data={claims}
           keyExtractor={(claim) => String(claim.id)}
           ListEmptyComponent={
             <View style={styles.state}>
-              <Text accessibilityRole="header" style={styles.emptyTitle}>
-                {status ? `No ${status} claims` : 'No claims yet'}
+              <Text
+                accessibilityRole="header"
+                style={[styles.emptyTitle, { color: colors.textPrimary }]}
+              >
+                No claims found
               </Text>
-              <Text style={styles.stateText}>
+              <Text style={[styles.stateText, { color: colors.textSecondary }]}>
                 {status
-                  ? 'Choose another status to see more claims.'
-                  : 'Create a claim from your reimbursable expenses.'}
+                  ? 'Try selecting a different status filter.'
+                  : 'Submit work expenses for reimbursement by creating a claim.'}
               </Text>
               {!status ? (
                 <View style={styles.emptyAction}>
                   <AppButton
-                    label="New Claim"
+                    label="Create Claim"
                     onPress={() => router.push('/claims/new')}
                   />
                 </View>
               ) : null}
             </View>
           }
-          renderItem={({ item }) => (
+          onRefresh={() => void load()}
+          refreshing={loading}
+          renderItem={({ item: claim }) => (
             <Pressable
-              accessibilityLabel={`${item.title}, ${statusLabel(item.status)}`}
+              accessibilityLabel={`${claim.title}, ${statusLabel(claim.status)}`}
               accessibilityRole="button"
-              onPress={() => router.push(`/claims/${item.id}`)}
+              onPress={() => router.push(`/claims/${claim.id}`)}
               style={({ pressed }) => [
                 styles.claimRow,
+                {
+                  backgroundColor: colors.surface,
+                  borderBottomColor: colors.border,
+                },
                 pressed ? styles.pressed : null,
               ]}
             >
               <View style={styles.rowText}>
-                <Text numberOfLines={1} style={styles.rowTitle}>
-                  {item.title}
+                <Text
+                  numberOfLines={1}
+                  style={[styles.rowTitle, { color: colors.textPrimary }]}
+                >
+                  {claim.title}
                 </Text>
-                <Text style={styles.rowMetadata}>
-                  {statusLabel(item.status)} · {item.itemCount}{' '}
-                  {item.itemCount === 1 ? 'expense' : 'expenses'}
-                </Text>
-                <Text style={styles.rowMetadata}>
-                  {item.periodStart && item.periodEnd
-                    ? `${item.periodStart} – ${item.periodEnd}`
-                    : 'No period'}
+                <Text
+                  style={[styles.rowMetadata, { color: colors.textSecondary }]}
+                >
+                  {statusLabel(claim.status)} · {claim.itemCount} items
                 </Text>
               </View>
-              <Text style={styles.amount}>
-                {item.currencyCode
-                  ? formatMoney(item.totalMinor, item.currencyCode)
-                  : '—'}
+              <Text style={[styles.amount, { color: colors.textPrimary }]}>
+                {formatMoney(claim.totalMinor, 'IDR')}
               </Text>
             </Pressable>
           )}
@@ -189,16 +216,13 @@ export function ClaimsScreen() {
 const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
-    borderBottomColor: colors.border,
     borderBottomWidth: 1,
     flexDirection: 'row',
-    gap: spacing.sm,
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
-    paddingTop: spacing.sm,
+    paddingVertical: spacing.md,
   },
   title: {
-    color: colors.textPrimary,
     flex: 1,
     fontSize: typography.pageTitle.fontSize,
     fontWeight: typography.pageTitle.fontWeight,
@@ -211,31 +235,28 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   filter: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
     borderRadius: 999,
     borderWidth: 1,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  filterSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+  filterText: {
+    fontSize: 14,
   },
-  filterText: { color: colors.textPrimary },
-  filterTextSelected: { color: colors.surface, fontWeight: '700' },
   feedback: {
-    color: colors.positive,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
   },
   error: {
-    color: colors.destructive,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
   },
-  list: { paddingBottom: spacing.xxl },
-  emptyList: { flexGrow: 1 },
+  list: {
+    paddingBottom: spacing.xxl,
+  },
+  emptyList: {
+    flexGrow: 1,
+  },
   state: {
     alignItems: 'center',
     flex: 1,
@@ -243,41 +264,41 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   stateText: {
-    color: colors.textSecondary,
     marginTop: spacing.sm,
     textAlign: 'center',
   },
   emptyTitle: {
-    color: colors.textPrimary,
     fontSize: typography.sectionTitle.fontSize,
     fontWeight: typography.sectionTitle.fontWeight,
   },
-  emptyAction: { marginTop: spacing.lg, width: '100%' },
+  emptyAction: {
+    marginTop: spacing.lg,
+    width: '100%',
+  },
   claimRow: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderBottomColor: colors.border,
     borderBottomWidth: 1,
     flexDirection: 'row',
     gap: spacing.md,
     minHeight: 92,
     padding: spacing.lg,
   },
-  rowText: { flex: 1 },
+  rowText: {
+    flex: 1,
+  },
   rowTitle: {
-    color: colors.textPrimary,
     fontSize: typography.body.fontSize,
     fontWeight: '700',
   },
   rowMetadata: {
-    color: colors.textSecondary,
     fontSize: typography.metadata.fontSize,
     marginTop: spacing.xs,
   },
   amount: {
-    color: colors.textPrimary,
     fontSize: typography.body.fontSize,
     fontWeight: '700',
   },
-  pressed: { opacity: 0.72 },
+  pressed: {
+    opacity: 0.72,
+  },
 });

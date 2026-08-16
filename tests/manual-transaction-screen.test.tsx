@@ -18,9 +18,6 @@ const mockRouter = {
 const mockCreateTransaction = jest.fn();
 const mockPickManualReceipt =
   jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockRecognizeReceipt =
-  jest.fn<(...args: unknown[]) => Promise<unknown>>();
-const mockParseReceipt = jest.fn<(...args: unknown[]) => unknown>();
 
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
@@ -45,6 +42,13 @@ jest.mock('@/features/transactions/transaction-repository', () => ({
     .fn<() => Promise<null>>()
     .mockResolvedValue(null),
   updateTransaction: jest.fn(),
+}));
+
+jest.mock('@/features/settings/settings-repository', () => ({
+  DEFAULT_QUICK_SHORTCUTS: [2000, 5000, 10000, 20000, 50000, 100000],
+  getQuickShortcuts: jest
+    .fn<() => Promise<number[]>>()
+    .mockResolvedValue([2000, 5000, 10000, 20000, 50000, 100000]),
 }));
 
 jest.mock('@/features/categories/category-repository', () => ({
@@ -105,14 +109,6 @@ jest.mock('@/features/transactions/manual-receipt-picker', () => ({
   pickManualReceipt: (...args: unknown[]) => mockPickManualReceipt(...args),
 }));
 
-jest.mock('@/features/receipts/ocr-service', () => ({
-  recognizeReceipt: (...args: unknown[]) => mockRecognizeReceipt(...args),
-}));
-
-jest.mock('@/features/receipts/receipt-parser', () => ({
-  parseReceipt: (...args: unknown[]) => mockParseReceipt(...args),
-}));
-
 jest.mock('@/features/categories/category-picker', () => {
   const ReactNative = require('react-native');
   return {
@@ -143,8 +139,6 @@ describe('manual transaction form', () => {
     jest.clearAllMocks();
     mockCreateTransaction.mockReset();
     mockPickManualReceipt.mockReset();
-    mockRecognizeReceipt.mockReset();
-    mockParseReceipt.mockReset();
   });
 
   it('defaults to Expense and removes expense-only controls for Income', async () => {
@@ -223,21 +217,11 @@ describe('manual transaction form', () => {
     expect(mockPickManualReceipt).toHaveBeenCalledWith('camera');
   });
 
-  it('attaches a gallery receipt and fills empty fields from OCR', async () => {
+  it('attaches a photo from gallery directly', async () => {
     mockPickManualReceipt.mockResolvedValue({
       displayName: 'receipt.jpg',
       mimeType: 'image/jpeg',
       sourceImageUri: 'file:///cache/receipt.jpg',
-    });
-    mockRecognizeReceipt.mockResolvedValue({ rawText: 'TOKO\nTOTAL 45000' });
-    mockParseReceipt.mockReturnValue({
-      candidateAmounts: [45000],
-      localDate: '2026-08-14',
-      merchant: 'Toko',
-      subtotalMinor: 40_000,
-      taxMinor: 5_000,
-      totalMinor: 45_000,
-      warnings: [],
     });
     await render(
       <LanguageProvider initialLanguage="en">
@@ -252,11 +236,7 @@ describe('manual transaction form', () => {
 
     await waitFor(() => {
       expect(mockPickManualReceipt).toHaveBeenCalledWith('gallery');
-      expect(mockRecognizeReceipt).toHaveBeenCalledWith(
-        'file:///cache/receipt.jpg',
-      );
       expect(screen.getByText('receipt.jpg')).toBeOnTheScreen();
-      expect(screen.getByLabelText('Merchant').props.value).toBe('Toko');
     });
   });
 

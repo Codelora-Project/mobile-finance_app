@@ -91,6 +91,8 @@ describe('settings repository', () => {
       currencyCode: 'IDR',
       currencyName: 'Indonesian Rupiah',
       language: 'id',
+      quickShortcuts: [2000, 5000, 10000, 20000, 50000, 100000],
+      theme: 'system',
     });
 
     database.currency = 'USD';

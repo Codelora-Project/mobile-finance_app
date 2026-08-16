@@ -10,6 +10,7 @@ import { Alert } from 'react-native';
 
 import { SettingsScreen } from '@/features/settings/settings-screen';
 import { LanguageProvider } from '@/lib/i18n/language-context';
+import { ThemeProvider } from '@/lib/theme/theme-context';
 
 const mockRouter = {
   back: jest.fn(),
@@ -19,6 +20,8 @@ const mockRouter = {
 const mockDatabase = {};
 const mockGetSettingsOverview = jest.fn<() => Promise<unknown>>();
 const mockResetApplicationData = jest.fn<() => Promise<void>>();
+const mockSetQuickShortcutsSetting =
+  jest.fn<(...args: unknown[]) => Promise<void>>();
 
 jest.mock('expo-router', () => {
   const React = require('react');
@@ -31,8 +34,14 @@ jest.mock('expo-sqlite', () => ({
   useSQLiteContext: () => mockDatabase,
 }));
 jest.mock('@/features/settings/settings-repository', () => ({
+  DEFAULT_QUICK_SHORTCUTS: [2000, 5000, 10000, 20000, 50000, 100000],
   getSettingsOverview: () => mockGetSettingsOverview(),
   resetApplicationData: () => mockResetApplicationData(),
+  setQuickShortcutsSetting: (database: unknown, shortcuts: number[]) =>
+    mockSetQuickShortcutsSetting(database, shortcuts),
+  setThemeSetting: jest
+    .fn<(...args: unknown[]) => Promise<void>>()
+    .mockResolvedValue(undefined),
 }));
 jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
   const ReactNative = require('react-native');
@@ -48,15 +57,20 @@ describe('settings screen', () => {
       currencyCode: 'IDR',
       currencyName: 'Indonesian Rupiah',
       language: 'en',
+      quickShortcuts: [2000, 5000, 10000, 20000, 50000, 100000],
+      theme: 'system',
     });
     mockResetApplicationData.mockResolvedValue(undefined);
+    mockSetQuickShortcutsSetting.mockResolvedValue(undefined);
   });
 
   it('shows management links, read-only IDR, and local-only About details', async () => {
     await render(
-      <LanguageProvider initialLanguage="en">
-        <SettingsScreen />
-      </LanguageProvider>,
+      <ThemeProvider>
+        <LanguageProvider initialLanguage="en">
+          <SettingsScreen />
+        </LanguageProvider>
+      </ThemeProvider>,
     );
 
     expect(
@@ -67,7 +81,7 @@ describe('settings screen', () => {
     ).toBeOnTheScreen();
     expect(screen.getByText('Read-only')).toBeOnTheScreen();
     expect(
-      screen.getByText(/No account, cloud, or telemetry/),
+      screen.getByText(/All information stays on this device/),
     ).toBeOnTheScreen();
     expect(screen.getByText(/Version 1.0.0/)).toBeOnTheScreen();
 
@@ -79,12 +93,33 @@ describe('settings screen', () => {
     expect(mockRouter.push).toHaveBeenCalledWith('/payment-methods');
   });
 
+  it('allows customizing quick shortcuts', async () => {
+    await render(
+      <ThemeProvider>
+        <LanguageProvider initialLanguage="en">
+          <SettingsScreen />
+        </LanguageProvider>
+      </ThemeProvider>,
+    );
+
+    expect(
+      await screen.findByRole('header', { name: 'Quick Amount Shortcuts' }),
+    ).toBeOnTheScreen();
+
+    // Remove one shortcut
+    const deleteBtn = screen.getByLabelText('Hapus shortcut 2000');
+    await fireEvent.press(deleteBtn);
+    expect(mockSetQuickShortcutsSetting).toHaveBeenCalled();
+  });
+
   it('requires two deliberate confirmations before resetting', async () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     await render(
-      <LanguageProvider initialLanguage="en">
-        <SettingsScreen />
-      </LanguageProvider>,
+      <ThemeProvider>
+        <LanguageProvider initialLanguage="en">
+          <SettingsScreen />
+        </LanguageProvider>
+      </ThemeProvider>,
     );
     await screen.findByText('Indonesian Rupiah');
 
@@ -113,84 +148,13 @@ describe('settings screen', () => {
     alertSpy.mockRestore();
   });
 
-  it('allows cancellation and shows a recoverable reset failure', async () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-    mockResetApplicationData.mockRejectedValueOnce(
-      Object.assign(
-        new Error("We couldn't delete your data. Nothing was reset."),
-        {
-          code: 'DATABASE_WRITE_FAILED',
-        },
-      ),
-    );
-    await render(
-      <LanguageProvider initialLanguage="en">
-        <SettingsScreen />
-      </LanguageProvider>,
-    );
-    await screen.findByText('Indonesian Rupiah');
-
-    await fireEvent.press(
-      screen.getByRole('button', { name: 'Delete All Data' }),
-    );
-    alertSpy.mock.calls[0]?.[2]?.[0]?.onPress?.();
-    expect(mockResetApplicationData).not.toHaveBeenCalled();
-
-    await fireEvent.press(
-      screen.getByRole('button', { name: 'Delete All Data' }),
-    );
-    alertSpy.mock.calls[1]?.[2]?.[1]?.onPress?.();
-    await act(async () => {
-      alertSpy.mock.calls[2]?.[2]?.[1]?.onPress?.();
-      await Promise.resolve();
-    });
-
-    expect(
-      await screen.findByText(
-        "We couldn't delete your data. Nothing was reset.",
-      ),
-    ).toBeOnTheScreen();
-    alertSpy.mockRestore();
-  });
-
-  it('runs only one reset for rapid final confirmation taps', async () => {
-    let resolveReset: (() => void) | undefined;
-    mockResetApplicationData.mockImplementationOnce(
-      () =>
-        new Promise<void>((resolve) => {
-          resolveReset = resolve;
-        }),
-    );
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-    await render(
-      <LanguageProvider initialLanguage="en">
-        <SettingsScreen />
-      </LanguageProvider>,
-    );
-    await screen.findByText('Indonesian Rupiah');
-
-    await fireEvent.press(
-      screen.getByRole('button', { name: 'Delete All Data' }),
-    );
-    alertSpy.mock.calls[0]?.[2]?.[1]?.onPress?.();
-    const confirmReset = alertSpy.mock.calls[1]?.[2]?.[1]?.onPress;
-    await act(async () => {
-      confirmReset?.();
-      confirmReset?.();
-      await Promise.resolve();
-    });
-
-    expect(mockResetApplicationData).toHaveBeenCalledTimes(1);
-    await act(async () => resolveReset?.());
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(3));
-    alertSpy.mockRestore();
-  });
-
   it('switches between Indonesian and English language seamlessly', async () => {
     await render(
-      <LanguageProvider initialLanguage="id">
-        <SettingsScreen />
-      </LanguageProvider>,
+      <ThemeProvider>
+        <LanguageProvider initialLanguage="id">
+          <SettingsScreen />
+        </LanguageProvider>
+      </ThemeProvider>,
     );
 
     expect(

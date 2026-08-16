@@ -4,11 +4,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors } from '@/theme/colors';
+import { useLanguage } from '@/lib/i18n/language-context';
+import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
-
-import { useLanguage } from '@/lib/i18n/language-context';
 
 type TabIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
@@ -26,6 +25,7 @@ function TabIcon({ color, name }: { color: ColorValue; name: TabIconName }) {
 
 function AddActionButton({ label }: { label: string }) {
   const router = useRouter();
+  const { colors } = useTheme();
 
   return (
     <Pressable
@@ -38,16 +38,27 @@ function AddActionButton({ label }: { label: string }) {
         pressed ? styles.addActionPressed : null,
       ]}
     >
-      <View style={styles.addCircle}>
+      <View
+        style={[
+          styles.addCircle,
+          {
+            backgroundColor: colors.primary,
+            borderColor: colors.surface,
+            shadowColor: colors.textPrimary,
+          },
+        ]}
+      >
         <MaterialCommunityIcons
           accessibilityElementsHidden
-          color={colors.surface}
+          color="#FFFFFF"
           importantForAccessibility="no-hide-descendants"
           name="plus"
           size={32}
         />
       </View>
-      <Text style={styles.addLabel}>{label}</Text>
+      <Text style={[styles.addLabel, { color: colors.textSecondary }]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -55,6 +66,7 @@ function AddActionButton({ label }: { label: string }) {
 export default function MainTabLayout() {
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
+  const { colors } = useTheme();
   const bottomPadding = insets.bottom > 0 ? insets.bottom : spacing.sm;
   const tabHeight = 64 + bottomPadding;
 
@@ -64,11 +76,13 @@ export default function MainTabLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarHideOnKeyboard: true,
-        tabBarInactiveTintColor: '#475569',
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarLabelStyle: styles.tabLabel,
         tabBarStyle: [
           styles.tabBar,
           {
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
             height: tabHeight,
             paddingBottom: bottomPadding,
             paddingTop: spacing.xs + 2,
@@ -131,8 +145,6 @@ export default function MainTabLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: colors.surface,
-    borderTopColor: '#CBD5E1',
     borderTopWidth: 1.5,
   },
   tabLabel: {
@@ -151,21 +163,17 @@ const styles = StyleSheet.create({
   },
   addCircle: {
     alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderColor: colors.surface,
     borderRadius: radius.pill,
     borderWidth: 4,
     elevation: 4,
     height: 58,
     justifyContent: 'center',
-    shadowColor: colors.textPrimary,
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.22,
     shadowRadius: 4,
     width: 58,
   },
   addLabel: {
-    color: '#475569',
     fontSize: 12,
     fontWeight: '700',
     marginTop: 0,
