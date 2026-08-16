@@ -26,8 +26,7 @@ import {
 } from '@/features/settings/settings-repository';
 import { isCodedError, mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
-import { formatMoney } from '@/lib/money';
-import { useTheme } from '@/lib/theme/theme-context';
+import { useTheme, type ThemeSetting } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -47,7 +46,7 @@ export function SettingsScreen() {
   const database = useSQLiteContext();
   const router = useRouter();
   const { language, setLanguage, t } = useLanguage();
-  const { colors, setThemeSetting, themeSetting } = useTheme();
+  const { colors, isDark, setThemeSetting, themeSetting } = useTheme();
 
   const resettingRef = useRef(false);
   const [overview, setOverview] = useState<SettingsOverview | null>(null);
@@ -192,6 +191,7 @@ export function SettingsScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content}>
+        {/* Screen Title */}
         <View style={styles.header}>
           <Text
             accessibilityRole="header"
@@ -226,407 +226,716 @@ export function SettingsScreen() {
 
         {overview ? (
           <>
-            {/* Theme Selection Section */}
-            <View style={styles.section}>
-              <Text
-                accessibilityRole="header"
-                style={[styles.sectionTitle, { color: colors.textPrimary }]}
-              >
-                {t.settings.themeSection}
-              </Text>
-              <Text
-                style={[styles.secondaryText, { color: colors.textSecondary }]}
-              >
-                {t.settings.themeDesc}
-              </Text>
-
-              <View style={styles.optionsRow}>
-                {/* Light Option */}
-                <Pressable
-                  accessibilityLabel="Pilih Tema Terang"
-                  accessibilityRole="button"
-                  onPress={() => setThemeSetting('light')}
+            {/* 🛡️ Hero Trust Banner: 100% Private & Offline */}
+            <View
+              style={[
+                styles.vaultHeroCard,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <View style={styles.vaultBadgeRow}>
+                <View
                   style={[
-                    styles.optionCard,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.border,
-                    },
-                    themeSetting === 'light' ? styles.optionCardSelected : null,
+                    styles.vaultIconCircle,
+                    { backgroundColor: isDark ? '#14532D' : '#DCFCE7' },
                   ]}
                 >
                   <MaterialCommunityIcons
-                    color={
-                      themeSetting === 'light'
-                        ? colors.primary
-                        : colors.textSecondary
-                    }
-                    name="white-balance-sunny"
+                    color={colors.positive}
+                    name="shield-check"
                     size={22}
                   />
+                </View>
+                <View style={styles.vaultTextContainer}>
                   <Text
-                    style={[
-                      styles.optionCardText,
-                      { color: colors.textPrimary },
-                      themeSetting === 'light'
-                        ? styles.optionCardTextSelected
-                        : null,
-                    ]}
+                    style={[styles.vaultTitle, { color: colors.textPrimary }]}
                   >
-                    {t.settings.themeLight}
+                    Offline & Private Vault
                   </Text>
-                </Pressable>
-
-                {/* Dark Option */}
-                <Pressable
-                  accessibilityLabel="Pilih Tema Gelap"
-                  accessibilityRole="button"
-                  onPress={() => setThemeSetting('dark')}
-                  style={[
-                    styles.optionCard,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.border,
-                    },
-                    themeSetting === 'dark' ? styles.optionCardSelected : null,
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    color={
-                      themeSetting === 'dark'
-                        ? colors.primary
-                        : colors.textSecondary
-                    }
-                    name="weather-night"
-                    size={22}
-                  />
                   <Text
-                    style={[
-                      styles.optionCardText,
-                      { color: colors.textPrimary },
-                      themeSetting === 'dark'
-                        ? styles.optionCardTextSelected
-                        : null,
-                    ]}
+                    style={[styles.vaultDesc, { color: colors.textSecondary }]}
                   >
-                    {t.settings.themeDark}
+                    {t.settings.dataDesc}
                   </Text>
-                </Pressable>
-
-                {/* System Option */}
-                <Pressable
-                  accessibilityLabel="Pilih Tema Sistem"
-                  accessibilityRole="button"
-                  onPress={() => setThemeSetting('system')}
-                  style={[
-                    styles.optionCard,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.border,
-                    },
-                    themeSetting === 'system'
-                      ? styles.optionCardSelected
-                      : null,
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    color={
-                      themeSetting === 'system'
-                        ? colors.primary
-                        : colors.textSecondary
-                    }
-                    name="cellphone-cog"
-                    size={22}
-                  />
-                  <Text
-                    style={[
-                      styles.optionCardText,
-                      { color: colors.textPrimary },
-                      themeSetting === 'system'
-                        ? styles.optionCardTextSelected
-                        : null,
-                    ]}
-                  >
-                    {t.settings.themeSystem}
-                  </Text>
-                </Pressable>
+                </View>
               </View>
             </View>
 
-            {/* Quick Shortcuts Customization Section */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeaderBetween}>
-                <Text
-                  accessibilityRole="header"
-                  style={[styles.sectionTitle, { color: colors.textPrimary }]}
-                >
-                  {t.settings.shortcutsSection}
-                </Text>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={handleResetShortcuts}
-                >
-                  <Text style={styles.resetLinkText}>
-                    {t.settings.resetShortcuts}
-                  </Text>
-                </Pressable>
-              </View>
-
+            {/* SECTION 1: TAMPILAN & PREFERENSI (Appearance & Preferences) */}
+            <View style={styles.sectionGroup}>
               <Text
-                style={[styles.secondaryText, { color: colors.textSecondary }]}
-              >
-                {t.settings.shortcutsDesc}
-              </Text>
-
-              {/* Shortcut Chips Grid */}
-              <View style={styles.shortcutsList}>
-                {shortcuts.map((amount) => (
-                  <View
-                    key={amount}
-                    style={[
-                      styles.shortcutManageChip,
-                      {
-                        backgroundColor: colors.surfaceSecondary,
-                        borderColor: colors.border,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.shortcutManageText,
-                        { color: colors.primary },
-                      ]}
-                    >
-                      {formatShortcutLabel(amount)} (
-                      {formatMoney(amount, 'IDR')})
-                    </Text>
-                    <Pressable
-                      accessibilityLabel={`Hapus shortcut ${amount}`}
-                      accessibilityRole="button"
-                      hitSlop={8}
-                      onPress={() => handleRemoveShortcut(amount)}
-                      style={styles.removeShortcutBtn}
-                    >
-                      <MaterialCommunityIcons
-                        color="#EF4444"
-                        name="close-circle"
-                        size={18}
-                      />
-                    </Pressable>
-                  </View>
-                ))}
-              </View>
-
-              {shortcuts.length < 8 ? (
-                <AppButton
-                  label={t.settings.addShortcut}
-                  onPress={() => {
-                    setShortcutError(null);
-                    setAddShortcutModalVisible(true);
-                  }}
-                  variant="secondary"
-                />
-              ) : null}
-            </View>
-
-            {/* Language Selection Section */}
-            <View style={styles.section}>
-              <Text
-                accessibilityRole="header"
-                style={[styles.sectionTitle, { color: colors.textPrimary }]}
-              >
-                {t.settings.languageSection}
-              </Text>
-              <Text
-                style={[styles.secondaryText, { color: colors.textSecondary }]}
-              >
-                {t.settings.languageDesc}
-              </Text>
-
-              <View style={styles.languageOptions}>
-                {/* Indonesian Option */}
-                <Pressable
-                  accessibilityLabel="Pilih Bahasa Indonesia"
-                  accessibilityRole="button"
-                  android_ripple={{ color: '#DBEAFE' }}
-                  hitSlop={8}
-                  onPress={() => {
-                    void setLanguage('id');
-                  }}
-                  style={({ pressed }) => [
-                    styles.languageCard,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.border,
-                    },
-                    language === 'id' ? styles.languageCardSelected : null,
-                    pressed ? styles.languageCardPressed : null,
-                  ]}
-                >
-                  <View style={styles.languageCardLeft}>
-                    <Text style={styles.languageFlag}>🇮🇩</Text>
-                    <Text
-                      style={[
-                        styles.languageCardText,
-                        { color: colors.textPrimary },
-                        language === 'id'
-                          ? styles.languageCardTextSelected
-                          : null,
-                      ]}
-                    >
-                      {t.settings.langIndonesian}
-                    </Text>
-                  </View>
-                  <MaterialCommunityIcons
-                    color={language === 'id' ? colors.primary : '#94A3B8'}
-                    name={
-                      language === 'id' ? 'radiobox-marked' : 'radiobox-blank'
-                    }
-                    size={26}
-                  />
-                </Pressable>
-
-                {/* English Option */}
-                <Pressable
-                  accessibilityLabel="Select English language"
-                  accessibilityRole="button"
-                  android_ripple={{ color: '#DBEAFE' }}
-                  hitSlop={8}
-                  onPress={() => {
-                    void setLanguage('en');
-                  }}
-                  style={({ pressed }) => [
-                    styles.languageCard,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.border,
-                    },
-                    language === 'en' ? styles.languageCardSelected : null,
-                    pressed ? styles.languageCardPressed : null,
-                  ]}
-                >
-                  <View style={styles.languageCardLeft}>
-                    <Text style={styles.languageFlag}>🇬🇧</Text>
-                    <Text
-                      style={[
-                        styles.languageCardText,
-                        { color: colors.textPrimary },
-                        language === 'en'
-                          ? styles.languageCardTextSelected
-                          : null,
-                      ]}
-                    >
-                      {t.settings.langEnglish}
-                    </Text>
-                  </View>
-                  <MaterialCommunityIcons
-                    color={language === 'en' ? colors.primary : '#94A3B8'}
-                    name={
-                      language === 'en' ? 'radiobox-marked' : 'radiobox-blank'
-                    }
-                    size={26}
-                  />
-                </Pressable>
-              </View>
-            </View>
-
-            {/* Management Section */}
-            <View style={styles.section}>
-              <Text
-                accessibilityRole="header"
-                style={[styles.sectionTitle, { color: colors.textPrimary }]}
-              >
-                {t.settings.manageSection}
-              </Text>
-              <AppButton
-                label={t.settings.categories}
-                onPress={() => router.push('/categories')}
-                variant="secondary"
-              />
-              <AppButton
-                label={t.settings.paymentMethods}
-                onPress={() => router.push('/payment-methods')}
-                variant="secondary"
-              />
-            </View>
-
-            {/* Currency Section */}
-            <View style={styles.section}>
-              <Text
-                accessibilityRole="header"
-                style={[styles.sectionTitle, { color: colors.textPrimary }]}
-              >
-                {t.settings.currencySection}
-              </Text>
-              <View
-                accessibilityLabel="Currency, Indonesian Rupiah, IDR, read only"
                 style={[
-                  styles.readOnlyRow,
+                  styles.sectionHeaderLabel,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {language === 'id'
+                  ? 'TAMPILAN & SHORTCUT'
+                  : 'APPEARANCE & SHORTCUTS'}
+              </Text>
+
+              <View
+                style={[
+                  styles.groupedCard,
                   {
                     backgroundColor: colors.surface,
                     borderColor: colors.border,
                   },
                 ]}
               >
-                <View>
-                  <Text
-                    style={[styles.rowTitle, { color: colors.textPrimary }]}
+                {/* 🌓 Theme Mode */}
+                <View style={styles.cardItemPadding}>
+                  <View style={styles.itemHeaderBetween}>
+                    <View style={styles.iconTitleRow}>
+                      <View
+                        style={[
+                          styles.itemIconBadge,
+                          {
+                            backgroundColor: isDark
+                              ? colors.surfaceSecondary
+                              : '#EEF2FF',
+                          },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          color={colors.primary}
+                          name="theme-light-dark"
+                          size={18}
+                        />
+                      </View>
+                      <Text
+                        accessibilityRole="header"
+                        style={[
+                          styles.itemTitle,
+                          { color: colors.textPrimary },
+                        ]}
+                      >
+                        {t.settings.themeSection}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Segmented Pill Selector */}
+                  <View
+                    style={[
+                      styles.themeSegmentTrack,
+                      {
+                        backgroundColor: isDark
+                          ? colors.surfaceSecondary
+                          : '#F1F5F9',
+                      },
+                    ]}
                   >
-                    {overview.currencyName}
-                  </Text>
+                    {(
+                      [
+                        {
+                          icon: 'white-balance-sunny',
+                          key: 'light',
+                          label: t.settings.themeLight,
+                        },
+                        {
+                          icon: 'weather-night',
+                          key: 'dark',
+                          label: t.settings.themeDark,
+                        },
+                        {
+                          icon: 'cellphone-cog',
+                          key: 'system',
+                          label: t.settings.themeSystem,
+                        },
+                      ] as const
+                    ).map((item) => {
+                      const isSelected = themeSetting === item.key;
+                      return (
+                        <Pressable
+                          accessibilityLabel={`Pilih Tema ${item.label}`}
+                          accessibilityRole="button"
+                          key={item.key}
+                          onPress={() =>
+                            setThemeSetting(item.key as ThemeSetting)
+                          }
+                          style={[
+                            styles.themeSegmentTab,
+                            isSelected
+                              ? [
+                                  styles.themeSegmentTabActive,
+                                  { backgroundColor: colors.surface },
+                                ]
+                              : null,
+                          ]}
+                        >
+                          <MaterialCommunityIcons
+                            color={
+                              isSelected ? colors.primary : colors.textSecondary
+                            }
+                            name={item.icon}
+                            size={16}
+                          />
+                          <Text
+                            style={[
+                              styles.themeSegmentTabText,
+                              {
+                                color: isSelected
+                                  ? colors.primary
+                                  : colors.textSecondary,
+                                fontWeight: isSelected ? '800' : '600',
+                              },
+                            ]}
+                          >
+                            {item.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                <View
+                  style={[
+                    styles.cardInnerDivider,
+                    { backgroundColor: colors.border },
+                  ]}
+                />
+
+                {/* ⚡ Quick Amount Shortcuts */}
+                <View style={styles.cardItemPadding}>
+                  <View style={styles.itemHeaderBetween}>
+                    <View style={styles.iconTitleRow}>
+                      <View
+                        style={[
+                          styles.itemIconBadge,
+                          {
+                            backgroundColor: isDark
+                              ? colors.surfaceSecondary
+                              : '#FEF3C7',
+                          },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          color="#D97706"
+                          name="lightning-bolt"
+                          size={18}
+                        />
+                      </View>
+                      <Text
+                        accessibilityRole="header"
+                        style={[
+                          styles.itemTitle,
+                          { color: colors.textPrimary },
+                        ]}
+                      >
+                        {t.settings.shortcutsSection}
+                      </Text>
+                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      hitSlop={8}
+                      onPress={handleResetShortcuts}
+                    >
+                      <Text
+                        style={[
+                          styles.resetActionLink,
+                          { color: colors.primary },
+                        ]}
+                      >
+                        {t.settings.resetShortcuts}
+                      </Text>
+                    </Pressable>
+                  </View>
+
                   <Text
                     style={[
-                      styles.secondaryText,
+                      styles.itemSubtitle,
                       { color: colors.textSecondary },
                     ]}
                   >
-                    {overview.currencyCode}
+                    {t.settings.shortcutsDesc}
                   </Text>
+
+                  {/* Shortcut Chips Grid */}
+                  <View style={styles.shortcutChipsWrap}>
+                    {shortcuts.map((amount) => (
+                      <View
+                        key={amount}
+                        style={[
+                          styles.shortcutPillBadge,
+                          {
+                            backgroundColor: isDark
+                              ? colors.surfaceSecondary
+                              : '#EFF6FF',
+                            borderColor: isDark ? colors.border : '#BFDBFE',
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.shortcutPillText,
+                            { color: colors.primary },
+                          ]}
+                        >
+                          {formatShortcutLabel(amount)}
+                        </Text>
+                        <Pressable
+                          accessibilityLabel={`Hapus shortcut ${amount}`}
+                          accessibilityRole="button"
+                          hitSlop={6}
+                          onPress={() => handleRemoveShortcut(amount)}
+                          style={styles.shortcutRemoveIcon}
+                        >
+                          <MaterialCommunityIcons
+                            color="#EF4444"
+                            name="close-circle"
+                            size={16}
+                          />
+                        </Pressable>
+                      </View>
+                    ))}
+                  </View>
+
+                  {shortcuts.length < 8 ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => {
+                        setShortcutError(null);
+                        setAddShortcutModalVisible(true);
+                      }}
+                      style={[
+                        styles.addShortcutCardBtn,
+                        {
+                          backgroundColor: isDark
+                            ? colors.surfaceSecondary
+                            : '#F8FAFC',
+                          borderColor: colors.border,
+                        },
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        color={colors.primary}
+                        name="plus"
+                        size={18}
+                      />
+                      <Text
+                        style={[
+                          styles.addShortcutCardText,
+                          { color: colors.primary },
+                        ]}
+                      >
+                        {t.settings.addShortcut}
+                      </Text>
+                    </Pressable>
+                  ) : null}
                 </View>
-                <Text style={styles.readOnlyLabel}>{t.settings.readOnly}</Text>
+
+                <View
+                  style={[
+                    styles.cardInnerDivider,
+                    { backgroundColor: colors.border },
+                  ]}
+                />
+
+                {/* 🌐 Language Selection */}
+                <View style={styles.cardItemPadding}>
+                  <View style={styles.iconTitleRow}>
+                    <View
+                      style={[
+                        styles.itemIconBadge,
+                        {
+                          backgroundColor: isDark
+                            ? colors.surfaceSecondary
+                            : '#E0F2FE',
+                        },
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        color="#0284C7"
+                        name="translate"
+                        size={18}
+                      />
+                    </View>
+                    <Text
+                      accessibilityRole="header"
+                      style={[styles.itemTitle, { color: colors.textPrimary }]}
+                    >
+                      {t.settings.languageSection}
+                    </Text>
+                  </View>
+
+                  <View style={styles.languagePillsRow}>
+                    {/* Indonesian */}
+                    <Pressable
+                      accessibilityLabel="Pilih Bahasa Indonesia"
+                      accessibilityRole="button"
+                      onPress={() => void setLanguage('id')}
+                      style={[
+                        styles.langPillOption,
+                        {
+                          backgroundColor: isDark
+                            ? colors.surfaceSecondary
+                            : '#F8FAFC',
+                          borderColor: colors.border,
+                        },
+                        language === 'id'
+                          ? [
+                              styles.langPillOptionActive,
+                              { borderColor: colors.primary },
+                            ]
+                          : null,
+                      ]}
+                    >
+                      <Text style={styles.langFlagIcon}>🇮🇩</Text>
+                      <Text
+                        style={[
+                          styles.langOptionText,
+                          { color: colors.textPrimary },
+                          language === 'id'
+                            ? [
+                                styles.langOptionTextActive,
+                                { color: colors.primary },
+                              ]
+                            : null,
+                        ]}
+                      >
+                        {t.settings.langIndonesian}
+                      </Text>
+                    </Pressable>
+
+                    {/* English */}
+                    <Pressable
+                      accessibilityLabel="Select English language"
+                      accessibilityRole="button"
+                      onPress={() => void setLanguage('en')}
+                      style={[
+                        styles.langPillOption,
+                        {
+                          backgroundColor: isDark
+                            ? colors.surfaceSecondary
+                            : '#F8FAFC',
+                          borderColor: colors.border,
+                        },
+                        language === 'en'
+                          ? [
+                              styles.langPillOptionActive,
+                              { borderColor: colors.primary },
+                            ]
+                          : null,
+                      ]}
+                    >
+                      <Text style={styles.langFlagIcon}>🇬🇧</Text>
+                      <Text
+                        style={[
+                          styles.langOptionText,
+                          { color: colors.textPrimary },
+                          language === 'en'
+                            ? [
+                                styles.langOptionTextActive,
+                                { color: colors.primary },
+                              ]
+                            : null,
+                        ]}
+                      >
+                        {t.settings.langEnglish}
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
               </View>
             </View>
 
-            {/* Data Management Section */}
-            <View style={styles.section}>
+            {/* SECTION 2: KELOLA KEUANGAN (Manage Financial Data) */}
+            <View style={styles.sectionGroup}>
               <Text
                 accessibilityRole="header"
-                style={[styles.sectionTitle, { color: colors.textPrimary }]}
+                style={[
+                  styles.sectionHeaderLabel,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {t.settings.manageSection}
+              </Text>
+
+              <View
+                style={[
+                  styles.groupedCard,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                {/* Categories Row */}
+                <Pressable
+                  accessibilityLabel={t.settings.categories}
+                  accessibilityRole="button"
+                  onPress={() => router.push('/categories')}
+                  style={({ pressed }) => [
+                    styles.navRowItem,
+                    pressed ? styles.rowPressed : null,
+                  ]}
+                >
+                  <View style={styles.navRowLeft}>
+                    <View
+                      style={[
+                        styles.itemIconBadge,
+                        {
+                          backgroundColor: isDark
+                            ? colors.surfaceSecondary
+                            : '#FFEDD5',
+                        },
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        color="#EA580C"
+                        name="tag-multiple-outline"
+                        size={19}
+                      />
+                    </View>
+                    <View>
+                      <Text
+                        style={[
+                          styles.navRowTitle,
+                          { color: colors.textPrimary },
+                        ]}
+                      >
+                        {t.settings.categories}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.navRowSubtitle,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {language === 'id'
+                          ? 'Kelola kategori pemasukan & pengeluaran'
+                          : 'Manage income & expense categories'}
+                      </Text>
+                    </View>
+                  </View>
+                  <MaterialCommunityIcons
+                    color={colors.textSecondary}
+                    name="chevron-right"
+                    size={22}
+                  />
+                </Pressable>
+
+                <View
+                  style={[
+                    styles.cardInnerDivider,
+                    { backgroundColor: colors.border },
+                  ]}
+                />
+
+                {/* Payment Methods Row */}
+                <Pressable
+                  accessibilityLabel={t.settings.paymentMethods}
+                  accessibilityRole="button"
+                  onPress={() => router.push('/payment-methods')}
+                  style={({ pressed }) => [
+                    styles.navRowItem,
+                    pressed ? styles.rowPressed : null,
+                  ]}
+                >
+                  <View style={styles.navRowLeft}>
+                    <View
+                      style={[
+                        styles.itemIconBadge,
+                        {
+                          backgroundColor: isDark
+                            ? colors.surfaceSecondary
+                            : '#EDE9FE',
+                        },
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        color="#7C3AED"
+                        name="credit-card-outline"
+                        size={19}
+                      />
+                    </View>
+                    <View>
+                      <Text
+                        style={[
+                          styles.navRowTitle,
+                          { color: colors.textPrimary },
+                        ]}
+                      >
+                        {t.settings.paymentMethods}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.navRowSubtitle,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {language === 'id'
+                          ? 'Tunai, rekening bank, & e-wallet'
+                          : 'Cash, bank accounts, & e-wallets'}
+                      </Text>
+                    </View>
+                  </View>
+                  <MaterialCommunityIcons
+                    color={colors.textSecondary}
+                    name="chevron-right"
+                    size={22}
+                  />
+                </Pressable>
+
+                <View
+                  style={[
+                    styles.cardInnerDivider,
+                    { backgroundColor: colors.border },
+                  ]}
+                />
+
+                {/* Currency Row (Read Only) */}
+                <View
+                  accessibilityLabel="Currency, Indonesian Rupiah, IDR, read only"
+                  style={styles.navRowItem}
+                >
+                  <View style={styles.navRowLeft}>
+                    <View
+                      style={[
+                        styles.itemIconBadge,
+                        {
+                          backgroundColor: isDark
+                            ? colors.surfaceSecondary
+                            : '#DCFCE7',
+                        },
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        color="#16A34A"
+                        name="cash"
+                        size={19}
+                      />
+                    </View>
+                    <View>
+                      <Text
+                        style={[
+                          styles.navRowTitle,
+                          { color: colors.textPrimary },
+                        ]}
+                      >
+                        {overview.currencyName}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.navRowSubtitle,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {overview.currencyCode}
+                      </Text>
+                    </View>
+                  </View>
+                  <View
+                    style={[
+                      styles.readOnlyPillBadge,
+                      {
+                        backgroundColor: isDark
+                          ? colors.surfaceSecondary
+                          : '#F1F5F9',
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.readOnlyPillText,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {t.settings.readOnly}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* SECTION 3: ZONA DATA & PRIVASI (Danger Zone) */}
+            <View style={styles.sectionGroup}>
+              <Text
+                accessibilityRole="header"
+                style={[
+                  styles.sectionHeaderLabel,
+                  { color: colors.textSecondary },
+                ]}
               >
                 {t.settings.dataSection}
               </Text>
-              <Text
-                style={[styles.secondaryText, { color: colors.textSecondary }]}
+
+              <View
+                style={[
+                  styles.groupedCard,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: isDark ? '#7F1D1D' : '#FCA5A5',
+                  },
+                ]}
               >
-                {t.settings.dataDesc}
-              </Text>
-              <AppButton
-                disabled={resetting}
-                label={t.settings.deleteAllData}
-                loading={resetting}
-                onPress={requestReset}
-                variant="destructive"
-              />
+                <Pressable
+                  accessibilityLabel={t.settings.deleteAllData}
+                  accessibilityRole="button"
+                  disabled={resetting}
+                  onPress={requestReset}
+                  style={({ pressed }) => [
+                    styles.navRowItem,
+                    pressed ? styles.rowPressed : null,
+                  ]}
+                >
+                  <View style={styles.navRowLeft}>
+                    <View
+                      style={[
+                        styles.itemIconBadge,
+                        {
+                          backgroundColor: isDark ? '#450A0A' : '#FEE2E2',
+                        },
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        color="#EF4444"
+                        name="trash-can-outline"
+                        size={19}
+                      />
+                    </View>
+                    <View>
+                      <Text style={styles.dangerRowTitle}>
+                        {t.settings.deleteAllData}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.navRowSubtitle,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {language === 'id'
+                          ? 'Hapus seluruh riwayat transaksi & reset data'
+                          : 'Delete all records & restore defaults'}
+                      </Text>
+                    </View>
+                  </View>
+                  <MaterialCommunityIcons
+                    color="#EF4444"
+                    name="chevron-right"
+                    size={22}
+                  />
+                </Pressable>
+              </View>
             </View>
 
-            {/* About Section */}
-            <View style={styles.section}>
-              <Text
-                accessibilityRole="header"
-                style={[styles.sectionTitle, { color: colors.textPrimary }]}
-              >
-                {t.settings.aboutSection}
-              </Text>
+            {/* SECTION 4: TENTANG APLIKASI (About Footer) */}
+            <View style={styles.aboutFooterContainer}>
               <Text style={[styles.appName, { color: colors.textPrimary }]}>
                 Personal Finance
               </Text>
               <Text
-                style={[styles.secondaryText, { color: colors.textSecondary }]}
+                style={[styles.appVersionText, { color: colors.textSecondary }]}
               >
                 {t.settings.version} {Constants.expoConfig?.version ?? '1.0.0'}
               </Text>
               <Text
-                style={[styles.secondaryText, { color: colors.textSecondary }]}
+                style={[styles.aboutDescText, { color: colors.textSecondary }]}
               >
                 {t.settings.aboutDesc}
               </Text>
@@ -646,7 +955,15 @@ export function SettingsScreen() {
           onPress={() => setAddShortcutModalVisible(false)}
           style={styles.modalOverlay}
         >
-          <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
+          <View
+            style={[
+              styles.modalCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+            ]}
+          >
             <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
               {t.settings.addShortcut}
             </Text>
@@ -656,7 +973,15 @@ export function SettingsScreen() {
               {t.settings.enterShortcutAmount}
             </Text>
 
-            <View style={styles.modalInputWrap}>
+            <View
+              style={[
+                styles.modalInputWrap,
+                {
+                  backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+                  borderColor: colors.border,
+                },
+              ]}
+            >
               <Text style={styles.modalInputPrefix}>Rp</Text>
               <TextInput
                 autoFocus
@@ -666,7 +991,7 @@ export function SettingsScreen() {
                   setShortcutError(null);
                 }}
                 placeholder="15000"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textSecondary}
                 style={[styles.modalInput, { color: colors.textPrimary }]}
                 value={newShortcutInput}
               />
@@ -696,14 +1021,60 @@ export function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  appName: {
-    fontSize: typography.body.fontSize,
+  aboutDescText: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 4,
+    maxWidth: 320,
+    textAlign: 'center',
+  },
+  aboutFooterContainer: {
+    alignItems: 'center',
+    gap: 2,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  addShortcutCardBtn: {
+    alignItems: 'center',
+    borderRadius: radius.md,
+    borderStyle: 'dashed',
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+    paddingVertical: 10,
+  },
+  addShortcutCardText: {
+    fontSize: 13,
     fontWeight: '700',
+  },
+  appName: {
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  appVersionText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  cardInnerDivider: {
+    height: 1,
+    marginLeft: 54,
+  },
+  cardItemPadding: {
+    padding: spacing.md,
   },
   content: {
     gap: spacing.lg,
     padding: spacing.md,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.xxl + spacing.lg,
+  },
+  dangerRowTitle: {
+    color: '#EF4444',
+    fontSize: 15,
+    fontWeight: '700',
   },
   errorPanel: {
     backgroundColor: '#FEE2E2',
@@ -717,50 +1088,75 @@ const styles = StyleSheet.create({
     color: '#991B1B',
     fontSize: typography.secondary.fontSize,
   },
+  groupedCard: {
+    borderRadius: 20,
+    borderWidth: 1.5,
+    elevation: 2,
+    overflow: 'hidden',
+    shadowColor: '#0F172A',
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+  },
   header: {
     gap: spacing.xs,
+    paddingHorizontal: spacing.xs,
+    paddingTop: spacing.xs,
   },
-  languageCard: {
+  iconTitleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+  },
+  itemHeaderBetween: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  itemIconBadge: {
+    alignItems: 'center',
+    borderRadius: 10,
+    height: 32,
+    justifyContent: 'center',
+    width: 32,
+  },
+  itemSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 4,
+  },
+  itemTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  langFlagIcon: {
+    fontSize: 20,
+  },
+  langOptionText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  langOptionTextActive: {
+    fontWeight: '800',
+  },
+  langPillOption: {
     alignItems: 'center',
     borderRadius: radius.md,
     borderWidth: 1.5,
+    flex: 1,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    minHeight: 56,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    gap: 8,
+    justifyContent: 'center',
+    paddingVertical: 10,
   },
-  languageCardLeft: {
-    alignItems: 'center',
+  langPillOptionActive: {
+    borderWidth: 2,
+    elevation: 1,
+  },
+  languagePillsRow: {
     flexDirection: 'row',
-    gap: spacing.sm + 4,
-  },
-  languageCardPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.99 }],
-  },
-  languageCardSelected: {
-    borderColor: '#2563EB',
-    elevation: 2,
-    shadowColor: '#2563EB',
-    shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-  },
-  languageCardText: {
-    fontSize: typography.body.fontSize,
-    fontWeight: '600',
-  },
-  languageCardTextSelected: {
-    color: '#2563EB',
-    fontWeight: '800',
-  },
-  languageFlag: {
-    fontSize: 24,
-  },
-  languageOptions: {
     gap: spacing.sm,
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
   },
   modalActions: {
     flexDirection: 'row',
@@ -769,7 +1165,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   modalCard: {
-    borderRadius: 20,
+    borderRadius: 22,
+    borderWidth: 1,
     gap: spacing.sm,
     padding: spacing.lg,
     width: '90%',
@@ -787,8 +1184,8 @@ const styles = StyleSheet.create({
   },
   modalInputWrap: {
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
     borderRadius: radius.md,
+    borderWidth: 1,
     flexDirection: 'row',
     marginTop: spacing.xs,
     paddingHorizontal: spacing.md,
@@ -805,102 +1202,83 @@ const styles = StyleSheet.create({
     fontSize: typography.sectionTitle.fontSize,
     fontWeight: '800',
   },
-  optionCard: {
+  navRowItem: {
     alignItems: 'center',
-    borderRadius: radius.md,
-    borderWidth: 1.5,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 64,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+  },
+  navRowLeft: {
+    alignItems: 'center',
     flex: 1,
-    gap: 6,
-    justifyContent: 'center',
-    paddingVertical: spacing.md,
+    flexDirection: 'row',
+    gap: 12,
+    paddingRight: spacing.sm,
   },
-  optionCardSelected: {
-    borderColor: '#2563EB',
-    borderWidth: 2,
-    elevation: 2,
-    shadowColor: '#2563EB',
-    shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  optionCardText: {
+  navRowSubtitle: {
     fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  navRowTitle: {
+    fontSize: 15,
     fontWeight: '700',
   },
-  optionCardTextSelected: {
-    color: '#2563EB',
-    fontWeight: '800',
+  readOnlyPillBadge: {
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
-  optionsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  readOnlyLabel: {
-    color: '#64748B',
-    fontSize: typography.metadata.fontSize,
-    fontWeight: '600',
+  readOnlyPillText: {
+    fontSize: 11,
+    fontWeight: '700',
     textTransform: 'uppercase',
   },
-  readOnlyRow: {
-    alignItems: 'center',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: spacing.md,
-  },
-  removeShortcutBtn: {
-    marginLeft: 2,
-  },
-  resetLinkText: {
-    color: '#2563EB',
+  resetActionLink: {
     fontSize: 12,
     fontWeight: '700',
   },
-  rowTitle: {
-    fontSize: typography.body.fontSize,
-    fontWeight: '600',
+  rowPressed: {
+    opacity: 0.72,
   },
-  secondaryText: {
-    fontSize: typography.secondary.fontSize,
-    lineHeight: typography.secondary.lineHeight,
+  sectionGroup: {
+    gap: spacing.xs + 2,
   },
-  section: {
-    gap: spacing.sm,
+  sectionHeaderLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    paddingHorizontal: spacing.xs,
+    textTransform: 'uppercase',
   },
-  sectionHeaderBetween: {
-    alignItems: 'center',
+  shortcutChipsWrap: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  sectionTitle: {
-    fontSize: typography.sectionTitle.fontSize,
-    fontWeight: '700',
+    flexWrap: 'wrap',
+    gap: spacing.xs + 2,
+    marginTop: spacing.sm,
   },
   shortcutErrorText: {
     color: '#EF4444',
     fontSize: 12,
     fontWeight: '600',
   },
-  shortcutManageChip: {
+  shortcutPillBadge: {
     alignItems: 'center',
     borderRadius: radius.pill,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
-  shortcutManageText: {
+  shortcutPillText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  shortcutsList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs + 2,
-    marginTop: spacing.xs,
+  shortcutRemoveIcon: {
+    marginLeft: 2,
   },
   state: {
     alignItems: 'center',
@@ -908,8 +1286,72 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: spacing.xl,
   },
+  themeSegmentTab: {
+    alignItems: 'center',
+    borderRadius: radius.md - 2,
+    flex: 1,
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'center',
+    paddingVertical: 8,
+  },
+  themeSegmentTabActive: {
+    elevation: 2,
+    shadowColor: '#0F172A',
+    shadowOffset: { height: 1, width: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+  },
+  themeSegmentTabText: {
+    fontSize: 12,
+  },
+  themeSegmentTrack: {
+    borderRadius: radius.md,
+    flexDirection: 'row',
+    marginTop: spacing.sm,
+    padding: 3,
+  },
   title: {
-    fontSize: typography.pageTitle.fontSize,
+    fontSize: 26,
+    fontWeight: '900',
+    letterSpacing: -0.3,
+  },
+  vaultBadgeRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  vaultTitle: {
+    fontSize: 15,
     fontWeight: '800',
+  },
+  vaultDesc: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  vaultHeroCard: {
+    borderRadius: 20,
+    borderWidth: 1.5,
+    elevation: 2,
+    padding: spacing.md,
+    shadowColor: '#0F172A',
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+  },
+  vaultIconCircle: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  vaultTextContainer: {
+    flex: 1,
+  },
+  secondaryText: {
+    fontSize: typography.secondary.fontSize,
+    lineHeight: typography.secondary.lineHeight,
   },
 });
