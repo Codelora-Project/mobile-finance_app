@@ -53,6 +53,12 @@ jest.mock('@/features/habits/habit-repository', () => ({
   }),
 }));
 
+jest.mock('@/features/budgets/budget-repository', () => ({
+  listCategoryBudgets: jest
+    .fn<() => Promise<unknown[]>>()
+    .mockResolvedValue([]),
+}));
+
 jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
   const ReactNative = require('react-native');
   return (props: { name: string }) => (

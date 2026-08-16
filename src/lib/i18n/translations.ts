@@ -105,6 +105,51 @@ export type TranslationSchema = {
     loggingDays: string;
     streakHelp: string;
   };
+  analytics: {
+    title: string;
+    subtitle: string;
+    overviewTab: string;
+    budgetsTab: string;
+    trendsTab: string;
+    totalExpense: string;
+    totalIncome: string;
+    dailyAverage: string;
+    topCategory: string;
+    categoryDistribution: string;
+    weeklyComparison: string;
+    thisWeek: string;
+    lastWeek: string;
+    spendingIncreased: string;
+    spendingDecreased: string;
+    spendingSame: string;
+    cashFlowTrend: string;
+    noDataYet: string;
+    noDataDesc: string;
+    viewAnalytics: string;
+  };
+  budgets: {
+    title: string;
+    subtitle: string;
+    setBudget: string;
+    editBudget: string;
+    deleteBudget: string;
+    budgetLimit: string;
+    spent: string;
+    remaining: string;
+    dailyAllowance: string;
+    dailyAllowanceDesc: string;
+    statusSafe: string;
+    statusWarning: string;
+    statusDanger: string;
+    statusOverbudget: string;
+    overallProgress: string;
+    categoriesBudgeted: string;
+    noBudgetsYet: string;
+    noBudgetsDesc: string;
+    saveBudgetSuccess: string;
+    deleteBudgetConfirm: string;
+    manageBudgets: string;
+  };
   common: {
     save: string;
     cancel: string;
@@ -240,6 +285,55 @@ export const translations: Record<Language, TranslationSchema> = {
       streakHelp:
         'Catat minimal 1 transaksi setiap hari untuk mempertahankan streak apimu! 🔥',
     },
+    // Analytics & Visual Insights
+    analytics: {
+      title: 'Wawasan Finansial',
+      subtitle: 'Analisis pengeluaran, anggaran, dan tren arus kas',
+      overviewTab: 'Komposisi',
+      budgetsTab: 'Anggaran',
+      trendsTab: 'Tren Arus Kas',
+      totalExpense: 'Total Pengeluaran',
+      totalIncome: 'Total Pemasukan',
+      dailyAverage: 'Rata-rata Harian',
+      topCategory: 'Kategori Terbesar',
+      categoryDistribution: 'Distribusi Pengeluaran',
+      weeklyComparison: 'Perbandingan Mingguan',
+      thisWeek: 'Minggu Ini',
+      lastWeek: 'Minggu Lalu',
+      spendingIncreased: 'Meningkat dari minggu lalu',
+      spendingDecreased: 'Lebih hemat dari minggu lalu',
+      spendingSame: 'Sama dengan minggu lalu',
+      cashFlowTrend: 'Tren Arus Kas Bulanan',
+      noDataYet: 'Belum ada data pengeluaran',
+      noDataDesc: 'Catat transaksi pengeluaran untuk melihat grafik analitik.',
+      viewAnalytics: 'Lihat Analisis & Grafik Lengkap',
+    },
+    // Budgets
+    budgets: {
+      title: 'Anggaran Bulanan',
+      subtitle: 'Kontrol batas belanja bulanan per kategori',
+      setBudget: 'Pasang Anggaran',
+      editBudget: 'Ubah Anggaran',
+      deleteBudget: 'Hapus Anggaran',
+      budgetLimit: 'Batas Anggaran Bulanan',
+      spent: 'Terpakai',
+      remaining: 'Sisa Anggaran',
+      dailyAllowance: 'Sisa Jajan / Hari',
+      dailyAllowanceDesc: 'Batas aman pengeluaran per hari hingga akhir bulan',
+      statusSafe: 'Aman',
+      statusWarning: 'Waspada',
+      statusDanger: 'Kritis',
+      statusOverbudget: 'Overbudget!',
+      overallProgress: 'Realisasi Anggaran Total',
+      categoriesBudgeted: 'Kategori Beranggaran',
+      noBudgetsYet: 'Belum ada anggaran kategori',
+      noBudgetsDesc:
+        'Pasang batas anggaran bulanan pada kategori agar keuanganmu tetap terkontrol.',
+      saveBudgetSuccess: 'Anggaran berhasil disimpan!',
+      deleteBudgetConfirm:
+        'Apakah kamu yakin ingin menghapus anggaran kategori ini?',
+      manageBudgets: 'Kelola Anggaran',
+    },
     // Common
     common: {
       save: 'Simpan',
@@ -373,6 +467,56 @@ export const translations: Record<Language, TranslationSchema> = {
       loggingDays: 'Active Days This Month',
       streakHelp:
         'Log at least 1 transaction every day to keep your fire streak burning! 🔥',
+    },
+    // Analytics & Visual Insights
+    analytics: {
+      title: 'Financial Insights',
+      subtitle: 'Expense analytics, category budgets, and cash flow trends',
+      overviewTab: 'Breakdown',
+      budgetsTab: 'Budgets',
+      trendsTab: 'Cash Flow',
+      totalExpense: 'Total Expenses',
+      totalIncome: 'Total Income',
+      dailyAverage: 'Daily Average',
+      topCategory: 'Top Category',
+      categoryDistribution: 'Spending Distribution',
+      weeklyComparison: 'Weekly Comparison',
+      thisWeek: 'This Week',
+      lastWeek: 'Last Week',
+      spendingIncreased: 'Higher than last week',
+      spendingDecreased: 'More frugal than last week',
+      spendingSame: 'Same as last week',
+      cashFlowTrend: 'Monthly Cash Flow',
+      noDataYet: 'No expense data yet',
+      noDataDesc: 'Log your expenses to see detailed visual analytics.',
+      viewAnalytics: 'View Full Analytics & Charts',
+    },
+    // Budgets
+    budgets: {
+      title: 'Monthly Budgets',
+      subtitle: 'Control category spending limits every month',
+      setBudget: 'Set Budget',
+      editBudget: 'Edit Budget',
+      deleteBudget: 'Delete Budget',
+      budgetLimit: 'Monthly Budget Limit',
+      spent: 'Spent',
+      remaining: 'Remaining',
+      dailyAllowance: 'Daily Allowance',
+      dailyAllowanceDesc:
+        'Safe daily spending limit until the end of the month',
+      statusSafe: 'Safe',
+      statusWarning: 'Warning',
+      statusDanger: 'Critical',
+      statusOverbudget: 'Overbudget!',
+      overallProgress: 'Overall Budget Progress',
+      categoriesBudgeted: 'Budgeted Categories',
+      noBudgetsYet: 'No category budgets set',
+      noBudgetsDesc:
+        'Set monthly limits on your categories to keep your spending disciplined.',
+      saveBudgetSuccess: 'Budget saved successfully!',
+      deleteBudgetConfirm:
+        'Are you sure you want to delete this category budget?',
+      manageBudgets: 'Manage Budgets',
     },
     // Common
     common: {

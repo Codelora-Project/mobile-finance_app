@@ -14,6 +14,10 @@ import {
 
 import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
+import {
+  listCategoryBudgets,
+  type CategoryBudget,
+} from '@/features/budgets/budget-repository';
 import { getCategoryMeta } from '@/features/categories/category-meta';
 import { GoalCard } from '@/features/goals/components/goal-card';
 import {
@@ -96,6 +100,9 @@ export function HomeScreen() {
   const [summary, setSummary] = useState<HomeSummary | null>(null);
   const [goals, setGoals] = useState<readonly SavingsGoal[]>([]);
   const [habitStats, setHabitStats] = useState<HabitStats | null>(null);
+  const [categoryBudgets, setCategoryBudgets] = useState<
+    readonly CategoryBudget[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,15 +119,18 @@ export function HomeScreen() {
       setError(null);
 
       try {
-        const [nextSummary, nextGoals, nextHabits] = await Promise.all([
-          getHomeSummary(database),
-          listSavingsGoals(database).catch(() => []),
-          getHabitStats(database).catch(() => null),
-        ]);
+        const [nextSummary, nextGoals, nextHabits, nextBudgets] =
+          await Promise.all([
+            getHomeSummary(database),
+            listSavingsGoals(database).catch(() => []),
+            getHabitStats(database).catch(() => null),
+            listCategoryBudgets(database).catch(() => []),
+          ]);
         if (requestId.current === currentRequest) {
           setSummary(nextSummary);
           setGoals(nextGoals);
           setHabitStats(nextHabits);
+          setCategoryBudgets(nextBudgets);
         }
       } catch (loadError) {
         if (requestId.current === currentRequest) {
@@ -354,6 +364,59 @@ export function HomeScreen() {
           </View>
         </View>
 
+        {/* 📊 Analytics & Visual Insights Banner */}
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push('/analytics')}
+          style={({ pressed }) => [
+            styles.analyticsBanner,
+            {
+              backgroundColor: isDark ? colors.surfaceSecondary : '#EFF6FF',
+              borderColor: isDark ? colors.border : '#BFDBFE',
+            },
+            pressed ? styles.pressed : null,
+          ]}
+        >
+          <View style={styles.analyticsBannerLeft}>
+            <View
+              style={[
+                styles.analyticsIconCircle,
+                { backgroundColor: colors.primary },
+              ]}
+            >
+              <MaterialCommunityIcons
+                color="#FFFFFF"
+                name="chart-box-outline"
+                size={22}
+              />
+            </View>
+            <View style={styles.analyticsBannerTextWrap}>
+              <Text
+                style={[
+                  styles.analyticsBannerTitle,
+                  { color: colors.textPrimary },
+                ]}
+              >
+                {t.analytics.title}
+              </Text>
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.analyticsBannerSubtitle,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                Grafik Komposisi, Anggaran & Arus Kas
+              </Text>
+            </View>
+          </View>
+          <MaterialCommunityIcons
+            color={colors.primary}
+            name="chevron-right"
+            size={22}
+          />
+        </Pressable>
+
         {/* 🎯 Habit Streak & Celengan Impian Section */}
         <View style={styles.section}>
           {habitStats ? (
@@ -475,12 +538,20 @@ export function HomeScreen() {
 
         {/* Spending by Category Section */}
         <View style={styles.section}>
-          <Text
-            accessibilityRole="header"
-            style={[styles.sectionTitle, { color: colors.textPrimary }]}
-          >
-            {t.home.spendingByCategory}
-          </Text>
+          <View style={styles.sectionHeaderBetween}>
+            <Text
+              accessibilityRole="header"
+              style={[styles.sectionTitle, { color: colors.textPrimary }]}
+            >
+              {t.home.spendingByCategory}
+            </Text>
+            <Pressable hitSlop={8} onPress={() => router.push('/analytics')}>
+              <Text style={[styles.viewAllText, { color: colors.primary }]}>
+                Atur Anggaran ›
+              </Text>
+            </Pressable>
+          </View>
+
           {summary.categoryTotals.length === 0 ? (
             <View
               style={[
@@ -515,17 +586,27 @@ export function HomeScreen() {
                   isDark,
                 );
 
+                const catBudget = categoryBudgets.find(
+                  (b) =>
+                    b.categoryName === category.categoryName && b.hasBudget,
+                );
+
                 return (
-                  <View
+                  <Pressable
                     accessibilityLabel={`${category.categoryName}, ${formatMoney(category.amountMinor, summary.currencyCode)}, ${percentage}% ${t.home.ofExpenses}`}
                     key={category.categoryName}
-                    style={[
+                    onPress={() => router.push('/analytics')}
+                    style={({ pressed }) => [
                       styles.categoryCard,
                       {
                         backgroundColor: colors.surface,
-                        borderColor: colors.border,
+                        borderColor:
+                          catBudget?.status === 'overbudget'
+                            ? '#EF4444'
+                            : colors.border,
                         shadowColor: colors.textPrimary,
                       },
+                      pressed ? styles.pressed : null,
                     ]}
                   >
                     <View
@@ -585,6 +666,8 @@ export function HomeScreen() {
                           )}
                         </Text>
                       </View>
+
+                      {/* Bar Track */}
                       <View
                         style={[
                           styles.barTrack,
@@ -599,14 +682,40 @@ export function HomeScreen() {
                           style={[
                             styles.barFill,
                             {
-                              backgroundColor: meta.color,
+                              backgroundColor:
+                                catBudget?.status === 'overbudget'
+                                  ? '#EF4444'
+                                  : catBudget?.status === 'warning'
+                                    ? '#F59E0B'
+                                    : meta.color,
                               width: `${Math.max(percentage, 4)}%`,
                             },
                           ]}
                         />
                       </View>
+
+                      {/* Budget Badge / Daily Allowance if set */}
+                      {catBudget && catBudget.dailyAllowanceMinor !== null ? (
+                        <View style={styles.categoryBudgetNotice}>
+                          <Text
+                            style={[
+                              styles.categoryBudgetText,
+                              {
+                                color:
+                                  catBudget.status === 'overbudget'
+                                    ? '#EF4444'
+                                    : colors.textSecondary,
+                              },
+                            ]}
+                          >
+                            {catBudget.status === 'overbudget'
+                              ? 'Overbudget!'
+                              : `Sisa jajan: ${formatMoney(catBudget.dailyAllowanceMinor, summary.currencyCode)}/hari`}
+                          </Text>
+                        </View>
+                      ) : null}
                     </View>
-                  </View>
+                  </Pressable>
                 );
               })}
             </View>
@@ -832,6 +941,44 @@ export function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  analyticsBanner: {
+    alignItems: 'center',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    elevation: 2,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginHorizontal: spacing.lg,
+    padding: spacing.md,
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+  },
+  analyticsBannerLeft: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  analyticsBannerSubtitle: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  analyticsBannerTextWrap: {
+    flex: 1,
+  },
+  analyticsBannerTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  analyticsIconCircle: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
   avatarBadge: {
     alignItems: 'center',
     borderRadius: radius.pill,
@@ -869,6 +1016,13 @@ const styles = StyleSheet.create({
   categoryAmount: {
     fontSize: 14,
     fontWeight: '800',
+  },
+  categoryBudgetNotice: {
+    marginTop: 2,
+  },
+  categoryBudgetText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   categoryCard: {
     alignItems: 'center',
@@ -1117,11 +1271,11 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.75,
   },
-
   receiptBadge: {
     alignItems: 'center',
     borderRadius: radius.pill,
     flexDirection: 'row',
+    flexShrink: 0,
     gap: 2,
     paddingHorizontal: 4,
     paddingVertical: 1,

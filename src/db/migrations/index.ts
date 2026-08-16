@@ -2,8 +2,13 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { initialMigration } from '@/db/migrations/001-initial';
 import { goalsAndHabitsMigration } from '@/db/migrations/002-goals-and-habits';
+import { categoryBudgetsMigration } from '@/db/migrations/003-category-budgets';
 
-const migrations = [initialMigration, goalsAndHabitsMigration] as const;
+const migrations = [
+  initialMigration,
+  goalsAndHabitsMigration,
+  categoryBudgetsMigration,
+] as const;
 
 export const latestDatabaseVersion = migrations.at(-1)?.version ?? 0;
 
