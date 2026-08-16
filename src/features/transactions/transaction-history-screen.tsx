@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
     fontSize: typography.secondary.fontSize,
   },
   list: {
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.xxl + spacing.md,
   },
   emptyList: {
     flexGrow: 1,

@@ -228,23 +228,46 @@ export function HomeScreen() {
             </Text>
           </View>
 
-          <View
-            style={[
-              styles.monthBadge,
-              {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#EEF2FF',
-                borderColor: isDark ? colors.border : '#C7D2FE',
-              },
-            ]}
-          >
-            <MaterialCommunityIcons
-              color={colors.primary}
-              name="calendar-month-outline"
-              size={18}
-            />
-            <Text style={[styles.month, { color: colors.primary }]}>
-              {formatMonth(summary.monthStart, language)}
-            </Text>
+          <View style={styles.headerRightActions}>
+            <View
+              style={[
+                styles.monthBadge,
+                {
+                  backgroundColor: isDark ? colors.surfaceSecondary : '#EEF2FF',
+                  borderColor: isDark ? colors.border : '#C7D2FE',
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                color={colors.primary}
+                name="calendar-month-outline"
+                size={16}
+              />
+              <Text style={[styles.month, { color: colors.primary }]}>
+                {formatMonth(summary.monthStart, language)}
+              </Text>
+            </View>
+
+            <Pressable
+              accessibilityLabel={t.settings.title}
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() => router.push('/settings')}
+              style={({ pressed }) => [
+                styles.settingsHeaderBtn,
+                {
+                  backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+                  borderColor: colors.border,
+                },
+                pressed ? styles.pressed : null,
+              ]}
+            >
+              <MaterialCommunityIcons
+                color={colors.textPrimary}
+                name="cog-outline"
+                size={22}
+              />
+            </Pressable>
           </View>
         </View>
 
@@ -1075,7 +1098,7 @@ const styles = StyleSheet.create({
   },
   content: {
     gap: spacing.md,
-    paddingBottom: spacing.xxl + spacing.lg,
+    paddingBottom: spacing.xxl + spacing.md,
   },
   emptyAction: {
     marginTop: spacing.md,
@@ -1194,8 +1217,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
   },
+  headerRightActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
   headerTitles: {
     gap: 2,
+  },
+  settingsHeaderBtn: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    height: 38,
+    justifyContent: 'center',
+    width: 38,
   },
   heroAmount: {
     fontSize: 32,

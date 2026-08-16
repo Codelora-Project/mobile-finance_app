@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
   },
   list: {
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.xxl + spacing.md,
   },
   emptyList: {
     flexGrow: 1,

@@ -51,7 +51,7 @@ describe('main tab layout', () => {
     jest.clearAllMocks();
   });
 
-  it('renders the four destinations and opens Add as an action in English', async () => {
+  it('renders the tab destinations and opens Add as an action in English', async () => {
     await render(
       <SafeAreaProvider
         initialMetrics={{
@@ -67,8 +67,8 @@ describe('main tab layout', () => {
 
     expect(screen.getByText('Home')).toBeOnTheScreen();
     expect(screen.getByText('Transactions')).toBeOnTheScreen();
+    expect(screen.getByText('Reports')).toBeOnTheScreen();
     expect(screen.getByText('Claims')).toBeOnTheScreen();
-    expect(screen.getByText('Settings')).toBeOnTheScreen();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Add' }));
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/new');
@@ -90,8 +90,8 @@ describe('main tab layout', () => {
 
     expect(screen.getByText('Beranda')).toBeOnTheScreen();
     expect(screen.getByText('Riwayat')).toBeOnTheScreen();
+    expect(screen.getByText('Laporan')).toBeOnTheScreen();
     expect(screen.getByText('Klaim')).toBeOnTheScreen();
-    expect(screen.getByText('Pengaturan')).toBeOnTheScreen();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Catat' }));
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/new');

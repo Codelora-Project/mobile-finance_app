@@ -11,27 +11,49 @@ import { spacing } from '@/theme/spacing';
 
 type TabIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
-function TabIcon({ color, name }: { color: ColorValue; name: TabIconName }) {
+function TabIcon({
+  color,
+  focused,
+  name,
+}: {
+  color: ColorValue;
+  focused?: boolean;
+  name: TabIconName;
+}) {
+  const { isDark } = useTheme();
+
   return (
-    <MaterialCommunityIcons
-      accessibilityElementsHidden
-      color={color}
-      importantForAccessibility="no-hide-descendants"
-      name={name}
-      size={26}
-    />
+    <View
+      style={[
+        styles.iconContainer,
+        focused
+          ? [
+              styles.iconPillFocused,
+              { backgroundColor: isDark ? '#1E3A8A' : '#EFF6FF' },
+            ]
+          : null,
+      ]}
+    >
+      <MaterialCommunityIcons
+        accessibilityElementsHidden
+        color={color}
+        importantForAccessibility="no-hide-descendants"
+        name={name}
+        size={22}
+      />
+    </View>
   );
 }
 
 function AddActionButton({ label }: { label: string }) {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   return (
     <Pressable
       accessibilityLabel={label}
       accessibilityRole="button"
-      hitSlop={8}
+      hitSlop={6}
       onPress={() => router.push('/transactions/new')}
       style={({ pressed }) => [
         styles.addAction,
@@ -43,8 +65,8 @@ function AddActionButton({ label }: { label: string }) {
           styles.addCircle,
           {
             backgroundColor: colors.primary,
-            borderColor: colors.surface,
-            shadowColor: colors.textPrimary,
+            borderColor: isDark ? '#334155' : colors.surface,
+            shadowColor: colors.primary,
           },
         ]}
       >
@@ -53,7 +75,7 @@ function AddActionButton({ label }: { label: string }) {
           color="#FFFFFF"
           importantForAccessibility="no-hide-descendants"
           name="plus"
-          size={32}
+          size={28}
         />
       </View>
       <Text style={[styles.addLabel, { color: colors.textSecondary }]}>
@@ -66,9 +88,10 @@ function AddActionButton({ label }: { label: string }) {
 export default function MainTabLayout() {
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
-  const { colors } = useTheme();
-  const bottomPadding = insets.bottom > 0 ? insets.bottom : spacing.sm;
-  const tabHeight = 64 + bottomPadding;
+  const { colors, isDark } = useTheme();
+
+  const bottomPadding = insets.bottom > 0 ? insets.bottom : spacing.xs + 2;
+  const tabHeight = 60 + bottomPadding;
 
   return (
     <Tabs
@@ -77,15 +100,16 @@ export default function MainTabLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarHideOnKeyboard: true,
         tabBarInactiveTintColor: colors.textSecondary,
+        tabBarItemStyle: styles.tabBarItem,
         tabBarLabelStyle: styles.tabLabel,
         tabBarStyle: [
-          styles.tabBar,
+          styles.dockTabBar,
           {
             backgroundColor: colors.surface,
-            borderTopColor: colors.border,
+            borderTopColor: isDark ? 'rgba(51, 65, 85, 0.7)' : colors.border,
             height: tabHeight,
             paddingBottom: bottomPadding,
-            paddingTop: spacing.xs + 2,
+            shadowColor: isDark ? '#000000' : colors.textPrimary,
           },
         ],
       }}
@@ -96,6 +120,7 @@ export default function MainTabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
               color={color}
+              focused={focused}
               name={focused ? 'home-variant' : 'home-variant-outline'}
             />
           ),
@@ -105,8 +130,14 @@ export default function MainTabLayout() {
       <Tabs.Screen
         name="transactions"
         options={{
-          tabBarIcon: ({ color }) => (
-            <TabIcon color={color} name="format-list-bulleted" />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon
+              color={color}
+              focused={focused}
+              name={
+                focused ? 'format-list-bulleted-square' : 'format-list-bulleted'
+              }
+            />
           ),
           title: t.tabs.transactions,
         }}
@@ -119,11 +150,25 @@ export default function MainTabLayout() {
         }}
       />
       <Tabs.Screen
+        name="analytics"
+        options={{
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon
+              color={color}
+              focused={focused}
+              name={focused ? 'chart-box' : 'chart-box-outline'}
+            />
+          ),
+          title: t.tabs.analytics,
+        }}
+      />
+      <Tabs.Screen
         name="claims"
         options={{
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
               color={color}
+              focused={focused}
               name={focused ? 'file-document' : 'file-document-outline'}
             />
           ),
@@ -133,10 +178,7 @@ export default function MainTabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon color={color} name={focused ? 'cog' : 'cog-outline'} />
-          ),
-          title: t.tabs.settings,
+          href: null,
         }}
       />
     </Tabs>
@@ -144,38 +186,58 @@ export default function MainTabLayout() {
 }
 
 const styles = StyleSheet.create({
-  tabBar: {
-    borderTopWidth: 1.5,
-  },
-  tabLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
   addAction: {
     alignItems: 'center',
     flex: 1,
     justifyContent: 'flex-start',
-    marginTop: -spacing.lg,
+    marginTop: -14,
   },
   addActionPressed: {
-    opacity: 0.78,
-    transform: [{ scale: 0.96 }],
+    opacity: 0.85,
+    transform: [{ scale: 0.94 }],
   },
   addCircle: {
     alignItems: 'center',
     borderRadius: radius.pill,
-    borderWidth: 4,
+    borderWidth: 3.5,
     elevation: 4,
-    height: 58,
+    height: 48,
     justifyContent: 'center',
     shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.22,
-    shadowRadius: 4,
-    width: 58,
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    width: 48,
   },
   addLabel: {
-    fontSize: 12,
+    fontSize: 10,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  dockTabBar: {
+    borderTopWidth: 1.5,
+    elevation: 4,
+    paddingHorizontal: 4,
+    paddingTop: 4,
+    shadowOffset: { height: -2, width: 0 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+  },
+  iconContainer: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 26,
+    justifyContent: 'center',
+    width: 48,
+  },
+  iconPillFocused: {
+    borderRadius: 13,
+  },
+  tabBarItem: {
+    paddingVertical: 2,
+  },
+  tabLabel: {
+    fontSize: 11,
     fontWeight: '700',
-    marginTop: 0,
+    marginTop: 1,
   },
 });
