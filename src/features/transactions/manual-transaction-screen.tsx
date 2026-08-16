@@ -1,7 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -12,14 +12,26 @@ import {
   StyleSheet,
   Switch,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 
 import { AppButton } from '@/components/ui/app-button';
 import { AppInput } from '@/components/ui/app-input';
 import { Screen } from '@/components/ui/screen';
+import { getCategoryMeta } from '@/features/categories/category-meta';
 import { CategoryPicker } from '@/features/categories/category-picker';
-import type { Category } from '@/features/categories/category-repository';
+import {
+  listCategories,
+  type Category,
+} from '@/features/categories/category-repository';
+import {
+  listPaymentMethods,
+  type PaymentMethod,
+} from '@/features/payment-methods/payment-method-repository';
+import { PaymentMethodPicker } from '@/features/payment-methods/payment-method-picker';
+import { recognizeReceipt } from '@/features/receipts/ocr-service';
+import { parseReceipt } from '@/features/receipts/receipt-parser';
 import {
   pickManualReceipt,
   type ManualReceiptSelection,
@@ -36,17 +48,14 @@ import {
   type TransactionClaimMembership,
   type TransactionType,
 } from '@/features/transactions/transaction-repository';
-import { PaymentMethodPicker } from '@/features/payment-methods/payment-method-picker';
-import type { PaymentMethod } from '@/features/payment-methods/payment-method-repository';
-import { recognizeReceipt } from '@/features/receipts/ocr-service';
-import { parseReceipt } from '@/features/receipts/receipt-parser';
 import {
   getTimezoneOffsetMinutes,
   parseLocalDateTimeInput,
   toLocalDateTimeInput,
 } from '@/lib/dates';
 import { isCodedError, mapError } from '@/lib/errors';
-import { formatMoneyInput, parseMoneyInput } from '@/lib/money';
+import { useLanguage } from '@/lib/i18n/language-context';
+import { formatMoney, formatMoneyInput, parseMoneyInput } from '@/lib/money';
 import { colors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -76,6 +85,15 @@ type PickerState = 'category' | 'paymentMethod' | null;
 type ManualTransactionScreenProps = {
   transactionId?: number;
 };
+
+const QUICK_INCREMENTS = [
+  { label: '+2k', value: 2_000 },
+  { label: '+5k', value: 5_000 },
+  { label: '+10k', value: 10_000 },
+  { label: '+20k', value: 20_000 },
+  { label: '+50k', value: 50_000 },
+  { label: '+100k', value: 100_000 },
+] as const;
 
 function createDefaultForm(): FormState {
   const now = Date.now();
@@ -224,1033 +242,1287 @@ function buildSaveInput(form: FormState) {
   return { errors, input };
 }
 
-function SelectionField({
-  error,
-  label,
-  onPress,
-  value,
-}: {
-  error?: string;
-  label: string;
-  onPress: () => void;
-  value: string;
-}) {
-  return (
-    <View>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <Pressable
-        accessibilityLabel={label}
-        accessibilityRole="button"
-        onPress={onPress}
-        style={({ pressed }) => [
-          styles.selectionField,
-          error ? styles.selectionFieldError : null,
-          pressed ? styles.pressed : null,
-        ]}
-      >
-        <Text style={value ? styles.selectionValue : styles.placeholder}>
-          {value || `Choose ${label.toLowerCase()}`}
-        </Text>
-        <Text style={styles.chevron}>›</Text>
-      </Pressable>
-      {error ? (
-        <Text accessibilityLiveRegion="polite" style={styles.fieldError}>
-          {error}
-        </Text>
-      ) : null}
-    </View>
-  );
-}
-
 export function ManualTransactionScreen({
   transactionId,
 }: ManualTransactionScreenProps) {
   const database = useSQLiteContext();
   const router = useRouter();
+  const { language, t } = useLanguage();
+  const isEditMode = typeof transactionId === 'number';
+
   const [form, setForm] = useState<FormState>(createDefaultForm);
-  const initialSnapshot = useRef(serializeForm(form));
-  const savingRef = useRef(false);
-  const deletingRef = useRef(false);
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [picker, setPicker] = useState<PickerState>(null);
-  const [loading, setLoading] = useState(transactionId !== undefined);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [initialForm, setInitialForm] = useState<FormState>(createDefaultForm);
+  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
+  const [paymentMethodsList, setPaymentMethodsList] = useState<PaymentMethod[]>(
+    [],
+  );
   const [claimMembership, setClaimMembership] =
     useState<TransactionClaimMembership | null>(null);
-  const [selectingReceipt, setSelectingReceipt] = useState(false);
-  const [receiptNotice, setReceiptNotice] = useState<string | null>(null);
-  const [receiptSourceVisible, setReceiptSourceVisible] = useState(false);
+  const [loading, setLoading] = useState(isEditMode);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [picker, setPicker] = useState<PickerState>(null);
+  const [receiptMenuVisible, setReceiptMenuVisible] = useState(false);
+  const [showDetailSection, setShowDetailSection] = useState(isEditMode);
 
-  const isEditing = transactionId !== undefined;
-  const isDirty = serializeForm(form) !== initialSnapshot.current;
+  const savingRef = useRef(false);
+  const deletingRef = useRef(false);
+  const amountInputRef = useRef<TextInput | null>(null);
 
+  const isDirty = useMemo(
+    () => serializeForm(form) !== serializeForm(initialForm),
+    [form, initialForm],
+  );
+
+  // Load Categories & Payment Methods
+  const loadEntities = useCallback(
+    async (type: TransactionType) => {
+      try {
+        const [cats, pms] = await Promise.all([
+          listCategories(database, type),
+          listPaymentMethods(database),
+        ]);
+        setCategoriesList(cats);
+        setPaymentMethodsList(pms);
+      } catch (err) {
+        if (__DEV__) console.warn('Could not load categories or methods', err);
+      }
+    },
+    [database],
+  );
+
+  useEffect(() => {
+    void loadEntities(form.type);
+  }, [form.type, loadEntities]);
+
+  // Load Existing Transaction for Edit
   const loadTransaction = useCallback(async () => {
-    if (transactionId === undefined) {
-      return;
-    }
+    if (!transactionId) return;
+    setLoading(true);
     try {
-      const [transaction, membership] = await Promise.all([
+      const [tx, claim] = await Promise.all([
         getTransaction(database, transactionId),
         getTransactionClaimMembership(database, transactionId),
       ]);
-      if (!transaction) {
-        setLoadError('Transaction not found.');
+      if (!tx) {
+        setErrors({ submit: 'Transaction was not found.' });
         return;
       }
-      if (membership && membership.claimStatus !== 'draft') {
-        setLoadError(
-          `This transaction is locked by the ${membership.claimStatus} claim “${membership.claimTitle}”. Move it back to Draft first.`,
-        );
-        return;
-      }
-      setClaimMembership(membership);
-      const nextForm = formFromTransaction(transaction);
-      setForm(nextForm);
-      initialSnapshot.current = serializeForm(nextForm);
-      setLoadError(null);
-    } catch (error) {
-      if (__DEV__) {
-        console.error('Manual transaction could not be loaded.', error);
-      }
-      setLoadError(mapError(error, 'DATABASE_WRITE_FAILED').message);
+      const initial = formFromTransaction(tx);
+      setForm(initial);
+      setInitialForm(initial);
+      setClaimMembership(claim);
+      setShowDetailSection(true);
+    } catch (loadError) {
+      setErrors({ submit: getOperationMessage(loadError) });
     } finally {
       setLoading(false);
     }
   }, [database, transactionId]);
 
   useEffect(() => {
-    if (transactionId === undefined) {
+    if (isEditMode) {
+      void loadTransaction();
+    }
+  }, [isEditMode, loadTransaction]);
+
+  // Navigation Guard
+  const handleExit = useCallback(() => {
+    if (savingRef.current || deletingRef.current) return;
+    if (isDirty) {
+      Alert.alert('Discard changes?', 'Your unsaved changes will be lost.', [
+        { style: 'cancel', text: 'Keep Editing' },
+        {
+          onPress: () => router.back(),
+          style: 'destructive',
+          text: 'Discard',
+        },
+      ]);
       return;
     }
-    let active = true;
-    Promise.all([
-      getTransaction(database, transactionId),
-      getTransactionClaimMembership(database, transactionId),
-    ])
-      .then(([transaction, membership]) => {
-        if (!active) {
-          return;
-        }
-        if (membership && membership.claimStatus !== 'draft') {
-          setLoadError(
-            `This transaction is locked by the ${membership.claimStatus} claim “${membership.claimTitle}”. Move it back to Draft first.`,
-          );
-          return;
-        }
-        setClaimMembership(membership);
-        if (!transaction) {
-          setLoadError('Transaction not found.');
-          return;
-        }
-        const nextForm = formFromTransaction(transaction);
-        setForm(nextForm);
-        initialSnapshot.current = serializeForm(nextForm);
-        setLoadError(null);
-      })
-      .catch((error: unknown) => {
-        if (__DEV__) {
-          console.error('Manual transaction could not be loaded.', error);
-        }
-        if (active) {
-          setLoadError(mapError(error, 'DATABASE_WRITE_FAILED').message);
-        }
-      })
-      .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [database, transactionId]);
-
-  const exitScreen = useCallback(() => {
     router.back();
-  }, [router]);
-
-  const requestExit = useCallback(() => {
-    if (savingRef.current || deleting) {
-      return;
-    }
-    if (!isDirty) {
-      exitScreen();
-      return;
-    }
-    Alert.alert('Discard changes?', 'Your unsaved changes will be lost.', [
-      { style: 'cancel', text: 'Keep Editing' },
-      { onPress: exitScreen, style: 'destructive', text: 'Discard' },
-    ]);
-  }, [deleting, exitScreen, isDirty]);
+  }, [isDirty, router]);
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener(
       'hardwareBackPress',
       () => {
-        requestExit();
+        handleExit();
         return true;
       },
     );
     return () => subscription.remove();
-  }, [requestExit]);
+  }, [handleExit]);
 
-  function updateForm(patch: Partial<FormState>) {
-    setForm((current) => ({ ...current, ...patch }));
-    setErrors((current) => ({ ...current, submit: undefined }));
-  }
-
-  function applyType(type: TransactionType) {
-    if (type === form.type) {
-      return;
-    }
-    updateForm({
-      category: null,
-      isReimbursable: type === 'expense' ? form.isReimbursable : false,
-      receipt: type === 'expense' ? form.receipt : null,
-      type,
+  // Quick Amount Shortcut Handlers
+  const handleAddIncrement = useCallback((inc: number) => {
+    setForm((curr) => {
+      let currentVal = 0;
+      try {
+        currentVal = parseMoneyInput(curr.amount, 'IDR');
+      } catch {
+        currentVal = 0;
+      }
+      const nextVal = Math.min(currentVal + inc, 1_000_000_000);
+      return { ...curr, amount: formatMoneyInput(nextVal, 'IDR') };
     });
-    setErrors((current) => ({ ...current, category: undefined }));
-  }
+    setErrors((curr) => ({ ...curr, amount: undefined }));
+  }, []);
 
-  function selectType(type: TransactionType) {
-    if (type === 'income' && (form.receipt !== null || form.isReimbursable)) {
-      Alert.alert(
-        'Switch to income?',
-        'The receipt and reimbursable selection will be removed.',
-        [
-          { style: 'cancel', text: 'Cancel' },
-          { onPress: () => applyType(type), text: 'Switch' },
-        ],
-      );
-      return;
-    }
-    applyType(type);
-  }
+  const handleClearAmount = useCallback(() => {
+    setForm((curr) => ({ ...curr, amount: '' }));
+  }, []);
 
-  async function selectReceipt(source: ManualReceiptSource) {
-    setSelectingReceipt(true);
-    try {
-      const receipt = await pickManualReceipt(source);
-      if (receipt) {
+  // Category Selection Handler
+  const handleSelectCategory = useCallback((cat: Category) => {
+    setForm((curr) => ({
+      ...curr,
+      category: { id: cat.id, name: cat.name },
+    }));
+    setErrors((curr) => ({ ...curr, category: undefined }));
+  }, []);
+
+  // Payment Method Selection Handler
+  const handleSelectPaymentMethod = useCallback((pm: PaymentMethod) => {
+    setForm((curr) => ({
+      ...curr,
+      paymentMethod:
+        curr.paymentMethod?.id === pm.id ? null : { id: pm.id, name: pm.name },
+    }));
+  }, []);
+
+  // Receipt Actions
+  const handleSelectReceiptSource = useCallback(
+    async (source: ManualReceiptSource) => {
+      setReceiptMenuVisible(false);
+      try {
+        const selection = await pickManualReceipt(source);
+        if (!selection) return;
+
+        setForm((curr) => ({
+          ...curr,
+          receipt: selection,
+        }));
+
+        setOcrLoading(true);
         try {
-          const result = await recognizeReceipt(receipt.sourceImageUri);
-          const parsed = parseReceipt(result.rawText);
-          const ocrStatus =
-            parsed.totalMinor === null
-              ? ('partial' as const)
-              : ('processed' as const);
-          updateForm({
+          const ocrResult = await recognizeReceipt(selection.sourceImageUri);
+          const parsed = parseReceipt(ocrResult.rawText);
+
+          setForm((curr) => ({
+            ...curr,
             amount:
-              form.amount.trim() || parsed.totalMinor === null
-                ? form.amount
-                : formatMoneyInput(parsed.totalMinor, 'IDR'),
+              !curr.amount && parsed.totalMinor !== null
+                ? formatMoneyInput(parsed.totalMinor, 'IDR')
+                : curr.amount,
             counterparty:
-              form.counterparty.trim() || !parsed.merchant
-                ? form.counterparty
-                : parsed.merchant,
-            date: parsed.localDate ?? form.date,
-            receipt: {
-              ...receipt,
-              ocrRawText: result.rawText,
-              ocrStatus,
-              subtotalMinor: parsed.subtotalMinor,
-              taxMinor: parsed.taxMinor,
-            },
-          });
-          setReceiptNotice(
-            ocrStatus === 'processed'
-              ? 'Receipt attached and detected details were filled in. Review them before saving.'
-              : 'Receipt attached. Some details could not be detected, so review the form.',
-          );
+              !curr.counterparty && parsed.merchant
+                ? parsed.merchant
+                : curr.counterparty,
+            date:
+              curr.date === initialForm.date && parsed.localDate
+                ? parsed.localDate
+                : curr.date,
+            receipt: curr.receipt
+              ? {
+                  ...curr.receipt,
+                  ocrRawText: ocrResult.rawText,
+                  ocrStatus:
+                    parsed.totalMinor !== null ? 'processed' : 'partial',
+                  subtotalMinor: parsed.subtotalMinor,
+                  taxMinor: parsed.taxMinor,
+                }
+              : null,
+          }));
         } catch {
-          updateForm({
-            receipt: {
-              ...receipt,
-              ocrStatus: 'failed',
-            },
-          });
-          setReceiptNotice(
-            'Receipt attached, but its details could not be read. Fill them in manually.',
-          );
+          setForm((curr) => ({
+            ...curr,
+            receipt: curr.receipt
+              ? { ...curr.receipt, ocrStatus: 'failed' }
+              : null,
+          }));
+        } finally {
+          setOcrLoading(false);
         }
+      } catch (receiptError) {
+        setErrors((curr) => ({
+          ...curr,
+          submit: getOperationMessage(receiptError),
+        }));
       }
-    } catch (error) {
-      if (__DEV__ && !isCodedError(error)) {
-        console.error('Manual receipt selection failed.', error);
-      }
-      setErrors((current) => ({
-        ...current,
-        submit: getOperationMessage(error),
-      }));
-    } finally {
-      setSelectingReceipt(false);
-    }
-  }
+    },
+    [initialForm.date],
+  );
 
-  function chooseReceiptSource() {
-    setReceiptSourceVisible(true);
-  }
-
-  function chooseReceipt(source: ManualReceiptSource) {
-    setReceiptSourceVisible(false);
-    void selectReceipt(source);
-  }
-
-  function removeReceipt() {
-    Alert.alert('Remove receipt?', 'The receipt will be detached.', [
-      { style: 'cancel', text: 'Cancel' },
-      {
-        onPress: () => {
-          updateForm({ receipt: null });
-          setReceiptNotice(null);
-        },
-        style: 'destructive',
-        text: 'Remove',
-      },
-    ]);
-  }
-
-  async function save() {
-    if (savingRef.current) {
-      return;
-    }
-    const result = buildSaveInput(form);
-    setErrors(result.errors);
-    if (!result.input) {
-      return;
-    }
+  // Save Transaction
+  const handleSave = useCallback(async () => {
+    if (savingRef.current || deletingRef.current) return;
+    const { errors: nextErrors, input } = buildSaveInput(form);
+    setErrors(nextErrors);
+    if (!input) return;
 
     savingRef.current = true;
     setSaving(true);
     try {
-      const saved = isEditing
-        ? await updateTransaction(database, transactionId, result.input)
-        : await createTransaction(database, result.input);
-      initialSnapshot.current = serializeForm(form);
-      router.dismissTo({
-        params: {
-          feedback: `${saved.type === 'expense' ? 'Expense' : 'Income'} saved.`,
-        },
-        pathname: '/transactions',
-      });
-    } catch (error) {
-      if (__DEV__ && !isCodedError(error)) {
-        console.error('Manual transaction could not be saved.', error);
+      if (isEditMode && transactionId) {
+        await updateTransaction(database, transactionId, input);
+        router.dismissTo({
+          params: { feedback: 'Transaction updated.' },
+          pathname: '/transactions',
+        });
+      } else {
+        await createTransaction(database, input);
+        router.dismissTo({
+          params: { feedback: 'Transaction recorded.' },
+          pathname: '/transactions',
+        });
       }
-      setErrors((current) => ({
-        ...current,
-        submit: getOperationMessage(error),
-      }));
+    } catch (saveError) {
       savingRef.current = false;
       setSaving(false);
+      setErrors((curr) => ({
+        ...curr,
+        submit: getOperationMessage(saveError),
+      }));
     }
-  }
+  }, [database, form, isEditMode, router, transactionId]);
 
-  function confirmDelete() {
-    if (transactionId === undefined || deletingRef.current) {
-      return;
-    }
-    const warning = claimMembership
-      ? `This will remove the transaction from Draft claim “${claimMembership.claimTitle}” and delete it.`
-      : 'This action cannot be undone.';
-    Alert.alert('Delete transaction?', warning, [
-      { style: 'cancel', text: 'Cancel' },
-      {
-        onPress: () => {
-          if (deletingRef.current) return;
-          deletingRef.current = true;
-          setDeleting(true);
-          deleteTransaction(database, transactionId)
-            .then(() => {
-              initialSnapshot.current = serializeForm(form);
+  // Delete Transaction (for Edit Mode)
+  const handleDelete = useCallback(() => {
+    if (!transactionId || deletingRef.current || savingRef.current) return;
+    Alert.alert(
+      'Delete transaction?',
+      'This transaction and attached receipts will be deleted permanently.',
+      [
+        { style: 'cancel', text: 'Cancel' },
+        {
+          onPress: async () => {
+            deletingRef.current = true;
+            setDeleting(true);
+            try {
+              await deleteTransaction(database, transactionId);
               router.dismissTo({
                 params: { feedback: 'Transaction deleted.' },
                 pathname: '/transactions',
               });
-            })
-            .catch((error: unknown) => {
+            } catch (delError) {
               deletingRef.current = false;
-              if (__DEV__ && !isCodedError(error)) {
-                console.error('Manual transaction delete failed.', error);
-              }
-              setErrors((current) => ({
-                ...current,
-                submit: getOperationMessage(error),
-              }));
               setDeleting(false);
-            });
+              setErrors((curr) => ({
+                ...curr,
+                submit: getOperationMessage(delError),
+              }));
+            }
+          },
+          style: 'destructive',
+          text: 'Delete',
         },
-        style: 'destructive',
-        text: 'Delete',
-      },
-    ]);
-  }
+      ],
+    );
+  }, [database, router, transactionId]);
 
   if (loading) {
     return (
-      <Screen style={styles.stateScreen}>
-        <ActivityIndicator color={colors.primary} size="large" />
-        <Text style={styles.stateText}>Loading transaction…</Text>
-      </Screen>
-    );
-  }
-
-  if (loadError) {
-    return (
-      <Screen style={styles.stateScreen}>
-        <Text accessibilityRole="header" style={styles.title}>
-          Transaction unavailable
-        </Text>
-        <Text accessibilityLiveRegion="assertive" style={styles.stateText}>
-          {loadError}
-        </Text>
-        <View style={styles.stateActions}>
-          {transactionId !== undefined ? (
-            <AppButton
-              label="Try again"
-              onPress={() => void loadTransaction()}
-            />
-          ) : null}
-          <AppButton label="Back" onPress={exitScreen} variant="secondary" />
+      <Screen>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator color={colors.primary} size="large" />
+          <Text style={styles.loadingText}>Loading transaction details…</Text>
         </View>
       </Screen>
     );
   }
 
-  const noteLength = Array.from(form.note.normalize('NFC').trim()).length;
+  const isExpense = form.type === 'expense';
+  const parsedAmountMinor = (() => {
+    try {
+      return parseMoneyInput(form.amount, 'IDR');
+    } catch {
+      return 0;
+    }
+  })();
 
   return (
-    <Screen>
-      <View style={styles.header}>
-        <AppButton label="Back" onPress={requestExit} variant="ghost" />
-        <Text accessibilityRole="header" style={styles.title}>
-          {isEditing ? 'Edit Transaction' : 'Add Transaction'}
-        </Text>
-        <View style={styles.headerSpacer} />
-      </View>
+    <View style={styles.backdropOverlay}>
+      <Pressable onPress={handleExit} style={styles.backdropTouchArea} />
 
-      <ScrollView
-        contentContainerStyle={styles.form}
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="handled"
-      >
-        <View accessibilityRole="tablist" style={styles.segment}>
-          {(['expense', 'income'] as const).map((type) => {
-            const selected = form.type === type;
-            return (
-              <Pressable
-                accessibilityRole="tab"
-                accessibilityState={{ selected }}
-                key={type}
-                onPress={() => selectType(type)}
-                style={({ pressed }) => [
-                  styles.segmentButton,
-                  selected ? styles.segmentSelected : null,
-                  pressed ? styles.pressed : null,
+      <View style={styles.bottomSheetModal}>
+        {/* Drag Indicator */}
+        <View style={styles.dragHandle} />
+
+        {/* Header: Type Toggle + Close */}
+        <View style={styles.sheetHeader}>
+          <View style={styles.typeSegment}>
+            <Pressable
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isExpense }}
+              onPress={() => {
+                setForm((c) => ({
+                  ...c,
+                  category: null,
+                  receipt: null,
+                  type: 'expense',
+                }));
+                setErrors({});
+              }}
+              style={[
+                styles.typeButton,
+                isExpense ? styles.typeButtonActiveExpense : null,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.typeButtonText,
+                  isExpense ? styles.typeButtonTextActive : null,
                 ]}
               >
-                <Text
-                  style={
-                    selected ? styles.segmentSelectedText : styles.segmentText
-                  }
+                💸 {language === 'id' ? 'Pengeluaran' : 'Expense'}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="tab"
+              accessibilityState={{ selected: !isExpense }}
+              onPress={() => {
+                setForm((c) => ({
+                  ...c,
+                  category: null,
+                  isReimbursable: false,
+                  receipt: null,
+                  type: 'income',
+                }));
+                setErrors({});
+              }}
+              style={[
+                styles.typeButton,
+                !isExpense ? styles.typeButtonActiveIncome : null,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.typeButtonText,
+                  !isExpense ? styles.typeButtonTextActive : null,
+                ]}
+              >
+                💰 {language === 'id' ? 'Pemasukan' : 'Income'}
+              </Text>
+            </Pressable>
+          </View>
+
+          <Pressable
+            accessibilityLabel="Close modal"
+            accessibilityRole="button"
+            hitSlop={12}
+            onPress={handleExit}
+            style={styles.closeIconButton}
+          >
+            <MaterialCommunityIcons color="#64748B" name="close" size={24} />
+          </Pressable>
+        </View>
+
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Hero Amount Display & Number Pad input */}
+          <Pressable
+            onPress={() => amountInputRef.current?.focus()}
+            style={[
+              styles.amountHeroContainer,
+              errors.amount ? styles.amountHeroError : null,
+            ]}
+          >
+            <Text style={styles.currencyPrefix}>Rp</Text>
+            <TextInput
+              accessibilityLabel="Amount *"
+              autoFocus={!isEditMode}
+              inputMode="decimal"
+              keyboardType="number-pad"
+              onChangeText={(text) => {
+                setForm((c) => ({ ...c, amount: text }));
+                setErrors((c) => ({ ...c, amount: undefined }));
+              }}
+              placeholder="0"
+              placeholderTextColor="#94A3B8"
+              ref={amountInputRef}
+              style={styles.amountHeroInput}
+              value={form.amount}
+            />
+          </Pressable>
+          {errors.amount ? (
+            <Text style={styles.errorBanner}>{errors.amount}</Text>
+          ) : null}
+
+          {/* Quick Cash Shortcuts (+2k, +5k, +10k, +50k...) */}
+          <View style={styles.quickShortcutsRow}>
+            <ScrollView
+              contentContainerStyle={styles.shortcutsList}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+            >
+              {QUICK_INCREMENTS.map((item) => (
+                <Pressable
+                  accessibilityLabel={`Add ${item.label}`}
+                  accessibilityRole="button"
+                  key={item.value}
+                  onPress={() => handleAddIncrement(item.value)}
+                  style={({ pressed }) => [
+                    styles.shortcutChip,
+                    pressed && styles.shortcutChipPressed,
+                  ]}
                 >
-                  {type === 'expense' ? 'Expense' : 'Income'}
+                  <Text style={styles.shortcutChipText}>{item.label}</Text>
+                </Pressable>
+              ))}
+              <Pressable
+                accessibilityLabel="Reset amount"
+                accessibilityRole="button"
+                onPress={handleClearAmount}
+                style={({ pressed }) => [
+                  styles.shortcutChip,
+                  styles.shortcutChipClear,
+                  pressed && styles.shortcutChipPressed,
+                ]}
+              >
+                <Text style={styles.shortcutChipClearText}>⌫ Reset</Text>
+              </Pressable>
+            </ScrollView>
+          </View>
+
+          {/* 1-Tap Category Grid */}
+          <View style={styles.sectionContainer}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionLabel}>
+                {language === 'id' ? 'PILIH KATEGORI' : 'SELECT CATEGORY'} *
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Category *"
+                onPress={() => setPicker('category')}
+                style={styles.moreCategoriesBtn}
+              >
+                <Text style={styles.moreCategoriesText}>
+                  {language === 'id' ? '+ Kategori Lain' : '+ More'}
                 </Text>
               </Pressable>
-            );
-          })}
-        </View>
-
-        <AppInput
-          autoFocus={!isEditing}
-          error={errors.amount}
-          inputMode="decimal"
-          label="Amount *"
-          onChangeText={(amount) => updateForm({ amount })}
-          placeholder="0"
-          value={form.amount}
-        />
-
-        <SelectionField
-          error={errors.category}
-          label="Category *"
-          onPress={() => setPicker('category')}
-          value={form.category?.name ?? ''}
-        />
-
-        <View>
-          <Text style={styles.fieldLabel}>Date & Time *</Text>
-          <View style={styles.dateTimeRow}>
-            <View style={styles.dateField}>
-              <AppInput
-                accessibilityLabel="Transaction date"
-                autoCapitalize="none"
-                error={null}
-                label="Date"
-                onChangeText={(date) => updateForm({ date })}
-                placeholder="YYYY-MM-DD"
-                value={form.date}
-              />
             </View>
-            <View style={styles.timeField}>
-              <AppInput
-                accessibilityLabel="Transaction time"
-                autoCapitalize="none"
-                error={null}
-                label="Time"
-                onChangeText={(time) => updateForm({ time })}
-                placeholder="HH:mm"
-                value={form.time}
-              />
-            </View>
-          </View>
-          {errors.dateTime ? (
-            <Text accessibilityLiveRegion="polite" style={styles.fieldError}>
-              {errors.dateTime}
-            </Text>
-          ) : null}
-        </View>
 
-        <AppInput
-          autoCapitalize="words"
-          label={form.type === 'expense' ? 'Merchant' : 'Source'}
-          onChangeText={(counterparty) => updateForm({ counterparty })}
-          placeholder="Optional"
-          value={form.counterparty}
-        />
-
-        <SelectionField
-          label="Payment Method"
-          onPress={() => setPicker('paymentMethod')}
-          value={form.paymentMethod?.name ?? ''}
-        />
-
-        {form.type === 'expense' ? (
-          <View style={styles.switchRow}>
-            <View style={styles.switchText}>
-              <Text style={styles.fieldLabel}>Reimbursable</Text>
-              <Text style={styles.helper}>
-                Include this expense in a claim.
-              </Text>
-            </View>
-            <Switch
-              accessibilityLabel="Reimbursable"
-              onValueChange={(isReimbursable) => updateForm({ isReimbursable })}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              value={form.isReimbursable}
-            />
-          </View>
-        ) : null}
-
-        <View>
-          <AppInput
-            error={errors.note}
-            label="Note"
-            multiline
-            numberOfLines={4}
-            onChangeText={(note) => updateForm({ note })}
-            placeholder="Optional"
-            style={styles.noteInput}
-            textAlignVertical="top"
-            value={form.note}
-          />
-          <Text style={styles.characterCount}>{noteLength}/500</Text>
-        </View>
-
-        {form.type === 'expense' ? (
-          <View>
-            <Text style={styles.fieldLabel}>Receipt</Text>
-            {form.receipt ? (
-              <View style={styles.receiptCard}>
-                <View style={styles.receiptText}>
-                  <Text numberOfLines={1} style={styles.selectionValue}>
-                    {form.receipt.displayName}
-                  </Text>
-                  <Text style={styles.helper}>
-                    {form.receipt.ocrStatus === 'processed'
-                      ? 'Receipt details detected'
-                      : form.receipt.ocrStatus === 'partial'
-                        ? 'Some receipt details detected'
-                        : form.receipt.ocrStatus === 'failed'
-                          ? 'Receipt attached · Enter details manually'
-                          : 'Receipt attached'}
-                  </Text>
-                </View>
-                <AppButton
-                  label="Remove"
-                  onPress={removeReceipt}
-                  variant="destructive"
-                />
-              </View>
-            ) : (
-              <Pressable
-                accessibilityLabel="Add receipt"
-                accessibilityRole="button"
-                accessibilityState={{
-                  busy: selectingReceipt,
-                  disabled: selectingReceipt,
-                }}
-                disabled={selectingReceipt}
-                onPress={chooseReceiptSource}
-                style={({ pressed }) => [
-                  styles.receiptPicker,
-                  selectingReceipt ? styles.disabled : null,
-                  pressed ? styles.pressed : null,
-                ]}
-              >
-                {selectingReceipt ? (
-                  <ActivityIndicator color={colors.primary} />
-                ) : (
-                  <MaterialCommunityIcons
-                    accessibilityElementsHidden
-                    color={colors.primary}
-                    importantForAccessibility="no-hide-descendants"
-                    name="camera-plus-outline"
-                    size={26}
-                  />
-                )}
-                <View style={styles.receiptPickerText}>
-                  <Text style={styles.receiptPickerTitle}>Add receipt</Text>
-                  <Text style={styles.helper}>
-                    Take a photo or choose from gallery
-                  </Text>
-                </View>
-                <Text style={styles.chevron}>›</Text>
-              </Pressable>
-            )}
-            {form.receipt && receiptNotice ? (
-              <Text
-                accessibilityLiveRegion="polite"
-                style={styles.receiptNotice}
-              >
-                {receiptNotice}
-              </Text>
+            <ScrollView
+              contentContainerStyle={styles.categoryGrid}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+            >
+              {categoriesList.slice(0, 10).map((cat) => {
+                const meta = getCategoryMeta(cat.name, form.type);
+                const isSelected = form.category?.id === cat.id;
+                return (
+                  <Pressable
+                    accessibilityLabel={cat.name}
+                    accessibilityRole="button"
+                    key={cat.id}
+                    onPress={() => handleSelectCategory(cat)}
+                    style={[
+                      styles.categoryCard,
+                      isSelected ? styles.categoryCardSelected : null,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.categoryIconBadge,
+                        { backgroundColor: meta.backgroundColor },
+                        isSelected ? styles.categoryIconBadgeSelected : null,
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        color={meta.color}
+                        name={meta.icon}
+                        size={26}
+                      />
+                    </View>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.categoryNameText,
+                        isSelected ? styles.categoryNameTextSelected : null,
+                      ]}
+                    >
+                      {cat.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+            {errors.category ? (
+              <Text style={styles.errorBanner}>{errors.category}</Text>
             ) : null}
           </View>
-        ) : null}
 
-        {errors.submit ? (
-          <Text accessibilityLiveRegion="assertive" style={styles.submitError}>
-            {errors.submit}
-          </Text>
-        ) : null}
-
-        <View style={styles.formActions}>
-          <AppButton
-            disabled={deleting}
-            label={`Save ${form.type === 'expense' ? 'Expense' : 'Income'}`}
-            loading={saving}
-            onPress={() => void save()}
-            testID="save-transaction"
-          />
-          {isEditing ? (
-            <AppButton
-              disabled={saving}
-              label="Delete transaction"
-              loading={deleting}
-              onPress={confirmDelete}
-              variant="destructive"
-            />
-          ) : null}
-        </View>
-      </ScrollView>
-
-      <Modal
-        animationType="fade"
-        onRequestClose={() => setReceiptSourceVisible(false)}
-        transparent
-        visible={receiptSourceVisible}
-      >
-        <View style={styles.sourceOverlay}>
-          <Pressable
-            accessibilityLabel="Close receipt options"
-            accessibilityRole="button"
-            onPress={() => setReceiptSourceVisible(false)}
-            style={StyleSheet.absoluteFill}
-          />
-          <View accessibilityViewIsModal style={styles.sourceSheet}>
-            <Text accessibilityRole="header" style={styles.sourceTitle}>
-              Add receipt
+          {/* Quick Payment Method Chips */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionLabel}>
+              {language === 'id' ? 'METODE PEMBAYARAN' : 'PAYMENT METHOD'}
             </Text>
-            <Text style={styles.sourceDescription}>
-              Take a new photo or choose an existing image.
-            </Text>
-            <Pressable
-              accessibilityLabel="Take photo"
-              accessibilityRole="button"
-              onPress={() => chooseReceipt('camera')}
-              style={({ pressed }) => [
-                styles.sourceOption,
-                pressed ? styles.pressed : null,
-              ]}
+            <ScrollView
+              contentContainerStyle={styles.paymentMethodsList}
+              horizontal
+              showsHorizontalScrollIndicator={false}
             >
-              <MaterialCommunityIcons
-                accessibilityElementsHidden
-                color={colors.primary}
-                importantForAccessibility="no-hide-descendants"
-                name="camera-outline"
-                size={26}
-              />
-              <View style={styles.sourceOptionText}>
-                <Text style={styles.sourceOptionTitle}>Take photo</Text>
-                <Text style={styles.helper}>Open the camera</Text>
-              </View>
-            </Pressable>
-            <Pressable
-              accessibilityLabel="Choose from gallery"
-              accessibilityRole="button"
-              onPress={() => chooseReceipt('gallery')}
-              style={({ pressed }) => [
-                styles.sourceOption,
-                pressed ? styles.pressed : null,
-              ]}
-            >
-              <MaterialCommunityIcons
-                accessibilityElementsHidden
-                color={colors.primary}
-                importantForAccessibility="no-hide-descendants"
-                name="image-outline"
-                size={26}
-              />
-              <View style={styles.sourceOptionText}>
-                <Text style={styles.sourceOptionTitle}>
-                  Choose from gallery
-                </Text>
-                <Text style={styles.helper}>Select one receipt image</Text>
-              </View>
-            </Pressable>
-            <AppButton
-              label="Cancel"
-              onPress={() => setReceiptSourceVisible(false)}
-              variant="ghost"
-            />
+              {paymentMethodsList.map((pm) => {
+                const isSelected = form.paymentMethod?.id === pm.id;
+                return (
+                  <Pressable
+                    accessibilityLabel={pm.name}
+                    accessibilityRole="button"
+                    key={pm.id}
+                    onPress={() => handleSelectPaymentMethod(pm)}
+                    style={[
+                      styles.paymentMethodChip,
+                      isSelected ? styles.paymentMethodChipSelected : null,
+                    ]}
+                  >
+                    <MaterialCommunityIcons
+                      color={isSelected ? '#FFFFFF' : '#475569'}
+                      name={
+                        pm.name.toLowerCase().includes('cash') ||
+                        pm.name.toLowerCase().includes('tunai')
+                          ? 'cash'
+                          : pm.name.toLowerCase().includes('qris') ||
+                              pm.name.toLowerCase().includes('gopay') ||
+                              pm.name.toLowerCase().includes('ovo')
+                            ? 'qrcode-scan'
+                            : 'credit-card-outline'
+                      }
+                      size={16}
+                    />
+                    <Text
+                      style={[
+                        styles.paymentMethodChipText,
+                        isSelected
+                          ? styles.paymentMethodChipTextSelected
+                          : null,
+                      ]}
+                    >
+                      {pm.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
           </View>
-        </View>
-      </Modal>
 
+          {/* Quick Compact Details & Toggle */}
+          <View style={styles.sectionContainer}>
+            <View style={styles.compactDetailRow}>
+              <View style={styles.counterpartyInputWrap}>
+                <MaterialCommunityIcons
+                  color="#94A3B8"
+                  name="store-outline"
+                  size={20}
+                />
+                <TextInput
+                  accessibilityLabel="Merchant"
+                  onChangeText={(text) =>
+                    setForm((c) => ({ ...c, counterparty: text }))
+                  }
+                  placeholder={
+                    language === 'id'
+                      ? 'Nama toko / catatan (opsional)'
+                      : 'Merchant / note (optional)'
+                  }
+                  placeholderTextColor="#94A3B8"
+                  style={styles.compactInput}
+                  value={form.counterparty}
+                />
+              </View>
+
+              {isExpense ? (
+                <Pressable
+                  accessibilityLabel="Add receipt"
+                  accessibilityRole="button"
+                  onPress={() => setReceiptMenuVisible(true)}
+                  style={[
+                    styles.receiptActionChip,
+                    form.receipt ? styles.receiptActionChipActive : null,
+                  ]}
+                >
+                  {ocrLoading ? (
+                    <ActivityIndicator color={colors.primary} size="small" />
+                  ) : (
+                    <MaterialCommunityIcons
+                      color={form.receipt ? colors.primary : '#64748B'}
+                      name={form.receipt ? 'paperclip' : 'camera-plus-outline'}
+                      size={20}
+                    />
+                  )}
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.receiptActionChipText,
+                      form.receipt ? styles.receiptActionChipTextActive : null,
+                    ]}
+                  >
+                    {ocrLoading
+                      ? 'Scanning…'
+                      : form.receipt
+                        ? form.receipt.displayName
+                        : language === 'id'
+                          ? '+ Struk'
+                          : '+ Receipt'}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+
+            {claimMembership ? (
+              <Text style={styles.claimMembershipNotice}>
+                {language === 'id'
+                  ? `Terikat pada Klaim #${claimMembership.claimId} (${claimMembership.claimStatus})`
+                  : `Included in Claim #${claimMembership.claimId} (${claimMembership.claimStatus})`}
+              </Text>
+            ) : null}
+
+            {/* Expandable Advanced Options */}
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setShowDetailSection((prev) => !prev)}
+              style={styles.advancedToggleBtn}
+            >
+              <Text style={styles.advancedToggleText}>
+                {showDetailSection
+                  ? language === 'id'
+                    ? '▲ Sembunyikan Opsi Lanjutan'
+                    : '▲ Hide Details'
+                  : language === 'id'
+                    ? '▼ Tanggal, Catatan & Klaim'
+                    : '▼ Date, Note & Claim Details'}
+              </Text>
+            </Pressable>
+
+            {showDetailSection ? (
+              <View style={styles.advancedFieldsPanel}>
+                <View style={styles.dateRow}>
+                  <View style={styles.dateField}>
+                    <AppInput
+                      accessibilityLabel="Transaction date"
+                      label={language === 'id' ? 'Tanggal' : 'Date'}
+                      onChangeText={(date) => setForm((c) => ({ ...c, date }))}
+                      placeholder="YYYY-MM-DD"
+                      value={form.date}
+                    />
+                  </View>
+                  <View style={styles.timeField}>
+                    <AppInput
+                      accessibilityLabel="Transaction time"
+                      label={language === 'id' ? 'Waktu' : 'Time'}
+                      onChangeText={(time) => setForm((c) => ({ ...c, time }))}
+                      placeholder="HH:mm"
+                      value={form.time}
+                    />
+                  </View>
+                </View>
+
+                {isExpense ? (
+                  <View style={styles.reimbursableRow}>
+                    <View>
+                      <Text style={styles.reimbursableTitle}>
+                        {language === 'id'
+                          ? 'Dapat Diklaim (Reimburse)'
+                          : 'Reimbursable Expense'}
+                      </Text>
+                      <Text style={styles.reimbursableSubtitle}>
+                        {language === 'id'
+                          ? 'Tandai untuk klaim kantor / dinas'
+                          : 'Mark to claim reimbursement'}
+                      </Text>
+                    </View>
+                    <Switch
+                      accessibilityLabel="Reimbursable"
+                      onValueChange={(isReimbursable) =>
+                        setForm((c) => ({ ...c, isReimbursable }))
+                      }
+                      trackColor={{ false: '#CBD5E1', true: colors.primary }}
+                      value={form.isReimbursable}
+                    />
+                  </View>
+                ) : null}
+
+                <AppInput
+                  label={language === 'id' ? 'Catatan Lengkap' : 'Full Note'}
+                  multiline
+                  numberOfLines={2}
+                  onChangeText={(note) => setForm((c) => ({ ...c, note }))}
+                  placeholder="Optional"
+                  value={form.note}
+                />
+              </View>
+            ) : null}
+          </View>
+
+          {errors.submit ? (
+            <Text style={styles.errorBanner}>{errors.submit}</Text>
+          ) : null}
+
+          {/* Big Action Save Button */}
+          <View style={styles.actionBtnContainer}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={saving}
+              onPress={() => void handleSave()}
+              style={[
+                styles.saveBigButton,
+                isExpense
+                  ? styles.saveBigButtonExpense
+                  : styles.saveBigButtonIncome,
+                saving ? styles.saveBigButtonDisabled : null,
+              ]}
+              testID="save-transaction"
+            >
+              {saving ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.saveBigButtonText}>
+                  {isEditMode
+                    ? language === 'id'
+                      ? `Update Transaksi • ${parsedAmountMinor > 0 ? formatMoney(parsedAmountMinor, 'IDR') : ''}`
+                      : `Update Transaction • ${parsedAmountMinor > 0 ? formatMoney(parsedAmountMinor, 'IDR') : ''}`
+                    : isExpense
+                      ? language === 'id'
+                        ? `✓ Simpan Pengeluaran • ${parsedAmountMinor > 0 ? formatMoney(parsedAmountMinor, 'IDR') : ''}`
+                        : `✓ Save Expense • ${parsedAmountMinor > 0 ? formatMoney(parsedAmountMinor, 'IDR') : ''}`
+                      : language === 'id'
+                        ? `✓ Simpan Pemasukan • ${parsedAmountMinor > 0 ? formatMoney(parsedAmountMinor, 'IDR') : ''}`
+                        : `✓ Save Income • ${parsedAmountMinor > 0 ? formatMoney(parsedAmountMinor, 'IDR') : ''}`}
+                </Text>
+              )}
+            </Pressable>
+
+            {isEditMode ? (
+              <AppButton
+                disabled={deleting || saving}
+                label={t.common.delete}
+                loading={deleting}
+                onPress={handleDelete}
+                variant="destructive"
+              />
+            ) : null}
+          </View>
+        </ScrollView>
+      </View>
+
+      {/* Category Picker Modal */}
       <Modal
         animationType="slide"
         onRequestClose={() => setPicker(null)}
-        visible={picker !== null}
+        visible={picker === 'category'}
       >
         <Screen>
-          <View style={styles.modalHeader}>
-            <Text accessibilityRole="header" style={styles.modalTitle}>
-              {picker === 'category' ? 'Choose Category' : 'Payment Method'}
+          <View style={styles.modalScreenHeader}>
+            <Text style={styles.actionSheetTitle}>
+              {language === 'id' ? 'Pilih Kategori' : 'Select Category'}
+            </Text>
+            <Pressable
+              accessibilityLabel="Close category picker"
+              accessibilityRole="button"
+              hitSlop={12}
+              onPress={() => setPicker(null)}
+              style={styles.closeIconButton}
+            >
+              <MaterialCommunityIcons color="#64748B" name="close" size={24} />
+            </Pressable>
+          </View>
+          <CategoryPicker
+            onSelect={(selectedCategory) => {
+              handleSelectCategory(selectedCategory);
+              setPicker(null);
+            }}
+            selectedId={form.category?.id}
+            type={form.type}
+          />
+        </Screen>
+      </Modal>
+
+      {/* Payment Method Picker Modal */}
+      <Modal
+        animationType="slide"
+        onRequestClose={() => setPicker(null)}
+        visible={picker === 'paymentMethod'}
+      >
+        <Screen>
+          <View style={styles.modalScreenHeader}>
+            <Text style={styles.actionSheetTitle}>
+              {language === 'id'
+                ? 'Metode Pembayaran'
+                : 'Select Payment Method'}
+            </Text>
+            <Pressable
+              accessibilityLabel="Close payment picker"
+              accessibilityRole="button"
+              hitSlop={12}
+              onPress={() => setPicker(null)}
+              style={styles.closeIconButton}
+            >
+              <MaterialCommunityIcons color="#64748B" name="close" size={24} />
+            </Pressable>
+          </View>
+          <PaymentMethodPicker
+            onSelect={(selectedPaymentMethod) => {
+              if (selectedPaymentMethod) {
+                handleSelectPaymentMethod(selectedPaymentMethod);
+              }
+              setPicker(null);
+            }}
+            selectedId={form.paymentMethod?.id}
+          />
+        </Screen>
+      </Modal>
+
+      {/* Receipt Action Sheet Modal */}
+      <Modal
+        animationType="fade"
+        onRequestClose={() => setReceiptMenuVisible(false)}
+        transparent
+        visible={receiptMenuVisible}
+      >
+        <Pressable
+          onPress={() => setReceiptMenuVisible(false)}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.actionSheetContent}>
+            <Text style={styles.actionSheetTitle}>
+              {language === 'id' ? 'Bukti Struk' : 'Attach Receipt'}
             </Text>
             <AppButton
-              label="Close"
-              onPress={() => setPicker(null)}
+              label={language === 'id' ? 'Ambil Foto' : 'Take photo'}
+              onPress={() => void handleSelectReceiptSource('camera')}
+              variant="secondary"
+            />
+            <AppButton
+              label={
+                language === 'id' ? 'Pilih dari Galeri' : 'Choose from gallery'
+              }
+              onPress={() => void handleSelectReceiptSource('gallery')}
+              variant="secondary"
+            />
+            {form.receipt ? (
+              <AppButton
+                label={language === 'id' ? 'Hapus Struk' : 'Remove Receipt'}
+                onPress={() => {
+                  setForm((c) => ({ ...c, receipt: null }));
+                  setReceiptMenuVisible(false);
+                }}
+                variant="destructive"
+              />
+            ) : null}
+            <AppButton
+              label={t.common.cancel}
+              onPress={() => setReceiptMenuVisible(false)}
               variant="ghost"
             />
           </View>
-          <View style={styles.modalContent}>
-            {picker === 'category' ? (
-              <CategoryPicker
-                onSelect={(category: Category) => {
-                  updateForm({
-                    category: { id: category.id, name: category.name },
-                  });
-                  setErrors((current) => ({
-                    ...current,
-                    category: undefined,
-                  }));
-                  setPicker(null);
-                }}
-                selectedId={form.category?.id}
-                type={form.type}
-              />
-            ) : null}
-            {picker === 'paymentMethod' ? (
-              <PaymentMethodPicker
-                allowNone
-                onSelect={(paymentMethod: PaymentMethod | null) => {
-                  updateForm({
-                    paymentMethod: paymentMethod
-                      ? { id: paymentMethod.id, name: paymentMethod.name }
-                      : null,
-                  });
-                  setPicker(null);
-                }}
-                selectedId={form.paymentMethod?.id}
-              />
-            ) : null}
-          </View>
-        </Screen>
+        </Pressable>
       </Modal>
-    </Screen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    alignItems: 'center',
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  headerSpacer: {
-    width: 72,
-  },
-  title: {
-    color: colors.textPrimary,
+  backdropOverlay: {
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
     flex: 1,
-    fontSize: typography.sectionTitle.fontSize,
-    fontWeight: typography.sectionTitle.fontWeight,
-    lineHeight: typography.sectionTitle.lineHeight,
-    textAlign: 'center',
+    justifyContent: 'flex-end',
   },
-  form: {
-    gap: spacing.lg,
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
-  segment: {
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: radius.md,
-    flexDirection: 'row',
-    padding: spacing.xs,
-  },
-  segmentButton: {
-    alignItems: 'center',
-    borderRadius: radius.sm,
+  backdropTouchArea: {
     flex: 1,
-    justifyContent: 'center',
-    minHeight: 48,
   },
-  segmentSelected: {
-    backgroundColor: colors.surface,
+  bottomSheetModal: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: '92%',
+    paddingBottom: spacing.lg,
+    shadowColor: '#000000',
+    shadowOffset: { height: -4, width: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
   },
-  segmentText: {
-    color: colors.textSecondary,
-    fontSize: typography.body.fontSize,
-    fontWeight: '600',
+  dragHandle: {
+    alignSelf: 'center',
+    backgroundColor: '#E2E8F0',
+    borderRadius: 3,
+    height: 5,
+    marginTop: spacing.sm,
+    width: 44,
   },
-  segmentSelectedText: {
-    color: colors.primary,
-    fontSize: typography.body.fontSize,
+  sheetHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+  },
+  typeSegment: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: radius.pill,
+    flexDirection: 'row',
+    padding: 3,
+  },
+  typeButton: {
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+  },
+  typeButtonActiveExpense: {
+    backgroundColor: '#EF4444',
+  },
+  typeButtonActiveIncome: {
+    backgroundColor: '#10B981',
+  },
+  typeButtonText: {
+    color: '#64748B',
+    fontSize: 13,
     fontWeight: '700',
   },
-  fieldLabel: {
-    color: colors.textPrimary,
-    fontSize: typography.secondary.fontSize,
-    fontWeight: '600',
-    lineHeight: typography.secondary.lineHeight,
-    marginBottom: spacing.xs,
+  typeButtonTextActive: {
+    color: '#FFFFFF',
   },
-  selectionField: {
+  closeIconButton: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flexDirection: 'row',
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
+    backgroundColor: '#F8FAFC',
+    borderRadius: radius.pill,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
   },
-  selectionFieldError: {
+  scrollContent: {
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+  },
+  amountHeroContainer: {
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
+    borderRadius: 18,
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  amountHeroError: {
     borderColor: colors.destructive,
   },
-  selectionValue: {
-    color: colors.textPrimary,
+  currencyPrefix: {
+    color: '#64748B',
+    fontSize: 22,
+    fontWeight: '800',
+    marginRight: 6,
+  },
+  amountHeroInput: {
+    color: '#0F172A',
+    fontSize: 34,
+    fontWeight: '900',
+    minWidth: 100,
+    textAlign: 'center',
+  },
+  quickShortcutsRow: {
+    marginTop: -spacing.xs,
+  },
+  shortcutsList: {
+    flexDirection: 'row',
+    gap: spacing.xs + 2,
+    paddingVertical: 2,
+  },
+  shortcutChip: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  shortcutChipPressed: {
+    opacity: 0.7,
+  },
+  shortcutChipText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  shortcutChipClear: {
+    backgroundColor: '#F1F5F9',
+    borderColor: '#CBD5E1',
+  },
+  shortcutChipClearText: {
+    color: '#64748B',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  sectionContainer: {
+    gap: spacing.xs,
+  },
+  sectionHeaderRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  sectionLabel: {
+    color: '#64748B',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  moreCategoriesBtn: {
+    paddingVertical: 2,
+  },
+  moreCategoriesText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  categoryGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingVertical: spacing.xs,
+  },
+  categoryCard: {
+    alignItems: 'center',
+    gap: 6,
+    width: 68,
+  },
+  categoryCardSelected: {
+    transform: [{ scale: 1.05 }],
+  },
+  categoryIconBadge: {
+    alignItems: 'center',
+    borderColor: 'transparent',
+    borderRadius: 20,
+    borderWidth: 2,
+    height: 52,
+    justifyContent: 'center',
+    width: 52,
+  },
+  categoryIconBadgeSelected: {
+    borderColor: colors.primary,
+    elevation: 3,
+    shadowColor: colors.primary,
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+  },
+  categoryNameText: {
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  categoryNameTextSelected: {
+    color: colors.primary,
+    fontWeight: '800',
+  },
+  paymentMethodsList: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  paymentMethodChip: {
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  paymentMethodChipSelected: {
+    backgroundColor: '#1E293B',
+    borderColor: '#1E293B',
+  },
+  paymentMethodChipText: {
+    color: '#475569',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  paymentMethodChipTextSelected: {
+    color: '#FFFFFF',
+  },
+  compactDetailRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  counterpartyInputWrap: {
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    borderWidth: 1.5,
     flex: 1,
-    fontSize: typography.body.fontSize,
-    lineHeight: typography.body.lineHeight,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
   },
-  placeholder: {
-    color: colors.textSecondary,
+  compactInput: {
+    color: '#0F172A',
     flex: 1,
-    fontSize: typography.body.fontSize,
-    lineHeight: typography.body.lineHeight,
+    fontSize: 14,
+    fontWeight: '600',
   },
-  chevron: {
-    color: colors.textSecondary,
-    fontSize: 28,
+  receiptActionChip: {
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    gap: 4,
+    maxWidth: 130,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
-  fieldError: {
-    color: colors.destructive,
-    fontSize: typography.secondary.fontSize,
-    lineHeight: typography.secondary.lineHeight,
-    marginTop: spacing.xs,
+  receiptActionChipActive: {
+    backgroundColor: '#EFF6FF',
+    borderColor: colors.primary,
   },
-  dateTimeRow: {
+  receiptActionChipText: {
+    color: '#64748B',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  receiptActionChipTextActive: {
+    color: colors.primary,
+  },
+  advancedToggleBtn: {
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  advancedToggleText: {
+    color: '#64748B',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  advancedFieldsPanel: {
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  dateRow: {
     flexDirection: 'row',
     gap: spacing.sm,
   },
   dateField: {
-    flex: 1.4,
+    flex: 2,
   },
   timeField: {
     flex: 1,
   },
-  switchRow: {
+  reimbursableRow: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
     flexDirection: 'row',
-    minHeight: 64,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    justifyContent: 'space-between',
+    paddingVertical: spacing.xs,
   },
-  switchText: {
-    flex: 1,
+  reimbursableTitle: {
+    color: '#0F172A',
+    fontSize: 14,
+    fontWeight: '700',
   },
-  helper: {
-    color: colors.textSecondary,
-    fontSize: typography.metadata.fontSize,
-    lineHeight: typography.metadata.lineHeight,
+  reimbursableSubtitle: {
+    color: '#64748B',
+    fontSize: 12,
   },
-  noteInput: {
-    minHeight: 112,
-  },
-  characterCount: {
-    color: colors.textSecondary,
-    fontSize: typography.metadata.fontSize,
-    marginTop: spacing.xs,
-    textAlign: 'right',
-  },
-  receiptCard: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flexDirection: 'row',
+  actionBtnContainer: {
     gap: spacing.sm,
-    minHeight: 64,
+    marginTop: spacing.xs,
+    paddingBottom: spacing.md,
+  },
+  saveBigButton: {
+    alignItems: 'center',
+    borderRadius: 18,
+    elevation: 4,
+    height: 56,
+    justifyContent: 'center',
+    shadowColor: '#2563EB',
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+  },
+  saveBigButtonExpense: {
+    backgroundColor: colors.primary,
+  },
+  saveBigButtonIncome: {
+    backgroundColor: '#10B981',
+    shadowColor: '#10B981',
+  },
+  saveBigButtonDisabled: {
+    opacity: 0.6,
+  },
+  saveBigButtonText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  errorBanner: {
+    color: colors.destructive,
+    fontSize: 12,
+    fontWeight: '600',
+    paddingHorizontal: 4,
+  },
+  claimMembershipNotice: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#FDE68A',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    color: '#92400E',
+    fontSize: 12,
+    fontWeight: '600',
     padding: spacing.sm,
   },
-  receiptText: {
-    flex: 1,
-  },
-  receiptPicker: {
+  loadingContainer: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.md,
-    minHeight: 72,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  receiptPickerText: {
     flex: 1,
-  },
-  receiptPickerTitle: {
-    color: colors.textPrimary,
-    fontSize: typography.body.fontSize,
-    fontWeight: '600',
-    lineHeight: typography.body.lineHeight,
-  },
-  receiptNotice: {
-    color: colors.textSecondary,
-    fontSize: typography.secondary.fontSize,
-    lineHeight: typography.secondary.lineHeight,
-    marginTop: spacing.sm,
-  },
-  submitError: {
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: radius.md,
-    color: colors.destructive,
-    fontSize: typography.body.fontSize,
-    lineHeight: typography.body.lineHeight,
-    padding: spacing.md,
-  },
-  formActions: {
     gap: spacing.sm,
+    justifyContent: 'center',
   },
-  pressed: {
-    opacity: 0.72,
+  loadingText: {
+    color: colors.textSecondary,
+    fontSize: typography.body.fontSize,
   },
-  disabled: {
-    opacity: 0.5,
-  },
-  sourceOverlay: {
-    backgroundColor: 'rgba(15, 23, 42, 0.48)',
+  modalOverlay: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
     flex: 1,
     justifyContent: 'flex-end',
+    padding: spacing.md,
   },
-  sourceSheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
+  actionSheetContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
     gap: spacing.sm,
     padding: spacing.lg,
-    paddingBottom: spacing.xl,
+    width: '100%',
   },
-  sourceTitle: {
-    color: colors.textPrimary,
-    fontSize: typography.sectionTitle.fontSize,
-    fontWeight: typography.sectionTitle.fontWeight,
-    lineHeight: typography.sectionTitle.lineHeight,
-  },
-  sourceDescription: {
-    color: colors.textSecondary,
-    fontSize: typography.secondary.fontSize,
-    lineHeight: typography.secondary.lineHeight,
-    marginBottom: spacing.sm,
-  },
-  sourceOption: {
-    alignItems: 'center',
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.md,
-    minHeight: 72,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  sourceOptionText: {
-    flex: 1,
-  },
-  sourceOptionTitle: {
-    color: colors.textPrimary,
-    fontSize: typography.body.fontSize,
-    fontWeight: '600',
-    lineHeight: typography.body.lineHeight,
-  },
-  modalHeader: {
-    alignItems: 'center',
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  modalTitle: {
-    color: colors.textPrimary,
-    flex: 1,
-    fontSize: typography.sectionTitle.fontSize,
-    fontWeight: typography.sectionTitle.fontWeight,
-    lineHeight: typography.sectionTitle.lineHeight,
-  },
-  modalContent: {
-    flex: 1,
-  },
-  stateScreen: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.lg,
-  },
-  stateText: {
-    color: colors.textSecondary,
-    fontSize: typography.body.fontSize,
-    lineHeight: typography.body.lineHeight,
-    marginTop: spacing.sm,
+  actionSheetTitle: {
+    color: '#0F172A',
+    fontSize: 18,
+    fontWeight: '800',
     textAlign: 'center',
   },
-  stateActions: {
-    gap: spacing.sm,
-    marginTop: spacing.lg,
-    width: '100%',
+  modalScreenHeader: {
+    alignItems: 'center',
+    borderBottomColor: '#E2E8F0',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
 });

@@ -58,6 +58,22 @@ function AppWithLanguage() {
         }}
       >
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="transactions/new"
+          options={{
+            animation: 'fade',
+            contentStyle: { backgroundColor: 'transparent' },
+            presentation: 'transparentModal',
+          }}
+        />
+        <Stack.Screen
+          name="transactions/[id]/edit"
+          options={{
+            animation: 'fade',
+            contentStyle: { backgroundColor: 'transparent' },
+            presentation: 'transparentModal',
+          }}
+        />
       </Stack>
     </LanguageProvider>
   );
