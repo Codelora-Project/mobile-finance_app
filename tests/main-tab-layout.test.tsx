@@ -73,4 +73,3 @@ describe('main tab layout', () => {
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/new');
   });
 });
-

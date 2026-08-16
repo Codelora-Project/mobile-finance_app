@@ -37,6 +37,13 @@ jest.mock('@/features/home/home-repository', () => ({
   getHomeSummary: (...args: unknown[]) => mockGetHomeSummary(...args),
 }));
 
+jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
+  const ReactNative = require('react-native');
+  return (props: { name: string }) => (
+    <ReactNative.Text>{props.name}</ReactNative.Text>
+  );
+});
+
 const summary: HomeSummary = {
   categoryTotals: [
     { amountMinor: 70_000, categoryId: 1, categoryName: 'Food & Drink' },
