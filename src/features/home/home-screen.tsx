@@ -15,6 +15,15 @@ import {
 import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
 import { getCategoryMeta } from '@/features/categories/category-meta';
+import { GoalCard } from '@/features/goals/components/goal-card';
+import {
+  listSavingsGoals,
+  type SavingsGoal,
+} from '@/features/goals/goals-repository';
+import {
+  getHabitStats,
+  type HabitStats,
+} from '@/features/habits/habit-repository';
 import {
   getHomeSummary,
   type HomeSummary,
@@ -85,6 +94,8 @@ export function HomeScreen() {
   const { colors, isDark } = useTheme();
 
   const [summary, setSummary] = useState<HomeSummary | null>(null);
+  const [goals, setGoals] = useState<readonly SavingsGoal[]>([]);
+  const [habitStats, setHabitStats] = useState<HabitStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,9 +112,15 @@ export function HomeScreen() {
       setError(null);
 
       try {
-        const nextSummary = await getHomeSummary(database);
+        const [nextSummary, nextGoals, nextHabits] = await Promise.all([
+          getHomeSummary(database),
+          listSavingsGoals(database).catch(() => []),
+          getHabitStats(database).catch(() => null),
+        ]);
         if (requestId.current === currentRequest) {
           setSummary(nextSummary);
+          setGoals(nextGoals);
+          setHabitStats(nextHabits);
         }
       } catch (loadError) {
         if (requestId.current === currentRequest) {
@@ -221,24 +238,9 @@ export function HomeScreen() {
           </View>
         </View>
 
-        {error ? (
-          <Text
-            accessibilityLiveRegion="assertive"
-            style={[
-              styles.errorBanner,
-              {
-                backgroundColor: isDark ? '#450A0A' : '#FEF3F2',
-                borderColor: isDark ? '#7F1D1D' : '#FECDCA',
-                color: colors.destructive,
-              },
-            ]}
-          >
-            {error}
-          </Text>
-        ) : null}
-
-        {/* Hero Card: Financial Balance & Income/Expense Pill */}
+        {/* Hero Card: Net Balance Overview */}
         <View
+          accessibilityLabel={`Net balance: ${formatNet(summary.netMinor, summary.currencyCode)}`}
           style={[
             styles.heroCard,
             {
@@ -248,24 +250,13 @@ export function HomeScreen() {
             },
           ]}
         >
-          <View style={styles.heroHeader}>
-            <View style={styles.heroLabelRow}>
-              <View
-                style={[
-                  styles.heroIconBubble,
-                  {
-                    backgroundColor: isDark
-                      ? colors.surfaceSecondary
-                      : '#EFF6FF',
-                  },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  color={colors.primary}
-                  name="wallet-outline"
-                  size={18}
-                />
-              </View>
+          <View style={styles.heroHeaderRow}>
+            <View style={styles.heroBadge}>
+              <MaterialCommunityIcons
+                color={colors.primary}
+                name="wallet-outline"
+                size={16}
+              />
               <Text
                 style={[styles.heroNetLabel, { color: colors.textSecondary }]}
               >
@@ -363,62 +354,123 @@ export function HomeScreen() {
           </View>
         </View>
 
-        {/* Quick Action Buttons */}
-        <View style={styles.quickActionsContainer}>
-          <Pressable
-            accessibilityLabel={t.home.quickAddTransaction}
-            accessibilityRole="button"
-            onPress={() => router.push('/transactions/new')}
-            style={({ pressed }) => [
-              styles.quickActionButtonPrimary,
-              { backgroundColor: colors.primary },
-              pressed ? styles.pressed : null,
-            ]}
-          >
-            <View style={styles.quickActionIconCirclePrimary}>
-              <MaterialCommunityIcons color="#FFFFFF" name="plus" size={22} />
-            </View>
-            <Text style={styles.quickActionTextPrimary}>
-              {t.home.quickAddTransaction}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            accessibilityLabel={t.home.quickScanReceipt}
-            accessibilityRole="button"
-            onPress={() => router.push('/receipt/camera')}
-            style={({ pressed }) => [
-              styles.quickActionButtonSecondary,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-              },
-              pressed ? styles.pressed : null,
-            ]}
-          >
-            <View
-              style={[
-                styles.quickActionIconCircleSecondary,
+        {/* 🎯 Habit Streak & Celengan Impian Section */}
+        <View style={styles.section}>
+          {habitStats ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/goals')}
+              style={({ pressed }) => [
+                styles.habitStreakWidget,
                 {
-                  backgroundColor: isDark ? colors.surfaceSecondary : '#EFF6FF',
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
                 },
+                pressed ? styles.pressed : null,
               ]}
             >
+              <View style={styles.habitWidgetLeft}>
+                <Text style={styles.habitEmoji}>
+                  {habitStats.currentBadge.emoji}
+                </Text>
+                <View>
+                  <Text
+                    style={[
+                      styles.habitStreakTitle,
+                      { color: colors.textPrimary },
+                    ]}
+                  >
+                    {habitStats.currentStreak} Hari Beruntun 🔥
+                  </Text>
+                  <Text
+                    style={[
+                      styles.habitStreakSubtitle,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {habitStats.currentBadge.title} ·{' '}
+                    {habitStats.noSpendDaysThisMonth} Hari Hemat
+                  </Text>
+                </View>
+              </View>
+              <MaterialCommunityIcons
+                color={colors.textSecondary}
+                name="chevron-right"
+                size={22}
+              />
+            </Pressable>
+          ) : null}
+
+          {/* Celengan Impian Widget */}
+          <View style={styles.sectionHeaderBetween}>
+            <Text
+              accessibilityRole="header"
+              style={[styles.sectionTitle, { color: colors.textPrimary }]}
+            >
+              {t.goals.title}
+            </Text>
+            <Pressable hitSlop={8} onPress={() => router.push('/goals')}>
+              <Text style={[styles.viewAllText, { color: colors.primary }]}>
+                {t.home.viewAll} ›
+              </Text>
+            </Pressable>
+          </View>
+
+          {goals.length > 0 ? (
+            <GoalCard
+              goal={goals[0]!}
+              onPress={() => router.push(`/goals/${goals[0]!.id}`)}
+            />
+          ) : (
+            <Pressable
+              onPress={() => router.push('/goals')}
+              style={({ pressed }) => [
+                styles.emptyGoalPromptCard,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+                pressed ? styles.pressed : null,
+              ]}
+            >
+              <View
+                style={[
+                  styles.emptyGoalIconWrap,
+                  {
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : '#FEF3C7',
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  color="#D97706"
+                  name="piggy-bank-outline"
+                  size={28}
+                />
+              </View>
+              <View style={styles.emptyGoalTextWrap}>
+                <Text
+                  style={[styles.emptyGoalTitle, { color: colors.textPrimary }]}
+                >
+                  {t.goals.createFirstGoal}
+                </Text>
+                <Text
+                  style={[
+                    styles.emptyGoalSubtitle,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  {t.goals.subtitle}
+                </Text>
+              </View>
               <MaterialCommunityIcons
                 color={colors.primary}
-                name="camera-outline"
-                size={20}
+                name="plus-circle"
+                size={24}
               />
-            </View>
-            <Text
-              style={[
-                styles.quickActionTextSecondary,
-                { color: colors.textPrimary },
-              ]}
-            >
-              {t.home.quickScanReceipt}
-            </Text>
-          </Pressable>
+            </Pressable>
+          )}
         </View>
 
         {/* Spending by Category Section */}
@@ -449,41 +501,36 @@ export function HomeScreen() {
               </Text>
             </View>
           ) : (
-            <View
-              style={[
-                styles.card,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                  shadowColor: colors.textPrimary,
-                },
-              ]}
-            >
+            <View style={styles.categoryList}>
               {summary.categoryTotals.map((category) => {
+                const percentage =
+                  summary.expenseMinor > 0
+                    ? Math.round(
+                        (category.amountMinor / summary.expenseMinor) * 100,
+                      )
+                    : 0;
                 const meta = getCategoryMeta(
                   category.categoryName,
                   'expense',
                   isDark,
                 );
-                const percentage =
-                  summary.expenseMinor === 0
-                    ? 0
-                    : Math.round(
-                        (category.amountMinor / summary.expenseMinor) * 100,
-                      );
+
                 return (
                   <View
-                    accessibilityLabel={`${category.categoryName}, ${formatMoney(
-                      category.amountMinor,
-                      summary.currencyCode,
-                    )}, ${percentage}% ${t.home.ofExpenses}`}
-                    accessible
-                    key={category.categoryId}
-                    style={styles.categoryRow}
+                    accessibilityLabel={`${category.categoryName}, ${formatMoney(category.amountMinor, summary.currencyCode)}, ${percentage}% ${t.home.ofExpenses}`}
+                    key={category.categoryName}
+                    style={[
+                      styles.categoryCard,
+                      {
+                        backgroundColor: colors.surface,
+                        borderColor: colors.border,
+                        shadowColor: colors.textPrimary,
+                      },
+                    ]}
                   >
                     <View
                       style={[
-                        styles.categoryIconBadge,
+                        styles.categoryIconCircle,
                         { backgroundColor: meta.backgroundColor },
                       ]}
                     >
@@ -493,8 +540,9 @@ export function HomeScreen() {
                         size={22}
                       />
                     </View>
+
                     <View style={styles.categoryInfo}>
-                      <View style={styles.categoryLabels}>
+                      <View style={styles.categoryHeader}>
                         <View style={styles.categoryTitleGroup}>
                           <Text
                             numberOfLines={1}
@@ -698,12 +746,29 @@ export function HomeScreen() {
                       </Text>
                       <View style={styles.transactionMetaRow}>
                         <Text
+                          numberOfLines={1}
                           style={[
-                            styles.transactionMetadata,
+                            styles.transactionCategory,
                             { color: colors.textSecondary },
                           ]}
                         >
-                          {transaction.categoryName} ·{' '}
+                          {transaction.categoryName}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.bulletSeparator,
+                            { color: colors.textSecondary },
+                          ]}
+                        >
+                          ·
+                        </Text>
+                        <Text
+                          numberOfLines={1}
+                          style={[
+                            styles.transactionDate,
+                            { color: colors.textSecondary },
+                          ]}
+                        >
                           {formatTransactionDate(
                             transaction.localDate,
                             language,
@@ -717,13 +782,12 @@ export function HomeScreen() {
                                 backgroundColor: isDark
                                   ? colors.surfaceSecondary
                                   : '#EFF6FF',
-                                borderColor: isDark ? colors.border : '#DBEAFE',
                               },
                             ]}
                           >
                             <MaterialCommunityIcons
                               color={colors.primary}
-                              name="paperclip"
+                              name="receipt"
                               size={12}
                             />
                             <Text
@@ -744,7 +808,7 @@ export function HomeScreen() {
                           transaction.type === 'expense'
                             ? [
                                 styles.expenseAmount,
-                                { color: colors.destructive },
+                                { color: colors.textPrimary },
                               ]
                             : [styles.incomeAmount, { color: colors.positive }]
                         }
@@ -756,11 +820,6 @@ export function HomeScreen() {
                         )}
                       </Text>
                     </View>
-                    <MaterialCommunityIcons
-                      color={colors.textSecondary}
-                      name="chevron-right"
-                      size={22}
-                    />
                   </Pressable>
                 );
               })}
@@ -773,349 +832,143 @@ export function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: {
-    paddingBottom: spacing.xxl + spacing.md,
-  },
-  header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingBottom: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-  },
-  headerTitles: {
-    flex: 1,
-  },
-  greeting: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    lineHeight: 30,
-    marginTop: 2,
-  },
-  monthBadge: {
+  avatarBadge: {
     alignItems: 'center',
     borderRadius: radius.pill,
-    borderWidth: 1.5,
-    flexDirection: 'row',
-    gap: 6,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 3,
-  },
-  month: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  errorBanner: {
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    fontSize: 14,
-    fontWeight: '600',
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.sm,
-    padding: spacing.sm + 4,
-  },
-  heroCard: {
-    borderRadius: 20,
-    borderWidth: 1.5,
-    elevation: 3,
-    marginHorizontal: spacing.lg,
-    padding: spacing.lg,
-    shadowOffset: { height: 4, width: 0 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-  },
-  heroHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  heroLabelRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
-  },
-  heroIconBubble: {
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    height: 30,
+    height: 44,
     justifyContent: 'center',
-    width: 30,
+    width: 44,
   },
-  heroNetLabel: {
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0.3,
+  barFill: {
+    borderRadius: radius.pill,
+    height: '100%',
   },
-  heroAmount: {
-    fontSize: 34,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-    marginVertical: spacing.xs + 4,
+  barTrack: {
+    borderRadius: radius.pill,
+    height: 6,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  bulletSeparator: {
+    fontSize: 12,
   },
   cardDivider: {
-    height: 1.5,
-    marginVertical: spacing.sm + 2,
+    height: 1,
+    marginVertical: spacing.md,
   },
-  summaryRows: {
-    gap: spacing.sm + 4,
-    marginTop: spacing.xs,
-  },
-  summaryRowItem: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  summaryRowLeft: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    flexShrink: 1,
-    gap: 10,
-  },
-  iconCircleIncome: {
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    height: 32,
-    justifyContent: 'center',
-    width: 32,
-  },
-  iconCircleExpense: {
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    height: 32,
-    justifyContent: 'center',
-    width: 32,
-  },
-  summaryRowLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  summaryIncomeValue: {
-    fontSize: 17,
-    fontWeight: '800',
-  },
-  summaryExpenseValue: {
-    fontSize: 17,
-    fontWeight: '800',
-  },
-  quickActionsContainer: {
-    flexDirection: 'row',
-    gap: spacing.sm + 2,
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.md,
-  },
-  quickActionButtonPrimary: {
-    alignItems: 'center',
-    borderRadius: 14,
-    elevation: 2,
-    flex: 1,
-    flexDirection: 'row',
-    gap: 8,
-    height: 52,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  quickActionIconCirclePrimary: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    borderRadius: radius.pill,
-    height: 28,
-    justifyContent: 'center',
-    width: 28,
-  },
-  quickActionTextPrimary: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  quickActionButtonSecondary: {
-    alignItems: 'center',
-    borderRadius: 14,
-    borderWidth: 1.5,
-    elevation: 1,
-    flex: 1,
-    flexDirection: 'row',
-    gap: 8,
-    height: 52,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  quickActionIconCircleSecondary: {
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    height: 28,
-    justifyContent: 'center',
-    width: 28,
-  },
-  quickActionTextSecondary: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  section: {
-    marginTop: spacing.lg + spacing.xs,
-  },
-  sectionHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    minHeight: 44,
-    paddingRight: spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    paddingHorizontal: spacing.lg,
-  },
-  card: {
-    borderRadius: 18,
+  cardList: {
+    borderRadius: 20,
     borderWidth: 1.5,
     elevation: 2,
-    gap: spacing.md + 2,
     marginHorizontal: spacing.lg,
-    marginTop: spacing.sm,
-    padding: spacing.md + 2,
+    overflow: 'hidden',
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
   },
-  emptyCard: {
+  categoryAmount: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  categoryCard: {
+    alignItems: 'center',
     borderRadius: 18,
     borderWidth: 1.5,
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.sm,
-    padding: spacing.lg,
+    elevation: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.md,
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
   },
-  categoryRow: {
+  categoryHeader: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
+    justifyContent: 'space-between',
   },
-  categoryIconBadge: {
+  categoryIconCircle: {
     alignItems: 'center',
-    borderRadius: 14,
+    borderRadius: radius.pill,
     height: 44,
     justifyContent: 'center',
     width: 44,
   },
   categoryInfo: {
     flex: 1,
-    gap: 6,
+    gap: spacing.xs,
   },
-  categoryLabels: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  categoryList: {
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  categoryName: {
+    fontSize: 14,
+    fontWeight: '700',
   },
   categoryTitleGroup: {
     alignItems: 'center',
+    flex: 1,
     flexDirection: 'row',
-    flexShrink: 1,
-    gap: 8,
+    gap: spacing.xs,
+    paddingRight: spacing.xs,
   },
-  categoryName: {
-    fontSize: 15,
-    fontWeight: '700',
+  centeredState: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    padding: spacing.lg,
   },
-  percentBadge: {
-    borderRadius: radius.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+  content: {
+    gap: spacing.md,
+    paddingBottom: spacing.xxl + spacing.lg,
   },
-  percentText: {
-    fontSize: 11,
-    fontWeight: '800',
+  emptyAction: {
+    marginTop: spacing.md,
+    width: '100%',
   },
-  categoryAmount: {
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  barTrack: {
-    borderRadius: radius.pill,
-    height: 10,
-    overflow: 'hidden',
-  },
-  barFill: {
-    borderRadius: radius.pill,
-    height: '100%',
-  },
-  cardList: {
+  emptyCard: {
     borderRadius: 18,
     borderWidth: 1.5,
-    elevation: 2,
     marginHorizontal: spacing.lg,
-    marginTop: spacing.sm,
-    overflow: 'hidden',
-    shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    padding: spacing.xl,
   },
-  transactionRow: {
+  emptyGoalIconWrap: {
     alignItems: 'center',
-    borderBottomWidth: 1.5,
+    borderRadius: radius.pill,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  emptyGoalPromptCard: {
+    alignItems: 'center',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    elevation: 1,
     flexDirection: 'row',
     gap: 12,
-    minHeight: 76,
-    paddingHorizontal: spacing.md + 2,
-    paddingVertical: spacing.sm + 4,
+    marginHorizontal: spacing.lg,
+    padding: spacing.md,
   },
-  transactionRowLast: {
-    borderBottomWidth: 0,
+  emptyGoalSubtitle: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
   },
-  avatarBadge: {
-    alignItems: 'center',
-    borderRadius: 14,
-    height: 46,
-    justifyContent: 'center',
-    width: 46,
-  },
-  transactionText: {
+  emptyGoalTextWrap: {
     flex: 1,
   },
-  transactionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  transactionMetaRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
-    marginTop: 3,
-  },
-  transactionMetadata: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  receiptBadge: {
-    alignItems: 'center',
-    borderRadius: 4,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 2,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-  },
-  receiptBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  transactionAmountWrapper: {
-    alignItems: 'flex-end',
-  },
-  expenseAmount: {
-    fontSize: 16,
+  emptyGoalTitle: {
+    fontSize: 15,
     fontWeight: '800',
   },
-  incomeAmount: {
-    fontSize: 16,
-    fontWeight: '800',
+  emptyIconCircle: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 68,
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+    width: 68,
   },
   emptyRecentCard: {
     alignItems: 'center',
@@ -1129,18 +982,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
   },
-  emptyIconCircle: {
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    height: 68,
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-    width: 68,
-  },
-  emptySectionTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-  },
   emptySectionText: {
     fontSize: 14,
     fontWeight: '500',
@@ -1148,30 +989,259 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     textAlign: 'center',
   },
-  emptyAction: {
-    marginTop: spacing.md,
-    width: '100%',
+  emptySectionTitle: {
+    fontSize: 17,
+    fontWeight: '800',
   },
-  centeredState: {
+  expenseAmount: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  greeting: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  habitEmoji: {
+    fontSize: 26,
+  },
+  habitStreakSubtitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  habitStreakTitle: {
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  habitStreakWidget: {
     alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-    padding: spacing.lg,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    elevation: 2,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginHorizontal: spacing.lg,
+    padding: spacing.md,
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
   },
-  stateTitle: {
-    fontSize: typography.sectionTitle.fontSize,
-    fontWeight: typography.sectionTitle.fontWeight,
+  habitWidgetLeft: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  header: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+  },
+  headerTitles: {
+    gap: 2,
+  },
+  heroAmount: {
+    fontSize: 32,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+  },
+  heroBadge: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  heroCard: {
+    borderRadius: 24,
+    borderWidth: 1.5,
+    elevation: 3,
+    marginHorizontal: spacing.lg,
+    padding: spacing.lg,
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+  },
+  heroHeaderRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
+  heroNetLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  iconCircleExpense: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  iconCircleIncome: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  incomeAmount: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  month: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  monthBadge: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  percentBadge: {
+    borderRadius: radius.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  percentText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  pressed: {
+    opacity: 0.75,
+  },
+
+  receiptBadge: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    flexDirection: 'row',
+    gap: 2,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+  },
+  receiptBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  section: {
+    gap: spacing.sm,
+  },
+  sectionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+  },
+  sectionHeaderBetween: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.lg,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+    paddingHorizontal: spacing.lg,
+  },
+  stateAction: {
+    marginTop: spacing.lg,
+    width: '100%',
   },
   stateText: {
     fontSize: typography.body.fontSize,
     marginTop: spacing.sm,
     textAlign: 'center',
   },
-  stateAction: {
-    marginTop: spacing.lg,
-    width: '100%',
+  stateTitle: {
+    fontSize: typography.sectionTitle.fontSize,
+    fontWeight: typography.sectionTitle.fontWeight,
   },
-  pressed: {
-    opacity: 0.75,
+  summaryExpenseValue: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  summaryIncomeValue: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  summaryRowItem: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  summaryRowLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  summaryRowLeft: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  summaryRows: {
+    gap: spacing.sm,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+  },
+  transactionAmountWrapper: {
+    alignItems: 'flex-end',
+    flexShrink: 0,
+    justifyContent: 'center',
+    paddingLeft: spacing.xs,
+  },
+  transactionCategory: {
+    flexShrink: 1,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  transactionDate: {
+    flexShrink: 0,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  transactionMetaRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    gap: 4,
+    minWidth: 0,
+  },
+  transactionRow: {
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm + 2,
+    minHeight: 68,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  transactionRowLast: {
+    borderBottomWidth: 0,
+  },
+  transactionText: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+    overflow: 'hidden',
+  },
+  transactionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  viewAllText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

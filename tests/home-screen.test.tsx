@@ -38,6 +38,21 @@ jest.mock('@/features/home/home-repository', () => ({
   getHomeSummary: (...args: unknown[]) => mockGetHomeSummary(...args),
 }));
 
+jest.mock('@/features/goals/goals-repository', () => ({
+  listSavingsGoals: jest.fn<() => Promise<unknown[]>>().mockResolvedValue([]),
+}));
+
+jest.mock('@/features/habits/habit-repository', () => ({
+  getHabitStats: jest.fn<() => Promise<unknown>>().mockResolvedValue({
+    activeLoggingDaysThisMonth: 1,
+    bestStreak: 1,
+    currentBadge: { emoji: '🌱', minDays: 1, title: 'Pemula Disiplin' },
+    currentStreak: 1,
+    nextBadge: null,
+    noSpendDaysThisMonth: 1,
+  }),
+}));
+
 jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
   const ReactNative = require('react-native');
   return (props: { name: string }) => (
@@ -191,8 +206,6 @@ describe('home screen', () => {
     expect(screen.getByText('Uang Masuk')).toBeOnTheScreen();
     expect(screen.getByText('Uang Keluar')).toBeOnTheScreen();
     expect(screen.getByText('Sisa Saldo')).toBeOnTheScreen();
-    expect(screen.getByText('+ Catat Transaksi')).toBeOnTheScreen();
-    expect(screen.getByText('Foto Struk')).toBeOnTheScreen();
     expect(screen.getByText('Pengeluaran per Kategori')).toBeOnTheScreen();
     expect(screen.getByText('Transaksi Terakhir')).toBeOnTheScreen();
   });

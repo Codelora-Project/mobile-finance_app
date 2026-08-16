@@ -70,6 +70,41 @@ export type TranslationSchema = {
     continue: string;
     done: string;
   };
+  goals: {
+    title: string;
+    subtitle: string;
+    newGoal: string;
+    editGoal: string;
+    goalName: string;
+    targetAmount: string;
+    initialDeposit: string;
+    deposit: string;
+    withdraw: string;
+    saved: string;
+    target: string;
+    remaining: string;
+    history: string;
+    noGoalsYet: string;
+    noGoalsDesc: string;
+    createFirstGoal: string;
+    completed: string;
+    active: string;
+    congratsCompleted: string;
+    depositSuccess: string;
+    withdrawSuccess: string;
+    deleteGoal: string;
+    deleteConfirm: string;
+  };
+  habits: {
+    streakTitle: string;
+    streakDays: string;
+    noSpendTitle: string;
+    noSpendDays: string;
+    frugalBadge: string;
+    streakBest: string;
+    loggingDays: string;
+    streakHelp: string;
+  };
   common: {
     save: string;
     cancel: string;
@@ -165,6 +200,46 @@ export const translations: Record<Language, TranslationSchema> = {
       continue: 'Lanjutkan',
       done: 'Selesai',
     },
+    // Goals / Celengan Impian
+    goals: {
+      title: 'Celengan Impian',
+      subtitle:
+        'Tetapkan target tabungan dan pantau progres pencapaian impianmu.',
+      newGoal: '+ Target Baru',
+      editGoal: 'Ubah Target',
+      goalName: 'Nama Target',
+      targetAmount: 'Target Nominal',
+      initialDeposit: 'Setoran Awal (Opsional)',
+      deposit: 'Nabung / Setor',
+      withdraw: 'Tarik Dana',
+      saved: 'Terkumpul',
+      target: 'Target',
+      remaining: 'Kurang',
+      history: 'Riwayat Tabungan',
+      noGoalsYet: 'Belum Ada Target Tabungan',
+      noGoalsDesc:
+        'Mulai buat celengan impian pertamamu untuk barang idaman atau dana darurat!',
+      createFirstGoal: 'Buat Celengan Impian',
+      completed: 'Tercapai 🎉',
+      active: 'Berjalan',
+      congratsCompleted: 'Selamat! Target tabungan ini sudah tercapai 🥳',
+      depositSuccess: 'Berhasil menabung!',
+      withdrawSuccess: 'Berhasil menarik tabungan!',
+      deleteGoal: 'Hapus Target',
+      deleteConfirm: 'Apakah kamu yakin ingin menghapus target tabungan ini?',
+    },
+    // Habits & Streaks
+    habits: {
+      streakTitle: 'Streak Pencatatan',
+      streakDays: 'Hari Beruntun',
+      noSpendTitle: 'Hari Bebas Jajan',
+      noSpendDays: 'Hari Hemat',
+      frugalBadge: 'Level Disiplin',
+      streakBest: 'Rekor Terbaik',
+      loggingDays: 'Hari Aktif Bulan Ini',
+      streakHelp:
+        'Catat minimal 1 transaksi setiap hari untuk mempertahankan streak apimu! 🔥',
+    },
     // Common
     common: {
       save: 'Simpan',
@@ -258,6 +333,46 @@ export const translations: Record<Language, TranslationSchema> = {
       cancel: 'Cancel',
       continue: 'Continue',
       done: 'Done',
+    },
+    // Goals / Savings Goals
+    goals: {
+      title: 'Savings Goals',
+      subtitle:
+        'Set financial targets and track your progress to reach your dreams.',
+      newGoal: '+ New Goal',
+      editGoal: 'Edit Goal',
+      goalName: 'Goal Name',
+      targetAmount: 'Target Amount',
+      initialDeposit: 'Initial Deposit (Optional)',
+      deposit: 'Deposit / Save',
+      withdraw: 'Withdraw',
+      saved: 'Saved',
+      target: 'Target',
+      remaining: 'Remaining',
+      history: 'Savings History',
+      noGoalsYet: 'No Savings Goals Yet',
+      noGoalsDesc:
+        'Start your first savings goal for dream items or an emergency fund!',
+      createFirstGoal: 'Create Savings Goal',
+      completed: 'Completed 🎉',
+      active: 'In Progress',
+      congratsCompleted: 'Congratulations! You reached this savings goal 🥳',
+      depositSuccess: 'Deposit successful!',
+      withdrawSuccess: 'Withdrawal successful!',
+      deleteGoal: 'Delete Goal',
+      deleteConfirm: 'Are you sure you want to delete this savings goal?',
+    },
+    // Habits & Streaks
+    habits: {
+      streakTitle: 'Logging Streak',
+      streakDays: 'Day Streak',
+      noSpendTitle: 'No-Spend Days',
+      noSpendDays: 'Frugal Days',
+      frugalBadge: 'Discipline Level',
+      streakBest: 'Best Streak',
+      loggingDays: 'Active Days This Month',
+      streakHelp:
+        'Log at least 1 transaction every day to keep your fire streak burning! 🔥',
     },
     // Common
     common: {

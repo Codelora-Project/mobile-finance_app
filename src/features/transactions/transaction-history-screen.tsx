@@ -349,6 +349,7 @@ export function TransactionHistoryScreen() {
                     {title}
                   </Text>
                   <Text
+                    numberOfLines={1}
                     style={[
                       styles.rowMetadata,
                       { color: colors.textSecondary },
@@ -440,6 +441,8 @@ const styles = StyleSheet.create({
   },
   rowText: {
     flex: 1,
+    minWidth: 0,
+    overflow: 'hidden',
   },
   rowTitle: {
     fontSize: typography.body.fontSize,
@@ -450,12 +453,16 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   expenseAmount: {
+    flexShrink: 0,
     fontSize: typography.body.fontSize,
     fontWeight: '700',
+    paddingLeft: spacing.sm,
   },
   incomeAmount: {
+    flexShrink: 0,
     fontSize: typography.body.fontSize,
     fontWeight: '700',
+    paddingLeft: spacing.sm,
   },
   state: {
     alignItems: 'center',
