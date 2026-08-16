@@ -747,7 +747,7 @@ export function HomeScreen() {
 
         {/* Recent Transactions Section */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
+          <View style={styles.sectionHeaderBetween}>
             <Text
               accessibilityRole="header"
               style={[styles.sectionTitle, { color: colors.textPrimary }]}
@@ -755,11 +755,11 @@ export function HomeScreen() {
               {t.home.recentTransactions}
             </Text>
             {summary.recentTransactions.length > 0 ? (
-              <AppButton
-                label={t.home.viewAll}
-                onPress={() => router.push('/transactions')}
-                variant="ghost"
-              />
+              <Pressable hitSlop={8} onPress={() => router.push('/transactions')}>
+                <Text style={[styles.viewAllText, { color: colors.primary }]}>
+                  {t.home.viewAll} ›
+                </Text>
+              </Pressable>
             ) : null}
           </View>
           {summary.recentTransactions.length === 0 ? (
@@ -1097,7 +1097,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   content: {
-    gap: spacing.md,
+    gap: spacing.lg,
     paddingBottom: spacing.xxl + spacing.md,
   },
   emptyAction: {
@@ -1321,7 +1321,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   section: {
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   sectionHeader: {
     alignItems: 'center',
@@ -1333,14 +1333,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: spacing.xs,
     paddingHorizontal: spacing.lg,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '800',
     letterSpacing: -0.2,
-    paddingHorizontal: spacing.lg,
   },
   stateAction: {
     marginTop: spacing.lg,
