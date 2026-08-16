@@ -2,6 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Tabs, useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { ColorValue } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
@@ -51,6 +52,10 @@ function AddActionButton() {
 }
 
 export default function MainTabLayout() {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = insets.bottom > 0 ? insets.bottom : spacing.sm;
+  const tabHeight = 60 + bottomPadding;
+
   return (
     <Tabs
       screenOptions={{
@@ -59,7 +64,14 @@ export default function MainTabLayout() {
         tabBarHideOnKeyboard: true,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarLabelStyle: styles.tabLabel,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            height: tabHeight,
+            paddingBottom: bottomPadding,
+            paddingTop: spacing.xs,
+          },
+        ],
       }}
     >
       <Tabs.Screen
@@ -119,9 +131,6 @@ const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: colors.surface,
     borderTopColor: colors.border,
-    height: 76,
-    paddingBottom: spacing.sm,
-    paddingTop: spacing.sm,
   },
   tabLabel: {
     fontSize: typography.metadata.fontSize,

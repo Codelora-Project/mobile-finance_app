@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import MainTabLayout from '@/app/(tabs)/_layout';
 
@@ -50,7 +51,16 @@ describe('main tab layout', () => {
   });
 
   it('renders the four destinations and opens Add as an action', async () => {
-    await render(<MainTabLayout />);
+    await render(
+      <SafeAreaProvider
+        initialMetrics={{
+          frame: { height: 812, width: 375, x: 0, y: 0 },
+          insets: { bottom: 0, left: 0, right: 0, top: 0 },
+        }}
+      >
+        <MainTabLayout />
+      </SafeAreaProvider>,
+    );
 
     expect(screen.getByText('Home')).toBeOnTheScreen();
     expect(screen.getByText('Transactions')).toBeOnTheScreen();
@@ -63,3 +73,4 @@ describe('main tab layout', () => {
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/new');
   });
 });
+
