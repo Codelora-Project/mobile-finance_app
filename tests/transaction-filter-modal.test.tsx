@@ -14,6 +14,13 @@ jest.mock('expo-sqlite', () => ({
   useSQLiteContext: () => mockDatabase,
 }));
 
+jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
+  const ReactNative = require('react-native');
+  return ({ name }: { name: string }) => (
+    <ReactNative.Text>{name}</ReactNative.Text>
+  );
+});
+
 jest.mock('@/features/categories/category-repository', () => ({
   listCategories: jest.fn<() => Promise<unknown>>().mockResolvedValue([
     { id: 1, name: 'Food & Drink', type: 'expense' },
@@ -28,7 +35,7 @@ jest.mock('@/features/payment-methods/payment-method-repository', () => ({
 }));
 
 describe('transaction filter modal', () => {
-  it('applies all MVP filters and validates date order', async () => {
+  it('applies all filters and validates date order', async () => {
     const onApply = jest.fn();
     await render(
       <TransactionFilterModal
@@ -40,28 +47,43 @@ describe('transaction filter modal', () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByRole('radio', { name: 'Income' })).toBeOnTheScreen(),
+      expect(
+        screen.getByRole('radio', { name: /Pemasukan/ }),
+      ).toBeOnTheScreen(),
     );
-    await fireEvent.press(screen.getByRole('radio', { name: 'Income' }));
+    await fireEvent.press(screen.getByRole('radio', { name: /Pemasukan/ }));
     await fireEvent.press(screen.getByRole('radio', { name: 'Salary' }));
-    await fireEvent.changeText(screen.getByLabelText('From'), '2026-08-31');
-    await fireEvent.changeText(screen.getByLabelText('To'), '2026-08-01');
+    await fireEvent.changeText(
+      screen.getByLabelText('Dari Tanggal'),
+      '2026-08-31',
+    );
+    await fireEvent.changeText(
+      screen.getByLabelText('Sampai Tanggal'),
+      '2026-08-01',
+    );
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Apply Filters' }),
+      screen.getByRole('button', { name: 'Terapkan Filter' }),
     );
     expect(
-      screen.getByText('Start date must be on or before end date.'),
+      screen.getByText(
+        'Tanggal awal tidak boleh lebih besar dari tanggal akhir.',
+      ),
     ).toBeOnTheScreen();
     expect(onApply).not.toHaveBeenCalled();
 
-    await fireEvent.changeText(screen.getByLabelText('From'), '2026-08-01');
-    await fireEvent.changeText(screen.getByLabelText('To'), '2026-08-31');
+    await fireEvent.changeText(
+      screen.getByLabelText('Dari Tanggal'),
+      '2026-08-01',
+    );
+    await fireEvent.changeText(
+      screen.getByLabelText('Sampai Tanggal'),
+      '2026-08-31',
+    );
     await fireEvent.press(screen.getByRole('radio', { name: 'Cash' }));
-    const yesChoices = screen.getAllByRole('radio', { name: 'Yes' });
-    await fireEvent.press(yesChoices[0]);
-    await fireEvent.press(yesChoices[1]);
+    await fireEvent.press(screen.getByRole('radio', { name: 'Klaim Kantor' }));
+    await fireEvent.press(screen.getByRole('radio', { name: 'Ada Struk' }));
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Apply Filters' }),
+      screen.getByRole('button', { name: 'Terapkan Filter' }),
     );
 
     expect(onApply).toHaveBeenCalledWith({

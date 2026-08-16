@@ -35,6 +35,13 @@ jest.mock('expo-sqlite', () => ({
   useSQLiteContext: () => mockDatabase,
 }));
 
+jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
+  const ReactNative = require('react-native');
+  return ({ name }: { name: string }) => (
+    <ReactNative.Text>{name}</ReactNative.Text>
+  );
+});
+
 jest.mock('@/features/transactions/transaction-repository', () => ({
   listTransactions: (...args: unknown[]) => mockListTransactions(...args),
 }));
@@ -90,9 +97,9 @@ describe('transaction history screen', () => {
 
     await render(<TransactionHistoryScreen />);
 
-    expect(await screen.findByText('No transactions')).toBeOnTheScreen();
+    expect(await screen.findByText('Belum Ada Transaksi')).toBeOnTheScreen();
     expect(
-      screen.getByRole('button', { name: 'Add transaction' }),
+      screen.getByRole('button', { name: 'Catat Transaksi' }),
     ).toBeOnTheScreen();
   });
 
@@ -108,7 +115,8 @@ describe('transaction history screen', () => {
     const row = await screen.findByRole('button', {
       name: /Coffee Shop/,
     });
-    expect(screen.getByText('Food & Drink · Receipt')).toBeOnTheScreen();
+    expect(screen.getByText('Food & Drink')).toBeOnTheScreen();
+    expect(screen.getByText('Struk')).toBeOnTheScreen();
     await fireEvent.press(row);
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/42');
 
@@ -131,16 +139,13 @@ describe('transaction history screen', () => {
     await render(<TransactionHistoryScreen />);
     await screen.findByRole('button', { name: /Coffee Shop/ });
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Filters' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Filter' }));
     await fireEvent.press(
       screen.getByRole('button', { name: 'Apply test filter' }),
     );
 
     expect(
-      await screen.findByText('No matching transactions'),
-    ).toBeOnTheScreen();
-    expect(
-      screen.getByText('Try changing your search or filters.'),
+      await screen.findByText('Tidak Ada Transaksi yang Cocok'),
     ).toBeOnTheScreen();
   });
 });

@@ -31,6 +31,54 @@ export type TranslationSchema = {
     tryAgain: string;
     loading: string;
   };
+  transactions: {
+    title: string;
+    subtitle: string;
+    searchPlaceholder: string;
+    all: string;
+    expense: string;
+    income: string;
+    withReceipt: string;
+    reimbursable: string;
+    filters: string;
+    filtersActive: string;
+    today: string;
+    yesterday: string;
+    dailyTotal: string;
+    loading: string;
+    noTransactionsTitle: string;
+    noTransactionsDesc: string;
+    noMatchingTitle: string;
+    noMatchingDesc: string;
+    addTransaction: string;
+    resetFilter: string;
+    detailTitle: string;
+    viewReceipt: string;
+    editTransaction: string;
+    deleteTransaction: string;
+    deleteDialogTitle: string;
+    deleteDialogDesc: string;
+    deleteClaimWarning: string;
+    deletedSuccess: string;
+    notFound: string;
+    notFoundDesc: string;
+    backToList: string;
+    merchant: string;
+    source: string;
+    category: string;
+    dateTime: string;
+    paymentMethod: string;
+    note: string;
+    receipt: string;
+    reimbursementStatus: string;
+    reimbursableBadge: string;
+    notReimbursable: string;
+    notApplicable: string;
+    claim: string;
+    lockedByClaim: string;
+    noReceipt: string;
+    none: string;
+  };
   settings: {
     title: string;
     loading: string;
@@ -219,6 +267,60 @@ export const translations: Record<Language, TranslationSchema> = {
       loadFailed: 'Gagal memuat ringkasan keuangan. Silakan coba lagi.',
       tryAgain: 'Coba lagi',
       loading: 'Memuat ringkasan…',
+    },
+    // Transactions Screen
+    transactions: {
+      title: 'Riwayat Transaksi',
+      subtitle: 'Semua pencatatan pemasukan & pengeluaran',
+      searchPlaceholder: 'Cari merchant, kategori, atau catatan…',
+      all: 'Semua',
+      expense: 'Pengeluaran',
+      income: 'Pemasukan',
+      withReceipt: 'Struk',
+      reimbursable: 'Klaim',
+      filters: 'Filter',
+      filtersActive: 'Filter',
+      today: 'Hari Ini',
+      yesterday: 'Kemarin',
+      dailyTotal: 'Total',
+      loading: 'Memuat riwayat transaksi…',
+      noTransactionsTitle: 'Belum Ada Transaksi',
+      noTransactionsDesc:
+        'Mulai pantau keuanganmu dengan mencatat transaksi pertamamu.',
+      noMatchingTitle: 'Tidak Ada Transaksi yang Cocok',
+      noMatchingDesc:
+        'Coba sesuaikan kata kunci pencarian atau filter yang dipilih.',
+      addTransaction: 'Catat Transaksi',
+      resetFilter: 'Reset Filter',
+      detailTitle: 'Detail Transaksi',
+      viewReceipt: 'Lihat Bukti Struk',
+      editTransaction: 'Ubah Transaksi',
+      deleteTransaction: 'Hapus Transaksi',
+      deleteDialogTitle: 'Hapus transaksi?',
+      deleteDialogDesc: 'Tindakan ini tidak dapat dibatalkan.',
+      deleteClaimWarning:
+        'Transaksi ini akan dihapus dari draf klaim dan dihapus permanen.',
+      deletedSuccess: 'Transaksi berhasil dihapus.',
+      notFound: 'Transaksi Tidak Ditemukan',
+      notFoundDesc:
+        'Transaksi yang diminta tidak ditemukan atau telah dihapus.',
+      backToList: 'Kembali ke Riwayat',
+      merchant: 'Merchant / Toko',
+      source: 'Sumber Dana',
+      category: 'Kategori',
+      dateTime: 'Tanggal & Waktu',
+      paymentMethod: 'Metode Pembayaran',
+      note: 'Catatan',
+      receipt: 'Bukti Struk',
+      reimbursementStatus: 'Status Reimburse',
+      reimbursableBadge: 'Dapat Diklaim',
+      notReimbursable: 'Bukan Klaim',
+      notApplicable: 'Tidak Berlaku',
+      claim: 'Klaim Terkait',
+      lockedByClaim:
+        'Transaksi ini terkunci oleh klaim dan tidak dapat diubah.',
+      noReceipt: 'Tanpa struk',
+      none: 'Tidak ada',
     },
     // Settings Screen
     settings: {
@@ -427,6 +529,59 @@ export const translations: Record<Language, TranslationSchema> = {
       loadFailed: "We couldn't load your overview. Try again.",
       tryAgain: 'Try again',
       loading: 'Loading overview…',
+    },
+    // Transactions Screen
+    transactions: {
+      title: 'Transactions',
+      subtitle: 'All income & expense logs',
+      searchPlaceholder: 'Search merchants, categories, or notes…',
+      all: 'All',
+      expense: 'Expenses',
+      income: 'Income',
+      withReceipt: 'Receipts',
+      reimbursable: 'Reimbursable',
+      filters: 'Filters',
+      filtersActive: 'Filters',
+      today: 'Today',
+      yesterday: 'Yesterday',
+      dailyTotal: 'Total',
+      loading: 'Loading transactions…',
+      noTransactionsTitle: 'No Transactions Yet',
+      noTransactionsDesc:
+        'Start tracking your finances by adding your first transaction.',
+      noMatchingTitle: 'No Matching Transactions',
+      noMatchingDesc: 'Try adjusting your search query or active filters.',
+      addTransaction: 'Add Transaction',
+      resetFilter: 'Reset Filters',
+      detailTitle: 'Transaction Detail',
+      viewReceipt: 'View Receipt Image',
+      editTransaction: 'Edit Transaction',
+      deleteTransaction: 'Delete Transaction',
+      deleteDialogTitle: 'Delete transaction?',
+      deleteDialogDesc: 'This action cannot be undone.',
+      deleteClaimWarning:
+        'This will remove the transaction from the draft claim and delete it.',
+      deletedSuccess: 'Transaction deleted.',
+      notFound: 'Transaction Not Found',
+      notFoundDesc:
+        'The requested transaction could not be loaded or was removed.',
+      backToList: 'Back to Transactions',
+      merchant: 'Merchant / Store',
+      source: 'Source',
+      category: 'Category',
+      dateTime: 'Date & Time',
+      paymentMethod: 'Payment Method',
+      note: 'Note',
+      receipt: 'Receipt',
+      reimbursementStatus: 'Reimbursement Status',
+      reimbursableBadge: 'Reimbursable',
+      notReimbursable: 'Not reimbursable',
+      notApplicable: 'Not applicable',
+      claim: 'Associated Claim',
+      lockedByClaim:
+        'This transaction is locked by a claim and cannot be modified.',
+      noReceipt: 'No receipt',
+      none: 'None',
     },
     // Settings Screen
     settings: {

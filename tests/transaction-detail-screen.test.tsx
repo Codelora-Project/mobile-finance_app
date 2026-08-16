@@ -33,6 +33,13 @@ jest.mock('expo-sqlite', () => ({
   useSQLiteContext: () => mockDatabase,
 }));
 
+jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
+  const ReactNative = require('react-native');
+  return ({ name }: { name: string }) => (
+    <ReactNative.Text>{name}</ReactNative.Text>
+  );
+});
+
 jest.mock('@/features/transactions/transaction-repository', () => ({
   deleteTransaction: (...args: unknown[]) => mockDeleteTransaction(...args),
   getTransaction: (...args: unknown[]) => mockGetTransaction(...args),
@@ -73,25 +80,29 @@ describe('transaction detail screen', () => {
     mockDeleteTransaction.mockResolvedValue(undefined);
   });
 
-  it('shows all Phase 5 detail fields and opens Edit', async () => {
+  it('shows all detail fields and opens Edit', async () => {
     await render(<TransactionDetailScreen transactionId={42} />);
 
     expect(
-      await screen.findByRole('header', { name: 'Transaction Detail' }),
+      await screen.findByRole('header', { name: 'Detail Transaksi' }),
     ).toBeOnTheScreen();
-    expect(screen.getByText('Coffee Shop')).toBeOnTheScreen();
+    expect(screen.getAllByText('Coffee Shop').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Food & Drink')).toBeOnTheScreen();
     expect(screen.getByText('Cash')).toBeOnTheScreen();
     expect(screen.getByText('Client meeting')).toBeOnTheScreen();
-    expect(screen.getByText('receipt.jpg · not processed')).toBeOnTheScreen();
-    expect(screen.getByText('Reimbursable')).toBeOnTheScreen();
+    expect(screen.getByText('receipt.jpg (not processed)')).toBeOnTheScreen();
+    expect(screen.getAllByText('Dapat Diklaim').length).toBeGreaterThanOrEqual(
+      1,
+    );
 
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Edit transaction' }),
+      screen.getByRole('button', { name: 'Ubah Transaksi' }),
     );
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/42/edit');
 
-    await fireEvent.press(screen.getByRole('button', { name: 'View receipt' }));
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Lihat Bukti Struk' }),
+    );
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/42/receipt');
   });
 
@@ -99,30 +110,29 @@ describe('transaction detail screen', () => {
     const alertSpy = jest
       .spyOn(Alert, 'alert')
       .mockImplementation((_title, _message, buttons) => {
-        const deleteButton = buttons?.find(
-          (button) => button.text === 'Delete',
-        );
+        const deleteButton = buttons?.find((button) => button.text === 'Hapus');
         deleteButton?.onPress?.();
       });
     await render(<TransactionDetailScreen transactionId={42} />);
-    await screen.findByText('Coffee Shop');
+    await screen.findAllByText('Coffee Shop');
 
-    await fireEvent.press(
-      screen.getByRole('button', { name: 'Delete transaction' }),
-    );
+    const deleteButtons = screen.getAllByRole('button', {
+      name: 'Hapus Transaksi',
+    });
+    await fireEvent.press(deleteButtons[0]!);
 
     await waitFor(() =>
       expect(mockDeleteTransaction).toHaveBeenCalledWith(expect.anything(), 42),
     );
     await waitFor(() =>
       expect(mockRouter.dismissTo).toHaveBeenCalledWith({
-        params: { feedback: 'Transaction deleted.' },
+        params: { feedback: 'Transaksi berhasil dihapus.' },
         pathname: '/transactions',
       }),
     );
     expect(alertSpy).toHaveBeenCalledWith(
-      'Delete transaction?',
-      'This action cannot be undone.',
+      'Hapus transaksi?',
+      'Tindakan ini tidak dapat dibatalkan.',
       expect.any(Array),
     );
     alertSpy.mockRestore();
@@ -138,13 +148,13 @@ describe('transaction detail screen', () => {
     await render(<TransactionDetailScreen transactionId={42} />);
 
     expect(
-      await screen.findByText(/locked by a submitted claim/i),
+      await screen.findByText(/Transaksi ini terkunci oleh klaim/i),
     ).toBeOnTheScreen();
     expect(
-      screen.queryByRole('button', { name: 'Edit transaction' }),
+      screen.queryByRole('button', { name: 'Ubah Transaksi' }),
     ).not.toBeOnTheScreen();
     expect(
-      screen.queryByRole('button', { name: 'Delete transaction' }),
+      screen.queryByRole('button', { name: 'Hapus Transaksi' }),
     ).not.toBeOnTheScreen();
   });
 });

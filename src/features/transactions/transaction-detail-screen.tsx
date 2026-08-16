@@ -1,9 +1,11 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,6 +14,7 @@ import {
 
 import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
+import { getCategoryMeta } from '@/features/categories/category-meta';
 import {
   deleteTransaction,
   getTransaction,
@@ -21,21 +24,58 @@ import {
 } from '@/features/transactions/transaction-repository';
 import { toLocalDateTimeInput } from '@/lib/dates';
 import { isCodedError, mapError } from '@/lib/errors';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
-import { typography } from '@/theme/typography';
 
-function DetailField({ label, value }: { label: string; value: string }) {
+function DetailItemRow({
+  icon,
+  iconColor,
+  label,
+  value,
+  isLast = false,
+}: {
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  iconColor?: string;
+  label: string;
+  value: string;
+  isLast?: boolean;
+}) {
   const { colors } = useTheme();
 
   return (
-    <View style={[styles.field, { borderBottomColor: colors.border }]}>
-      <Text style={[styles.label, { color: colors.textSecondary }]}>
-        {label}
-      </Text>
-      <Text selectable style={[styles.value, { color: colors.textPrimary }]}>
+    <View
+      style={[
+        styles.detailItemRow,
+        !isLast
+          ? [styles.detailItemBorder, { borderBottomColor: colors.border }]
+          : null,
+      ]}
+    >
+      <View style={styles.detailItemLeft}>
+        <View
+          style={[
+            styles.detailIconBox,
+            { backgroundColor: colors.surfaceSecondary },
+          ]}
+        >
+          <MaterialCommunityIcons
+            color={iconColor || colors.textSecondary}
+            name={icon}
+            size={18}
+          />
+        </View>
+        <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
+          {label}
+        </Text>
+      </View>
+      <Text
+        numberOfLines={2}
+        selectable
+        style={[styles.detailValue, { color: colors.textPrimary }]}
+      >
         {value}
       </Text>
     </View>
@@ -53,8 +93,10 @@ export function TransactionDetailScreen({
 }) {
   const database = useSQLiteContext();
   const router = useRouter();
-  const { colors } = useTheme();
+  const { t } = useLanguage();
+  const { colors, isDark } = useTheme();
   const deletingRef = useRef(false);
+
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [claimMembership, setClaimMembership] =
     useState<TransactionClaimMembership | null>(null);
@@ -72,7 +114,7 @@ export function TransactionDetailScreen({
       ]);
       if (!nextTransaction) {
         setTransaction(null);
-        setError('Transaction not found.');
+        setError(t.transactions.notFoundDesc);
         return;
       }
       setTransaction(nextTransaction);
@@ -82,7 +124,7 @@ export function TransactionDetailScreen({
     } finally {
       setLoading(false);
     }
-  }, [database, transactionId]);
+  }, [database, t.transactions.notFoundDesc, transactionId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -95,10 +137,11 @@ export function TransactionDetailScreen({
       return;
     }
     const warning = claimMembership
-      ? `This will remove the transaction from Draft claim “${claimMembership.claimTitle}” and delete it.`
-      : 'This action cannot be undone.';
-    Alert.alert('Delete transaction?', warning, [
-      { style: 'cancel', text: 'Cancel' },
+      ? `${t.transactions.deleteClaimWarning} (${claimMembership.claimTitle})`
+      : t.transactions.deleteDialogDesc;
+
+    Alert.alert(t.transactions.deleteDialogTitle, warning, [
+      { style: 'cancel', text: t.common.cancel },
       {
         onPress: () => {
           if (deletingRef.current) return;
@@ -107,7 +150,7 @@ export function TransactionDetailScreen({
           deleteTransaction(database, transactionId)
             .then(() => {
               router.dismissTo({
-                params: { feedback: 'Transaction deleted.' },
+                params: { feedback: t.transactions.deletedSuccess },
                 pathname: '/transactions',
               });
             })
@@ -123,7 +166,7 @@ export function TransactionDetailScreen({
             });
         },
         style: 'destructive',
-        text: 'Delete',
+        text: t.common.delete,
       },
     ]);
   }
@@ -131,10 +174,10 @@ export function TransactionDetailScreen({
   if (loading && !transaction) {
     return (
       <Screen>
-        <View style={styles.state}>
+        <View style={styles.centeredState}>
           <ActivityIndicator color={colors.primary} size="large" />
           <Text style={[styles.stateText, { color: colors.textSecondary }]}>
-            Loading transaction…
+            {t.transactions.loading}
           </Text>
         </View>
       </Screen>
@@ -144,23 +187,33 @@ export function TransactionDetailScreen({
   if (!transaction) {
     return (
       <Screen>
-        <View style={styles.state}>
+        <View style={styles.centeredState}>
+          <View
+            style={[
+              styles.emptyIconCircle,
+              {
+                backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+              },
+            ]}
+          >
+            <MaterialCommunityIcons
+              color={colors.textSecondary}
+              name="alert-circle-outline"
+              size={44}
+            />
+          </View>
           <Text
             accessibilityRole="header"
-            style={[styles.title, { color: colors.textPrimary }]}
+            style={[styles.emptyTitle, { color: colors.textPrimary }]}
           >
-            Transaction not found
+            {t.transactions.notFound}
           </Text>
-          <Text
-            accessibilityLiveRegion="assertive"
-            style={[styles.stateText, { color: colors.textSecondary }]}
-          >
-            {error ??
-              'The requested transaction could not be loaded or was removed.'}
+          <Text style={[styles.stateText, { color: colors.textSecondary }]}>
+            {error ?? t.transactions.notFoundDesc}
           </Text>
           <View style={styles.stateActions}>
             <AppButton
-              label="Back to transactions"
+              label={t.transactions.backToList}
               onPress={() => router.replace('/transactions')}
               variant="secondary"
             />
@@ -174,87 +227,267 @@ export function TransactionDetailScreen({
     transaction.occurredAt,
     transaction.timezoneOffsetMinutes,
   );
+  const meta = getCategoryMeta(
+    transaction.categoryName,
+    transaction.type,
+    isDark,
+  );
   const counterpartyLabel =
-    transaction.type === 'expense' ? 'Merchant' : 'Source';
+    transaction.type === 'expense'
+      ? t.transactions.merchant
+      : t.transactions.source;
+  const isExpense = transaction.type === 'expense';
 
   return (
     <Screen>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <AppButton label="Back" onPress={() => router.back()} variant="ghost" />
+      {/* Top App Bar Header */}
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: colors.surface,
+            borderBottomColor: colors.border,
+          },
+        ]}
+      >
+        <Pressable
+          accessibilityLabel={t.common.back}
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={() => router.back()}
+          style={({ pressed }) => [
+            styles.backButton,
+            {
+              backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+            },
+            pressed ? styles.pressed : null,
+          ]}
+        >
+          <MaterialCommunityIcons
+            color={colors.textPrimary}
+            name="arrow-left"
+            size={20}
+          />
+        </Pressable>
+
         <Text
           accessibilityRole="header"
           style={[styles.headerTitle, { color: colors.textPrimary }]}
         >
-          Transaction Detail
+          {t.transactions.detailTitle}
         </Text>
-        <View style={styles.headerSpacer} />
+
+        {!claimMembership || claimMembership.claimStatus === 'draft' ? (
+          <Pressable
+            accessibilityLabel={t.transactions.deleteTransaction}
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={confirmDelete}
+            style={({ pressed }) => [
+              styles.deleteIconBtn,
+              {
+                backgroundColor: isDark ? '#7F1D1D' : '#FEE2E2',
+              },
+              pressed ? styles.pressed : null,
+            ]}
+          >
+            <MaterialCommunityIcons
+              color={colors.destructive}
+              name="trash-can-outline"
+              size={20}
+            />
+          </Pressable>
+        ) : (
+          <View style={styles.headerSpacer} />
+        )}
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.summary}>
-          <Text style={[styles.type, { color: colors.textSecondary }]}>
-            {transaction.type === 'expense' ? 'Expense' : 'Income'}
-          </Text>
-          <Text
-            style={
-              transaction.type === 'expense'
-                ? [styles.expenseAmount, { color: colors.destructive }]
-                : [styles.incomeAmount, { color: colors.positive }]
-            }
-          >
-            {transaction.type === 'expense' ? '−' : '+'}
-            {formatMoney(transaction.amountMinor, transaction.currencyCode)}
-          </Text>
-        </View>
-
+        {/* 🌟 Hero Card: Big Amount & Category */}
         <View
           style={[
-            styles.card,
+            styles.heroCard,
             {
               backgroundColor: colors.surface,
               borderColor: colors.border,
+              shadowColor: colors.textPrimary,
             },
           ]}
         >
-          <DetailField
-            label={counterpartyLabel}
-            value={
-              transaction.counterparty ??
-              `No ${counterpartyLabel.toLowerCase()}`
-            }
+          {/* Avatar Icon */}
+          <View
+            style={[
+              styles.heroAvatarCircle,
+              { backgroundColor: meta.backgroundColor },
+            ]}
+          >
+            <MaterialCommunityIcons
+              color={meta.color}
+              name={meta.icon}
+              size={32}
+            />
+          </View>
+
+          {/* Title / Counterparty */}
+          <Text
+            numberOfLines={2}
+            style={[styles.heroCounterparty, { color: colors.textPrimary }]}
+          >
+            {transaction.counterparty?.trim() || transaction.categoryName}
+          </Text>
+
+          {/* Large Amount Display */}
+          <Text
+            style={[
+              styles.heroAmount,
+              { color: isExpense ? colors.destructive : colors.positive },
+            ]}
+          >
+            {isExpense ? '−' : '+'}
+            {formatMoney(transaction.amountMinor, transaction.currencyCode)}
+          </Text>
+
+          {/* Pill Badges */}
+          <View style={styles.heroBadgesRow}>
+            <View
+              style={[
+                styles.heroTypePill,
+                {
+                  backgroundColor: isExpense
+                    ? isDark
+                      ? '#7F1D1D'
+                      : '#FEE2E2'
+                    : isDark
+                      ? '#14532D'
+                      : '#DCFCE7',
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.heroTypePillText,
+                  { color: isExpense ? colors.destructive : colors.positive },
+                ]}
+              >
+                {isExpense
+                  ? `💸 ${t.transactions.expense}`
+                  : `💰 ${t.transactions.income}`}
+              </Text>
+            </View>
+
+            {transaction.receipt ? (
+              <View
+                style={[
+                  styles.heroReceiptPill,
+                  {
+                    backgroundColor: isDark ? '#312E81' : '#EDE9FE',
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  color="#7C3AED"
+                  name="receipt-outline"
+                  size={12}
+                />
+                <Text style={styles.heroReceiptPillText}>
+                  {t.home.receiptBadge}
+                </Text>
+              </View>
+            ) : null}
+
+            {transaction.isReimbursable ? (
+              <View
+                style={[
+                  styles.heroReimbursePill,
+                  {
+                    backgroundColor: isDark ? '#78350F' : '#FEF3C7',
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  color="#D97706"
+                  name="briefcase-outline"
+                  size={12}
+                />
+                <Text style={styles.heroReimbursePillText}>
+                  {t.transactions.reimbursableBadge}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+
+        {/* 📋 Complete Info Card Group */}
+        <View
+          style={[
+            styles.infoCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              shadowColor: colors.textPrimary,
+            },
+          ]}
+        >
+          <DetailItemRow
+            icon={meta.icon}
+            iconColor={meta.color}
+            label={t.transactions.category}
+            value={transaction.categoryName}
           />
-          <DetailField label="Category" value={transaction.categoryName} />
-          <DetailField
-            label="Date & Time"
+
+          <DetailItemRow
+            icon="storefront-outline"
+            label={counterpartyLabel}
+            value={transaction.counterparty || t.transactions.none}
+          />
+
+          <DetailItemRow
+            icon="calendar-clock-outline"
+            label={t.transactions.dateTime}
             value={`${dateTime.date} · ${dateTime.time}`}
           />
-          <DetailField
-            label="Payment Method"
-            value={transaction.paymentMethodName ?? 'None'}
+
+          <DetailItemRow
+            icon="credit-card-outline"
+            label={t.transactions.paymentMethod}
+            value={transaction.paymentMethodName || t.transactions.none}
           />
-          <DetailField label="Note" value={transaction.note ?? 'None'} />
-          <DetailField
-            label="Receipt"
+
+          <DetailItemRow
+            icon="note-text-outline"
+            label={t.transactions.note}
+            value={transaction.note || t.transactions.none}
+          />
+
+          <DetailItemRow
+            icon="receipt-text-outline"
+            label={t.transactions.receipt}
             value={
               transaction.receipt
-                ? `${receiptName(transaction.receipt.storageKey)} · ${transaction.receipt.ocrStatus.replaceAll('_', ' ')}`
-                : 'No receipt'
+                ? `${receiptName(transaction.receipt.storageKey)} (${transaction.receipt.ocrStatus.replaceAll('_', ' ')})`
+                : t.transactions.noReceipt
             }
           />
-          <DetailField
-            label="Reimbursement status"
+
+          <DetailItemRow
+            icon="briefcase-check-outline"
+            isLast={!claimMembership}
+            label={t.transactions.reimbursementStatus}
             value={
               transaction.type === 'income'
-                ? 'Not applicable'
+                ? t.transactions.notApplicable
                 : transaction.isReimbursable
-                  ? 'Reimbursable'
-                  : 'Not reimbursable'
+                  ? t.transactions.reimbursableBadge
+                  : t.transactions.notReimbursable
             }
           />
+
           {claimMembership ? (
-            <DetailField
-              label="Claim"
-              value={`${claimMembership.claimTitle} · ${claimMembership.claimStatus}`}
+            <DetailItemRow
+              icon="file-document-outline"
+              isLast
+              label={t.transactions.claim}
+              value={`${claimMembership.claimTitle} (${claimMembership.claimStatus})`}
             />
           ) : null}
         </View>
@@ -268,37 +501,60 @@ export function TransactionDetailScreen({
           </Text>
         ) : null}
 
+        {/* 🚀 Actions Section */}
         <View style={styles.actions}>
           {transaction.receipt ? (
             <AppButton
-              label="View receipt"
+              label={t.transactions.viewReceipt}
               onPress={() =>
                 router.push(`/transactions/${transaction.id}/receipt`)
               }
               variant="secondary"
             />
           ) : null}
+
           {claimMembership && claimMembership.claimStatus !== 'draft' ? (
-            <Text style={[styles.locked, { color: colors.textSecondary }]}>
-              This transaction is locked by a {claimMembership.claimStatus}{' '}
-              claim and cannot be edited or deleted.
-            </Text>
+            <View
+              style={[
+                styles.lockedBanner,
+                {
+                  backgroundColor: isDark ? colors.surfaceSecondary : '#FEF3C7',
+                  borderColor: isDark ? colors.border : '#FDE68A',
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                color="#D97706"
+                name="lock-outline"
+                size={18}
+              />
+              <Text
+                style={[
+                  styles.lockedText,
+                  { color: isDark ? colors.textPrimary : '#92400E' },
+                ]}
+              >
+                {t.transactions.lockedByClaim}
+              </Text>
+            </View>
           ) : (
-            <>
+            <View style={styles.primaryActionGroup}>
               <AppButton
-                label="Edit transaction"
+                label={t.transactions.editTransaction}
                 onPress={() =>
                   router.push(`/transactions/${transaction.id}/edit`)
                 }
+                variant="primary"
               />
+
               <AppButton
                 disabled={deleting}
-                label="Delete transaction"
+                label={t.transactions.deleteTransaction}
                 loading={deleting}
                 onPress={confirmDelete}
                 variant="destructive"
               />
-            </>
+            </View>
           )}
         </View>
       </ScrollView>
@@ -307,6 +563,85 @@ export function TransactionDetailScreen({
 }
 
 const styles = StyleSheet.create({
+  actions: {
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  backButton: {
+    alignItems: 'center',
+    borderRadius: 14,
+    height: 38,
+    justifyContent: 'center',
+    width: 38,
+  },
+  centeredState: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    padding: spacing.xl,
+  },
+  content: {
+    gap: spacing.md,
+    padding: spacing.md,
+    paddingBottom: spacing.xxl + spacing.lg,
+  },
+  deleteIconBtn: {
+    alignItems: 'center',
+    borderRadius: 14,
+    height: 38,
+    justifyContent: 'center',
+    width: 38,
+  },
+  detailIconBox: {
+    alignItems: 'center',
+    borderRadius: 8,
+    height: 28,
+    justifyContent: 'center',
+    width: 28,
+  },
+  detailItemBorder: {
+    borderBottomWidth: 1,
+  },
+  detailItemLeft: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  detailItemRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 13,
+  },
+  detailLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  detailValue: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    paddingLeft: spacing.md,
+    textAlign: 'right',
+  },
+  emptyIconCircle: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 76,
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+    width: 76,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  error: {
+    fontSize: 13,
+    textAlign: 'center',
+  },
   header: {
     alignItems: 'center',
     borderBottomWidth: 1,
@@ -315,79 +650,124 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
+  headerSpacer: {
+    width: 38,
+  },
   headerTitle: {
-    fontSize: typography.sectionTitle.fontSize,
-    fontWeight: typography.sectionTitle.fontWeight,
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  heroAmount: {
+    fontSize: 32,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+    marginTop: 4,
+  },
+  heroAvatarCircle: {
+    alignItems: 'center',
+    borderRadius: 20,
+    height: 60,
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+    width: 60,
+  },
+  heroBadgesRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    justifyContent: 'center',
+    marginTop: spacing.sm + 2,
+  },
+  heroCard: {
+    alignItems: 'center',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    elevation: 3,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+  },
+  heroCounterparty: {
+    fontSize: 18,
+    fontWeight: '800',
     textAlign: 'center',
   },
-  headerSpacer: {
-    width: 72,
-  },
-  content: {
-    gap: spacing.lg,
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
-  summary: {
+  heroReceiptPill: {
     alignItems: 'center',
-    paddingVertical: spacing.lg,
+    borderRadius: radius.pill,
+    flexDirection: 'row',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
-  type: {
-    fontSize: typography.secondary.fontSize,
-    fontWeight: '600',
+  heroReceiptPillText: {
+    color: '#7C3AED',
+    fontSize: 11,
+    fontWeight: '800',
   },
-  expenseAmount: {
-    fontSize: 32,
-    fontWeight: '700',
-    marginTop: spacing.xs,
+  heroReimbursePill: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    flexDirection: 'row',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
-  incomeAmount: {
-    fontSize: 32,
-    fontWeight: '700',
-    marginTop: spacing.xs,
+  heroReimbursePillText: {
+    color: '#D97706',
+    fontSize: 11,
+    fontWeight: '800',
   },
-  card: {
+  heroTypePill: {
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  heroTypePillText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  infoCard: {
+    borderRadius: 18,
+    borderWidth: 1.5,
+    elevation: 2,
+    overflow: 'hidden',
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+  },
+  lockedBanner: {
+    alignItems: 'center',
     borderRadius: radius.md,
     borderWidth: 1,
-    paddingHorizontal: spacing.md,
-  },
-  field: {
-    borderBottomWidth: 1,
-    paddingVertical: spacing.md,
-  },
-  label: {
-    fontSize: typography.metadata.fontSize,
-  },
-  value: {
-    fontSize: typography.body.fontSize,
-    marginTop: spacing.xs,
-  },
-  error: {
-    fontSize: typography.body.fontSize,
-  },
-  locked: {
-    textAlign: 'center',
-  },
-  actions: {
+    flexDirection: 'row',
     gap: spacing.sm,
+    padding: spacing.md,
   },
-  state: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.lg,
+  lockedText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 18,
   },
-  title: {
-    fontSize: typography.sectionTitle.fontSize,
-    fontWeight: typography.sectionTitle.fontWeight,
+  pressed: {
+    opacity: 0.75,
+    transform: [{ scale: 0.96 }],
   },
-  stateText: {
-    fontSize: typography.body.fontSize,
-    marginTop: spacing.sm,
-    textAlign: 'center',
+  primaryActionGroup: {
+    gap: spacing.sm,
   },
   stateActions: {
-    gap: spacing.sm,
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
     width: '100%',
+  },
+  stateText: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: spacing.xs,
+    textAlign: 'center',
   },
 });
