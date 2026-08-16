@@ -2,7 +2,6 @@ import React, {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -31,10 +30,12 @@ export function LanguageProvider({
   onLanguageChange?: (language: Language) => Promise<void> | void;
 }) {
   const [language, setLanguageState] = useState<Language>(initialLanguage);
+  const [prevInitial, setPrevInitial] = useState<Language>(initialLanguage);
 
-  useEffect(() => {
+  if (initialLanguage !== prevInitial) {
+    setPrevInitial(initialLanguage);
     setLanguageState(initialLanguage);
-  }, [initialLanguage]);
+  }
 
   const setLanguage = useCallback(
     async (nextLanguage: Language) => {

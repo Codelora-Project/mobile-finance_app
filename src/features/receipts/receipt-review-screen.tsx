@@ -235,6 +235,43 @@ export function ReceiptReviewScreen() {
           placeholder="0"
           value={amount}
         />
+        {ocr.parsed?.candidateAmounts &&
+        ocr.parsed.candidateAmounts.length > 1 ? (
+          <View style={styles.candidateRow}>
+            <Text style={styles.candidateLabel}>Pilihan terdeteksi:</Text>
+            <ScrollView
+              contentContainerStyle={styles.candidateList}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+            >
+              {ocr.parsed.candidateAmounts.map((amt) => {
+                const formatted = formatMoneyInput(amt, 'IDR');
+                const isSelected = amount === formatted;
+                return (
+                  <Pressable
+                    accessibilityLabel={`Pilih nominal Rp ${formatted}`}
+                    accessibilityRole="button"
+                    key={amt}
+                    onPress={() => setAmount(formatted)}
+                    style={[
+                      styles.candidateChip,
+                      isSelected ? styles.candidateChipSelected : null,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.candidateChipText,
+                        isSelected ? styles.candidateChipTextSelected : null,
+                      ]}
+                    >
+                      Rp {formatted}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        ) : null}
         <AppInput
           autoCapitalize="words"
           label="Merchant"
@@ -394,6 +431,40 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     justifyContent: 'center',
     padding: spacing.lg,
+  },
+  candidateRow: {
+    gap: spacing.xs,
+    marginTop: -spacing.xs,
+  },
+  candidateLabel: {
+    color: '#64748B',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  candidateList: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  candidateChip: {
+    backgroundColor: '#F1F5F9',
+    borderColor: '#CBD5E1',
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+  },
+  candidateChipSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  candidateChipText: {
+    color: '#334155',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  candidateChipTextSelected: {
+    color: colors.surface,
   },
   dateField: { flex: 2 },
   dateRow: { flexDirection: 'row', gap: spacing.sm },
