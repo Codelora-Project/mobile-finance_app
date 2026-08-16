@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { HomeScreen } from '@/features/home/home-screen';
 import type { HomeSummary } from '@/features/home/home-repository';
+import { LanguageProvider } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 
 const mockRouter = {
@@ -79,9 +80,13 @@ describe('home screen', () => {
     mockGetHomeSummary.mockReset();
   });
 
-  it('renders monthly totals, category bars, and recent transactions', async () => {
+  it('renders monthly totals, category bars, and recent transactions in English', async () => {
     mockGetHomeSummary.mockResolvedValue(summary);
-    await render(<HomeScreen />);
+    await render(
+      <LanguageProvider initialLanguage="en">
+        <HomeScreen />
+      </LanguageProvider>,
+    );
 
     expect(
       await screen.findByRole('header', { name: 'Personal Finance' }),
@@ -126,7 +131,11 @@ describe('home screen', () => {
       recentTransactions: [],
     });
 
-    await render(<HomeScreen />);
+    await render(
+      <LanguageProvider initialLanguage="en">
+        <HomeScreen />
+      </LanguageProvider>,
+    );
 
     expect(
       await screen.findByText('No expenses this month.'),
@@ -144,7 +153,11 @@ describe('home screen', () => {
       .mockRejectedValueOnce(new Error('database unavailable'))
       .mockResolvedValueOnce(summary);
 
-    await render(<HomeScreen />);
+    await render(
+      <LanguageProvider initialLanguage="en">
+        <HomeScreen />
+      </LanguageProvider>,
+    );
 
     expect(
       await screen.findByRole('header', { name: 'Overview unavailable' }),
@@ -161,5 +174,26 @@ describe('home screen', () => {
       'DATABASE_WRITE_FAILED',
     );
     warningSpy.mockRestore();
+  });
+
+  it('renders correctly in Indonesian language mode', async () => {
+    mockGetHomeSummary.mockResolvedValue(summary);
+    await render(
+      <LanguageProvider initialLanguage="id">
+        <HomeScreen />
+      </LanguageProvider>,
+    );
+
+    expect(
+      await screen.findByRole('header', { name: 'Personal Finance' }),
+    ).toBeOnTheScreen();
+    expect(screen.getByText('Agustus 2026')).toBeOnTheScreen();
+    expect(screen.getByText('Uang Masuk')).toBeOnTheScreen();
+    expect(screen.getByText('Uang Keluar')).toBeOnTheScreen();
+    expect(screen.getByText('Sisa Saldo')).toBeOnTheScreen();
+    expect(screen.getByText('+ Catat Transaksi')).toBeOnTheScreen();
+    expect(screen.getByText('Pindai Struk')).toBeOnTheScreen();
+    expect(screen.getByText('Pengeluaran per Kategori')).toBeOnTheScreen();
+    expect(screen.getByText('Transaksi Terakhir')).toBeOnTheScreen();
   });
 });

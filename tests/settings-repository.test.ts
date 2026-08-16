@@ -90,6 +90,7 @@ describe('settings repository', () => {
     ).resolves.toEqual({
       currencyCode: 'IDR',
       currencyName: 'Indonesian Rupiah',
+      language: 'id',
     });
 
     database.currency = 'USD';
@@ -117,6 +118,7 @@ describe('settings repository', () => {
       new Map([
         ['welcome_seen', 'false'],
         ['default_currency_code', 'IDR'],
+        ['language', 'id'],
       ]),
     );
     expect(database.executedSql[0]).toContain('DELETE FROM claim_items');

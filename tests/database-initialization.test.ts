@@ -104,6 +104,7 @@ describe('database initialization', () => {
     expect(database.paymentMethods.size).toBe(9);
     expect(database.settings.get('default_currency_code')).toBe('IDR');
     expect(database.settings.get('welcome_seen')).toBe('false');
+    expect(database.settings.get('language')).toBe('id');
     expect(database.categories).toContain('expense_other');
     expect(database.categories).toContain('income_other');
     expect(database.paymentMethods).toContain('other');
@@ -118,7 +119,7 @@ describe('database initialization', () => {
     expect(database.migrationRuns).toBe(1);
     expect(database.categories.size).toBe(defaultCategories.length);
     expect(database.paymentMethods.size).toBe(defaultPaymentMethods.length);
-    expect(database.settings.size).toBe(2);
+    expect(database.settings.size).toBe(3);
   });
 
   it('enables foreign keys and WAL before using the database', async () => {

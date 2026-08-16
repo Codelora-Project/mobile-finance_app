@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Alert } from 'react-native';
 
 import { SettingsScreen } from '@/features/settings/settings-screen';
+import { LanguageProvider } from '@/lib/i18n/language-context';
 
 const mockRouter = {
   back: jest.fn(),
@@ -33,6 +34,12 @@ jest.mock('@/features/settings/settings-repository', () => ({
   getSettingsOverview: () => mockGetSettingsOverview(),
   resetApplicationData: () => mockResetApplicationData(),
 }));
+jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
+  const ReactNative = require('react-native');
+  return (props: { name: string }) => (
+    <ReactNative.Text>{props.name}</ReactNative.Text>
+  );
+});
 
 describe('settings screen', () => {
   beforeEach(() => {
@@ -40,12 +47,17 @@ describe('settings screen', () => {
     mockGetSettingsOverview.mockResolvedValue({
       currencyCode: 'IDR',
       currencyName: 'Indonesian Rupiah',
+      language: 'en',
     });
     mockResetApplicationData.mockResolvedValue(undefined);
   });
 
   it('shows management links, read-only IDR, and local-only About details', async () => {
-    await render(<SettingsScreen />);
+    await render(
+      <LanguageProvider initialLanguage="en">
+        <SettingsScreen />
+      </LanguageProvider>,
+    );
 
     expect(
       await screen.findByRole('header', { name: 'Settings' }),
@@ -69,7 +81,11 @@ describe('settings screen', () => {
 
   it('requires two deliberate confirmations before resetting', async () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-    await render(<SettingsScreen />);
+    await render(
+      <LanguageProvider initialLanguage="en">
+        <SettingsScreen />
+      </LanguageProvider>,
+    );
     await screen.findByText('Indonesian Rupiah');
 
     await fireEvent.press(
@@ -107,7 +123,11 @@ describe('settings screen', () => {
         },
       ),
     );
-    await render(<SettingsScreen />);
+    await render(
+      <LanguageProvider initialLanguage="en">
+        <SettingsScreen />
+      </LanguageProvider>,
+    );
     await screen.findByText('Indonesian Rupiah');
 
     await fireEvent.press(
@@ -142,7 +162,11 @@ describe('settings screen', () => {
         }),
     );
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-    await render(<SettingsScreen />);
+    await render(
+      <LanguageProvider initialLanguage="en">
+        <SettingsScreen />
+      </LanguageProvider>,
+    );
     await screen.findByText('Indonesian Rupiah');
 
     await fireEvent.press(
@@ -160,5 +184,31 @@ describe('settings screen', () => {
     await act(async () => resolveReset?.());
     await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(3));
     alertSpy.mockRestore();
+  });
+
+  it('switches between Indonesian and English language seamlessly', async () => {
+    await render(
+      <LanguageProvider initialLanguage="id">
+        <SettingsScreen />
+      </LanguageProvider>,
+    );
+
+    expect(
+      await screen.findByRole('header', { name: 'Pengaturan' }),
+    ).toBeOnTheScreen();
+    expect(screen.getByText('Bahasa / Language')).toBeOnTheScreen();
+    expect(screen.getByText('Bahasa Indonesia')).toBeOnTheScreen();
+    expect(screen.getByText('English')).toBeOnTheScreen();
+    expect(screen.getByText('Kelola')).toBeOnTheScreen();
+    expect(screen.getByText('Kategori')).toBeOnTheScreen();
+    expect(screen.getByText('Metode Pembayaran')).toBeOnTheScreen();
+    expect(screen.getByText('Hapus Semua Data')).toBeOnTheScreen();
+
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Select English language' }),
+    );
+    expect(screen.getByText('Manage')).toBeOnTheScreen();
+    expect(screen.getByText('Categories')).toBeOnTheScreen();
+    expect(screen.getByText('Delete All Data')).toBeOnTheScreen();
   });
 });

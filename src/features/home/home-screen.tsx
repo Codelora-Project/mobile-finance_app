@@ -21,6 +21,8 @@ import {
 } from '@/features/home/home-repository';
 import type { TransactionListItem } from '@/features/transactions/transaction-repository';
 import { mapError } from '@/lib/errors';
+import { useLanguage } from '@/lib/i18n/language-context';
+import type { Language } from '@/lib/i18n/translations';
 import { formatMoney } from '@/lib/money';
 import { colors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
@@ -32,15 +34,17 @@ function parseLocalDate(localDate: string) {
   return new Date(year ?? 0, (month ?? 1) - 1, day ?? 1);
 }
 
-function formatMonth(monthStart: string) {
-  return new Intl.DateTimeFormat('en-US', {
+function formatMonth(monthStart: string, language: Language) {
+  const locale = language === 'id' ? 'id-ID' : 'en-US';
+  return new Intl.DateTimeFormat(locale, {
     month: 'long',
     year: 'numeric',
   }).format(parseLocalDate(monthStart));
 }
 
-function formatTransactionDate(localDate: string) {
-  return new Intl.DateTimeFormat('en-US', {
+function formatTransactionDate(localDate: string, language: Language) {
+  const locale = language === 'id' ? 'id-ID' : 'en-US';
+  return new Intl.DateTimeFormat(locale, {
     day: 'numeric',
     month: 'short',
   }).format(parseLocalDate(localDate));
@@ -56,17 +60,28 @@ function formatNet(amountMinor: number, currencyCode: string) {
   return formatMoney(0, currencyCode);
 }
 
-function transactionTitle(transaction: TransactionListItem) {
+function transactionTitle(
+  transaction: TransactionListItem,
+  language: Language,
+) {
+  const fallback =
+    transaction.type === 'expense'
+      ? language === 'id'
+        ? 'Pengeluaran'
+        : 'Expense'
+      : language === 'id'
+        ? 'Pemasukan'
+        : 'Income';
+
   return (
-    transaction.counterparty?.trim() ||
-    transaction.categoryName ||
-    (transaction.type === 'expense' ? 'Expense' : 'Income')
+    transaction.counterparty?.trim() || transaction.categoryName || fallback
   );
 }
 
 export function HomeScreen() {
   const database = useSQLiteContext();
   const router = useRouter();
+  const { language, t } = useLanguage();
   const [summary, setSummary] = useState<HomeSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -94,7 +109,7 @@ export function HomeScreen() {
           if (__DEV__) {
             console.warn('Home summary load failed.', mappedError.code);
           }
-          setError("We couldn't load your overview. Try again.");
+          setError(t.home.loadFailed);
         }
       } finally {
         if (requestId.current === currentRequest) {
@@ -103,7 +118,7 @@ export function HomeScreen() {
         }
       }
     },
-    [database],
+    [database, t.home.loadFailed],
   );
 
   useFocusEffect(
@@ -120,7 +135,7 @@ export function HomeScreen() {
       <Screen>
         <View style={styles.centeredState}>
           <ActivityIndicator color={colors.primary} size="large" />
-          <Text style={styles.stateText}>Loading overview…</Text>
+          <Text style={styles.stateText}>{t.home.loading}</Text>
         </View>
       </Screen>
     );
@@ -131,13 +146,16 @@ export function HomeScreen() {
       <Screen>
         <View style={styles.centeredState}>
           <Text accessibilityRole="header" style={styles.stateTitle}>
-            Overview unavailable
+            {t.home.overviewUnavailable}
           </Text>
           <Text accessibilityLiveRegion="assertive" style={styles.stateText}>
             {error}
           </Text>
           <View style={styles.stateAction}>
-            <AppButton label="Try again" onPress={() => void loadSummary()} />
+            <AppButton
+              label={t.home.tryAgain}
+              onPress={() => void loadSummary()}
+            />
           </View>
         </View>
       </Screen>
@@ -157,21 +175,23 @@ export function HomeScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Header Bar */}
+        {/* Header Bar - Large & High Contrast */}
         <View style={styles.header}>
           <View style={styles.headerTitles}>
-            <Text style={styles.greeting}>Overview</Text>
+            <Text style={styles.greeting}>{t.home.greeting}</Text>
             <Text accessibilityRole="header" style={styles.title}>
-              Personal Finance
+              {t.home.appTitle}
             </Text>
           </View>
           <View style={styles.monthBadge}>
             <MaterialCommunityIcons
               color={colors.primary}
               name="calendar-month-outline"
-              size={15}
+              size={18}
             />
-            <Text style={styles.month}>{formatMonth(summary.monthStart)}</Text>
+            <Text style={styles.month}>
+              {formatMonth(summary.monthStart, language)}
+            </Text>
           </View>
         </View>
 
@@ -188,11 +208,11 @@ export function HomeScreen() {
               <View style={styles.heroIconBubble}>
                 <MaterialCommunityIcons
                   color={colors.primary}
-                  name="wallet-outline"
-                  size={16}
+                  name="wallet"
+                  size={18}
                 />
               </View>
-              <Text style={styles.heroNetLabel}>Net</Text>
+              <Text style={styles.heroNetLabel}>{t.home.net}</Text>
             </View>
           </View>
 
@@ -209,62 +229,107 @@ export function HomeScreen() {
             {formatNet(summary.netMinor, summary.currencyCode)}
           </Text>
 
-          <View style={styles.statChipsRow}>
-            {/* Income Stat Chip */}
-            <View style={styles.statChipIncome}>
-              <View style={styles.statIconIncome}>
-                <MaterialCommunityIcons
-                  color={colors.positive}
-                  name="arrow-bottom-left"
-                  size={16}
-                />
+          {/* High Contrast Divider */}
+          <View style={styles.cardDivider} />
+
+          {/* Vertically Stacked Income & Expenses Rows */}
+          <View style={styles.summaryRows}>
+            {/* Income Row */}
+            <View style={styles.summaryRowItem}>
+              <View style={styles.summaryRowLeft}>
+                <View style={styles.iconCircleIncome}>
+                  <MaterialCommunityIcons
+                    color="#15803D"
+                    name="arrow-bottom-left"
+                    size={20}
+                  />
+                </View>
+                <Text style={styles.summaryRowLabel}>{t.home.income}</Text>
               </View>
-              <View style={styles.statChipContent}>
-                <Text style={styles.statChipLabelIncome}>Income</Text>
-                <Text
-                  adjustsFontSizeToFit
-                  numberOfLines={1}
-                  style={styles.statChipValueIncome}
-                >
-                  {formatMoney(summary.incomeMinor, summary.currencyCode)}
-                </Text>
-              </View>
+              <Text
+                adjustsFontSizeToFit
+                numberOfLines={1}
+                style={styles.summaryIncomeValue}
+              >
+                {formatMoney(summary.incomeMinor, summary.currencyCode)}
+              </Text>
             </View>
 
-            {/* Expense Stat Chip */}
-            <View style={styles.statChipExpense}>
-              <View style={styles.statIconExpense}>
-                <MaterialCommunityIcons
-                  color={colors.destructive}
-                  name="arrow-top-right"
-                  size={16}
-                />
-              </View>
-              <View style={styles.statChipContent}>
-                <Text numberOfLines={1} style={styles.statChipLabelExpense}>
-                  Expenses this month
-                </Text>
-                <Text
-                  adjustsFontSizeToFit
-                  numberOfLines={1}
-                  style={styles.statChipValueExpense}
-                >
-                  {formatMoney(summary.expenseMinor, summary.currencyCode)}
+            {/* Expense Row */}
+            <View style={styles.summaryRowItem}>
+              <View style={styles.summaryRowLeft}>
+                <View style={styles.iconCircleExpense}>
+                  <MaterialCommunityIcons
+                    color="#B42318"
+                    name="arrow-top-right"
+                    size={20}
+                  />
+                </View>
+                <Text style={styles.summaryRowLabel}>
+                  {t.home.expensesThisMonth}
                 </Text>
               </View>
+              <Text
+                adjustsFontSizeToFit
+                numberOfLines={1}
+                style={styles.summaryExpenseValue}
+              >
+                {formatMoney(summary.expenseMinor, summary.currencyCode)}
+              </Text>
             </View>
           </View>
+        </View>
+
+        {/* Large Quick Action Buttons (Senior Touch-Friendly) */}
+        <View style={styles.quickActionsContainer}>
+          <Pressable
+            accessibilityLabel={t.home.quickAddTransaction}
+            accessibilityRole="button"
+            onPress={() => router.push('/transactions/new')}
+            style={({ pressed }) => [
+              styles.quickActionButtonPrimary,
+              pressed ? styles.pressed : null,
+            ]}
+          >
+            <View style={styles.quickActionIconCirclePrimary}>
+              <MaterialCommunityIcons color="#FFFFFF" name="plus" size={22} />
+            </View>
+            <Text style={styles.quickActionTextPrimary}>
+              {t.home.quickAddTransaction}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            accessibilityLabel={t.home.quickScanReceipt}
+            accessibilityRole="button"
+            onPress={() => router.push('/receipt/camera')}
+            style={({ pressed }) => [
+              styles.quickActionButtonSecondary,
+              pressed ? styles.pressed : null,
+            ]}
+          >
+            <View style={styles.quickActionIconCircleSecondary}>
+              <MaterialCommunityIcons
+                color={colors.primary}
+                name="camera-outline"
+                size={20}
+              />
+            </View>
+            <Text style={styles.quickActionTextSecondary}>
+              {t.home.quickScanReceipt}
+            </Text>
+          </Pressable>
         </View>
 
         {/* Spending by Category Section */}
         <View style={styles.section}>
           <Text accessibilityRole="header" style={styles.sectionTitle}>
-            Spending by category
+            {t.home.spendingByCategory}
           </Text>
           {summary.categoryTotals.length === 0 ? (
             <View style={styles.emptyCard}>
               <Text style={styles.emptySectionText}>
-                No expenses this month.
+                {t.home.noExpensesThisMonth}
               </Text>
             </View>
           ) : (
@@ -282,7 +347,7 @@ export function HomeScreen() {
                     accessibilityLabel={`${category.categoryName}, ${formatMoney(
                       category.amountMinor,
                       summary.currencyCode,
-                    )}, ${percentage}% of expenses`}
+                    )}, ${percentage}% ${t.home.ofExpenses}`}
                     accessible
                     key={category.categoryId}
                     style={styles.categoryRow}
@@ -296,7 +361,7 @@ export function HomeScreen() {
                       <MaterialCommunityIcons
                         color={meta.color}
                         name={meta.icon}
-                        size={18}
+                        size={22}
                       />
                     </View>
                     <View style={styles.categoryInfo}>
@@ -324,7 +389,7 @@ export function HomeScreen() {
                             styles.barFill,
                             {
                               backgroundColor: meta.color,
-                              width: `${Math.max(percentage, 2)}%`,
+                              width: `${Math.max(percentage, 4)}%`,
                             },
                           ]}
                         />
@@ -341,11 +406,11 @@ export function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text accessibilityRole="header" style={styles.sectionTitle}>
-              Recent transactions
+              {t.home.recentTransactions}
             </Text>
             {summary.recentTransactions.length > 0 ? (
               <AppButton
-                label="View all"
+                label={t.home.viewAll}
                 onPress={() => router.push('/transactions')}
                 variant="ghost"
               />
@@ -357,16 +422,18 @@ export function HomeScreen() {
                 <MaterialCommunityIcons
                   color={colors.textSecondary}
                   name="receipt-text-plus-outline"
-                  size={32}
+                  size={36}
                 />
               </View>
-              <Text style={styles.emptySectionTitle}>No transactions yet</Text>
+              <Text style={styles.emptySectionTitle}>
+                {t.home.noTransactionsYet}
+              </Text>
               <Text style={styles.emptySectionText}>
-                Add an expense or income to see your monthly overview.
+                {t.home.noTransactionsDesc}
               </Text>
               <View style={styles.emptyAction}>
                 <AppButton
-                  label="Add your first transaction"
+                  label={t.home.addFirstTransaction}
                   onPress={() => router.push('/transactions/new')}
                   variant="secondary"
                 />
@@ -375,7 +442,7 @@ export function HomeScreen() {
           ) : (
             <View style={styles.cardList}>
               {summary.recentTransactions.map((transaction, index) => {
-                const title = transactionTitle(transaction);
+                const title = transactionTitle(transaction, language);
                 const meta = getCategoryMeta(
                   transaction.categoryName,
                   transaction.type,
@@ -408,7 +475,7 @@ export function HomeScreen() {
                       <MaterialCommunityIcons
                         color={meta.color}
                         name={meta.icon}
-                        size={20}
+                        size={22}
                       />
                     </View>
                     <View style={styles.transactionText}>
@@ -418,15 +485,22 @@ export function HomeScreen() {
                       <View style={styles.transactionMetaRow}>
                         <Text style={styles.transactionMetadata}>
                           {transaction.categoryName} ·{' '}
-                          {formatTransactionDate(transaction.localDate)}
+                          {formatTransactionDate(
+                            transaction.localDate,
+                            language,
+                          )}
                         </Text>
                         {transaction.hasReceipt ? (
-                          <MaterialCommunityIcons
-                            color={colors.textSecondary}
-                            name="paperclip"
-                            size={12}
-                            style={styles.receiptIcon}
-                          />
+                          <View style={styles.receiptBadge}>
+                            <MaterialCommunityIcons
+                              color={colors.primary}
+                              name="paperclip"
+                              size={12}
+                            />
+                            <Text style={styles.receiptBadgeText}>
+                              {t.home.receiptBadge}
+                            </Text>
+                          </View>
                         ) : null}
                       </View>
                     </View>
@@ -446,9 +520,9 @@ export function HomeScreen() {
                       </Text>
                     </View>
                     <MaterialCommunityIcons
-                      color="#CBD5E1"
+                      color="#94A3B8"
                       name="chevron-right"
-                      size={18}
+                      size={22}
                     />
                   </Pressable>
                 );
@@ -463,7 +537,7 @@ export function HomeScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.xxl + spacing.md,
   },
   header: {
     alignItems: 'center',
@@ -477,59 +551,58 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   greeting: {
-    color: colors.textSecondary,
+    color: '#475569',
     fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    fontWeight: '700',
+    letterSpacing: 0.8,
   },
   title: {
     color: colors.textPrimary,
-    fontSize: typography.pageTitle.fontSize,
-    fontWeight: typography.pageTitle.fontWeight,
-    lineHeight: typography.pageTitle.lineHeight,
+    fontSize: 24,
+    fontWeight: '800',
+    lineHeight: 30,
     marginTop: 2,
   },
   monthBadge: {
     alignItems: 'center',
     backgroundColor: '#EEF2FF',
-    borderColor: '#E0E7FF',
+    borderColor: '#C7D2FE',
     borderRadius: radius.pill,
-    borderWidth: 1,
+    borderWidth: 1.5,
     flexDirection: 'row',
-    gap: 5,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: spacing.xs + 2,
+    gap: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 3,
   },
   month: {
     color: colors.primary,
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
   },
   errorBanner: {
     backgroundColor: '#FEF3F2',
-    borderColor: '#FEE4E2',
+    borderColor: '#FECDCA',
     borderRadius: radius.md,
-    borderWidth: 1,
+    borderWidth: 1.5,
     color: colors.destructive,
-    fontSize: typography.secondary.fontSize,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '600',
     marginHorizontal: spacing.lg,
     marginBottom: spacing.sm,
-    padding: spacing.sm + 2,
+    padding: spacing.sm + 4,
   },
   heroCard: {
     backgroundColor: colors.surface,
-    borderColor: colors.border,
+    borderColor: '#CBD5E1',
     borderRadius: 20,
-    borderWidth: 1,
+    borderWidth: 1.5,
     elevation: 3,
     marginHorizontal: spacing.lg,
     padding: spacing.lg,
     shadowColor: '#0F172A',
     shadowOffset: { height: 4, width: 0 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
   },
   heroHeader: {
     alignItems: 'center',
@@ -539,27 +612,27 @@ const styles = StyleSheet.create({
   heroLabelRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 6,
+    gap: 8,
   },
   heroIconBubble: {
     alignItems: 'center',
     backgroundColor: '#EFF6FF',
     borderRadius: radius.pill,
-    height: 26,
+    height: 30,
     justifyContent: 'center',
-    width: 26,
+    width: 30,
   },
   heroNetLabel: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 0.2,
+    color: '#475569',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   heroAmount: {
-    fontSize: 30,
+    fontSize: 34,
     fontWeight: '800',
     letterSpacing: -0.5,
-    marginVertical: spacing.xs + 2,
+    marginVertical: spacing.xs + 4,
   },
   heroAmountPositive: {
     color: colors.textPrimary,
@@ -567,110 +640,155 @@ const styles = StyleSheet.create({
   heroAmountNegative: {
     color: colors.destructive,
   },
-  statChipsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.md,
+  cardDivider: {
+    backgroundColor: '#E2E8F0',
+    height: 1.5,
+    marginVertical: spacing.sm + 2,
   },
-  statChipIncome: {
+  summaryRows: {
+    gap: spacing.sm + 4,
+    marginTop: spacing.xs,
+  },
+  summaryRowItem: {
     alignItems: 'center',
-    backgroundColor: '#F0FDF4',
-    borderColor: '#DCFCE7',
-    borderRadius: 14,
-    borderWidth: 1,
-    flex: 1,
     flexDirection: 'row',
-    gap: 8,
-    padding: spacing.sm + 2,
+    justifyContent: 'space-between',
   },
-  statIconIncome: {
+  summaryRowLeft: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexShrink: 1,
+    gap: 10,
+  },
+  iconCircleIncome: {
     alignItems: 'center',
     backgroundColor: '#DCFCE7',
     borderRadius: radius.pill,
-    height: 28,
+    height: 32,
     justifyContent: 'center',
-    width: 28,
+    width: 32,
   },
-  statChipExpense: {
+  iconCircleExpense: {
     alignItems: 'center',
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FEE2E2',
+    backgroundColor: '#FEE2E2',
+    borderRadius: radius.pill,
+    height: 32,
+    justifyContent: 'center',
+    width: 32,
+  },
+  summaryRowLabel: {
+    color: '#334155',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  summaryIncomeValue: {
+    color: '#15803D',
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  summaryExpenseValue: {
+    color: '#B42318',
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  quickActionsContainer: {
+    flexDirection: 'row',
+    gap: spacing.sm + 2,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+  },
+  quickActionButtonPrimary: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
     borderRadius: 14,
-    borderWidth: 1,
+    elevation: 2,
     flex: 1,
     flexDirection: 'row',
     gap: 8,
-    padding: spacing.sm + 2,
+    height: 52,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    shadowColor: colors.primary,
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
-  statIconExpense: {
+  quickActionIconCirclePrimary: {
     alignItems: 'center',
-    backgroundColor: '#FEE2E2',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     borderRadius: radius.pill,
     height: 28,
     justifyContent: 'center',
     width: 28,
   },
-  statChipContent: {
+  quickActionTextPrimary: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  quickActionButtonSecondary: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#CBD5E1',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    elevation: 1,
     flex: 1,
+    flexDirection: 'row',
+    gap: 8,
+    height: 52,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
   },
-  statChipLabelIncome: {
-    color: '#15803D',
-    fontSize: 11,
-    fontWeight: '600',
+  quickActionIconCircleSecondary: {
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    borderRadius: radius.pill,
+    height: 28,
+    justifyContent: 'center',
+    width: 28,
   },
-  statChipValueIncome: {
-    color: '#15803D',
+  quickActionTextSecondary: {
+    color: colors.textPrimary,
     fontSize: 14,
     fontWeight: '700',
-    marginTop: 2,
-  },
-  statChipLabelExpense: {
-    color: '#B42318',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  statChipValueExpense: {
-    color: '#B42318',
-    fontSize: 14,
-    fontWeight: '700',
-    marginTop: 2,
   },
   section: {
-    marginTop: spacing.lg,
+    marginTop: spacing.lg + spacing.xs,
   },
   sectionHeader: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    minHeight: 40,
+    minHeight: 44,
     paddingRight: spacing.sm,
   },
   sectionTitle: {
     color: colors.textPrimary,
-    fontSize: typography.sectionTitle.fontSize,
-    fontWeight: typography.sectionTitle.fontWeight,
+    fontSize: 18,
+    fontWeight: '800',
     paddingHorizontal: spacing.lg,
   },
   card: {
     backgroundColor: colors.surface,
-    borderColor: colors.border,
+    borderColor: '#CBD5E1',
     borderRadius: 18,
-    borderWidth: 1,
+    borderWidth: 1.5,
     elevation: 2,
-    gap: spacing.md,
+    gap: spacing.md + 2,
     marginHorizontal: spacing.lg,
     marginTop: spacing.sm,
-    padding: spacing.md,
+    padding: spacing.md + 2,
     shadowColor: '#0F172A',
     shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.05,
     shadowRadius: 8,
   },
   emptyCard: {
     backgroundColor: colors.surface,
-    borderColor: colors.border,
+    borderColor: '#CBD5E1',
     borderRadius: 18,
-    borderWidth: 1,
+    borderWidth: 1.5,
     marginHorizontal: spacing.lg,
     marginTop: spacing.sm,
     padding: spacing.lg,
@@ -682,10 +800,10 @@ const styles = StyleSheet.create({
   },
   categoryIconBadge: {
     alignItems: 'center',
-    borderRadius: 12,
-    height: 38,
+    borderRadius: 14,
+    height: 44,
     justifyContent: 'center',
-    width: 38,
+    width: 44,
   },
   categoryInfo: {
     flex: 1,
@@ -700,33 +818,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     flexShrink: 1,
-    gap: 6,
+    gap: 8,
   },
   categoryName: {
     color: colors.textPrimary,
-    fontSize: typography.secondary.fontSize,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
   },
   percentBadge: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#E2E8F0',
     borderRadius: radius.pill,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
   percentText: {
-    color: colors.textSecondary,
-    fontSize: 10,
-    fontWeight: '700',
+    color: '#334155',
+    fontSize: 11,
+    fontWeight: '800',
   },
   categoryAmount: {
     color: colors.textPrimary,
-    fontSize: typography.secondary.fontSize,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
   },
   barTrack: {
-    backgroundColor: colors.surfaceSecondary,
+    backgroundColor: '#F1F5F9',
     borderRadius: radius.pill,
-    height: 6,
+    height: 10,
     overflow: 'hidden',
   },
   barFill: {
@@ -735,105 +853,120 @@ const styles = StyleSheet.create({
   },
   cardList: {
     backgroundColor: colors.surface,
-    borderColor: colors.border,
+    borderColor: '#CBD5E1',
     borderRadius: 18,
-    borderWidth: 1,
+    borderWidth: 1.5,
     elevation: 2,
     marginHorizontal: spacing.lg,
     marginTop: spacing.sm,
     overflow: 'hidden',
     shadowColor: '#0F172A',
     shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.05,
     shadowRadius: 8,
   },
   transactionRow: {
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderBottomColor: '#F1F5F9',
-    borderBottomWidth: 1,
+    borderBottomWidth: 1.5,
     flexDirection: 'row',
     gap: 12,
-    minHeight: 68,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
+    minHeight: 76,
+    paddingHorizontal: spacing.md + 2,
+    paddingVertical: spacing.sm + 4,
   },
   transactionRowLast: {
     borderBottomWidth: 0,
   },
   avatarBadge: {
     alignItems: 'center',
-    borderRadius: 12,
-    height: 42,
+    borderRadius: 14,
+    height: 46,
     justifyContent: 'center',
-    width: 42,
+    width: 46,
   },
   transactionText: {
     flex: 1,
   },
   transactionTitle: {
     color: colors.textPrimary,
-    fontSize: typography.body.fontSize,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
   },
   transactionMetaRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 4,
-    marginTop: 2,
+    gap: 6,
+    marginTop: 3,
   },
   transactionMetadata: {
-    color: colors.textSecondary,
-    fontSize: typography.metadata.fontSize,
+    color: '#475569',
+    fontSize: 13,
+    fontWeight: '500',
   },
-  receiptIcon: {
-    marginLeft: 2,
+  receiptBadge: {
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    borderColor: '#DBEAFE',
+    borderRadius: 4,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 2,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+  },
+  receiptBadgeText: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: '700',
   },
   transactionAmountWrapper: {
     alignItems: 'flex-end',
   },
   expenseAmount: {
     color: colors.destructive,
-    fontSize: typography.secondary.fontSize,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
   },
   incomeAmount: {
     color: colors.positive,
-    fontSize: typography.secondary.fontSize,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
   },
   emptyRecentCard: {
     alignItems: 'center',
     backgroundColor: colors.surface,
-    borderColor: colors.border,
+    borderColor: '#CBD5E1',
     borderRadius: 18,
-    borderWidth: 1,
+    borderWidth: 1.5,
     elevation: 2,
     marginHorizontal: spacing.lg,
     marginTop: spacing.sm,
     padding: spacing.xl,
     shadowColor: '#0F172A',
     shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.05,
     shadowRadius: 8,
   },
   emptyIconCircle: {
     alignItems: 'center',
     backgroundColor: '#F1F5F9',
     borderRadius: radius.pill,
-    height: 60,
+    height: 68,
     justifyContent: 'center',
     marginBottom: spacing.sm,
-    width: 60,
+    width: 68,
   },
   emptySectionTitle: {
     color: colors.textPrimary,
-    fontSize: typography.body.fontSize,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '800',
   },
   emptySectionText: {
-    color: colors.textSecondary,
-    fontSize: typography.secondary.fontSize,
+    color: '#475569',
+    fontSize: 14,
+    fontWeight: '500',
     marginTop: spacing.xs,
     paddingHorizontal: spacing.md,
     textAlign: 'center',
@@ -854,7 +987,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.sectionTitle.fontWeight,
   },
   stateText: {
-    color: colors.textSecondary,
+    color: '#475569',
     fontSize: typography.body.fontSize,
     marginTop: spacing.sm,
     textAlign: 'center',
@@ -864,6 +997,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   pressed: {
-    opacity: 0.72,
+    opacity: 0.75,
   },
 });

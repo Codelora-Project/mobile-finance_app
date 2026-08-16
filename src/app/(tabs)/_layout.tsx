@@ -7,7 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
-import { typography } from '@/theme/typography';
+
+import { useLanguage } from '@/lib/i18n/language-context';
 
 type TabIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
@@ -18,17 +19,17 @@ function TabIcon({ color, name }: { color: ColorValue; name: TabIconName }) {
       color={color}
       importantForAccessibility="no-hide-descendants"
       name={name}
-      size={24}
+      size={26}
     />
   );
 }
 
-function AddActionButton() {
+function AddActionButton({ label }: { label: string }) {
   const router = useRouter();
 
   return (
     <Pressable
-      accessibilityLabel="Add transaction"
+      accessibilityLabel={label}
       accessibilityRole="button"
       hitSlop={8}
       onPress={() => router.push('/transactions/new')}
@@ -43,18 +44,19 @@ function AddActionButton() {
           color={colors.surface}
           importantForAccessibility="no-hide-descendants"
           name="plus"
-          size={30}
+          size={32}
         />
       </View>
-      <Text style={styles.addLabel}>Add</Text>
+      <Text style={styles.addLabel}>{label}</Text>
     </Pressable>
   );
 }
 
 export default function MainTabLayout() {
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
   const bottomPadding = insets.bottom > 0 ? insets.bottom : spacing.sm;
-  const tabHeight = 60 + bottomPadding;
+  const tabHeight = 64 + bottomPadding;
 
   return (
     <Tabs
@@ -62,14 +64,14 @@ export default function MainTabLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarHideOnKeyboard: true,
-        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarInactiveTintColor: '#475569',
         tabBarLabelStyle: styles.tabLabel,
         tabBarStyle: [
           styles.tabBar,
           {
             height: tabHeight,
             paddingBottom: bottomPadding,
-            paddingTop: spacing.xs,
+            paddingTop: spacing.xs + 2,
           },
         ],
       }}
@@ -83,7 +85,7 @@ export default function MainTabLayout() {
               name={focused ? 'home-variant' : 'home-variant-outline'}
             />
           ),
-          title: 'Home',
+          title: t.tabs.home,
         }}
       />
       <Tabs.Screen
@@ -92,14 +94,14 @@ export default function MainTabLayout() {
           tabBarIcon: ({ color }) => (
             <TabIcon color={color} name="format-list-bulleted" />
           ),
-          title: 'Transactions',
+          title: t.tabs.transactions,
         }}
       />
       <Tabs.Screen
         name="action"
         options={{
-          tabBarButton: () => <AddActionButton />,
-          title: 'Add',
+          tabBarButton: () => <AddActionButton label={t.tabs.add} />,
+          title: t.tabs.add,
         }}
       />
       <Tabs.Screen
@@ -111,7 +113,7 @@ export default function MainTabLayout() {
               name={focused ? 'file-document' : 'file-document-outline'}
             />
           ),
-          title: 'Claims',
+          title: t.tabs.claims,
         }}
       />
       <Tabs.Screen
@@ -120,7 +122,7 @@ export default function MainTabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <TabIcon color={color} name={focused ? 'cog' : 'cog-outline'} />
           ),
-          title: 'Settings',
+          title: t.tabs.settings,
         }}
       />
     </Tabs>
@@ -130,11 +132,12 @@ export default function MainTabLayout() {
 const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: colors.surface,
-    borderTopColor: colors.border,
+    borderTopColor: '#CBD5E1',
+    borderTopWidth: 1.5,
   },
   tabLabel: {
-    fontSize: typography.metadata.fontSize,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
   },
   addAction: {
     alignItems: 'center',
@@ -153,18 +156,18 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 4,
     elevation: 4,
-    height: 56,
+    height: 58,
     justifyContent: 'center',
     shadowColor: colors.textPrimary,
     shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.22,
     shadowRadius: 4,
-    width: 56,
+    width: 58,
   },
   addLabel: {
-    color: colors.textSecondary,
-    fontSize: typography.metadata.fontSize,
-    fontWeight: '600',
+    color: '#475569',
+    fontSize: 12,
+    fontWeight: '700',
     marginTop: 0,
   },
 });

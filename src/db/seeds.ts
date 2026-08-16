@@ -71,6 +71,7 @@ export const defaultPaymentMethods: readonly PaymentMethodSeed[] = [
 const defaultSettings = [
   { key: 'welcome_seen', value: 'false' },
   { key: 'default_currency_code', value: 'IDR' },
+  { key: 'language', value: 'id' },
 ] as const;
 
 type SeedDatabase = Pick<SQLiteDatabase, 'runAsync'>;

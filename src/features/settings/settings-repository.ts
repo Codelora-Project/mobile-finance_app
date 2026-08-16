@@ -12,6 +12,7 @@ type SettingRow = {
 export type SettingsOverview = Readonly<{
   currencyCode: 'IDR';
   currencyName: 'Indonesian Rupiah';
+  language: 'id' | 'en';
 }>;
 
 export async function getSettingsOverview(
@@ -30,10 +31,31 @@ export async function getSettingsOverview(
     );
   }
 
+  const langRow = await database.getFirstAsync<SettingRow>(
+    `SELECT value
+     FROM app_settings
+     WHERE key = 'language'`,
+  );
+
   return {
     currencyCode: 'IDR',
     currencyName: 'Indonesian Rupiah',
+    language: langRow?.value === 'en' ? 'en' : 'id',
   };
+}
+
+export async function setLanguageSetting(
+  database: SQLiteDatabase,
+  language: 'id' | 'en',
+) {
+  const timestamp = Date.now();
+  await database.runAsync(
+    `INSERT INTO app_settings (key, value, updated_at)
+     VALUES ('language', ?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+    language,
+    timestamp,
+  );
 }
 
 async function resetDatabase(database: SQLiteDatabase) {

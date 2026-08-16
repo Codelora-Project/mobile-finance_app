@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import MainTabLayout from '@/app/(tabs)/_layout';
+import { LanguageProvider } from '@/lib/i18n/language-context';
 
 const mockRouter = { push: jest.fn() };
 
@@ -50,7 +51,7 @@ describe('main tab layout', () => {
     jest.clearAllMocks();
   });
 
-  it('renders the four destinations and opens Add as an action', async () => {
+  it('renders the four destinations and opens Add as an action in English', async () => {
     await render(
       <SafeAreaProvider
         initialMetrics={{
@@ -58,7 +59,9 @@ describe('main tab layout', () => {
           insets: { bottom: 0, left: 0, right: 0, top: 0 },
         }}
       >
-        <MainTabLayout />
+        <LanguageProvider initialLanguage="en">
+          <MainTabLayout />
+        </LanguageProvider>
       </SafeAreaProvider>,
     );
 
@@ -67,9 +70,30 @@ describe('main tab layout', () => {
     expect(screen.getByText('Claims')).toBeOnTheScreen();
     expect(screen.getByText('Settings')).toBeOnTheScreen();
 
-    await fireEvent.press(
-      screen.getByRole('button', { name: 'Add transaction' }),
+    await fireEvent.press(screen.getByRole('button', { name: 'Add' }));
+    expect(mockRouter.push).toHaveBeenCalledWith('/transactions/new');
+  });
+
+  it('renders the tab destinations in Indonesian', async () => {
+    await render(
+      <SafeAreaProvider
+        initialMetrics={{
+          frame: { height: 812, width: 375, x: 0, y: 0 },
+          insets: { bottom: 0, left: 0, right: 0, top: 0 },
+        }}
+      >
+        <LanguageProvider initialLanguage="id">
+          <MainTabLayout />
+        </LanguageProvider>
+      </SafeAreaProvider>,
     );
+
+    expect(screen.getByText('Beranda')).toBeOnTheScreen();
+    expect(screen.getByText('Riwayat')).toBeOnTheScreen();
+    expect(screen.getByText('Klaim')).toBeOnTheScreen();
+    expect(screen.getByText('Pengaturan')).toBeOnTheScreen();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Catat' }));
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/new');
   });
 });
