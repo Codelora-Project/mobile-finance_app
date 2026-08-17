@@ -1,354 +1,231 @@
-# Personal Finance
+# Personal Finance App 💰
 
-Aplikasi pencatatan keuangan pribadi berbasis Android yang dibangun dengan Expo Development Build, React Native, TypeScript, Expo Router, dan SQLite. Proyek ini masih dalam tahap pengembangan; implementasi saat ini telah mencapai **Milestone 14** (edge-case hardening untuk interrupted OCR, rapid actions, Android Back, large amounts, long content, keyboard/font scaling, restart persistence, dan penggunaan offline).
+Aplikasi pencatatan keuangan pribadi (_Personal Finance_) modern berbasis Android yang dibangun menggunakan **Expo Development Build**, **React Native**, **TypeScript**, **Expo Router**, dan **SQLite**.
 
-`PRD.md` adalah **single source of truth** untuk requirement, arsitektur, urutan implementasi, dan acceptance criteria. Jangan mengimplementasikan phase berikutnya sebelum milestone sebelumnya selesai dan terverifikasi.
+Aplikasi dirancang dengan arsitektur **Offline-First**, di mana seluruh data transaksi, anggaran, target tabungan, lampiran foto struk, dan ekspor dokumen PDF disimpan dan diproses 100% secara lokal pada perangkat tanpa memerlukan koneksi internet maupun server eksternal.
 
-## Stack saat ini
+---
 
-- Expo SDK 57
-- React Native 0.86
-- React 19
-- TypeScript strict
-- Expo Router
-- `@expo/vector-icons`
-- `expo-font`
-- `expo-sqlite`
-- `expo-image-picker`
-- `expo-camera`
-- `expo-file-system`
-- `expo-print`
-- `expo-sharing`
-- `expo-splash-screen`
-- `@infinitered/react-native-mlkit-text-recognition`
-- Jest + `jest-expo` + Testing Library
-- ESLint + Prettier
-- npm
+## 📱 Fitur Utama
 
-Target utama sesuai PRD adalah **Pixel 7 Android Emulator, Android 16 / API 36, Google Play image**. Expo Go tidak digunakan; aplikasi dijalankan sebagai Expo Development Build.
+- **Pencatatan Transaksi Cepat**: Catat pemasukan (_Income_) dan pengeluaran (_Expense_) harian dengan nominal, kategori, metode pembayaran, catatan, dan tanggal/waktu.
+- **Lampiran Bukti Struk Manual**: Lampirkan foto bukti struk transaksi langsung dari Kamera atau Galeri perangkat, tersimpan aman di direktori lokal.
+- **Analitik & Grafik Finansial**: Visualisasi pengeluaran bulanan, grafik perbandingan mingguan, dan diagram breakdown kategori (_Donut Chart_).
+- **Anggaran Kategori (_Category Budgets_)**: Tetapkan batas pengeluaran bulanan per kategori dengan indikator visual dan peringatan over-budget.
+- **Target Tabungan (_Savings Goals_) & Habit Streak**: Pantau progres tabungan impian dan pertahankan streak pencatatan keuangan harian dengan lencana (_badges_).
+- **Klaim Reimbursement & Ekspor PDF**: Kelompokkan transaksi yang dapat diklaim (_reimbursable_) ke dalam laporan klaim dan ekspor menjadi berkas PDF resmi lengkap dengan lampiran foto struk.
+- **Kategori & Metode Pembayaran Dinamis**: Kelola kategori dan metode pembayaran kustom sesuai kebutuhan pribadi.
+- **Tema & Bahasa**: Mendukung Dark Mode / Light Mode serta pilihan bahasa Indonesia dan Inggris.
+- **Privasi & Keamanan**: Tanpa registrasi akun, tanpa cloud tracking, dan opsi _Delete All Data_ untuk reset total data lokal.
 
-## Prasyarat
+---
 
-Siapkan:
+## 🛠️ Tech Stack
 
-1. Node.js yang memenuhi engine React Native 0.86: `^20.19.4 || ^22.13.0 || ^24.3.0 || >=25.0.0`. Proyek ini telah diverifikasi dengan Node `24.19.0`.
-2. npm.
-3. Android Studio beserta:
-   - Android SDK Platform 36;
-   - Android SDK Build-Tools;
-   - Android SDK Platform-Tools (`adb`);
-   - Android Emulator;
-   - Pixel 7 AVD dengan Android 16 / API 36 Google Play image.
-4. JDK 17. Toolchain Android proyek ini telah diverifikasi dengan Eclipse Temurin 17. JBR 25 bawaan Android Studio versi terbaru tidak kompatibel dengan native build yang digunakan proyek ini.
+- **Framework**: [Expo SDK 57](https://expo.dev) & [React Native 0.86](https://reactnative.dev)
+- **Bahasa**: [TypeScript](https://www.typescriptlang.org/) (Strict Mode)
+- **Routing & Navigasi**: [Expo Router](https://docs.expo.dev/router/introduction/) (File-based routing)
+- **Database Lokal**: `expo-sqlite` (SQLite Storage)
+- **Media & File**: `expo-camera`, `expo-image-picker`, `expo-file-system`
+- **Dokumen & Berbagi**: `expo-print`, `expo-sharing`
+- **Testing**: [Jest](https://jestjs.io/), `jest-expo`, `@testing-library/react-native`
+- **Code Quality**: ESLint, Prettier, TypeScript Compiler
 
-Pastikan perintah berikut dapat dijalankan dari terminal:
+---
 
-```powershell
-node --version
-npm --version
-java -version
-adb version
+## 📋 Prasyarat Sistem (_Prerequisites_)
+
+Sebelum menjalankan atau mem-build aplikasi, pastikan komputer Anda telah terpasang:
+
+1. **Node.js**: Versi LTS (`^20.19.4`, `^22.13.0`, `^24.3.0`, atau `>=25.0.0`).
+2. **Java Development Kit (JDK)**: **JDK 17** (disarankan [Eclipse Temurin 17](https://adoptium.net/temurin/releases/?version=17)).
+3. **Android Studio**:
+   - Android SDK Platform (API 34 / 35 / 36)
+   - Android SDK Build-Tools & Platform-Tools (`adb`)
+   - Android Emulator (misal: Pixel 7 dengan API 36 / Google Play image)
+4. **Environment Variables** (Windows PowerShell):
+   ```powershell
+   # Contoh path umum di Windows:
+   $env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-17.0.x-hotspot"
+   $env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
+   $env:Path = "$env:JAVA_HOME\bin;$env:ANDROID_HOME\platform-tools;$env:ANDROID_HOME\emulator;$env:Path"
+   ```
+   > Pastikan perintah `node --version`, `java -version`, dan `adb version` dapat dijalankan dari terminal.
+
+---
+
+## 🚀 Panduan Menjalankan Aplikasi (_Development_)
+
+### 1. Install Dependencies
+
+Buka terminal di direktori root proyek:
+
+```bash
+npm install
 ```
 
-Jika `java` atau `adb` tidak ditemukan, atur `JAVA_HOME`, `ANDROID_HOME`, dan `Path` ke instalasi lokal Android Studio/SDK. Contoh untuk sesi PowerShell saat ini dengan lokasi instalasi Windows yang umum:
+### 2. Nyalakan Emulator Android / Hubungkan Perangkat Fisik
 
-```powershell
-$env:JAVA_HOME = 'C:\Program Files\Eclipse Adoptium\jdk-17'
-$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
-$env:Path = "$env:JAVA_HOME\bin;$env:ANDROID_HOME\platform-tools;$env:ANDROID_HOME\emulator;$env:Path"
-```
+- **Via Emulator**: Buka Android Studio > Device Manager > Jalankan Virtual Device.
+- **Via HP Fisik**: Aktifkan **USB Debugging** di menu _Developer Options_ HP Anda dan sambungkan dengan kabel USB.
+- Verifikasi koneksi:
+  ```bash
+  adb devices
+  ```
 
-Lokasi aktual dapat berbeda. Perintah di atas hanya berlaku pada terminal aktif; tambahkan nilai yang sama melalui Windows Environment Variables agar permanen, lalu buka terminal baru. Pastikan `java -version` menampilkan versi 17 sebelum menjalankan native build.
+### 3. Build & Jalankan Aplikasi Pertama Kali
 
-## Instalasi
+Jalankan perintah berikut untuk mengompilasi kode native Android, menginstal aplikasi ke perangkat, dan menyalakan Metro Bundler:
 
-Dari root proyek:
-
-```powershell
-npm ci
-```
-
-`npm ci` memasang dependency persis seperti `package-lock.json`. Saat sengaja menambah package Expo, gunakan `npx expo install <package>`; untuk package pihak ketiga gunakan `npm install <package>`, lalu commit perubahan lockfile.
-
-## Menjalankan aplikasi di Android
-
-### 1. Nyalakan emulator
-
-Buka Android Studio > Device Manager, lalu jalankan Pixel 7 AVD. Verifikasi perangkat terdeteksi:
-
-```powershell
-adb devices
-```
-
-Status perangkat harus `device`, bukan `offline` atau `unauthorized`.
-
-### 2. Build dan install development build
-
-Untuk build pertama, atau setelah dependency/config native berubah:
-
-```powershell
+```bash
 npm run android
 ```
 
-Perintah tersebut menjalankan `expo run:android`, mengompilasi aplikasi native, memasangnya ke emulator, dan memulai Metro.
+_(Atau `npx expo run:android`)_
 
-Jika port 8081 sedang dipakai proses lain, gunakan port berbeda:
+> [!TIP]
+> Jika port `8081` bentrok dengan aplikasi lain, tentukan port lain secara manual:
+>
+> ```bash
+> npx expo run:android --port 8082
+> ```
 
-```powershell
-npx expo run:android --port 8082
-```
+### 4. Menjalankan Sesi Harian Berikutnya
 
-### 3. Menjalankan sesi development berikutnya
+Jika aplikasi native sudah terinstal di emulator/HP dan Anda hanya mengubah kode React/TypeScript:
 
-Jika development build sudah terpasang dan tidak ada perubahan native:
-
-```powershell
+```bash
 npm start
 ```
 
-Perintah ini menjalankan Metro dengan target development client. Buka aplikasi **Personal Finance** di emulator bila tidak terbuka otomatis. Fast Refresh akan aktif selama aplikasi terhubung ke Metro.
+Buka aplikasi **Personal Finance** di perangkat, dan perubahan kode akan otomatis ter-update via _Fast Refresh_.
 
-Native rebuild diperlukan setelah perubahan pada:
+---
 
-- dependency yang memiliki kode native;
-- Expo config atau config plugin;
-- Expo SDK;
-- konfigurasi native Android.
+## 📦 Panduan Build Menjadi APK (_Production / Standalone_)
 
-Setelah perubahan tersebut, jalankan:
+Ada dua cara mudah untuk menghasilkan file instalasi APK:
 
-```powershell
-npx expo-doctor@latest
-npm run android
-```
+### Opsi A: Build APK Standalone Langsung (Gradle Lokal) — _Direkomendasikan_
 
-## Quality gates dan automated tests
+Anda dapat mem-build APK Release langsung tanpa koneksi cloud Expo:
 
-Jalankan seluruh gate sebelum menyatakan suatu task selesai:
+#### 1. Masuk ke folder `android` dan jalankan Gradle:
 
-```powershell
-npm run format:check
-npm run lint
-npm run typecheck
-npm test
-```
+- **Windows (PowerShell / Command Prompt)**:
+  ```powershell
+  cd android
+  .\gradlew assembleRelease
+  cd ..
+  ```
+- **macOS / Linux**:
+  ```bash
+  cd android
+  ./gradlew assembleRelease
+  cd ..
+  ```
 
-Kegunaan setiap command:
+#### 2. Lokasi Output File APK:
 
-| Command                | Tujuan                                               |
-| ---------------------- | ---------------------------------------------------- |
-| `npm run format:check` | Memeriksa format tanpa mengubah file                 |
-| `npm run format`       | Memformat file dengan Prettier                       |
-| `npm run lint`         | Menjalankan aturan ESLint/Expo                       |
-| `npm run typecheck`    | Memeriksa TypeScript strict tanpa menghasilkan build |
-| `npm test`             | Menjalankan seluruh Jest test sekali                 |
-| `npm run test:watch`   | Menjalankan Jest dalam watch mode saat development   |
-
-Untuk menjalankan satu test suite:
-
-```powershell
-npm test -- tests/money.test.ts
-```
-
-Test yang tersedia saat ini mencakup bootstrap route, inisialisasi/migrasi database, utilitas money/date/text/error/HTML, repository kategori dan metode pembayaran, repository transaksi termasuk metadata OCR, pagination/read model, dan Claim locks, form transaksi manual, riwayat transaksi, filter, detail transaksi, Home, Camera/Gallery/OCR/Receipt flow, persistent receipt storage, repository dan layar Claims, ClaimPdfModel, escaped HTML renderer, receipt base64 embedding, Expo Print/Sharing boundary, Settings dan reset database/file dengan default re-seeding, serta hardening Milestone 14 untuk interrupted OCR, rapid actions, unsaved Claim Back, dan aggregate money overflow.
-
-## Verifikasi manual saat ini
-
-Automated tests tidak menggantikan pengujian pada emulator. Untuk scope sampai Milestone 14, cek minimal:
-
-1. Aplikasi terbuka tanpa error database atau crash.
-2. Bottom tab menampilkan Home, Transactions, Add, Claims, dan Settings; tombol Add langsung membuka form transaksi.
-3. Form transaksi baru default ke Expense; ketika Income dipilih, field Reimbursable dan Receipt tidak ditampilkan.
-4. Amount dan Category wajib diisi, serta tanggal/waktu masa depan ditolak.
-5. Expense dapat disimpan dengan Category, Payment Method opsional, Reimbursable, Merchant, Note, dan Receipt manual.
-6. Receipt hanya menerima JPEG/PNG/WEBP dan tampil dengan status `OCR not processed`.
-7. Income dapat disimpan, tetapi tidak dapat reimbursable atau memiliki Receipt.
-8. Tombol save tidak menghasilkan transaksi ganda ketika ditekan berulang saat proses save berlangsung.
-9. Tombol Back dan hardware Back menampilkan konfirmasi ketika ada perubahan yang belum disimpan.
-10. Transaksi yang baru disimpan dapat dibuka melalui **Edit saved transaction**, diedit, dan dihapus dengan konfirmasi.
-11. Transaksi dan receipt tetap tersedia setelah aplikasi ditutup paksa lalu dibuka kembali.
-12. Delete transaksi juga menghapus row receipt terkait tanpa foreign-key violation.
-13. Aturan custom/default/fallback category dan payment method dari Milestone 3 tetap berlaku.
-14. Loading, validation, confirmation, success, dan failure state yang relevan tampil dengan benar.
-15. Daftar Transactions menampilkan transaksi terbaru terlebih dahulu dan memuat halaman berikutnya saat mendekati akhir daftar.
-16. Search menemukan transaksi berdasarkan Merchant/Source, Note, dan nama Category tanpa membedakan kapitalisasi.
-17. Filter Type, Category, Date Range, Payment Method, Reimbursable, dan Has Receipt dapat diterapkan dan di-reset.
-18. Kombinasi search/filter tanpa hasil menampilkan `No matching transactions`, bukan empty state data baru.
-19. Transaction Detail menampilkan seluruh field yang relevan; Edit, Delete, dan Add mengembalikan pengguna ke daftar yang sudah ter-refetch.
-20. Edit transaksi tanpa mengubah amount tidak mengubah nilai minor-unit yang tersimpan.
-21. Home menampilkan bulan lokal saat ini serta total Expense, Income, dan Net dari data SQLite bulan tersebut.
-22. Net menggunakan rumus Income dikurangi Expense dan tetap menampilkan tanda yang benar ketika hasilnya negatif.
-23. Spending by category hanya menghitung Expense dalam currency Home, diurutkan berdasarkan jumlah terbesar, dan menampilkan maksimum lima bar horizontal beserta nominalnya.
-24. Recent transactions menampilkan maksimum lima transaksi terbaru dan membuka Transaction Detail ketika ditekan.
-25. Home menampilkan state kosong yang benar ketika belum ada transaksi atau belum ada Expense pada bulan berjalan.
-26. Home melakukan refetch setelah kembali dari Add/Edit/Delete dan pull-to-refresh dapat digunakan tanpa menggandakan data.
-27. Add Transaction langsung membuka form Expense/Income tanpa layar pilihan perantara.
-28. Action Receipt pada form menawarkan Take Photo atau Choose from Gallery untuk satu image JPEG/PNG/WEBP dan kembali normal ketika picker dibatalkan.
-29. Image dengan MIME atau metadata yang tidak valid menghasilkan error yang recoverable dan dapat dipilih ulang.
-30. Image diproses on-device dengan ML Kit tanpa request jaringan dan pengguna tetap berada di Add Transaction Form.
-31. Hasil OCR mengisi Amount, Merchant, dan Date yang masih kosong tanpa menimpa input pengguna.
-32. Hasil OCR partial menampilkan pemberitahuan dan field yang tidak terdeteksi tetap dapat diisi manual.
-33. OCR kosong, native error, dan timeout tetap mempertahankan receipt pada form dengan fallback manual.
-34. Transaction/Receipt baru dibuat hanya setelah final Save, dengan `processed`, `partial`, atau `failed` serta raw text/subtotal/tax yang sesuai.
-35. Camera permission baru diminta setelah Take Photo dipilih; penolakan tidak membuang isian form.
-36. Take Photo menghasilkan satu attachment yang divalidasi sebelum OCR.
-37. Camera dan Gallery menggunakan pipeline OCR serta penyimpanan receipt yang sama.
-38. Cancel Camera/Gallery kembali ke form tanpa mengubah attachment atau field yang ada.
-39. Setelah Save, `receipts.storage_key` berisi key relatif `receipts/<file>`, bukan URI gallery/camera atau absolute path.
-40. Receipt Viewer dari Transaction Detail menampilkan file yang disalin ke document storage.
-41. Force-stop dan buka ulang aplikasi; receipt yang sama tetap dapat dilihat.
-42. Mengganti receipt menampilkan file baru dan membersihkan file lama hanya setelah DB update berhasil.
-43. Melepas receipt atau menghapus transaction membersihkan row receipt dan file persistent terkait.
-44. Simulasi kegagalan DB setelah copy membersihkan file baru; kegagalan replace tidak menghilangkan file lama.
-45. Claims hanya menawarkan Expense dengan `is_reimbursable = true` yang belum menjadi anggota Claim lain; receipt tidak wajib.
-46. New Claim memvalidasi Title maksimum 100 karakter, Description maksimum 500 karakter, serta manual period yang valid.
-47. IDR dapat digabung dengan IDR dan USD dengan USD; pemilihan currency berbeda menampilkan `This expense uses a different currency.`
-48. Claim Review menampilkan expense rows, total derived dari transaksi, serta jumlah receipt attached/missing sebelum Save Draft.
-49. Draft Claim dapat diedit, expense dapat ditambah/dihapus, dapat ditandai Submitted, dan dapat dihapus tanpa menghapus transaksi.
-50. Submitted Claim terkunci, tetapi dapat dipindahkan kembali ke Draft, ditandai Reimbursed, atau ditandai Rejected.
-51. Rejected Claim dapat dipindahkan kembali ke Draft; Reimbursed Claim bersifat terminal dan read-only.
-52. Satu Transaction tidak dapat menjadi anggota dua Claims dan Income/non-reimbursable Expense ditolak oleh repository meskipun dipanggil di luar UI.
-53. Edit amount/date pada transaction anggota Draft Claim memperbarui total/auto period secara derived; membuatnya tidak eligible ditolak sampai membership dilepas.
-54. Delete transaction anggota Draft menampilkan warning dan melepas membership; delete/edit pada Submitted, Rejected, atau Reimbursed Claim diblokir.
-55. Export PDF bekerja ketika koneksi jaringan emulator dimatikan dan tidak melakukan request HTTP.
-56. PDF menampilkan title, period, generated date, expense table, currency-aware amount, dan total Claim yang benar.
-57. Merchant, note, category, title, dan description dengan karakter HTML ditampilkan sebagai teks aman, bukan markup executable.
-58. Receipt persistent muncul pada Receipt Attachments; expense tanpa receipt tetap muncul dengan `Receipt not attached`.
-59. Nama file mengikuti `expense-claim-<slug-title>-<date>.pdf` dan hasil berada di `cache/exports`, bukan database atau document storage.
-60. Export failure menampilkan error recoverable tanpa mengubah Claim atau membership.
-61. Pada Reimbursed Claim, Share PDF membuka native share sheet dengan MIME `application/pdf` dan local `file://` URI.
-62. Settings dapat dibuka dari bottom tab dan menyediakan link menuju Categories serta Payment Methods.
-63. Currency menampilkan `Indonesian Rupiah (IDR)` sebagai read-only dan tidak menyediakan kontrol perubahan currency.
-64. About menampilkan nama aplikasi, versi, sifat offline-first/local-only, dan OCR on-device.
-65. Menekan Delete All Data belum menghapus data pada dialog pertama; pengguna harus memilih Continue lalu Delete All Data pada dialog kedua.
-66. Membatalkan salah satu dialog konfirmasi mempertahankan seluruh data.
-67. Setelah konfirmasi final, Transactions, Receipts, Claims, Claim Items, custom Categories, custom Payment Methods, receipt files, dan `cache/exports` terhapus.
-68. Setelah reset, default Categories, Payment Methods, `welcome_seen`, dan currency IDR tersedia kembali; Home terbuka dalam empty state yang valid.
-69. Hasil OCR yang selesai setelah Import Receipt ditutup diabaikan dan tidak mengubah flow berikutnya.
-70. Rapid tap pada save, capture, Claim status/delete/PDF, transaction delete, management save/delete, dan reset data tidak menjalankan operasi native/database ganda.
-71. Total Claim yang melampaui safe integer ditolak secara recoverable di UI dan repository tanpa crash atau partial write.
-72. Back/hardware Back pada Claim Form mundur satu step; pada step pertama dengan perubahan, tampil konfirmasi discard.
-73. Merchant panjang membungkus maksimal dua baris tanpa mendorong amount keluar dari row; tombol tetap terbaca pada font scaling Android.
-74. Drag pada form yang berisi input menutup keyboard dan tap pada kontrol tetap dapat diproses.
-75. Empty history dan daftar berisi 100+ Transactions/Claims tetap memiliki state, urutan, dan pagination yang benar.
-76. Force-stop/relaunch mempertahankan Transaction dan Receipt yang tersimpan; navigasi serta PDF lokal tetap bekerja ketika jaringan dimatikan.
-
-Untuk mengecek persistence melalui terminal:
-
-```powershell
-adb shell am force-stop com.personalfinance.app
-adb shell am start -n com.personalfinance.app/.MainActivity
-```
-
-## Reset data lokal
-
-Reset yang sesuai flow aplikasi tersedia melalui **Home > Settings > Delete All Data**. Flow ini memakai dua tahap konfirmasi, membersihkan database dan file yang dikelola aplikasi, menanam ulang default, lalu kembali ke Home.
-
-Untuk reset tingkat package ketika debugging bootstrap/migration:
-
-Untuk mengulang pengujian dari database bersih:
-
-```powershell
-adb shell pm clear com.personalfinance.app
-```
-
-**Peringatan:** command ini menghapus seluruh data aplikasi pada emulator/perangkat Android yang sedang dipilih. Saat aplikasi dibuka kembali, migrasi akan berjalan dan default categories, payment methods, serta app settings akan dibuat ulang.
-
-Jika lebih dari satu device terhubung, tentukan target secara eksplisit:
-
-```powershell
-adb -s <device-id> shell pm clear com.personalfinance.app
-```
-
-## Troubleshooting
-
-### Development build belum terpasang
-
-Jika Metro menampilkan pesan bahwa development build tidak ditemukan, pastikan emulator aktif lalu jalankan:
-
-```powershell
-npm run android
-```
-
-### `Unknown command: "expo"`
-
-`expo` bukan subcommand npm, jadi jangan menjalankan `npm expo start`. Gunakan salah satu command berikut:
-
-```powershell
-npm start
-# atau
-npx expo start --dev-client
-```
-
-### Native build gagal dengan Java 25
-
-Jika output Gradle/CMake menyebut Java 25 atau restricted `System` method, hentikan proses, arahkan `JAVA_HOME` ke JDK 17, lalu jalankan kembali `npm run android`.
-
-### Metro cache bermasalah
-
-Hentikan Metro dengan `Ctrl+C`, lalu:
-
-```powershell
-npx expo start --dev-client --clear
-```
-
-### Emulator tidak terdeteksi
-
-```powershell
-adb devices
-adb kill-server
-adb start-server
-```
-
-Lalu restart emulator jika status masih `offline`.
-
-### Aplikasi tidak dapat terhubung ke Metro
-
-Pastikan Metro berjalan dan port development diteruskan ke emulator:
-
-```powershell
-adb reverse tcp:8081 tcp:8081
-```
-
-Kemudian buka kembali aplikasi.
-
-### Pemeriksaan dependency/config Expo
-
-```powershell
-npx expo-doctor@latest
-```
-
-Jangan menjalankan auto-fix dependency atau upgrade major secara membabi buta. Cocokkan setiap perubahan dengan Expo SDK 57, PRD, dan `package-lock.json`.
-
-## Struktur proyek
+Setelah build sukses, file APK siap instal berada di:
 
 ```text
-src/
-  app/                    Expo Router routes
-  components/ui/          shared UI primitives
-  db/                     SQLite provider, migrations, dan seeds
-  features/home/          targeted SQL aggregation dan Home screen
-  features/receipts/      Camera/Gallery, ML Kit boundary, parser, flow Context, dan Receipt Review
-  features/claims/        Claims domain/UI serta offline PDF generation dan sharing
-  features/settings/      Settings overview, read-only currency, dan transactional data reset
-  features/categories/    category management dan picker
-  features/payment-methods/
-  features/transactions/  manual form, history, filters, detail, receipt picker, repository
-  lib/                    pure TypeScript utilities
-  theme/                  design tokens
-tests/                    Jest unit/component/integration tests
-assets/                   app icons dan static assets
-PRD.md                    product dan engineering specification
+android/app/build/outputs/apk/release/app-release.apk
 ```
 
-Database bersifat local-first dan disimpan di application sandbox. Jangan menambahkan backend, cloud sync, global state library, ORM, atau dependency lain yang ditolak PRD tanpa requirement nyata dan persetujuan scope.
+_(Atau untuk debug build: `android/app/build/outputs/apk/debug/app-debug.apk` via `.\gradlew assembleDebug`)_
 
-## Checklist sebelum melanjutkan phase
+#### 3. Instal APK ke Emulator / HP:
 
-- Baca requirement dan acceptance criteria phase dari `PRD.md`.
-- Pastikan milestone sebelumnya sudah selesai dan terverifikasi.
-- Tambahkan test yang relevan dengan perubahan.
-- Jalankan seluruh quality gates.
-- Uji related screen dan failure path pada Pixel 7 emulator.
-- Jika ada perubahan native, jalankan Expo Doctor dan Android build.
-- Dokumentasikan blocker atau penyimpangan secara eksplisit.
+```bash
+adb install android/app/build/outputs/apk/release/app-release.apk
+```
+
+Atau langsung copy file `.apk` tersebut ke smartphone Android Anda dan install manual (_Sideload_).
+
+---
+
+### Opsi B: Build APK Menggunakan EAS CLI (_Expo Application Services_)
+
+Jika Anda menggunakan EAS Build:
+
+1. Pastikan EAS CLI terpasang:
+   ```bash
+   npm install -g eas-cli
+   ```
+2. Build APK untuk Android (Preview / Standalone APK):
+   ```bash
+   eas build -p android --profile preview
+   ```
+   _(Atau tambahkan flag `--local` jika ingin proses build dieksekusi di komputer lokal Anda)_.
+
+---
+
+## 🧪 Quality Gates & Pengujian (_Testing_)
+
+Sebelum melakukan commit atau rilis kode baru, jalankan seluruh pipeline pemeriksaan:
+
+```bash
+# 1. Pengecekan tipe TypeScript
+npm run typecheck
+
+# 2. Menjalankan unit test Jest
+npm test
+
+# 3. Linter kode
+npm run lint
+
+# 4. Pengecekan formatting Prettier
+npm run format:check
+```
+
+### Format Kode Otomatis:
+
+```bash
+npm run format
+```
+
+---
+
+## 🔧 Troubleshooting & Solusi Umum
+
+| Kendala                                            | Penyebab Umum                                                              | Solusi                                                                                                                 |
+| :------------------------------------------------- | :------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------- |
+| **Port 8081 already in use**                       | Ada proses Node/Metro lain yang masih berjalan.                            | Jalankan dengan port lain: `npx expo start --port 8082` atau kill proses di port 8081.                                 |
+| **Gradle build error / Java Version mismatch**     | Menggunakan JDK 21/25 bawaan Android Studio terbaru yang belum kompatibel. | Pastikan `JAVA_HOME` mengarah ke **JDK 17** (`java -version`).                                                         |
+| **Cache Metro / Expo bermasalah**                  | Cache bundler lama menumpuk.                                               | Jalankan Metro dengan flag reset: `npx expo start -c`.                                                                 |
+| **Build Native Android Gagal setelah ubah config** | File build Gradle lama tidak sinkron.                                      | Masuk ke folder android dan bersihkan cache: `cd android && .\gradlew clean && cd ..` lalu jalankan `npm run android`. |
+| **Perangkat tidak terdeteksi di adb**              | USB Debugging belum aktif / driver belum terpasang.                        | Cek status dengan `adb devices`, pastikan statusnya `device` (bukan `unauthorized`).                                   |
+
+---
+
+## 📄 Struktur Direktori Utama
+
+```text
+├── src/
+│   ├── app/                 # Rute halaman Expo Router (Tabs, Modals, Detail)
+│   ├── components/          # Komponen UI global (AppButton, AppInput, Screen)
+│   ├── db/                  # Inisialisasi SQLite Database, Migrasi, dan Seeds
+│   ├── features/            # Modul fitur terisolasi
+│   │   ├── analytics/       # Grafik cashflow, perbandingan mingguan, breakdown
+│   │   ├── budgets/         # Penganggaran kategori & modal budget
+│   │   ├── categories/      # Manajemen kategori & picker
+│   │   ├── claims/          # Manajemen klaim reimbursement & PDF generator
+│   │   ├── goals/           # Target tabungan (Savings goals)
+│   │   ├── habits/          # Habit tracker & streak badges
+│   │   ├── home/            # Dashboard ringkasan keuangan
+│   │   ├── payment-methods/ # Manajemen metode pembayaran
+│   │   ├── receipts/        # Penyimpanan file struk & penampil gambar struk
+│   │   ├── settings/        # Pengaturan tema, bahasa, & reset database
+│   │   └── transactions/    # Input transaksi manual, riwayat, filter, & detail
+│   ├── lib/                 # Utility tanggal, uang (IDR), format string, & error
+│   └── theme/               # Token desain (warna, spacing, radius, tipografi)
+├── tests/                   # 100% Automated Unit & Integration Test Suites
+└── package.json             # Konfigurasi dependensi proyek
+```
+
+---
+
+## 📜 Lisensi
+
+Aplikasi ini bersifat privat untuk pencatatan keuangan pribadi offline-first.

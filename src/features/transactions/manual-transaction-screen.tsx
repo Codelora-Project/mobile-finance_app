@@ -69,7 +69,6 @@ import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
-
 type SelectedReference = Readonly<{ id: number; name: string }>;
 
 type FormState = Readonly<{

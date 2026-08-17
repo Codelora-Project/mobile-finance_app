@@ -394,11 +394,12 @@ export function GoalsScreen() {
 
                   <View style={styles.summaryStatsRow}>
                     <Text style={styles.summaryTargetText}>
-                      {t.goals.target}: {formatMoney(summary.totalTargetMinor, 'IDR')}
+                      {t.goals.target}:{' '}
+                      {formatMoney(summary.totalTargetMinor, 'IDR')}
                     </Text>
                     <Text style={styles.summaryTargetText}>
-                      {summary.activeCount} {t.goals.active} · {summary.completedCount}{' '}
-                      {t.goals.completed}
+                      {summary.activeCount} {t.goals.active} ·{' '}
+                      {summary.completedCount} {t.goals.completed}
                     </Text>
                   </View>
                 </View>

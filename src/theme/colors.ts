@@ -63,4 +63,3 @@ export const darkColors: ColorPalette = {
 };
 
 export const colors: ColorPalette = lightColors;
-

@@ -422,8 +422,8 @@ export function HomeScreen() {
                 style={[styles.miniSubtitle, { color: colors.textSecondary }]}
               >
                 {habitStats
-                  ? t.habits.badges[habitStats.currentBadge.key] ??
-                    habitStats.currentBadge.key
+                  ? (t.habits.badges[habitStats.currentBadge.key] ??
+                    habitStats.currentBadge.key)
                   : t.habits.streakTitle}
               </Text>
             </View>
@@ -433,9 +433,7 @@ export function HomeScreen() {
           <Pressable
             accessibilityRole="button"
             onPress={() =>
-              router.push(
-                primaryGoal ? `/goals/${primaryGoal.id}` : '/goals',
-              )
+              router.push(primaryGoal ? `/goals/${primaryGoal.id}` : '/goals')
             }
             style={({ pressed }) => [
               styles.miniWidgetCard,
@@ -595,10 +593,7 @@ export function HomeScreen() {
             <Pressable hitSlop={8} onPress={() => router.push('/analytics')}>
               <View style={styles.cardHeaderLink}>
                 <Text
-                  style={[
-                    styles.cardHeaderLinkText,
-                    { color: colors.primary },
-                  ]}
+                  style={[styles.cardHeaderLinkText, { color: colors.primary }]}
                 >
                   {t.budgets.manageBudgets}
                 </Text>
@@ -736,7 +731,10 @@ export function HomeScreen() {
               {t.home.recentTransactions}
             </Text>
             {summary.recentTransactions.length > 0 ? (
-              <Pressable hitSlop={8} onPress={() => router.push('/transactions')}>
+              <Pressable
+                hitSlop={8}
+                onPress={() => router.push('/transactions')}
+              >
                 <View style={styles.cardHeaderLink}>
                   <Text
                     style={[
@@ -836,10 +834,7 @@ export function HomeScreen() {
                           { color: colors.textSecondary },
                         ]}
                       >
-                        {formatTransactionDate(
-                          transaction.localDate,
-                          language,
-                        )}
+                        {formatTransactionDate(transaction.localDate, language)}
                       </Text>
                     </View>
 

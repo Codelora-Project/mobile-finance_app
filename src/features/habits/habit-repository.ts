@@ -3,12 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { getTimezoneOffsetMinutes, toLocalDate } from '@/lib/dates';
 
 export type StreakBadgeKey =
-  | 'starter'
-  | 'momentum'
-  | 'consistent'
-  | 'champion'
-  | 'master'
-  | 'legend';
+  'starter' | 'momentum' | 'consistent' | 'champion' | 'master' | 'legend';
 
 export type StreakBadge = Readonly<{
   key: StreakBadgeKey;

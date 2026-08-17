@@ -25,4 +25,3 @@ export function parseIntegerInput(value: string): number | null {
   if (!Number.isFinite(parsed) || parsed <= 0) return null;
   return parsed;
 }
-

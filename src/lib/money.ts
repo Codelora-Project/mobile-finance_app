@@ -296,4 +296,3 @@ export function formatShortcutLabel(amount: number): string {
   }
   return `+${amount}`;
 }
-

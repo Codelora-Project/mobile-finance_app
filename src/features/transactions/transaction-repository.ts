@@ -399,10 +399,7 @@ function normalizeInput(input: SaveTransactionInput, now: number) {
     input.paymentMethodId !== null &&
     (!Number.isSafeInteger(input.paymentMethodId) || input.paymentMethodId <= 0)
   ) {
-    throw createCodedError(
-      'VALIDATION_FAILED',
-      'Choose a payment method.',
-    );
+    throw createCodedError('VALIDATION_FAILED', 'Choose a payment method.');
   }
   if (!Number.isSafeInteger(input.occurredAt)) {
     throw createCodedError('VALIDATION_FAILED', 'Enter a valid date.');
@@ -416,10 +413,7 @@ function normalizeInput(input: SaveTransactionInput, now: number) {
   if (!Number.isInteger(input.timezoneOffsetMinutes)) {
     throw createCodedError('VALIDATION_FAILED', 'Enter a valid date.');
   }
-  const localDate = toLocalDate(
-    input.occurredAt,
-    input.timezoneOffsetMinutes,
-  );
+  const localDate = toLocalDate(input.occurredAt, input.timezoneOffsetMinutes);
   if (input.localDate !== localDate) {
     throw createCodedError('VALIDATION_FAILED', 'Enter a valid date.');
   }

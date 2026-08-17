@@ -33,7 +33,6 @@ import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 
-
 type TabMode = 'overview' | 'budgets' | 'trends';
 
 export function AnalyticsScreen() {

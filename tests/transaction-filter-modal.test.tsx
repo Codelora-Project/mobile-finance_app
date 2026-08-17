@@ -35,18 +35,16 @@ jest.mock('@/features/payment-methods/payment-method-repository', () => ({
 }));
 
 describe('transaction filter modal', () => {
-  it(
-    'applies all filters and validates date order',
-    async () => {
-      const onApply = jest.fn();
-      await render(
-        <TransactionFilterModal
-          filters={{}}
-          onApply={onApply}
-          onClose={jest.fn()}
-          visible
-        />,
-      );
+  it('applies all filters and validates date order', async () => {
+    const onApply = jest.fn();
+    await render(
+      <TransactionFilterModal
+        filters={{}}
+        onApply={onApply}
+        onClose={jest.fn()}
+        visible
+      />,
+    );
 
     await waitFor(() =>
       expect(

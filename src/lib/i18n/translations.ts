@@ -392,9 +392,11 @@ export const translations: Record<Language, TranslationSchema> = {
       cancel: 'Batal',
       continue: 'Lanjutkan',
       done: 'Selesai',
-      errorShortcutInvalid: 'Masukkan nominal angka yang valid (contoh: 15000).',
+      errorShortcutInvalid:
+        'Masukkan nominal angka yang valid (contoh: 15000).',
       errorShortcutDuplicate: 'Nominal ini sudah ada di daftar shortcut.',
-      errorShortcutMinimum: 'Aplikasi membutuhkan minimal 1 tombol shortcut nominal.',
+      errorShortcutMinimum:
+        'Aplikasi membutuhkan minimal 1 tombol shortcut nominal.',
     },
     // Goals / Celengan Impian
     goals: {

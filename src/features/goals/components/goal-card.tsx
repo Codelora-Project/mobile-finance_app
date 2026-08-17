@@ -49,8 +49,7 @@ export function GoalCard({
   const accentBg = isDark ? `${goal.colorKey}22` : `${goal.colorKey}18`;
   const completedBorderColor = isDark ? '#065F46' : '#6EE7B7';
   // Shorten "Nabung / Setor" ? "Nabung" for the button label
-  const depositLabel =
-    t.goals.deposit.split('/')[0]?.trim() ?? t.goals.deposit;
+  const depositLabel = t.goals.deposit.split('/')[0]?.trim() ?? t.goals.deposit;
 
   return (
     <Pressable
@@ -85,10 +84,7 @@ export function GoalCard({
               {goal.name}
             </Text>
             <Text
-              style={[
-                styles.targetAmountText,
-                { color: colors.textSecondary },
-              ]}
+              style={[styles.targetAmountText, { color: colors.textSecondary }]}
             >
               {t.goals.target}: {formatMoney(goal.targetAmountMinor, 'IDR')}
             </Text>
@@ -138,7 +134,9 @@ export function GoalCard({
           style={[
             styles.progressBar,
             {
-              backgroundColor: goal.isCompleted ? colors.positive : goal.colorKey,
+              backgroundColor: goal.isCompleted
+                ? colors.positive
+                : goal.colorKey,
               width: `${clampedPercent}%`,
             },
           ]}
@@ -164,7 +162,7 @@ export function GoalCard({
           </Text>
         </View>
 
-        {/* Remaining — hidden in compact/completed mode */}
+        {/* Remaining ï¿½ hidden in compact/completed mode */}
         {!compact && !goal.isCompleted && (
           <>
             <View
@@ -177,10 +175,7 @@ export function GoalCard({
                 {t.goals.remaining}
               </Text>
               <Text
-                style={[
-                  styles.footerAmount,
-                  { color: colors.textSecondary },
-                ]}
+                style={[styles.footerAmount, { color: colors.textSecondary }]}
               >
                 {formatMoney(remainingMinor, 'IDR')}
               </Text>

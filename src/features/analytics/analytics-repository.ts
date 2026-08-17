@@ -77,7 +77,6 @@ function formatEpochDays(epochDays: number): string {
   return `${y}-${m}-${d}`;
 }
 
-
 export async function getAnalyticsData(
   database: SQLiteDatabase,
   referenceDateStr?: string,
