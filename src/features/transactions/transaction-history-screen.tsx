@@ -270,6 +270,8 @@ export function TransactionHistoryScreen() {
     if (filters.paymentMethodId !== undefined) count += 1;
     if (filters.type !== undefined) count += 1;
     if (filters.hasReceipt !== undefined) count += 1;
+    if (filters.isNonCash !== undefined) count += 1;
+    if (filters.minAmountMinor !== undefined) count += 1;
     return count;
   }, [filters]);
 
@@ -345,6 +347,26 @@ export function TransactionHistoryScreen() {
         return rest;
       }
       return { ...prev, isReimbursable: true };
+    });
+  };
+
+  const handleToggleQuickNonCash = () => {
+    setFilters((prev) => {
+      if (prev.isNonCash === true) {
+        const { isNonCash: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, isNonCash: true };
+    });
+  };
+
+  const handleToggleQuickHighAmount = () => {
+    setFilters((prev) => {
+      if (prev.minAmountMinor === 100_000) {
+        const { minAmountMinor: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, minAmountMinor: 100_000 };
     });
   };
 
@@ -446,6 +468,7 @@ export function TransactionHistoryScreen() {
           horizontal
           showsHorizontalScrollIndicator={false}
         >
+          {/* Chip 1: Semua (All) */}
           <Pressable
             accessibilityRole="button"
             onPress={() => handleToggleQuickType('all')}
@@ -455,7 +478,9 @@ export function TransactionHistoryScreen() {
                 backgroundColor:
                   filters.type === undefined &&
                   !filters.hasReceipt &&
-                  !filters.isReimbursable
+                  !filters.isReimbursable &&
+                  !filters.isNonCash &&
+                  filters.minAmountMinor === undefined
                     ? colors.primary
                     : isDark
                       ? colors.surfaceSecondary
@@ -463,7 +488,9 @@ export function TransactionHistoryScreen() {
                 borderColor:
                   filters.type === undefined &&
                   !filters.hasReceipt &&
-                  !filters.isReimbursable
+                  !filters.isReimbursable &&
+                  !filters.isNonCash &&
+                  filters.minAmountMinor === undefined
                     ? colors.primary
                     : colors.border,
               },
@@ -477,7 +504,9 @@ export function TransactionHistoryScreen() {
                   color:
                     filters.type === undefined &&
                     !filters.hasReceipt &&
-                    !filters.isReimbursable
+                    !filters.isReimbursable &&
+                    !filters.isNonCash &&
+                    filters.minAmountMinor === undefined
                       ? '#FFFFFF'
                       : colors.textPrimary,
                 },
@@ -487,6 +516,153 @@ export function TransactionHistoryScreen() {
             </Text>
           </Pressable>
 
+          {/* Chip 2: 📎 Ada Struk (Has Receipt) */}
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleToggleQuickReceipt}
+            style={({ pressed }) => [
+              styles.quickChip,
+              {
+                backgroundColor:
+                  filters.hasReceipt === true
+                    ? isDark
+                      ? '#312E81'
+                      : '#EDE9FE'
+                    : isDark
+                      ? colors.surfaceSecondary
+                      : '#F1F5F9',
+                borderColor:
+                  filters.hasReceipt === true ? '#7C3AED' : colors.border,
+              },
+              pressed ? styles.pressed : null,
+            ]}
+          >
+            <Text
+              style={[
+                styles.quickChipText,
+                {
+                  color:
+                    filters.hasReceipt === true
+                      ? '#7C3AED'
+                      : colors.textPrimary,
+                },
+              ]}
+            >
+              📎 {t.transactions.withReceipt}
+            </Text>
+          </Pressable>
+
+          {/* Chip 3: 💼 Klaim Kantor (Reimbursable) */}
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleToggleQuickReimbursable}
+            style={({ pressed }) => [
+              styles.quickChip,
+              {
+                backgroundColor:
+                  filters.isReimbursable === true
+                    ? isDark
+                      ? '#78350F'
+                      : '#FEF3C7'
+                    : isDark
+                      ? colors.surfaceSecondary
+                      : '#F1F5F9',
+                borderColor:
+                  filters.isReimbursable === true ? '#D97706' : colors.border,
+              },
+              pressed ? styles.pressed : null,
+            ]}
+          >
+            <Text
+              style={[
+                styles.quickChipText,
+                {
+                  color:
+                    filters.isReimbursable === true
+                      ? '#D97706'
+                      : colors.textPrimary,
+                },
+              ]}
+            >
+              💼 {t.transactions.reimbursable}
+            </Text>
+          </Pressable>
+
+          {/* Chip 4: 💳 Non-Tunai (Non-Cash) */}
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleToggleQuickNonCash}
+            style={({ pressed }) => [
+              styles.quickChip,
+              {
+                backgroundColor:
+                  filters.isNonCash === true
+                    ? isDark
+                      ? '#0E7490'
+                      : '#CFFAFE'
+                    : isDark
+                      ? colors.surfaceSecondary
+                      : '#F1F5F9',
+                borderColor:
+                  filters.isNonCash === true ? '#0891B2' : colors.border,
+              },
+              pressed ? styles.pressed : null,
+            ]}
+          >
+            <Text
+              style={[
+                styles.quickChipText,
+                {
+                  color:
+                    filters.isNonCash === true
+                      ? '#0891B2'
+                      : colors.textPrimary,
+                },
+              ]}
+            >
+              💳 {t.transactions.nonCash}
+            </Text>
+          </Pressable>
+
+          {/* Chip 5: 💰 > Rp 100k (> 100k) */}
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleToggleQuickHighAmount}
+            style={({ pressed }) => [
+              styles.quickChip,
+              {
+                backgroundColor:
+                  filters.minAmountMinor === 100_000
+                    ? isDark
+                      ? '#831843'
+                      : '#FCE7F3'
+                    : isDark
+                      ? colors.surfaceSecondary
+                      : '#F1F5F9',
+                borderColor:
+                  filters.minAmountMinor === 100_000
+                    ? '#DB2777'
+                    : colors.border,
+              },
+              pressed ? styles.pressed : null,
+            ]}
+          >
+            <Text
+              style={[
+                styles.quickChipText,
+                {
+                  color:
+                    filters.minAmountMinor === 100_000
+                      ? '#DB2777'
+                      : colors.textPrimary,
+                },
+              ]}
+            >
+              💰 {t.transactions.above100k}
+            </Text>
+          </Pressable>
+
+          {/* Chip 6: 💸 Pengeluaran (Expense) */}
           <Pressable
             accessibilityRole="button"
             onPress={() => handleToggleQuickType('expense')}
@@ -524,6 +700,7 @@ export function TransactionHistoryScreen() {
             </Text>
           </Pressable>
 
+          {/* Chip 7: 💵 Pemasukan (Income) */}
           <Pressable
             accessibilityRole="button"
             onPress={() => handleToggleQuickType('income')}
@@ -555,77 +732,7 @@ export function TransactionHistoryScreen() {
                 },
               ]}
             >
-              💰 {t.transactions.income}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            onPress={handleToggleQuickReceipt}
-            style={({ pressed }) => [
-              styles.quickChip,
-              {
-                backgroundColor:
-                  filters.hasReceipt === true
-                    ? isDark
-                      ? '#312E81'
-                      : '#EDE9FE'
-                    : isDark
-                      ? colors.surfaceSecondary
-                      : '#F1F5F9',
-                borderColor:
-                  filters.hasReceipt === true ? '#7C3AED' : colors.border,
-              },
-              pressed ? styles.pressed : null,
-            ]}
-          >
-            <Text
-              style={[
-                styles.quickChipText,
-                {
-                  color:
-                    filters.hasReceipt === true
-                      ? '#7C3AED'
-                      : colors.textPrimary,
-                },
-              ]}
-            >
-              📎 {t.transactions.withReceipt}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            onPress={handleToggleQuickReimbursable}
-            style={({ pressed }) => [
-              styles.quickChip,
-              {
-                backgroundColor:
-                  filters.isReimbursable === true
-                    ? isDark
-                      ? '#78350F'
-                      : '#FEF3C7'
-                    : isDark
-                      ? colors.surfaceSecondary
-                      : '#F1F5F9',
-                borderColor:
-                  filters.isReimbursable === true ? '#D97706' : colors.border,
-              },
-              pressed ? styles.pressed : null,
-            ]}
-          >
-            <Text
-              style={[
-                styles.quickChipText,
-                {
-                  color:
-                    filters.isReimbursable === true
-                      ? '#D97706'
-                      : colors.textPrimary,
-                },
-              ]}
-            >
-              💼 {t.transactions.reimbursable}
+              💵 {t.transactions.income}
             </Text>
           </Pressable>
         </ScrollView>

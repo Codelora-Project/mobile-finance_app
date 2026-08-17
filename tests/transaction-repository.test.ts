@@ -723,7 +723,9 @@ describe('transaction history repository', () => {
         dateFrom: '2026-08-01',
         dateTo: '2026-08-31',
         hasReceipt: true,
+        isNonCash: true,
         isReimbursable: true,
+        minAmountMinor: 100_000,
         paymentMethodId: 10,
         type: 'expense',
       },
@@ -741,6 +743,7 @@ describe('transaction history repository', () => {
     expect(call?.sql).toContain('t.payment_method_id = ?');
     expect(call?.sql).toContain('t.is_reimbursable = ?');
     expect(call?.sql).toContain('r.id IS NOT NULL');
+    expect(call?.sql).toContain('t.amount_minor >= ?');
     expect(call?.parameters).toEqual([
       '%Coffee%',
       '%Coffee%',
@@ -751,6 +754,7 @@ describe('transaction history repository', () => {
       '2026-08-31',
       10,
       1,
+      100000,
       51,
       0,
     ]);

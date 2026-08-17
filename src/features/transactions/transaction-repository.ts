@@ -81,6 +81,9 @@ export type TransactionFilters = Readonly<{
   paymentMethodId?: number;
   isReimbursable?: boolean;
   hasReceipt?: boolean;
+  minAmountMinor?: number;
+  maxAmountMinor?: number;
+  isNonCash?: boolean;
 }>;
 
 export type TransactionListItem = Readonly<{
@@ -333,6 +336,27 @@ function buildTransactionListQuery(input: ListTransactionsInput) {
   }
   if (filters.hasReceipt !== undefined) {
     where.push(filters.hasReceipt ? 'r.id IS NOT NULL' : 'r.id IS NULL');
+  }
+  if (filters.minAmountMinor !== undefined) {
+    if (!Number.isSafeInteger(filters.minAmountMinor) || filters.minAmountMinor < 0) {
+      throw createCodedError('VALIDATION_FAILED', 'Minimum amount is invalid.');
+    }
+    where.push('t.amount_minor >= ?');
+    parameters.push(filters.minAmountMinor);
+  }
+  if (filters.maxAmountMinor !== undefined) {
+    if (!Number.isSafeInteger(filters.maxAmountMinor) || filters.maxAmountMinor < 0) {
+      throw createCodedError('VALIDATION_FAILED', 'Maximum amount is invalid.');
+    }
+    where.push('t.amount_minor <= ?');
+    parameters.push(filters.maxAmountMinor);
+  }
+  if (filters.isNonCash !== undefined) {
+    if (filters.isNonCash) {
+      where.push("(pm.system_key != 'cash' AND pm.name != 'Cash' AND pm.name != 'Tunai' AND pm.id IS NOT NULL)");
+    } else {
+      where.push("(pm.system_key = 'cash' OR pm.name = 'Cash' OR pm.name = 'Tunai')");
+    }
   }
 
   return {

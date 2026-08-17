@@ -45,6 +45,8 @@ export type TranslationSchema = {
     income: string;
     withReceipt: string;
     reimbursable: string;
+    nonCash: string;
+    above100k: string;
     filters: string;
     filtersActive: string;
     today: string;
@@ -306,8 +308,10 @@ export const translations: Record<Language, TranslationSchema> = {
       all: 'Semua',
       expense: 'Pengeluaran',
       income: 'Pemasukan',
-      withReceipt: 'Struk',
-      reimbursable: 'Klaim',
+      withReceipt: 'Ada Struk',
+      reimbursable: 'Klaim Kantor',
+      nonCash: 'Non-Tunai',
+      above100k: '> Rp 100k',
       filters: 'Filter',
       filtersActive: 'Filter',
       today: 'Hari Ini',
@@ -592,8 +596,10 @@ export const translations: Record<Language, TranslationSchema> = {
       all: 'All',
       expense: 'Expenses',
       income: 'Income',
-      withReceipt: 'Receipts',
+      withReceipt: 'With Receipt',
       reimbursable: 'Reimbursable',
+      nonCash: 'Non-Cash',
+      above100k: '> 100k',
       filters: 'Filters',
       filtersActive: 'Filters',
       today: 'Today',
