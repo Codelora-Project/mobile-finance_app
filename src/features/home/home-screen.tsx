@@ -17,6 +17,8 @@ import {
 
 import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
+import { UndoToastBanner } from '@/components/ui/undo-toast-banner';
+import { useBottomSheetGesture } from '@/components/ui/use-bottom-sheet-gesture';
 import type { CategoryBudget } from '@/features/budgets/budget-repository';
 import { listCategoryBudgets } from '@/features/budgets/budget-repository';
 import { getCategoryMeta } from '@/features/categories/category-meta';
@@ -38,10 +40,8 @@ import {
   getQuickLogCategoryIds,
   setQuickLogCategoryIds,
 } from '@/features/settings/settings-repository';
+import { useUndoTransaction } from '@/features/transactions/hooks/use-undo-transaction';
 import {
-  createTransaction,
-  deleteTransaction,
-  type SaveTransactionInput,
   type TransactionListItem,
 } from '@/features/transactions/transaction-repository';
 
@@ -141,7 +141,6 @@ export function HomeScreen() {
   const [pinnedCategoryIds, setPinnedCategoryIds] = useState<number[]>([
     1, 2, 3, 4, 5,
   ]);
-  const [customizeModalVisible, setCustomizeModalVisible] = useState(false);
   const [selectedIdsInModal, setSelectedIdsInModal] = useState<number[]>([
     1, 2, 3, 4, 5,
   ]);
@@ -149,49 +148,6 @@ export function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestId = useRef(0);
-
-  const { feedback, undoCreatedId, undoPayload } = useLocalSearchParams<{
-    feedback?: string | string[];
-    undoCreatedId?: string;
-    undoPayload?: string;
-  }>();
-  const feedbackMessage = Array.isArray(feedback) ? feedback[0] : feedback;
-
-  const [toastVisible, setToastVisible] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [undoCreatedTransactionId, setUndoCreatedTransactionId] = useState<
-    number | null
-  >(null);
-  const [undoDeletedPayload, setUndoDeletedPayload] =
-    useState<SaveTransactionInput | null>(null);
-  const [isUndoing, setIsUndoing] = useState(false);
-  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    if (feedbackMessage) {
-      setToastMessage(feedbackMessage);
-      if (undoCreatedId) {
-        setUndoCreatedTransactionId(Number(undoCreatedId));
-        setUndoDeletedPayload(null);
-      } else if (undoPayload) {
-        try {
-          const parsed = JSON.parse(undoPayload) as SaveTransactionInput;
-          setUndoDeletedPayload(parsed);
-          setUndoCreatedTransactionId(null);
-        } catch {
-          setUndoDeletedPayload(null);
-        }
-      } else {
-        setUndoCreatedTransactionId(null);
-        setUndoDeletedPayload(null);
-      }
-      setToastVisible(true);
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-      toastTimeoutRef.current = setTimeout(() => {
-        setToastVisible(false);
-      }, 5000);
-    }
-  }, [feedbackMessage, undoCreatedId, undoPayload]);
 
   const loadSummary = useCallback(
     async (
@@ -254,47 +210,18 @@ export function HomeScreen() {
     [database, language, period, referenceDate, t.home.loadFailed],
   );
 
-  const handleUndo = useCallback(async () => {
-    if (isUndoing) return;
-    setIsUndoing(true);
-    try {
-      if (undoCreatedTransactionId) {
-        await deleteTransaction(database, undoCreatedTransactionId);
-        setUndoCreatedTransactionId(null);
-        setToastMessage(
-          language === 'id'
-            ? 'Penambahan transaksi dibatalkan'
-            : 'Transaction addition undone',
-        );
-      } else if (undoDeletedPayload) {
-        await createTransaction(database, undoDeletedPayload);
-        setUndoDeletedPayload(null);
-        setToastMessage(
-          language === 'id'
-            ? 'Transaksi berhasil dipulihkan'
-            : 'Transaction restored',
-        );
-      }
-      void loadSummary(period, referenceDate, 'refresh');
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-      toastTimeoutRef.current = setTimeout(() => {
-        setToastVisible(false);
-      }, 2500);
-    } catch (err) {
-      if (__DEV__) console.warn('Could not execute undo action', err);
-    } finally {
-      setIsUndoing(false);
-    }
-  }, [
-    database,
+  const {
+    canUndo,
+    dismissToast,
+    handleUndo,
     isUndoing,
-    language,
-    loadSummary,
-    period,
-    referenceDate,
-    undoCreatedTransactionId,
-    undoDeletedPayload,
-  ]);
+    toastMessage,
+    toastVisible,
+  } = useUndoTransaction({
+    onSuccess: () => {
+      void loadSummary(period, referenceDate, 'refresh');
+    },
+  });
 
   useFocusEffect(
     useCallback(() => {
@@ -307,92 +234,18 @@ export function HomeScreen() {
     void loadSummary(newPeriod, referenceDate, 'focus');
   };
 
-  const [panY] = useState(() => new Animated.Value(0));
-  const [backdropAnim] = useState(() => new Animated.Value(0));
-
-  const handleCloseCustomizeModal = useCallback(() => {
-    Animated.parallel([
-      Animated.timing(panY, {
-        duration: 180,
-        toValue: 450,
-        useNativeDriver: true,
-      }),
-      Animated.timing(backdropAnim, {
-        duration: 180,
-        toValue: 0,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setCustomizeModalVisible(false);
-      panY.setValue(0);
-    });
-  }, [backdropAnim, panY]);
-
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 5,
-        onPanResponderMove: (_, gestureState) => {
-          if (gestureState.dy > 0) {
-            panY.setValue(gestureState.dy);
-          }
-        },
-        onPanResponderRelease: (_, gestureState) => {
-          if (gestureState.dy > 70 || gestureState.vy > 0.4) {
-            Animated.parallel([
-              Animated.timing(panY, {
-                duration: 160,
-                toValue: 450,
-                useNativeDriver: true,
-              }),
-              Animated.timing(backdropAnim, {
-                duration: 160,
-                toValue: 0,
-                useNativeDriver: true,
-              }),
-            ]).start(() => {
-              setCustomizeModalVisible(false);
-              panY.setValue(0);
-            });
-          } else {
-            Animated.parallel([
-              Animated.spring(panY, {
-                friction: 8,
-                tension: 100,
-                toValue: 0,
-                useNativeDriver: true,
-              }),
-              Animated.timing(backdropAnim, {
-                duration: 150,
-                toValue: 1,
-                useNativeDriver: true,
-              }),
-            ]).start();
-          }
-        },
-        onStartShouldSetPanResponder: () => true,
-      }),
-    [backdropAnim, panY],
-  );
+  const {
+    backdropOpacity,
+    close: handleCloseCustomizeModal,
+    open: handleOpenCustomizeModalInternal,
+    panResponder,
+    panY,
+    visible: customizeModalVisible,
+  } = useBottomSheetGesture();
 
   const handleOpenCustomizeModal = () => {
-    panY.setValue(400);
-    backdropAnim.setValue(0);
     setSelectedIdsInModal(pinnedCategoryIds);
-    setCustomizeModalVisible(true);
-    Animated.parallel([
-      Animated.spring(panY, {
-        friction: 8,
-        tension: 100,
-        toValue: 0,
-        useNativeDriver: true,
-      }),
-      Animated.timing(backdropAnim, {
-        duration: 200,
-        toValue: 1,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    handleOpenCustomizeModalInternal();
   };
 
   const handleToggleModalCategory = (id: number) => {
@@ -1193,14 +1046,7 @@ export function HomeScreen() {
               StyleSheet.absoluteFill,
               styles.modalBackdrop,
               {
-                opacity: Animated.multiply(
-                  backdropAnim,
-                  panY.interpolate({
-                    extrapolate: 'clamp',
-                    inputRange: [0, 300],
-                    outputRange: [1, 0],
-                  }),
-                ),
+                opacity: backdropOpacity,
               },
             ]}
           >
@@ -1376,69 +1222,14 @@ export function HomeScreen() {
       </Modal>
 
       {/* Modern Floating Undo Toast on Home */}
-      {toastVisible && toastMessage ? (
-        <View
-          style={[
-            styles.floatingUndoToast,
-            {
-              backgroundColor: isDark ? '#1E293B' : '#0F172A',
-              borderColor: isDark ? '#334155' : '#1E293B',
-            },
-          ]}
-        >
-          <View style={styles.undoToastLeft}>
-            <MaterialCommunityIcons
-              color='#38BDF8'
-              name='information-outline'
-              size={20}
-            />
-            <Text
-              accessibilityLiveRegion='polite'
-              numberOfLines={1}
-              style={styles.undoToastText}
-            >
-              {toastMessage}
-            </Text>
-          </View>
-
-          {undoCreatedTransactionId || undoDeletedPayload ? (
-            <Pressable
-              accessibilityLabel='Undo action'
-              accessibilityRole='button'
-              disabled={isUndoing}
-              hitSlop={8}
-              onPress={() => void handleUndo()}
-              style={({ pressed }) => [
-                styles.undoButton,
-                pressed && styles.pressed,
-              ]}
-            >
-              <MaterialCommunityIcons
-                color='#FBBF24'
-                name='undo-variant'
-                size={16}
-              />
-              <Text style={styles.undoButtonText}>
-                {language === 'id' ? 'BATALKAN' : 'UNDO'}
-              </Text>
-            </Pressable>
-          ) : null}
-
-          <Pressable
-            accessibilityLabel='Close notification'
-            accessibilityRole='button'
-            hitSlop={8}
-            onPress={() => setToastVisible(false)}
-            style={styles.closeToastBtn}
-          >
-            <MaterialCommunityIcons
-              color='#94A3B8'
-              name='close'
-              size={18}
-            />
-          </Pressable>
-        </View>
-      ) : null}
+      <UndoToastBanner
+        canUndo={canUndo}
+        isUndoing={isUndoing}
+        message={toastMessage}
+        onClose={dismissToast}
+        onUndo={() => void handleUndo()}
+        visible={toastVisible}
+      />
     </Screen>
   );
 }

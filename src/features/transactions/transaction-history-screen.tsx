@@ -15,13 +15,13 @@ import {
 
 import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
+import { UndoToastBanner } from '@/components/ui/undo-toast-banner';
 import { getCategoryMeta } from '@/features/categories/category-meta';
 import { TransactionDateGroupHeader } from '@/features/transactions/components/transaction-date-group-header';
 import { TransactionRowItem } from '@/features/transactions/components/transaction-row-item';
+import { useUndoTransaction } from '@/features/transactions/hooks/use-undo-transaction';
 import { TransactionFilterModal } from '@/features/transactions/transaction-filter-modal';
 import {
-  createTransaction,
-  deleteTransaction,
   listTransactions,
   type SaveTransactionInput,
   type TransactionFilters,
@@ -122,45 +122,6 @@ export function TransactionHistoryScreen() {
   const router = useRouter();
   const { language, t } = useLanguage();
   const { colors, isDark } = useTheme();
-  const { feedback, undoCreatedId, undoPayload } = useLocalSearchParams<{
-    feedback?: string | string[];
-    undoCreatedId?: string;
-    undoPayload?: string;
-  }>();
-  const feedbackMessage = Array.isArray(feedback) ? feedback[0] : feedback;
-
-  const [toastVisible, setToastVisible] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [undoCreatedTransactionId, setUndoCreatedTransactionId] = useState<number | null>(null);
-  const [undoDeletedPayload, setUndoDeletedPayload] = useState<SaveTransactionInput | null>(null);
-  const [isUndoing, setIsUndoing] = useState(false);
-  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    if (feedbackMessage) {
-      setToastMessage(feedbackMessage);
-      if (undoCreatedId) {
-        setUndoCreatedTransactionId(Number(undoCreatedId));
-        setUndoDeletedPayload(null);
-      } else if (undoPayload) {
-        try {
-          const parsed = JSON.parse(undoPayload) as SaveTransactionInput;
-          setUndoDeletedPayload(parsed);
-          setUndoCreatedTransactionId(null);
-        } catch {
-          setUndoDeletedPayload(null);
-        }
-      } else {
-        setUndoCreatedTransactionId(null);
-        setUndoDeletedPayload(null);
-      }
-      setToastVisible(true);
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-      toastTimeoutRef.current = setTimeout(() => {
-        setToastVisible(false);
-      }, 5000);
-    }
-  }, [feedbackMessage, undoCreatedId, undoPayload]);
 
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -284,38 +245,18 @@ export function TransactionHistoryScreen() {
     setFilters({});
   };
 
-  const handleUndo = useCallback(async () => {
-    if (isUndoing) return;
-    setIsUndoing(true);
-    try {
-      if (undoCreatedTransactionId) {
-        await deleteTransaction(database, undoCreatedTransactionId);
-        setUndoCreatedTransactionId(null);
-        setToastMessage(
-          language === 'id'
-            ? 'Penambahan transaksi dibatalkan'
-            : 'Transaction addition undone',
-        );
-      } else if (undoDeletedPayload) {
-        await createTransaction(database, undoDeletedPayload);
-        setUndoDeletedPayload(null);
-        setToastMessage(
-          language === 'id'
-            ? 'Transaksi berhasil dipulihkan'
-            : 'Transaction restored',
-        );
-      }
+  const {
+    canUndo,
+    dismissToast,
+    handleUndo,
+    isUndoing,
+    toastMessage,
+    toastVisible,
+  } = useUndoTransaction({
+    onSuccess: () => {
       void loadFirstPage('refresh');
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-      toastTimeoutRef.current = setTimeout(() => {
-        setToastVisible(false);
-      }, 2500);
-    } catch (err) {
-      if (__DEV__) console.warn('Could not execute undo action', err);
-    } finally {
-      setIsUndoing(false);
-    }
-  }, [database, isUndoing, language, loadFirstPage, undoCreatedTransactionId, undoDeletedPayload]);
+    },
+  });
 
   const handleToggleQuickType = (type: 'expense' | 'income' | 'all') => {
     setFilters((prev) => {
@@ -886,69 +827,14 @@ export function TransactionHistoryScreen() {
       ) : null}
 
       {/* Modern Floating Undo Toast */}
-      {toastVisible && toastMessage ? (
-        <View
-          style={[
-            styles.floatingUndoToast,
-            {
-              backgroundColor: isDark ? '#1E293B' : '#0F172A',
-              borderColor: isDark ? '#334155' : '#1E293B',
-            },
-          ]}
-        >
-          <View style={styles.undoToastLeft}>
-            <MaterialCommunityIcons
-              color='#38BDF8'
-              name='information-outline'
-              size={20}
-            />
-            <Text
-              accessibilityLiveRegion='polite'
-              numberOfLines={1}
-              style={styles.undoToastText}
-            >
-              {toastMessage}
-            </Text>
-          </View>
-
-          {undoCreatedTransactionId || undoDeletedPayload ? (
-            <Pressable
-              accessibilityLabel='Undo action'
-              accessibilityRole='button'
-              disabled={isUndoing}
-              hitSlop={8}
-              onPress={() => void handleUndo()}
-              style={({ pressed }) => [
-                styles.undoButton,
-                pressed && styles.pressed,
-              ]}
-            >
-              <MaterialCommunityIcons
-                color='#FBBF24'
-                name='undo-variant'
-                size={16}
-              />
-              <Text style={styles.undoButtonText}>
-                {language === 'id' ? 'BATALKAN' : 'UNDO'}
-              </Text>
-            </Pressable>
-          ) : null}
-
-          <Pressable
-            accessibilityLabel='Close notification'
-            accessibilityRole='button'
-            hitSlop={8}
-            onPress={() => setToastVisible(false)}
-            style={styles.closeToastBtn}
-          >
-            <MaterialCommunityIcons
-              color='#94A3B8'
-              name='close'
-              size={18}
-            />
-          </Pressable>
-        </View>
-      ) : null}
+      <UndoToastBanner
+        canUndo={canUndo}
+        isUndoing={isUndoing}
+        message={toastMessage}
+        onClose={dismissToast}
+        onUndo={() => void handleUndo()}
+        visible={toastVisible}
+      />
     </Screen>
   );
 }
