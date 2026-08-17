@@ -4,7 +4,6 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   BackHandler,
   Easing,
@@ -25,6 +24,7 @@ import { Screen } from '@/components/ui/screen';
 import { defaultCategories, defaultPaymentMethods } from '@/db/seeds';
 import { getCategoryMeta } from '@/features/categories/category-meta';
 import { CategoryPicker } from '@/features/categories/category-picker';
+import { QuickShortcutsBar } from '@/features/transactions/components/quick-shortcuts-bar';
 import {
   listCategories,
   type Category,
@@ -59,7 +59,7 @@ import {
   DEFAULT_QUICK_SHORTCUTS,
   getQuickShortcuts,
 } from '@/features/settings/settings-repository';
-import { isCodedError, mapError } from '@/lib/errors';
+import { isCodedError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
 import {
   formatMoney,
@@ -370,11 +370,6 @@ export function ManualTransactionScreen({
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const isDirty = useMemo(
-    () => serializeForm(form) !== serializeForm(initialForm),
-    [form, initialForm],
-  );
-
   // Load Categories, Payment Methods & Custom Shortcuts
   const loadEntities = useCallback(
     async (type: TransactionType) => {
@@ -610,7 +605,7 @@ export function ManualTransactionScreen({
         submit: getOperationMessage(saveError),
       }));
     }
-  }, [database, form, isEditMode, router, transactionId]);
+  }, [database, form, isEditMode, language, router, transactionId]);
 
   // Delete Transaction (for Edit Mode)
   const handleDelete = useCallback(async () => {
@@ -815,69 +810,11 @@ export function ManualTransactionScreen({
           ) : null}
 
           {/* Quick Cash Shortcuts (Customizable) */}
-          <View style={styles.quickShortcutsRow}>
-            <ScrollView
-              contentContainerStyle={styles.shortcutsList}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-            >
-              {quickShortcuts.map((amount) => {
-                const label = formatShortcutLabel(amount);
-                return (
-                  <Pressable
-                    accessibilityLabel={`Add ${label}`}
-                    accessibilityRole="button"
-                    key={amount}
-                    onPress={() => handleAddIncrement(amount)}
-                    style={({ pressed }) => [
-                      styles.shortcutChip,
-                      {
-                        backgroundColor: isDark
-                          ? colors.surfaceSecondary
-                          : '#EFF6FF',
-                        borderColor: isDark ? colors.border : '#BFDBFE',
-                      },
-                      pressed && styles.shortcutChipPressed,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.shortcutChipText,
-                        { color: colors.primary },
-                      ]}
-                    >
-                      {label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-              <Pressable
-                accessibilityLabel="Reset amount"
-                accessibilityRole="button"
-                onPress={handleClearAmount}
-                style={({ pressed }) => [
-                  styles.shortcutChip,
-                  styles.shortcutChipClear,
-                  {
-                    backgroundColor: isDark
-                      ? colors.surfaceSecondary
-                      : '#F1F5F9',
-                    borderColor: colors.border,
-                  },
-                  pressed && styles.shortcutChipPressed,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.shortcutChipClearText,
-                    { color: colors.textSecondary },
-                  ]}
-                >
-                  ⌫ Reset
-                </Text>
-              </Pressable>
-            </ScrollView>
-          </View>
+          <QuickShortcutsBar
+            onAddIncrement={handleAddIncrement}
+            onReset={handleClearAmount}
+            quickShortcuts={quickShortcuts}
+          />
 
           {/* 1-Tap Category Grid */}
           <View style={styles.sectionContainer}>

@@ -370,17 +370,6 @@ function buildTransactionListQuery(input: ListTransactionsInput) {
   };
 }
 
-function normalizeNote(value: string | null) {
-  const note = value?.normalize('NFC').trim() ?? '';
-  if (Array.from(note).length > 500) {
-    throw createCodedError(
-      'VALIDATION_FAILED',
-      'Note must be 500 characters or fewer.',
-    );
-  }
-  return note.length > 0 ? note : null;
-}
-
 function normalizeReceipt(input: SaveTransactionInput['receipt']) {
   if (!input) {
     return null;

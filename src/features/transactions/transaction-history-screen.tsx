@@ -16,6 +16,8 @@ import {
 import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
 import { getCategoryMeta } from '@/features/categories/category-meta';
+import { TransactionDateGroupHeader } from '@/features/transactions/components/transaction-date-group-header';
+import { TransactionRowItem } from '@/features/transactions/components/transaction-row-item';
 import { TransactionFilterModal } from '@/features/transactions/transaction-filter-modal';
 import {
   createTransaction,
@@ -118,7 +120,6 @@ function buildRows(items: readonly TransactionListItem[]) {
 export function TransactionHistoryScreen() {
   const database = useSQLiteContext();
   const router = useRouter();
-  const { filter } = useLocalSearchParams<{ filter?: string }>();
   const { language, t } = useLanguage();
   const { colors, isDark } = useTheme();
   const { feedback, undoCreatedId, undoPayload } = useLocalSearchParams<{
@@ -369,6 +370,48 @@ export function TransactionHistoryScreen() {
       return { ...prev, minAmountMinor: 100_000 };
     });
   };
+
+  const handleOpenTransaction = useCallback(
+    (id: number) => {
+      router.push(`/transactions/${id}`);
+    },
+    [router],
+  );
+
+  const renderItem = useCallback(
+    ({ item: row }: { item: HistoryRow }) => {
+      if (row.kind === 'header') {
+        const formattedDate = formatGroupDate(row.localDate, language, t);
+        return (
+          <TransactionDateGroupHeader
+            formattedDate={formattedDate}
+            totalNetMinor={row.totalNetMinor}
+          />
+        );
+      }
+
+      const idx = rows.findIndex((r) => r.key === row.key);
+      const isLast =
+        idx === rows.length - 1 || rows[idx + 1]?.kind === 'header';
+
+      return (
+        <TransactionRowItem
+          isLast={isLast}
+          onPress={handleOpenTransaction}
+          receiptBadgeText={t.home.receiptBadge}
+          reimbursableBadgeText={t.transactions.reimbursableBadge}
+          transaction={row.transaction}
+        />
+      );
+    },
+    [
+      handleOpenTransaction,
+      language,
+      rows,
+      t.home.receiptBadge,
+      t.transactions.reimbursableBadge,
+    ],
+  );
 
   const headerBg = isDark ? '#0F172A' : '#1D4ED8';
 
@@ -816,177 +859,16 @@ export function TransactionHistoryScreen() {
               />
             ) : null
           }
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
           onEndReached={() => void loadNextPage()}
           onEndReachedThreshold={0.4}
           onRefresh={() => void loadFirstPage('refresh')}
           refreshing={refreshing}
-          renderItem={({ item: row }) => {
-            if (row.kind === 'header') {
-              const formattedDate = formatGroupDate(row.localDate, language, t);
-              const formattedDaily =
-                row.totalNetMinor >= 0
-                  ? `+${formatMoney(row.totalNetMinor, 'IDR')}`
-                  : `−${formatMoney(Math.abs(row.totalNetMinor), 'IDR')}`;
-
-              return (
-                <View style={[styles.dateHeaderRow, { backgroundColor: colors.background }]}>
-                  <View style={[styles.dateHeaderPill, { backgroundColor: isDark ? colors.surfaceSecondary : '#EFF6FF' }]}>
-                    <Text
-                      style={[
-                        styles.dateHeaderTitle,
-                        { color: isDark ? colors.textSecondary : '#1D4ED8' },
-                      ]}
-                    >
-                      {formattedDate.toUpperCase()}
-                    </Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.dateHeaderNet,
-                      {
-                        color:
-                          row.totalNetMinor >= 0
-                            ? colors.positive
-                            : colors.textSecondary,
-                      },
-                    ]}
-                  >
-                    {formattedDaily}
-                  </Text>
-                </View>
-              );
-            }
-
-            const transaction = row.transaction;
-            const meta = getCategoryMeta(
-              transaction.categoryName,
-              transaction.type,
-              isDark,
-            );
-            const title =
-              transaction.counterparty?.trim() || transaction.categoryName;
-
-            const isLast = (() => {
-              const idx = rows.findIndex((r) => r.key === row.key);
-              return idx === rows.length - 1 || rows[idx + 1]?.kind === 'header';
-            })();
-
-            return (
-              <Pressable
-                accessibilityLabel={`${title}, ${formatMoney(
-                  transaction.amountMinor,
-                  transaction.currencyCode,
-                )}`}
-                accessibilityRole='button'
-                onPress={() => router.push(`/transactions/${transaction.id}`)}
-                style={({ pressed }) => [
-                  styles.timelineRow,
-                  { backgroundColor: colors.surface },
-                  pressed ? { opacity: 0.75 } : null,
-                ]}
-              >
-                {/* Timeline Dot & Connecting Line */}
-                <View style={styles.timelineTrackCol}>
-                  <View
-                    style={[
-                      styles.timelineDot,
-                      { backgroundColor: meta.color },
-                    ]}
-                  />
-                  {!isLast ? (
-                    <View
-                      style={[
-                        styles.timelineLine,
-                        { backgroundColor: colors.border },
-                      ]}
-                    />
-                  ) : null}
-                </View>
-
-                {/* Content */}
-                <View style={styles.timelineContentCol}>
-                  {/* Row 1: title + amount */}
-                  <View style={styles.timelineMainRow}>
-                    <Text
-                      numberOfLines={1}
-                      style={[styles.timelineItemTitle, { color: colors.textPrimary }]}
-                    >
-                      {title}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.timelineAmount,
-                        {
-                          color:
-                            transaction.type === 'expense'
-                              ? colors.destructive
-                              : colors.positive,
-                        },
-                      ]}
-                    >
-                      {transaction.type === 'expense' ? '−' : '+'}
-                      {formatMoney(
-                        transaction.amountMinor,
-                        transaction.currencyCode,
-                      )}
-                    </Text>
-                  </View>
-
-                  {/* Row 2: category + badges */}
-                  <View style={styles.timelineMetaRow}>
-                    <Text
-                      numberOfLines={1}
-                      style={[styles.timelineCategoryName, { color: colors.textSecondary }]}
-                    >
-                      {transaction.categoryName}
-                    </Text>
-
-                    {transaction.hasReceipt ? (
-                      <View
-                        style={[
-                          styles.receiptPill,
-                          {
-                            backgroundColor: isDark ? '#312E81' : '#EDE9FE',
-                            borderColor: isDark ? '#4338CA' : '#DDD6FE',
-                          },
-                        ]}
-                      >
-                        <MaterialCommunityIcons
-                          color='#7C3AED'
-                          name='receipt-outline'
-                          size={10}
-                        />
-                        <Text style={styles.receiptPillText}>
-                          {t.home.receiptBadge}
-                        </Text>
-                      </View>
-                    ) : null}
-
-                    {transaction.isReimbursable ? (
-                      <View
-                        style={[
-                          styles.reimbursablePill,
-                          {
-                            backgroundColor: isDark ? '#78350F' : '#FEF3C7',
-                            borderColor: isDark ? '#92400E' : '#FDE68A',
-                          },
-                        ]}
-                      >
-                        <MaterialCommunityIcons
-                          color='#D97706'
-                          name='briefcase-outline'
-                          size={10}
-                        />
-                        <Text style={styles.reimbursablePillText}>
-                          {t.transactions.reimbursableBadge}
-                        </Text>
-                      </View>
-                    ) : null}
-                  </View>
-                </View>
-              </Pressable>
-            );
-          }}
+          removeClippedSubviews={true}
+          renderItem={renderItem}
+          updateCellsBatchingPeriod={50}
+          windowSize={5}
         />
       )}
 

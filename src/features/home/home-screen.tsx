@@ -307,8 +307,8 @@ export function HomeScreen() {
     void loadSummary(newPeriod, referenceDate, 'focus');
   };
 
-  const panY = useRef(new Animated.Value(0)).current;
-  const backdropAnim = useRef(new Animated.Value(0)).current;
+  const [panY] = useState(() => new Animated.Value(0));
+  const [backdropAnim] = useState(() => new Animated.Value(0));
 
   const handleCloseCustomizeModal = useCallback(() => {
     Animated.parallel([

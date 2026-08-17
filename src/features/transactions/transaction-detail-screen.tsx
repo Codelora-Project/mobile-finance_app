@@ -4,7 +4,6 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,

@@ -16,6 +16,9 @@ type JournalModeRow = {
 export async function initializeDatabase(database: SQLiteDatabase) {
   await database.execAsync('PRAGMA foreign_keys = ON');
   await database.execAsync('PRAGMA journal_mode = WAL');
+  await database.execAsync('PRAGMA synchronous = NORMAL');
+  await database.execAsync('PRAGMA cache_size = -2000');
+  await database.execAsync('PRAGMA temp_store = MEMORY');
 
   const foreignKeys = await database.getFirstAsync<ForeignKeysRow>(
     'PRAGMA foreign_keys',

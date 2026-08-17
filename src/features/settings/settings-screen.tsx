@@ -110,6 +110,8 @@ export function SettingsScreen() {
     handleSaveShortcuts,
     newShortcutInput,
     shortcuts,
+    t.settings.errorShortcutDuplicate,
+    t.settings.errorShortcutInvalid,
     t.settings.shortcutLimit,
   ]);
 
