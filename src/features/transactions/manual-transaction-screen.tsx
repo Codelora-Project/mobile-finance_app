@@ -955,18 +955,18 @@ export function ManualTransactionScreen({
               {saving ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.saveBigButtonText}>
+                <Text adjustsFontSizeToFit minimumFontScale={0.8} numberOfLines={1} style={styles.saveBigButtonText}>
                   {isEditMode
                     ? language === 'id'
-                      ? `Update Transaksi • ${parsedAmountMinor > 0 ? formatMoney(parsedAmountMinor, 'IDR') : ''}`
-                      : `Update Transaction • ${parsedAmountMinor > 0 ? formatMoney(parsedAmountMinor, 'IDR') : ''}`
+                      ? 'Update Transaksi' + (parsedAmountMinor > 0 ? ' (' + formatMoney(parsedAmountMinor, 'IDR') + ')' : '')
+                      : 'Update Transaction' + (parsedAmountMinor > 0 ? ' (' + formatMoney(parsedAmountMinor, 'IDR') + ')' : '')
                     : isExpense
                       ? language === 'id'
-                        ? `✓ Simpan Pengeluaran • ${parsedAmountMinor > 0 ? formatMoney(parsedAmountMinor, 'IDR') : ''}`
-                        : `✓ Save Expense • ${parsedAmountMinor > 0 ? formatMoney(parsedAmountMinor, 'IDR') : ''}`
+                        ? '✓ Simpan Pengeluaran' + (parsedAmountMinor > 0 ? ' (' + formatMoney(parsedAmountMinor, 'IDR') + ')' : '')
+                        : '✓ Save Expense' + (parsedAmountMinor > 0 ? ' (' + formatMoney(parsedAmountMinor, 'IDR') + ')' : '')
                       : language === 'id'
-                        ? `✓ Simpan Pemasukan • ${parsedAmountMinor > 0 ? formatMoney(parsedAmountMinor, 'IDR') : ''}`
-                        : `✓ Save Income • ${parsedAmountMinor > 0 ? formatMoney(parsedAmountMinor, 'IDR') : ''}`}
+                        ? '✓ Simpan Pemasukan' + (parsedAmountMinor > 0 ? ' (' + formatMoney(parsedAmountMinor, 'IDR') + ')' : '')
+                        : '✓ Save Income' + (parsedAmountMinor > 0 ? ' (' + formatMoney(parsedAmountMinor, 'IDR') + ')' : '')}
                 </Text>
               )}
             </Pressable>
@@ -1421,8 +1421,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 18,
     elevation: 4,
-    height: 56,
+    minHeight: 56,
     justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 12,
     shadowColor: '#2563EB',
     shadowOffset: { height: 4, width: 0 },
     shadowOpacity: 0.25,
@@ -1440,8 +1442,9 @@ const styles = StyleSheet.create({
   },
   saveBigButtonText: {
     color: '#FFFFFF',
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
+    textAlign: 'center',
   },
   errorBanner: {
     color: colors.destructive,

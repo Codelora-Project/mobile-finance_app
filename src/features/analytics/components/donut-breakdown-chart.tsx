@@ -208,6 +208,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     minWidth: 0,
+    paddingRight: 8,
   },
   breakdownList: {
     gap: 4,
@@ -233,6 +234,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   categoryRowName: {
+    flex: 1,
     flexShrink: 1,
     fontSize: 13,
   },
@@ -242,19 +244,18 @@ const styles = StyleSheet.create({
     width: 10,
   },
   container: {
-    borderRadius: 24,
+    borderRadius: 22,
     borderWidth: 1.5,
     elevation: 2,
-    marginHorizontal: spacing.lg,
-    padding: spacing.lg,
+    padding: spacing.md + 2,
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
   },
   heroCenter: {
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: spacing.sm,
+    gap: 4,
+    paddingVertical: spacing.xs,
   },
   percentBadge: {
     borderRadius: radius.pill,
@@ -296,7 +297,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   selectedAmount: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '900',
     letterSpacing: -0.5,
   },
@@ -307,9 +308,9 @@ const styles = StyleSheet.create({
   selectedIconCircle: {
     alignItems: 'center',
     borderRadius: radius.pill,
-    height: 56,
+    height: 48,
     justifyContent: 'center',
     marginBottom: 2,
-    width: 56,
+    width: 48,
   },
 });

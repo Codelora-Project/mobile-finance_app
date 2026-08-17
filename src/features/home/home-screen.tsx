@@ -215,7 +215,7 @@ export function HomeScreen() {
             </Text>
             <Text
               accessibilityRole="header"
-              style={[styles.title, { color: colors.textPrimary }]}
+              adjustsFontSizeToFit minimumFontScale={0.85} numberOfLines={1} style={[styles.title, { color: colors.textPrimary }]}
             >
               {t.home.appTitle}
             </Text>
@@ -236,7 +236,7 @@ export function HomeScreen() {
                 name="calendar-month-outline"
                 size={16}
               />
-              <Text style={[styles.month, { color: colors.primary }]}>
+              <Text numberOfLines={1} style={[styles.month, { color: colors.primary }]}>
                 {formatMonth(summary.monthStart, language)}
               </Text>
             </View>
@@ -582,9 +582,7 @@ export function HomeScreen() {
         >
           <View style={styles.integratedCardHeader}>
             <Text
-              accessibilityRole="header"
-              style={[
-                styles.integratedCardTitle,
+              accessibilityRole="header" numberOfLines={1} style={[styles.integratedCardTitle,
                 { color: colors.textPrimary },
               ]}
             >
@@ -722,9 +720,7 @@ export function HomeScreen() {
         >
           <View style={styles.integratedCardHeader}>
             <Text
-              accessibilityRole="header"
-              style={[
-                styles.integratedCardTitle,
+              accessibilityRole="header" numberOfLines={1} style={[styles.integratedCardTitle,
                 { color: colors.textPrimary },
               ]}
             >
@@ -874,6 +870,7 @@ const styles = StyleSheet.create({
   cardHeaderLink: {
     alignItems: 'center',
     flexDirection: 'row',
+    flexShrink: 0,
     gap: 2,
   },
   cardHeaderLinkText: {
@@ -888,17 +885,21 @@ const styles = StyleSheet.create({
     width: 36,
   },
   categoryItemAmount: {
+    flexShrink: 0,
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: -0.2,
   },
   categoryItemName: {
+    flex: 1,
+    flexShrink: 1,
     fontSize: 14,
     fontWeight: '700',
   },
   categoryItemRow: {
     alignItems: 'center',
     flexDirection: 'row',
+    gap: spacing.sm,
     justifyContent: 'space-between',
   },
   categoryItemWrap: {
@@ -906,7 +907,9 @@ const styles = StyleSheet.create({
   },
   categoryLeftPart: {
     alignItems: 'center',
+    flex: 1,
     flexDirection: 'row',
+    flexShrink: 1,
     gap: 10,
   },
   categoryProgressBar: {
@@ -950,6 +953,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     flexDirection: 'row',
+    gap: spacing.sm,
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
@@ -957,9 +961,12 @@ const styles = StyleSheet.create({
   headerRightActions: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: spacing.sm,
+    flexShrink: 0,
+    gap: spacing.xs + 2,
   },
   headerTitles: {
+    flex: 1,
+    flexShrink: 1,
     gap: 2,
   },
   heroAmount: {
@@ -1023,9 +1030,12 @@ const styles = StyleSheet.create({
   integratedCardHeader: {
     alignItems: 'center',
     flexDirection: 'row',
+    gap: spacing.sm,
     justifyContent: 'space-between',
   },
   integratedCardTitle: {
+    flex: 1,
+    flexShrink: 1,
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: -0.2,
@@ -1087,6 +1097,7 @@ const styles = StyleSheet.create({
     elevation: 2,
     flex: 1,
     justifyContent: 'space-between',
+    minWidth: 0,
     padding: spacing.md,
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.04,
@@ -1109,6 +1120,7 @@ const styles = StyleSheet.create({
     opacity: 0.75,
   },
   recentAmount: {
+    flexShrink: 0,
     fontSize: 15,
     fontWeight: '800',
     letterSpacing: -0.2,
@@ -1122,6 +1134,7 @@ const styles = StyleSheet.create({
   },
   recentInfo: {
     flex: 1,
+    flexShrink: 1,
     gap: 2,
   },
   recentListWrap: {
@@ -1175,6 +1188,7 @@ const styles = StyleSheet.create({
   summaryColHeader: {
     alignItems: 'center',
     flexDirection: 'row',
+    flexShrink: 1,
     gap: 6,
   },
   summaryColItem: {
@@ -1182,6 +1196,8 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   summaryColLabel: {
+    flex: 1,
+    flexShrink: 1,
     fontSize: 12,
     fontWeight: '600',
   },

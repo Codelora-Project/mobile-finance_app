@@ -969,13 +969,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1,
     flexDirection: 'row',
+    gap: spacing.sm,
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
   headerTitle: {
+    flex: 1,
+    flexShrink: 1,
     fontSize: 18,
     fontWeight: '800',
+    textAlign: 'center',
   },
   iconOptionBtn: {
     alignItems: 'center',

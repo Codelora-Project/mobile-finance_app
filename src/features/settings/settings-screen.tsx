@@ -366,8 +366,7 @@ export function SettingsScreen() {
                             size={16}
                           />
                           <Text
-                            style={[
-                              styles.themeSegmentTabText,
+                            adjustsFontSizeToFit minimumFontScale={0.8} numberOfLines={1} style={[styles.themeSegmentTabText,
                               {
                                 color: isSelected
                                   ? colors.primary
@@ -578,8 +577,7 @@ export function SettingsScreen() {
                     >
                       <Text style={styles.langFlagIcon}>🇮🇩</Text>
                       <Text
-                        style={[
-                          styles.langOptionText,
+                        adjustsFontSizeToFit minimumFontScale={0.8} numberOfLines={1} style={[styles.langOptionText,
                           { color: colors.textPrimary },
                           language === 'id'
                             ? [
@@ -616,8 +614,7 @@ export function SettingsScreen() {
                     >
                       <Text style={styles.langFlagIcon}>🇬🇧</Text>
                       <Text
-                        style={[
-                          styles.langOptionText,
+                        adjustsFontSizeToFit minimumFontScale={0.8} numberOfLines={1} style={[styles.langOptionText,
                           { color: colors.textPrimary },
                           language === 'en'
                             ? [
@@ -1096,12 +1093,15 @@ const styles = StyleSheet.create({
   },
   iconTitleRow: {
     alignItems: 'center',
+    flex: 1,
     flexDirection: 'row',
+    flexShrink: 1,
     gap: 10,
   },
   itemHeaderBetween: {
     alignItems: 'center',
     flexDirection: 'row',
+    gap: spacing.sm,
     justifyContent: 'space-between',
   },
   itemIconBadge: {
@@ -1117,6 +1117,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   itemTitle: {
+    flex: 1,
+    flexShrink: 1,
     fontSize: 15,
     fontWeight: '700',
   },
@@ -1124,6 +1126,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   langOptionText: {
+    flexShrink: 1,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -1136,8 +1139,10 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     flex: 1,
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
     justifyContent: 'center',
+    minWidth: 0,
+    paddingHorizontal: 6,
     paddingVertical: 10,
   },
   langPillOptionActive: {
@@ -1196,17 +1201,19 @@ const styles = StyleSheet.create({
   navRowItem: {
     alignItems: 'center',
     flexDirection: 'row',
+    gap: spacing.sm,
     justifyContent: 'space-between',
     minHeight: 64,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
+    paddingVertical: spacing.sm,
   },
   navRowLeft: {
     alignItems: 'center',
     flex: 1,
     flexDirection: 'row',
+    flexShrink: 1,
     gap: 12,
-    paddingRight: spacing.sm,
+    paddingRight: 8,
   },
   navRowSubtitle: {
     fontSize: 12,
@@ -1228,7 +1235,8 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   resetActionLink: {
-    fontSize: 12,
+    flexShrink: 0,
+    fontSize: 13,
     fontWeight: '700',
   },
   rowPressed: {
@@ -1279,11 +1287,13 @@ const styles = StyleSheet.create({
   },
   themeSegmentTab: {
     alignItems: 'center',
-    borderRadius: radius.md - 2,
+    borderRadius: radius.pill,
     flex: 1,
     flexDirection: 'row',
-    gap: 6,
+    gap: 4,
     justifyContent: 'center',
+    minWidth: 0,
+    paddingHorizontal: 4,
     paddingVertical: 8,
   },
   themeSegmentTabActive: {
@@ -1294,6 +1304,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
   },
   themeSegmentTabText: {
+    flexShrink: 1,
     fontSize: 12,
   },
   themeSegmentTrack: {

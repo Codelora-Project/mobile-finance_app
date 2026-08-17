@@ -551,7 +551,7 @@ export const translations: Record<Language, TranslationSchema> = {
       appTitle: 'Personal Finance',
       net: 'Net',
       income: 'Income',
-      expensesThisMonth: 'Expenses this month',
+      expensesThisMonth: 'Expenses',
       quickAddTransaction: '+ Add Transaction',
       quickScanReceipt: 'Photo Receipt',
       spendingByCategory: 'Spending by category',

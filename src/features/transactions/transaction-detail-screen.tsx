@@ -338,8 +338,7 @@ export function TransactionDetailScreen({
 
           {/* Large Amount Display */}
           <Text
-            style={[
-              styles.heroAmount,
+            adjustsFontSizeToFit minimumFontScale={0.7} numberOfLines={1} style={[styles.heroAmount,
               { color: isExpense ? colors.destructive : colors.positive },
             ]}
           >
@@ -646,16 +645,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1,
     flexDirection: 'row',
+    gap: spacing.sm,
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
   headerSpacer: {
     width: 38,
   },
   headerTitle: {
-    fontSize: 17,
+    flex: 1,
+    flexShrink: 1,
+    fontSize: 18,
     fontWeight: '800',
+    textAlign: 'center',
   },
   heroAmount: {
     fontSize: 32,

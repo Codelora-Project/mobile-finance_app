@@ -285,6 +285,7 @@ const styles = StyleSheet.create({
   },
   rowText: {
     flex: 1,
+    flexShrink: 1,
   },
   rowTitle: {
     fontSize: typography.body.fontSize,
@@ -295,6 +296,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   amount: {
+    flexShrink: 0,
     fontSize: typography.body.fontSize,
     fontWeight: '700',
   },

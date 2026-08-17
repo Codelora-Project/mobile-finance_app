@@ -198,8 +198,7 @@ export function AnalyticsScreen() {
               ]}
             >
               <Text
-                style={[
-                  styles.tabPillText,
+                adjustsFontSizeToFit minimumFontScale={0.85} numberOfLines={1} style={[styles.tabPillText,
                   {
                     color: isSelected ? '#FFFFFF' : colors.textSecondary,
                     fontWeight: isSelected ? '800' : '600',
@@ -245,8 +244,7 @@ export function AnalyticsScreen() {
                   {t.analytics.totalExpense}
                 </Text>
                 <Text
-                  numberOfLines={1}
-                  style={[styles.metricValue, { color: colors.textPrimary }]}
+                  adjustsFontSizeToFit minimumFontScale={0.75} numberOfLines={1} style={[styles.metricValue, { color: colors.textPrimary }]}
                 >
                   {formatMoney(analytics.totalExpenseMinor, currencyCode)}
                 </Text>
@@ -268,8 +266,7 @@ export function AnalyticsScreen() {
                   {t.analytics.dailyAverage}
                 </Text>
                 <Text
-                  numberOfLines={1}
-                  style={[styles.metricValue, { color: colors.primary }]}
+                  adjustsFontSizeToFit minimumFontScale={0.75} numberOfLines={1} style={[styles.metricValue, { color: colors.primary }]}
                 >
                   {formatMoney(
                     analytics.averageDailyExpenseMinor,
@@ -605,11 +602,10 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   cashFlowCard: {
-    borderRadius: 24,
+    borderRadius: 22,
     borderWidth: 1.5,
     elevation: 2,
-    marginHorizontal: spacing.lg,
-    padding: spacing.lg,
+    padding: spacing.md + 2,
   },
   cashFlowList: {
     gap: spacing.lg,
@@ -638,7 +634,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 20,
     borderWidth: 1.5,
-    marginHorizontal: spacing.lg,
     padding: spacing.xl,
   },
   emptyTitle: {
@@ -683,6 +678,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     flex: 1,
     gap: 4,
+    minWidth: 0,
     padding: spacing.md,
   },
   metricLabel: {
@@ -698,7 +694,6 @@ const styles = StyleSheet.create({
   metricsStrip: {
     flexDirection: 'row',
     gap: spacing.md,
-    paddingHorizontal: spacing.lg,
   },
   monthHeaderRow: {
     alignItems: 'center',
@@ -728,7 +723,6 @@ const styles = StyleSheet.create({
   overallBudgetCard: {
     borderRadius: 20,
     borderWidth: 1.5,
-    marginHorizontal: spacing.lg,
     padding: spacing.md + 2,
   },
   overallHeader: {
@@ -777,10 +771,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: radius.pill,
     flex: 1,
-    paddingVertical: 8,
+    justifyContent: 'center',
+    minWidth: 0,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
   },
   tabPillText: {
-    fontSize: 12,
+    flexShrink: 1,
+    fontSize: 13,
   },
   tabsContainer: {
     flexDirection: 'row',

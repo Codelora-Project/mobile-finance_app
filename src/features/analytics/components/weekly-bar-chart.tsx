@@ -190,11 +190,10 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   container: {
-    borderRadius: 24,
+    borderRadius: 22,
     borderWidth: 1.5,
     elevation: 2,
-    marginHorizontal: spacing.lg,
-    padding: spacing.lg,
+    padding: spacing.md + 2,
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
