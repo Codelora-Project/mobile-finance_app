@@ -431,54 +431,54 @@ export function HomeScreen() {
           />
         </Pressable>
 
-        {/* 🎯 Habit Streak & Celengan Impian Section */}
-        <View style={styles.section}>
-          {habitStats ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push('/goals')}
-              style={({ pressed }) => [
-                styles.habitStreakWidget,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                },
-                pressed ? styles.pressed : null,
-              ]}
-            >
-              <View style={styles.habitWidgetLeft}>
-                <Text style={styles.habitEmoji}>
-                  {habitStats.currentBadge.emoji}
+        {/* 🎯 Habit Streak Widget */}
+        {habitStats ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/goals')}
+            style={({ pressed }) => [
+              styles.habitStreakWidget,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+              pressed ? styles.pressed : null,
+            ]}
+          >
+            <View style={styles.habitWidgetLeft}>
+              <Text style={styles.habitEmoji}>
+                {habitStats.currentBadge.emoji}
+              </Text>
+              <View>
+                <Text
+                  style={[
+                    styles.habitStreakTitle,
+                    { color: colors.textPrimary },
+                  ]}
+                >
+                  {habitStats.currentStreak} {t.habits.streakDays} 🔥
                 </Text>
-                <View>
-                  <Text
-                    style={[
-                      styles.habitStreakTitle,
-                      { color: colors.textPrimary },
-                    ]}
-                  >
-                    {habitStats.currentStreak} {t.habits.streakDays} 🔥
-                  </Text>
-                  <Text
-                    style={[
-                      styles.habitStreakSubtitle,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {habitStats.currentBadge.title} ·{' '}
-                    {habitStats.noSpendDaysThisMonth} {t.habits.noSpendDays}
-                  </Text>
-                </View>
+                <Text
+                  style={[
+                    styles.habitStreakSubtitle,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  {habitStats.currentBadge.title} ·{' '}
+                  {habitStats.noSpendDaysThisMonth} {t.habits.noSpendDays}
+                </Text>
               </View>
-              <MaterialCommunityIcons
-                color={colors.textSecondary}
-                name="chevron-right"
-                size={22}
-              />
-            </Pressable>
-          ) : null}
+            </View>
+            <MaterialCommunityIcons
+              color={colors.textSecondary}
+              name="chevron-right"
+              size={22}
+            />
+          </Pressable>
+        ) : null}
 
-          {/* Celengan Impian Widget */}
+        {/* 🎯 Celengan Impian (Savings Goals) Section */}
+        <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text
               accessibilityRole="header"
@@ -494,10 +494,13 @@ export function HomeScreen() {
           </View>
 
           {goals.length > 0 ? (
-            <GoalCard
-              goal={goals[0]!}
-              onPress={() => router.push(`/goals/${goals[0]!.id}`)}
-            />
+            <View style={styles.goalCardWrapper}>
+              <GoalCard
+                compact
+                goal={goals[0]!}
+                onPress={() => router.push(`/goals/${goals[0]!.id}`)}
+              />
+            </View>
           ) : (
             <Pressable
               onPress={() => router.push('/goals')}
@@ -1164,6 +1167,9 @@ const styles = StyleSheet.create({
   expenseAmount: {
     fontSize: 16,
     fontWeight: '800',
+  },
+  goalCardWrapper: {
+    marginHorizontal: spacing.lg,
   },
   greeting: {
     fontSize: 11,

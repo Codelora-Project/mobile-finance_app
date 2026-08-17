@@ -142,6 +142,7 @@ export type TranslationSchema = {
     createFirstGoal: string;
     completed: string;
     active: string;
+    all: string;
     congratsCompleted: string;
     depositSuccess: string;
     withdrawSuccess: string;
@@ -409,6 +410,7 @@ export const translations: Record<Language, TranslationSchema> = {
       createFirstGoal: 'Buat Celengan Impian',
       completed: 'Tercapai 🎉',
       active: 'Berjalan',
+      all: 'Semua',
       congratsCompleted: 'Selamat! Target tabungan ini sudah tercapai 🥳',
       depositSuccess: 'Berhasil menabung!',
       withdrawSuccess: 'Berhasil menarik tabungan!',
@@ -678,6 +680,7 @@ export const translations: Record<Language, TranslationSchema> = {
       createFirstGoal: 'Create Savings Goal',
       completed: 'Completed 🎉',
       active: 'In Progress',
+      all: 'All',
       congratsCompleted: 'Congratulations! You reached this savings goal 🥳',
       depositSuccess: 'Deposit successful!',
       withdrawSuccess: 'Withdrawal successful!',

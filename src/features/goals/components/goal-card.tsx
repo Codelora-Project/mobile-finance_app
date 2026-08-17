@@ -2,6 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { SavingsGoal } from '@/features/goals/goals-repository';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -11,6 +12,8 @@ type GoalCardProps = {
   goal: SavingsGoal;
   onPress: () => void;
   onDepositPress?: () => void;
+  /** When true, hides the "remaining" column (e.g. in the home screen widget) */
+  compact?: boolean;
 };
 
 export const GOAL_ICONS: Record<string, string> = {
@@ -26,41 +29,48 @@ export const GOAL_ICONS: Record<string, string> = {
   emergency: 'shield-star',
 };
 
-export function GoalCard({ goal, onPress, onDepositPress }: GoalCardProps) {
+export function GoalCard({
+  goal,
+  onPress,
+  onDepositPress,
+  compact = false,
+}: GoalCardProps) {
   const { colors, isDark } = useTheme();
-  const iconName = GOAL_ICONS[goal.iconKey] || 'target';
+  const { t } = useLanguage();
+  const iconName = GOAL_ICONS[goal.iconKey] ?? 'target';
+
+  const clampedPercent = Math.min(100, Math.max(0, goal.progressPercent));
+  const remainingMinor = Math.max(
+    0,
+    goal.targetAmountMinor - goal.currentAmountMinor,
+  );
+
+  // Translucent tint from the goal's chosen accent color
+  const accentBg = isDark ? `${goal.colorKey}22` : `${goal.colorKey}18`;
+  const completedBorderColor = isDark ? '#065F46' : '#6EE7B7';
+  // Shorten "Nabung / Setor" ? "Nabung" for the button label
+  const depositLabel =
+    t.goals.deposit.split('/')[0]?.trim() ?? t.goals.deposit;
 
   return (
     <Pressable
-      accessibilityLabel={`${goal.name}, ${goal.isCompleted ? 'Selesai' : `${goal.progressPercent}%`}, ${formatMoney(goal.currentAmountMinor, 'IDR')} dari ${formatMoney(goal.targetAmountMinor, 'IDR')}`}
+      accessibilityLabel={`${goal.name}, ${goal.isCompleted ? t.goals.completed : `${clampedPercent}%`}, ${formatMoney(goal.currentAmountMinor, 'IDR')} ${t.goals.saved.toLowerCase()}`}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
         {
           backgroundColor: colors.surface,
-          borderColor: goal.isCompleted
-            ? isDark
-              ? '#065F46'
-              : '#A7F3D0'
-            : colors.border,
+          borderColor: goal.isCompleted ? completedBorderColor : colors.border,
+          shadowColor: colors.textPrimary,
         },
-        pressed ? styles.pressed : null,
+        pressed && styles.pressed,
       ]}
     >
-      {/* Header Row */}
+      {/* -- Header Row ----------------------------------- */}
       <View style={styles.headerRow}>
         <View style={styles.leftTitleRow}>
-          <View
-            style={[
-              styles.iconCircle,
-              {
-                backgroundColor: isDark
-                  ? `${goal.colorKey}33`
-                  : `${goal.colorKey}20`,
-              },
-            ]}
-          >
+          <View style={[styles.iconCircle, { backgroundColor: accentBg }]}>
             <MaterialCommunityIcons
               color={goal.colorKey}
               name={iconName as any}
@@ -75,9 +85,12 @@ export function GoalCard({ goal, onPress, onDepositPress }: GoalCardProps) {
               {goal.name}
             </Text>
             <Text
-              style={[styles.targetAmountText, { color: colors.textSecondary }]}
+              style={[
+                styles.targetAmountText,
+                { color: colors.textSecondary },
+              ]}
             >
-              Target: {formatMoney(goal.targetAmountMinor, 'IDR')}
+              {t.goals.target}: {formatMoney(goal.targetAmountMinor, 'IDR')}
             </Text>
           </View>
         </View>
@@ -92,10 +105,10 @@ export function GoalCard({ goal, onPress, onDepositPress }: GoalCardProps) {
             <MaterialCommunityIcons
               color={colors.positive}
               name="check-decagram"
-              size={16}
+              size={14}
             />
             <Text style={[styles.completedText, { color: colors.positive }]}>
-              Tercapai ðŸŽ‰
+              {t.goals.completed}
             </Text>
           </View>
         ) : (
@@ -108,43 +121,40 @@ export function GoalCard({ goal, onPress, onDepositPress }: GoalCardProps) {
             ]}
           >
             <Text style={[styles.percentText, { color: colors.primary }]}>
-              {goal.progressPercent}%
+              {clampedPercent}%
             </Text>
           </View>
         )}
       </View>
 
-      {/* Progress Track */}
+      {/* -- Progress Bar --------------------------------- */}
       <View
         style={[
           styles.progressTrack,
-          {
-            backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
-          },
+          { backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9' },
         ]}
       >
         <View
           style={[
             styles.progressBar,
             {
-              backgroundColor: goal.isCompleted
-                ? colors.positive
-                : goal.colorKey,
-              width: `${Math.min(100, Math.max(0, goal.progressPercent))}%`,
+              backgroundColor: goal.isCompleted ? colors.positive : goal.colorKey,
+              width: `${clampedPercent}%`,
             },
           ]}
         />
       </View>
 
-      {/* Footer Info & Quick Deposit */}
+      {/* -- Footer --------------------------------------- */}
       <View style={styles.footerRow}>
-        <View>
-          <Text style={[styles.savedLabel, { color: colors.textSecondary }]}>
-            Terkumpul:
+        {/* Saved */}
+        <View style={styles.footerBlock}>
+          <Text style={[styles.footerLabel, { color: colors.textSecondary }]}>
+            {t.goals.saved}
           </Text>
           <Text
             style={[
-              styles.savedAmount,
+              styles.footerAmount,
               {
                 color: goal.isCompleted ? colors.positive : colors.textPrimary,
               },
@@ -154,22 +164,48 @@ export function GoalCard({ goal, onPress, onDepositPress }: GoalCardProps) {
           </Text>
         </View>
 
+        {/* Remaining — hidden in compact/completed mode */}
+        {!compact && !goal.isCompleted && (
+          <>
+            <View
+              style={[styles.footerDivider, { backgroundColor: colors.border }]}
+            />
+            <View style={[styles.footerBlock, styles.footerBlockRight]}>
+              <Text
+                style={[styles.footerLabel, { color: colors.textSecondary }]}
+              >
+                {t.goals.remaining}
+              </Text>
+              <Text
+                style={[
+                  styles.footerAmount,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {formatMoney(remainingMinor, 'IDR')}
+              </Text>
+            </View>
+          </>
+        )}
+
+        {/* Quick Deposit */}
         {!goal.isCompleted && onDepositPress ? (
           <Pressable
-            accessibilityLabel={`Nabung untuk ${goal.name}`}
+            accessibilityLabel={`${t.goals.deposit} ${goal.name}`}
             accessibilityRole="button"
             hitSlop={8}
             onPress={(e) => {
               e.stopPropagation();
               onDepositPress();
             }}
-            style={[
+            style={({ pressed }) => [
               styles.quickDepositBtn,
-              { backgroundColor: colors.primary },
+              { backgroundColor: goal.colorKey },
+              pressed && { opacity: 0.85 },
             ]}
           >
-            <MaterialCommunityIcons color="#FFFFFF" name="plus" size={16} />
-            <Text style={styles.quickDepositText}>Nabung</Text>
+            <MaterialCommunityIcons color="#FFFFFF" name="plus" size={14} />
+            <Text style={styles.quickDepositText}>{depositLabel}</Text>
           </Pressable>
         ) : null}
       </View>
@@ -179,15 +215,14 @@ export function GoalCard({ goal, onPress, onDepositPress }: GoalCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 20,
+    borderRadius: radius.lg + 4,
     borderWidth: 1.5,
-    elevation: 2,
+    elevation: 3,
     gap: spacing.sm + 2,
     padding: spacing.md,
-    shadowColor: '#0F172A',
-    shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
+    shadowOffset: { height: 3, width: 0 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
   },
   completedBadge: {
     alignItems: 'center',
@@ -195,21 +230,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 4,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
   },
   completedText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  footerAmount: {
+    fontSize: 14,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  footerBlock: {
+    flex: 1,
+  },
+  footerBlockRight: {
+    alignItems: 'flex-end',
+  },
+  footerDivider: {
+    borderRadius: 1,
+    height: 28,
+    marginHorizontal: spacing.sm,
+    width: 1,
+  },
+  footerLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
   footerRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    justifyContent: 'space-between',
     marginTop: 2,
   },
   goalName: {
     fontSize: 16,
     fontWeight: '800',
+    letterSpacing: -0.2,
   },
   headerRow: {
     alignItems: 'center',
@@ -228,16 +287,17 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     gap: 12,
-    paddingRight: spacing.xs,
+    paddingRight: spacing.sm,
   },
   percentBadge: {
     borderRadius: radius.pill,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
   },
   percentText: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '900',
+    letterSpacing: -0.3,
   },
   pressed: {
     opacity: 0.8,
@@ -248,7 +308,7 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     borderRadius: radius.pill,
-    height: 8,
+    height: 10,
     overflow: 'hidden',
     width: '100%',
   },
@@ -258,25 +318,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 4,
     paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingVertical: 7,
   },
   quickDepositText: {
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '800',
   },
-  savedAmount: {
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  savedLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
   targetAmountText: {
     fontSize: 12,
     fontWeight: '500',
-    marginTop: 2,
+    marginTop: 1,
   },
   titleContainer: {
     flex: 1,
