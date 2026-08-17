@@ -196,3 +196,39 @@ export async function resetApplicationData(database: SQLiteDatabase) {
 
   removeManagedFiles();
 }
+
+export async function getQuickLogCategoryIds(
+  database: SQLiteDatabase,
+): Promise<number[]> {
+  const row = await database.getFirstAsync<{ value: string }>(
+    "SELECT value FROM app_settings WHERE key = 'quick_log_category_ids'",
+  );
+  if (!row?.value) {
+    return [1, 2, 3, 4, 5];
+  }
+  try {
+    const parsed = JSON.parse(row.value);
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed.every((id) => Number.isInteger(id))) {
+      return parsed;
+    }
+  } catch {
+    // fallback
+  }
+  return [1, 2, 3, 4, 5];
+}
+
+export async function setQuickLogCategoryIds(
+  database: SQLiteDatabase,
+  categoryIds: number[],
+  now = Date.now(),
+): Promise<void> {
+  const value = JSON.stringify(categoryIds);
+  await database.runAsync(
+    `INSERT INTO app_settings (key, value, created_at, updated_at)
+     VALUES ('quick_log_category_ids', ?, ?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+    value,
+    now,
+    now,
+  );
+}

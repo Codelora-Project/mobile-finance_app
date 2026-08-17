@@ -36,6 +36,13 @@ export type TranslationSchema = {
     loadFailed: string;
     tryAgain: string;
     loading: string;
+    quickLogTitle: string;
+    quickLogSubtitle: string;
+    quickLogCustomize: string;
+    quickLogModalTitle: string;
+    quickLogModalDesc: string;
+    quickLogModalSave: string;
+    quickLogModalReset: string;
   };
   transactions: {
     title: string;
@@ -301,6 +308,13 @@ export const translations: Record<Language, TranslationSchema> = {
       loadFailed: 'Gagal memuat ringkasan keuangan. Silakan coba lagi.',
       tryAgain: 'Coba lagi',
       loading: 'Memuat ringkasan…',
+      quickLogTitle: 'Catat Cepat',
+      quickLogSubtitle: 'Pilih kategori untuk langsung catat',
+      quickLogCustomize: 'Atur',
+      quickLogModalTitle: 'Atur Kategori Catat Cepat',
+      quickLogModalDesc: 'Pilih kategori yang ingin Anda tampilkan di Beranda untuk akses cepat 1-tap.',
+      quickLogModalSave: 'Simpan Pilihan',
+      quickLogModalReset: 'Reset Default',
     },
     // Transactions Screen
     transactions: {
@@ -590,6 +604,13 @@ export const translations: Record<Language, TranslationSchema> = {
       loadFailed: "We couldn't load your overview. Try again.",
       tryAgain: 'Try again',
       loading: 'Loading overview…',
+      quickLogTitle: 'Quick Log',
+      quickLogSubtitle: 'Tap category to record instantly',
+      quickLogCustomize: 'Customize',
+      quickLogModalTitle: 'Customize Quick Log',
+      quickLogModalDesc: 'Select the categories you want to display on Home for 1-tap fast access.',
+      quickLogModalSave: 'Save Selection',
+      quickLogModalReset: 'Reset to Default',
     },
     // Transactions Screen
     transactions: {

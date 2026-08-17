@@ -1215,7 +1215,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   backdropTouchArea: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   bottomSheetModal: {
     backgroundColor: '#FFFFFF',

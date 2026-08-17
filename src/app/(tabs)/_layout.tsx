@@ -1,9 +1,11 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Tabs, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+type BottomTabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>['tabBar']>>[0];
+
 
 import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
@@ -89,6 +91,9 @@ function TabItem({
         />
       </Animated.View>
       <Text
+        adjustsFontSizeToFit
+        maxFontSizeMultiplier={1.2}
+        minimumFontScale={0.75}
         numberOfLines={1}
         style={[
           styles.tabLabel,

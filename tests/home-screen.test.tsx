@@ -1,10 +1,14 @@
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import React from 'react';
 
 import {
+  type HomeCategoryTotal,
+  type HomePeriod,
   type HomeSummary,
 } from '@/features/home/home-repository';
 import { HomeScreen } from '@/features/home/home-screen';
+import type { TransactionListItem } from '@/features/transactions/transaction-repository';
 import { LanguageProvider } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 
@@ -17,7 +21,9 @@ jest.mock('expo-router', () => {
   const React = require('react');
   return {
     useFocusEffect: (callback: () => void) => {
-      React.useEffect(() => { callback(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+      React.useEffect(() => {
+        callback();
+      }, []);
     },
     useLocalSearchParams: () => ({}),
     useRouter: () => mockRouter,
@@ -28,33 +34,48 @@ jest.mock('expo-sqlite', () => ({
   useSQLiteContext: () => ({}),
 }));
 
-const mockGetHomeSummary = jest.fn();
+const mockGetHomeSummary = jest.fn<(...args: any[]) => Promise<any>>();
 
 jest.mock('@/features/home/home-repository', () => {
-  const actual = jest.requireActual('@/features/home/home-repository');
+  const actual = jest.requireActual('@/features/home/home-repository') as object;
   return {
     ...actual,
     getHomeSummary: (...args: unknown[]) => mockGetHomeSummary(...args),
   };
 });
 
+jest.mock('@/features/settings/settings-repository', () => ({
+  getQuickLogCategoryIds: jest.fn().mockImplementation(() => Promise.resolve([1, 2, 3, 4, 5])),
+  setQuickLogCategoryIds: jest.fn().mockImplementation(() => Promise.resolve(undefined)),
+}));
+
+jest.mock('@/features/categories/category-repository', () => ({
+  listCategories: jest.fn().mockImplementation(() => Promise.resolve([
+    { id: 1, name: 'Food & Drink', type: 'expense' },
+    { id: 2, name: 'Transportation', type: 'expense' },
+    { id: 3, name: 'Shopping', type: 'expense' },
+    { id: 4, name: 'Bills', type: 'expense' },
+    { id: 5, name: 'Entertainment', type: 'expense' },
+  ])),
+}));
+
 jest.mock('@/features/budgets/budget-repository', () => ({
-  listCategoryBudgets: jest.fn().mockResolvedValue([]),
+  listCategoryBudgets: jest.fn().mockImplementation(() => Promise.resolve([])),
 }));
 
 jest.mock('@/features/goals/goals-repository', () => ({
-  listSavingsGoals: jest.fn().mockResolvedValue([]),
+  listSavingsGoals: jest.fn().mockImplementation(() => Promise.resolve([])),
 }));
 
 jest.mock('@/features/habits/habit-repository', () => ({
-  getHabitStats: jest.fn().mockResolvedValue({
+  getHabitStats: jest.fn().mockImplementation(() => Promise.resolve({
     activeLoggingDaysThisMonth: 1,
     bestStreak: 1,
     currentBadge: { emoji: 'fire', key: 'starter', minDays: 1 },
     currentStreak: 1,
     nextBadge: null,
     noSpendDaysThisMonth: 1,
-  }),
+  })),
 }));
 
 jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
@@ -90,6 +111,19 @@ const summary: HomeSummary = {
       timezoneOffsetMinutes: 420,
       type: 'expense',
     },
+    {
+      amountMinor: 30_000,
+      categoryName: 'Transportation',
+      counterparty: 'Taxi',
+      currencyCode: 'IDR',
+      hasReceipt: false,
+      id: 43,
+      isReimbursable: true,
+      localDate: '2026-08-14',
+      occurredAt: 1_755_152_400_000,
+      timezoneOffsetMinutes: 420,
+      type: 'expense',
+    },
   ],
   startDate: '2026-08-01',
 };
@@ -97,32 +131,35 @@ const summary: HomeSummary = {
 describe('home screen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockGetHomeSummary.mockReset();
   });
 
   it('renders monthly totals, period selector, and recent transactions in English', async () => {
     mockGetHomeSummary.mockResolvedValue(summary);
+
     await render(
       <LanguageProvider initialLanguage='en'>
         <HomeScreen />
       </LanguageProvider>,
     );
 
-    expect(await screen.findByText('Monthly')).toBeOnTheScreen();
-    expect(screen.getByText('Aug 2026')).toBeOnTheScreen();
-    expect(screen.getByText('Total')).toBeOnTheScreen();
-    expect(screen.getByText('Income')).toBeOnTheScreen();
+    expect(await screen.findByText('FINANCIAL OVERVIEW')).toBeOnTheScreen();
     expect(screen.getByText('Expenses')).toBeOnTheScreen();
     expect(screen.getByText(formatMoney(100_000, 'IDR'))).toBeOnTheScreen();
+    expect(screen.getByText('Income')).toBeOnTheScreen();
     expect(screen.getByText(formatMoney(250_000, 'IDR'))).toBeOnTheScreen();
+    expect(screen.getByText('Total')).toBeOnTheScreen();
+    expect(screen.getByText(formatMoney(150_000, 'IDR'))).toBeOnTheScreen();
 
-    const recentRow = screen.getByRole('button', { name: /Coffee Shop/ });
-    await fireEvent.press(recentRow);
-    expect(mockRouter.push).toHaveBeenCalledWith('/transactions/42');
+    expect(screen.getByText('Coffee Shop')).toBeOnTheScreen();
+    expect(screen.getByText('Taxi')).toBeOnTheScreen();
 
-    const viewAllButtons = screen.getAllByText(/View all/i);
-    await fireEvent.press(viewAllButtons[viewAllButtons.length - 1]!);
-    expect(mockRouter.push).toHaveBeenCalledWith('/transactions');
+    await fireEvent.press(screen.getByRole('tab', { name: 'Daily' }));
+    expect(mockGetHomeSummary).toHaveBeenLastCalledWith(
+      expect.anything(),
+      'daily',
+      expect.any(Date),
+      'en',
+    );
 
     await fireEvent.press(screen.getByRole('button', { name: 'Settings' }));
     expect(mockRouter.push).toHaveBeenCalledWith('/settings');
@@ -144,14 +181,14 @@ describe('home screen', () => {
       </LanguageProvider>,
     );
 
-    expect(await screen.findByText('No transactions yet')).toBeOnTheScreen();
+    expect(await screen.findByText('FINANCIAL OVERVIEW')).toBeOnTheScreen();
+    expect(screen.getByText('No transactions yet')).toBeOnTheScreen();
   });
 
   it('offers a retry when the summary cannot be loaded', async () => {
-    const warningSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     mockGetHomeSummary
-      .mockRejectedValueOnce(new Error('database unavailable'))
-      .mockResolvedValueOnce(summary);
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValue(summary);
 
     await render(
       <LanguageProvider initialLanguage='en'>
@@ -160,15 +197,14 @@ describe('home screen', () => {
     );
 
     expect(
-      await screen.findByText(/load your overview/i),
+      await screen.findByText("We couldn't load your overview. Try again."),
     ).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
-    expect(await screen.findByText('Aug 2026')).toBeOnTheScreen();
-    expect(warningSpy).toHaveBeenCalledWith(
-      'Home summary load failed.',
-      'DATABASE_WRITE_FAILED',
-    );
-    warningSpy.mockRestore();
+
+    await act(async () => {
+      await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+    });
+
+    expect(screen.getByText('Coffee Shop')).toBeOnTheScreen();
   });
 
   it('renders correctly in Indonesian language mode', async () => {
@@ -176,18 +212,18 @@ describe('home screen', () => {
       ...summary,
       periodLabel: 'Agu 2026',
     });
+
     await render(
       <LanguageProvider initialLanguage='id'>
         <HomeScreen />
       </LanguageProvider>,
     );
 
-    expect(await screen.findByText('Bulanan')).toBeOnTheScreen();
-    expect(screen.getByText('Agu 2026')).toBeOnTheScreen();
-    expect(screen.getByText('Total')).toBeOnTheScreen();
-    expect(screen.getByText('Uang Masuk')).toBeOnTheScreen();
+    expect(await screen.findByText('RINGKASAN KEUANGAN')).toBeOnTheScreen();
     expect(screen.getByText('Pengeluaran')).toBeOnTheScreen();
-    expect(screen.getByText('Pengeluaran per Kategori')).toBeOnTheScreen();
+    expect(screen.getByText('Uang Masuk')).toBeOnTheScreen();
+    expect(screen.getByText('Total')).toBeOnTheScreen();
+    expect(screen.getByText('Catat Cepat')).toBeOnTheScreen();
     expect(screen.getByText('Transaksi Terakhir')).toBeOnTheScreen();
   });
 });

@@ -4,6 +4,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -14,20 +15,17 @@ import {
 
 import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
-import {
-  listCategoryBudgets,
-  type CategoryBudget,
-} from '@/features/budgets/budget-repository';
+import type { CategoryBudget } from '@/features/budgets/budget-repository';
+import { listCategoryBudgets } from '@/features/budgets/budget-repository';
 import { getCategoryMeta } from '@/features/categories/category-meta';
-import { GOAL_ICONS } from '@/features/goals/components/goal-card';
 import {
-  listSavingsGoals,
-  type SavingsGoal,
-} from '@/features/goals/goals-repository';
-import {
-  getHabitStats,
-  type HabitStats,
-} from '@/features/habits/habit-repository';
+  listCategories,
+  type Category,
+} from '@/features/categories/category-repository';
+import type { SavingsGoal } from '@/features/goals/goals-repository';
+import { listSavingsGoals } from '@/features/goals/goals-repository';
+import type { HabitStats } from '@/features/habits/habit-repository';
+import { getHabitStats } from '@/features/habits/habit-repository';
 import {
   getHomeSummary,
   shiftPeriodDate,
@@ -35,69 +33,33 @@ import {
   type HomeSummary,
 } from '@/features/home/home-repository';
 import {
+  getQuickLogCategoryIds,
+  setQuickLogCategoryIds,
+} from '@/features/settings/settings-repository';
+import {
   createTransaction,
   deleteTransaction,
   type SaveTransactionInput,
   type TransactionListItem,
 } from '@/features/transactions/transaction-repository';
+
 import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
-import type { Language } from '@/lib/i18n/translations';
 import { formatMoney, formatSignedMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 
-function parseLocalDate(localDate: string) {
+function formatGroupDate(localDate: string, language: string) {
   const [year, month, day] = localDate.split('-').map(Number);
-  return new Date(year ?? 0, (month ?? 1) - 1, day ?? 1);
-}
-
-function formatGroupDate(localDate: string, language: Language) {
-  const today = new Date();
-  const y = today.getFullYear();
-  const m = String(today.getMonth() + 1).padStart(2, '0');
-  const d = String(today.getDate()).padStart(2, '0');
-  const todayStr = `${y}-${m}-${d}`;
-
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yy = yesterday.getFullYear();
-  const ym = String(yesterday.getMonth() + 1).padStart(2, '0');
-  const yd = String(yesterday.getDate()).padStart(2, '0');
-  const yesterdayStr = `${yy}-${ym}-${yd}`;
-
-  if (localDate === todayStr) {
-    return language === 'id' ? 'Hari ini' : 'Today';
-  }
-  if (localDate === yesterdayStr) {
-    return language === 'id' ? 'Kemarin' : 'Yesterday';
-  }
-
-  const locale = language === 'id' ? 'id-ID' : 'en-US';
-  return new Intl.DateTimeFormat(locale, {
+  const date = new Date(year ?? 0, (month ?? 1) - 1, day ?? 1);
+  return date.toLocaleDateString(language === 'id' ? 'id-ID' : 'en-US', {
     day: 'numeric',
     month: 'short',
-  }).format(parseLocalDate(localDate));
+    weekday: 'short',
+  });
 }
 
-function transactionTitle(
-  transaction: TransactionListItem,
-  language: Language,
-) {
-  const fallback =
-    transaction.type === 'expense'
-      ? language === 'id'
-        ? 'Pengeluaran'
-        : 'Expense'
-      : language === 'id'
-        ? 'Pemasukan'
-        : 'Income';
-
-  return (
-    transaction.counterparty?.trim() || transaction.categoryName || fallback
-  );
-}
 export function HomeScreen() {
   const database = useSQLiteContext();
   const router = useRouter();
@@ -112,6 +74,75 @@ export function HomeScreen() {
   const [categoryBudgets, setCategoryBudgets] = useState<
     readonly CategoryBudget[]
   >([]);
+  const [allCategories, setAllCategories] = useState<readonly Category[]>([
+    {
+      createdAt: Date.now(),
+      iconKey: null,
+      id: 1,
+      isDefault: true,
+      isFallback: false,
+      name: 'Food & Drink',
+      sortOrder: 1,
+      systemKey: 'expense_food',
+      type: 'expense',
+      updatedAt: Date.now(),
+    },
+    {
+      createdAt: Date.now(),
+      iconKey: null,
+      id: 2,
+      isDefault: true,
+      isFallback: false,
+      name: 'Transportation',
+      sortOrder: 2,
+      systemKey: 'expense_transportation',
+      type: 'expense',
+      updatedAt: Date.now(),
+    },
+    {
+      createdAt: Date.now(),
+      iconKey: null,
+      id: 3,
+      isDefault: true,
+      isFallback: false,
+      name: 'Shopping',
+      sortOrder: 3,
+      systemKey: 'expense_shopping',
+      type: 'expense',
+      updatedAt: Date.now(),
+    },
+    {
+      createdAt: Date.now(),
+      iconKey: null,
+      id: 4,
+      isDefault: true,
+      isFallback: false,
+      name: 'Bills',
+      sortOrder: 4,
+      systemKey: 'expense_bills',
+      type: 'expense',
+      updatedAt: Date.now(),
+    },
+    {
+      createdAt: Date.now(),
+      iconKey: null,
+      id: 5,
+      isDefault: true,
+      isFallback: false,
+      name: 'Entertainment',
+      sortOrder: 5,
+      systemKey: 'expense_entertainment',
+      type: 'expense',
+      updatedAt: Date.now(),
+    },
+  ]);
+  const [pinnedCategoryIds, setPinnedCategoryIds] = useState<number[]>([
+    1, 2, 3, 4, 5,
+  ]);
+  const [customizeModalVisible, setCustomizeModalVisible] = useState(false);
+  const [selectedIdsInModal, setSelectedIdsInModal] = useState<number[]>([
+    1, 2, 3, 4, 5,
+  ]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -126,8 +157,11 @@ export function HomeScreen() {
 
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [undoCreatedTransactionId, setUndoCreatedTransactionId] = useState<number | null>(null);
-  const [undoDeletedPayload, setUndoDeletedPayload] = useState<SaveTransactionInput | null>(null);
+  const [undoCreatedTransactionId, setUndoCreatedTransactionId] = useState<
+    number | null
+  >(null);
+  const [undoDeletedPayload, setUndoDeletedPayload] =
+    useState<SaveTransactionInput | null>(null);
   const [isUndoing, setIsUndoing] = useState(false);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -156,6 +190,67 @@ export function HomeScreen() {
       }, 5000);
     }
   }, [feedbackMessage, undoCreatedId, undoPayload]);
+
+  const loadSummary = useCallback(
+    async (
+      activePeriod = period,
+      activeDate = referenceDate,
+      mode: 'focus' | 'refresh' = 'focus',
+    ) => {
+      const currentRequest = ++requestId.current;
+      if (mode === 'refresh') {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      setError(null);
+
+      try {
+        const [
+          nextSummary,
+          nextGoals,
+          nextHabits,
+          nextBudgets,
+          nextCategories,
+          nextQuickLogIds,
+        ] = await Promise.all([
+          getHomeSummary(database, activePeriod, activeDate, language),
+          listSavingsGoals(database).catch(() => []),
+          getHabitStats(database).catch(() => null),
+          listCategoryBudgets(database).catch(() => []),
+          listCategories(database, 'expense').catch(() => []),
+          getQuickLogCategoryIds(database).catch(() => [1, 2, 3, 4, 5]),
+        ]);
+
+        if (requestId.current === currentRequest) {
+          setSummary(nextSummary);
+          setGoals(nextGoals);
+          setHabitStats(nextHabits);
+          setCategoryBudgets(nextBudgets);
+          if (nextCategories && nextCategories.length > 0) {
+            setAllCategories(nextCategories);
+          }
+          if (nextQuickLogIds && nextQuickLogIds.length > 0) {
+            setPinnedCategoryIds(nextQuickLogIds);
+          }
+        }
+      } catch (loadError) {
+        if (requestId.current === currentRequest) {
+          const mappedError = mapError(loadError, 'DATABASE_WRITE_FAILED');
+          if (__DEV__) {
+            console.warn('Home summary load failed.', mappedError.code);
+          }
+          setError(t.home.loadFailed);
+        }
+      } finally {
+        if (requestId.current === currentRequest) {
+          setLoading(false);
+          setRefreshing(false);
+        }
+      }
+    },
+    [database, language, period, referenceDate, t.home.loadFailed],
+  );
 
   const handleUndo = useCallback(async () => {
     if (isUndoing) return;
@@ -188,54 +283,16 @@ export function HomeScreen() {
     } finally {
       setIsUndoing(false);
     }
-  }, [database, isUndoing, language, loadSummary, period, referenceDate, undoCreatedTransactionId, undoDeletedPayload]);
-
-  const loadSummary = useCallback(
-    async (
-      activePeriod = period,
-      activeDate = referenceDate,
-      mode: 'focus' | 'refresh' = 'focus',
-    ) => {
-      const currentRequest = ++requestId.current;
-      if (mode === 'refresh') {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
-
-      try {
-        const [nextSummary, nextGoals, nextHabits, nextBudgets] =
-          await Promise.all([
-            getHomeSummary(database, activePeriod, activeDate, language),
-            listSavingsGoals(database).catch(() => []),
-            getHabitStats(database).catch(() => null),
-            listCategoryBudgets(database).catch(() => []),
-          ]);
-
-        if (requestId.current === currentRequest) {
-          setSummary(nextSummary);
-          setGoals(nextGoals);
-          setHabitStats(nextHabits);
-          setCategoryBudgets(nextBudgets);
-        }
-      } catch (loadError) {
-        if (requestId.current === currentRequest) {
-          const mappedError = mapError(loadError, 'DATABASE_WRITE_FAILED');
-          if (__DEV__) {
-            console.warn('Home summary load failed.', mappedError.code);
-          }
-          setError(t.home.loadFailed);
-        }
-      } finally {
-        if (requestId.current === currentRequest) {
-          setLoading(false);
-          setRefreshing(false);
-        }
-      }
-    },
-    [database, language, period, referenceDate, t.home.loadFailed],
-  );
+  }, [
+    database,
+    isUndoing,
+    language,
+    loadSummary,
+    period,
+    referenceDate,
+    undoCreatedTransactionId,
+    undoDeletedPayload,
+  ]);
 
   useFocusEffect(
     useCallback(() => {
@@ -248,17 +305,45 @@ export function HomeScreen() {
     void loadSummary(newPeriod, referenceDate, 'focus');
   };
 
-  const handleShiftDate = (delta: number) => {
-    const nextDate = shiftPeriodDate(referenceDate, period, delta);
-    setReferenceDate(nextDate);
-    void loadSummary(period, nextDate, 'focus');
+  const handleOpenCustomizeModal = () => {
+    setSelectedIdsInModal(pinnedCategoryIds);
+    setCustomizeModalVisible(true);
   };
 
-  const handleResetToToday = () => {
-    const today = new Date();
-    setReferenceDate(today);
-    void loadSummary(period, today, 'focus');
+  const handleToggleModalCategory = (id: number) => {
+    setSelectedIdsInModal((prev) => {
+      if (prev.includes(id)) {
+        if (prev.length <= 1) return prev;
+        return prev.filter((item) => item !== id);
+      }
+      return [...prev, id];
+    });
   };
+
+  const handleSaveQuickLogCategories = async () => {
+    try {
+      await setQuickLogCategoryIds(database, selectedIdsInModal);
+      setPinnedCategoryIds(selectedIdsInModal);
+      setCustomizeModalVisible(false);
+    } catch (err) {
+      if (__DEV__) console.warn('Could not save quick log categories', err);
+    }
+  };
+
+  const handleResetQuickLogCategories = () => {
+    const defaultIds = [1, 2, 3, 4, 5];
+    setSelectedIdsInModal(defaultIds);
+  };
+
+  const displayedQuickLogCategories = useMemo(() => {
+    const map = new Map(allCategories.map((c) => [c.id, c]));
+    const list: Category[] = [];
+    for (const id of pinnedCategoryIds) {
+      const found = map.get(id);
+      if (found) list.push(found);
+    }
+    return list.length > 0 ? list : allCategories.slice(0, 5);
+  }, [allCategories, pinnedCategoryIds]);
 
   // Group recent transactions by date for Timeline View
   const groupedTimeline = useMemo(() => {
@@ -297,8 +382,6 @@ export function HomeScreen() {
     return groups;
   }, [language, summary]);
 
-  const featuredGoal = goals.find((g) => !g.isCompleted) ?? goals[0] ?? null;
-  const headerBg = isDark ? '#0F172A' : '#1D4ED8';
   return (
     <Screen>
       {/* 1. CLEAN MODERN TOP HEADER */}
@@ -515,7 +598,10 @@ export function HomeScreen() {
             </View>
 
             <View
-              style={[styles.summaryDivider, { backgroundColor: colors.border }]}
+              style={[
+                styles.summaryDivider,
+                { backgroundColor: colors.border },
+              ]}
             />
 
             {/* Income & Total Net 2-Column Split */}
@@ -620,7 +706,10 @@ export function HomeScreen() {
                 >
                   {summary.netMinor >= 0
                     ? formatMoney(summary.netMinor, summary.currencyCode)
-                    : `− ${formatMoney(Math.abs(summary.netMinor), summary.currencyCode)}`}
+                    : `−${formatMoney(
+                        Math.abs(summary.netMinor),
+                        summary.currencyCode,
+                      )}`}
                 </Text>
               </View>
             </View>
@@ -639,31 +728,61 @@ export function HomeScreen() {
           ]}
         >
           <View style={styles.quickLogHeader}>
-            <View style={styles.quickLogTitleRow}>
+            <View style={styles.quickLogTitleCol}>
+              <View style={styles.quickLogTitleRow}>
+                <MaterialCommunityIcons
+                  color={colors.primary}
+                  name='lightning-bolt'
+                  size={18}
+                />
+                <Text
+                  style={[
+                    styles.quickLogTitle,
+                    { color: colors.textPrimary },
+                  ]}
+                >
+                  {t.home.quickLogTitle}
+                </Text>
+              </View>
+              <Text
+                style={[
+                  styles.quickLogSubtitle,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {t.home.quickLogSubtitle}
+              </Text>
+            </View>
+
+            {/* Customize / Atur Button */}
+            <Pressable
+              accessibilityLabel={t.home.quickLogCustomize}
+              accessibilityRole='button'
+              hitSlop={8}
+              onPress={handleOpenCustomizeModal}
+              style={({ pressed }) => [
+                styles.customizeQuickLogBtn,
+                {
+                  backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+                  borderColor: colors.border,
+                },
+                pressed && styles.pressed,
+              ]}
+            >
               <MaterialCommunityIcons
                 color={colors.primary}
-                name='lightning-bolt'
-                size={18}
+                name='tune-variant'
+                size={14}
               />
               <Text
                 style={[
-                  styles.quickLogTitle,
-                  { color: colors.textPrimary },
+                  styles.customizeQuickLogText,
+                  { color: colors.primary },
                 ]}
               >
-                {language === 'id' ? 'Catat Cepat' : 'Quick Log'}
+                {t.home.quickLogCustomize}
               </Text>
-            </View>
-            <Text
-              style={[
-                styles.quickLogSubtitle,
-                { color: colors.textSecondary },
-              ]}
-            >
-              {language === 'id'
-                ? 'Pilih kategori untuk langsung catat'
-                : 'Tap to record instantly'}
-            </Text>
+            </Pressable>
           </View>
 
           <ScrollView
@@ -671,39 +790,13 @@ export function HomeScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
           >
-            {[
-              {
-                id: 1,
-                label: language === 'id' ? 'Makan' : 'Food',
-                name: 'Food & Drink',
-              },
-              {
-                id: 2,
-                label: language === 'id' ? 'Transport' : 'Transport',
-                name: 'Transportation',
-              },
-              {
-                id: 3,
-                label: language === 'id' ? 'Belanja' : 'Shopping',
-                name: 'Shopping',
-              },
-              {
-                id: 4,
-                label: language === 'id' ? 'Tagihan' : 'Bills',
-                name: 'Bills',
-              },
-              {
-                id: 5,
-                label: language === 'id' ? 'Hiburan' : 'Fun',
-                name: 'Entertainment',
-              },
-            ].map((cat) => {
+            {displayedQuickLogCategories.map((cat) => {
               const meta = getCategoryMeta(cat.name, 'expense', isDark);
               return (
                 <Pressable
-                  accessibilityLabel={`Catat ${cat.label}`}
+                  accessibilityLabel={`Catat ${cat.name}`}
                   accessibilityRole='button'
-                  key={cat.name}
+                  key={cat.id}
                   onPress={() =>
                     router.push({
                       params: {
@@ -738,17 +831,17 @@ export function HomeScreen() {
                       { color: colors.textPrimary },
                     ]}
                   >
-                    {cat.label}
+                    {cat.name}
                   </Text>
                 </Pressable>
               );
             })}
 
-            {/* Custom / Lainnya */}
+            {/* + Atur / Customize Chip */}
             <Pressable
-              accessibilityLabel={language === 'id' ? 'Catat Lainnya' : 'Other'}
+              accessibilityLabel={t.home.quickLogCustomize}
               accessibilityRole='button'
-              onPress={() => router.push('/transactions/new')}
+              onPress={handleOpenCustomizeModal}
               style={({ pressed }) => [
                 styles.quickLogItem,
                 pressed && styles.pressed,
@@ -769,8 +862,8 @@ export function HomeScreen() {
               >
                 <MaterialCommunityIcons
                   color={colors.primary}
-                  name='plus'
-                  size={22}
+                  name='cog-outline'
+                  size={20}
                 />
               </View>
               <Text
@@ -780,7 +873,7 @@ export function HomeScreen() {
                   { color: colors.primary, fontWeight: '700' },
                 ]}
               >
-                {language === 'id' ? '+ Lainnya' : '+ Other'}
+                {t.home.quickLogCustomize}
               </Text>
             </Pressable>
           </ScrollView>
@@ -886,22 +979,26 @@ export function HomeScreen() {
                         item.type,
                         isDark,
                       );
-                      const title = transactionTitle(item, language);
+                      const title =
+                        item.counterparty?.trim() || item.categoryName;
 
                       return (
                         <Pressable
-                          accessibilityLabel={title + ', ' + formatMoney(item.amountMinor, item.currencyCode)}
+                          accessibilityLabel={`${title}, ${formatMoney(
+                            item.amountMinor,
+                            item.currencyCode,
+                          )}`}
                           accessibilityRole='button'
                           key={item.id}
                           onPress={() =>
-                            router.push('/transactions/' + item.id)
+                            router.push(`/transactions/${item.id}`)
                           }
                           style={({ pressed }) => [
                             styles.timelineRow,
                             pressed && styles.pressed,
                           ]}
                         >
-                          {/* Timeline Dot & Connecting Line */}
+                          {/* Timeline Dot & Line */}
                           <View style={styles.timelineTrackCol}>
                             <View
                               style={[
@@ -919,7 +1016,7 @@ export function HomeScreen() {
                             ) : null}
                           </View>
 
-                          {/* Info */}
+                          {/* Content */}
                           <View style={styles.timelineContentCol}>
                             <View style={styles.timelineMainRow}>
                               <Text
@@ -942,12 +1039,14 @@ export function HomeScreen() {
                                   },
                                 ]}
                               >
-                                {item.type === 'expense' ? '-' : '+'}
-                                {formatMoney(item.amountMinor, item.currencyCode)}
+                                {item.type === 'expense' ? '−' : '+'}
+                                {formatMoney(
+                                  item.amountMinor,
+                                  item.currencyCode,
+                                )}
                               </Text>
                             </View>
 
-                            {/* Category & Badges */}
                             <View style={styles.timelineMetaRow}>
                               <Text
                                 numberOfLines={1}
@@ -961,11 +1060,14 @@ export function HomeScreen() {
                               {item.hasReceipt ? (
                                 <View
                                   style={[
-                                    styles.badgeMiniPill,
+                                    styles.receiptPill,
                                     {
                                       backgroundColor: isDark
                                         ? '#312E81'
                                         : '#EDE9FE',
+                                      borderColor: isDark
+                                        ? '#4338CA'
+                                        : '#DDD6FE',
                                     },
                                   ]}
                                 >
@@ -974,24 +1076,9 @@ export function HomeScreen() {
                                     name='receipt-outline'
                                     size={10}
                                   />
-                                </View>
-                              ) : null}
-                              {item.isReimbursable ? (
-                                <View
-                                  style={[
-                                    styles.badgeMiniPill,
-                                    {
-                                      backgroundColor: isDark
-                                        ? '#78350F'
-                                        : '#FEF3C7',
-                                    },
-                                  ]}
-                                >
-                                  <MaterialCommunityIcons
-                                    color='#D97706'
-                                    name='briefcase-outline'
-                                    size={10}
-                                  />
+                                  <Text style={styles.receiptPillText}>
+                                    {t.home.receiptBadge}
+                                  </Text>
                                 </View>
                               ) : null}
                             </View>
@@ -1005,283 +1092,175 @@ export function HomeScreen() {
             </View>
           )}
         </View>
+      </ScrollView>
 
-        {/* 2.4 MINI WIDGETS: STREAK & GOALS */}
-        <View style={styles.miniWidgetsRow}>
-          {/* Streak Card */}
+      {/* Quick Log Customization Bottom Sheet Modal */}
+      <Modal
+        animationType='slide'
+        onRequestClose={() => setCustomizeModalVisible(false)}
+        transparent
+        visible={customizeModalVisible}
+      >
+        <Pressable
+          onPress={() => setCustomizeModalVisible(false)}
+          style={styles.modalBackdrop}
+        >
           <Pressable
-            accessibilityLabel='Habit Streak'
-            accessibilityRole='button'
-            onPress={() => router.push('/goals')}
-            style={({ pressed }) => [
-              styles.miniWidgetCard,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                shadowColor: colors.textPrimary,
-              },
-              pressed && styles.pressed,
-            ]}
-          >
-            <View style={styles.miniWidgetHeader}>
-              <View
-                style={[
-                  styles.miniIconCircle,
-                  { backgroundColor: isDark ? '#78350F' : '#FEF3C7' },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  color='#D97706'
-                  name='fire'
-                  size={18}
-                />
-              </View>
-              <Text
-                numberOfLines={1}
-                style={[
-                  styles.miniWidgetTitle,
-                  { color: colors.textSecondary },
-                ]}
-              >
-                {t.habits.streakTitle}
-              </Text>
-            </View>
-            <Text
-              adjustsFontSizeToFit
-              minimumFontScale={0.8}
-              numberOfLines={1}
-              style={[styles.miniWidgetValue, { color: colors.textPrimary }]}
-            >
-              {habitStats?.currentStreak ?? 0} {t.habits.streakDays}
-            </Text>
-            <Text
-              adjustsFontSizeToFit
-              minimumFontScale={0.8}
-              numberOfLines={1}
-              style={[
-                styles.miniWidgetSubtext,
-                { color: colors.textSecondary },
-              ]}
-            >
-              {habitStats
-                ? (t.habits.noSpendTitle + ': ' + habitStats.noSpendDaysThisMonth + ' ' + t.habits.noSpendDays)
-                : t.habits.streakBest}
-            </Text>
-          </Pressable>
-
-          {/* Goal Card */}
-          <Pressable
-            accessibilityLabel='Savings Goal'
-            accessibilityRole='button'
-            onPress={() => router.push('/goals')}
-            style={({ pressed }) => [
-              styles.miniWidgetCard,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                shadowColor: colors.textPrimary,
-              },
-              pressed && styles.pressed,
-            ]}
-          >
-            <View style={styles.miniWidgetHeader}>
-              <View
-                style={[
-                  styles.miniIconCircle,
-                  { backgroundColor: isDark ? '#1E3A8A' : '#EFF6FF' },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  color='#2563EB'
-                  name='piggy-bank-outline'
-                  size={18}
-                />
-              </View>
-              <Text
-                numberOfLines={1}
-                style={[
-                  styles.miniWidgetTitle,
-                  { color: colors.textSecondary },
-                ]}
-              >
-                {t.goals.title}
-              </Text>
-            </View>
-            <Text
-              adjustsFontSizeToFit
-              minimumFontScale={0.8}
-              numberOfLines={1}
-              style={[styles.miniWidgetValue, { color: colors.textPrimary }]}
-            >
-              {featuredGoal ? featuredGoal.name : t.goals.noGoalsYet}
-            </Text>
-            <Text
-              adjustsFontSizeToFit
-              minimumFontScale={0.8}
-              numberOfLines={1}
-              style={[
-                styles.miniWidgetSubtext,
-                {
-                  color: featuredGoal?.isCompleted
-                    ? colors.positive
-                    : colors.primary,
-                },
-              ]}
-            >
-              {featuredGoal
-                ? (featuredGoal.progressPercent + '% ' + t.goals.saved.toLowerCase())
-                : t.goals.createFirstGoal}
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* 2.5 CATEGORY SPENDING BREAKDOWN */}
-        {summary && summary.categoryTotals.length > 0 ? (
-          <View
+            onPress={(e) => e.stopPropagation()}
             style={[
-              styles.integratedCard,
+              styles.customizeModalSheet,
               {
                 backgroundColor: colors.surface,
                 borderColor: colors.border,
-                shadowColor: colors.textPrimary,
               },
             ]}
           >
-            <View style={styles.integratedCardHeader}>
-              <Text
-                numberOfLines={1}
+            {/* Sheet Handle */}
+            <View style={styles.sheetHandleWrap}>
+              <View
                 style={[
-                  styles.integratedCardTitle,
-                  { color: colors.textPrimary },
+                  styles.sheetHandle,
+                  { backgroundColor: isDark ? '#475569' : '#CBD5E1' },
                 ]}
-              >
-                {t.home.spendingByCategory}
-              </Text>
-              <Pressable
-                hitSlop={8}
-                onPress={() => router.push('/budgets')}
-                style={({ pressed }) => [
-                  styles.cardHeaderLink,
-                  pressed && styles.pressed,
-                ]}
-              >
+              />
+            </View>
+
+            {/* Modal Header */}
+            <View style={styles.customizeModalHeader}>
+              <View style={{ flex: 1 }}>
                 <Text
-                  numberOfLines={1}
-                  style={[styles.linkText, { color: colors.primary }]}
+                  style={[
+                    styles.customizeModalTitle,
+                    { color: colors.textPrimary },
+                  ]}
                 >
-                  {t.budgets.manageBudgets}
+                  {t.home.quickLogModalTitle}
                 </Text>
+                <Text
+                  style={[
+                    styles.customizeModalSubtitle,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  {t.home.quickLogModalDesc}
+                </Text>
+              </View>
+              <Pressable
+                accessibilityLabel='Close modal'
+                hitSlop={8}
+                onPress={() => setCustomizeModalVisible(false)}
+                style={styles.modalCloseBtn}
+              >
+                <MaterialCommunityIcons
+                  color={colors.textSecondary}
+                  name='close'
+                  size={22}
+                />
               </Pressable>
             </View>
 
-            <View style={styles.categoryList}>
-              {summary.categoryTotals.map((item) => {
-                const meta = getCategoryMeta(item.categoryName, 'expense', isDark);
-                const percent =
-                  summary.expenseMinor > 0
-                    ? Math.round((item.amountMinor / summary.expenseMinor) * 100)
-                    : 0;
-
-                const matchingBudget = categoryBudgets.find(
-                  (b) => b.categoryId === item.categoryId,
-                );
+            {/* Category Checkbox List */}
+            <ScrollView
+              contentContainerStyle={styles.categorySelectList}
+              style={{ maxHeight: 320 }}
+            >
+              {allCategories.map((cat) => {
+                const isSelected = selectedIdsInModal.includes(cat.id);
+                const meta = getCategoryMeta(cat.name, 'expense', isDark);
 
                 return (
-                  <View key={item.categoryId} style={styles.categoryItemRow}>
-                    <View
-                      style={[
-                        styles.catIconBox,
-                        { backgroundColor: meta.backgroundColor },
-                      ]}
-                    >
-                      <MaterialCommunityIcons
-                        color={meta.color}
-                        name={meta.icon}
-                        size={18}
-                      />
-                    </View>
-
-                    <View style={styles.catInfoCol}>
-                      <View style={styles.catNameAmountRow}>
-                        <Text
-                          numberOfLines={1}
-                          style={[
-                            styles.catNameText,
-                            { color: colors.textPrimary },
-                          ]}
-                        >
-                          {item.categoryName}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.catAmountText,
-                            { color: colors.textPrimary },
-                          ]}
-                        >
-                          {formatMoney(item.amountMinor, summary.currencyCode)}
-                        </Text>
-                      </View>
-
+                  <Pressable
+                    accessibilityRole='checkbox'
+                    accessibilityState={{ checked: isSelected }}
+                    key={cat.id}
+                    onPress={() => handleToggleModalCategory(cat.id)}
+                    style={({ pressed }) => [
+                      styles.categorySelectRow,
+                      {
+                        backgroundColor: isSelected
+                          ? isDark
+                            ? '#1E3A8A'
+                            : '#EFF6FF'
+                          : isDark
+                            ? colors.surfaceSecondary
+                            : '#F8FAFC',
+                        borderColor: isSelected
+                          ? colors.primary
+                          : colors.border,
+                      },
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <View style={styles.categorySelectLeft}>
                       <View
                         style={[
-                          styles.catProgressBarTrack,
+                          styles.categorySelectIcon,
+                          { backgroundColor: meta.backgroundColor },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          color={meta.color}
+                          name={meta.icon}
+                          size={20}
+                        />
+                      </View>
+                      <Text
+                        style={[
+                          styles.categorySelectName,
                           {
-                            backgroundColor: isDark
-                              ? colors.surfaceSecondary
-                              : '#F1F5F9',
+                            color: isSelected
+                              ? colors.primary
+                              : colors.textPrimary,
+                            fontWeight: isSelected ? '700' : '600',
                           },
                         ]}
                       >
-                        <View
-                          style={[
-                            styles.catProgressBarFill,
-                            {
-                              backgroundColor: meta.color,
-                              width: (Math.max(4, Math.min(100, percent)) + '%') as any,
-                            },
-                          ]}
-                        />
-                      </View>
-
-                      {matchingBudget && matchingBudget.monthlyLimitMinor != null ? (
-                        <Text
-                          numberOfLines={1}
-                          style={[
-                            styles.budgetHintText,
-                            {
-                              color:
-                                matchingBudget.spentMinor >
-                                matchingBudget.monthlyLimitMinor
-                                  ? colors.destructive
-                                  : colors.textSecondary,
-                            },
-                          ]}
-                        >
-                          {matchingBudget.spentMinor >
-                          matchingBudget.monthlyLimitMinor
-                            ? (t.budgets.statusOverbudget + ' (' + formatMoney(
-                                matchingBudget.spentMinor -
-                                  matchingBudget.monthlyLimitMinor,
-                                summary.currencyCode,
-                              ) + ')')
-                            : (t.budgets.remainingPrefix + ' ' + formatMoney(
-                                Math.max(
-                                  0,
-                                  matchingBudget.monthlyLimitMinor -
-                                    matchingBudget.spentMinor,
-                                ),
-                                summary.currencyCode,
-                              ))}
-                        </Text>
-                      ) : null}
+                        {cat.name}
+                      </Text>
                     </View>
-                  </View>
+
+                    <MaterialCommunityIcons
+                      color={isSelected ? colors.primary : colors.textSecondary}
+                      name={
+                        isSelected
+                          ? 'checkbox-marked-circle'
+                          : 'checkbox-blank-circle-outline'
+                      }
+                      size={24}
+                    />
+                  </Pressable>
                 );
               })}
+            </ScrollView>
+
+            {/* Modal Actions */}
+            <View style={styles.modalActionsRow}>
+              <Pressable
+                accessibilityRole='button'
+                onPress={handleResetQuickLogCategories}
+                style={[styles.modalResetBtn, { borderColor: colors.border }]}
+              >
+                <Text
+                  style={[
+                    styles.modalResetBtnText,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  {t.home.quickLogModalReset}
+                </Text>
+              </Pressable>
+
+              <View style={{ flex: 1 }}>
+                <AppButton
+                  label={t.home.quickLogModalSave}
+                  onPress={() => void handleSaveQuickLogCategories()}
+                  variant='primary'
+                />
+              </View>
             </View>
-          </View>
-        ) : null}
-      </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Modern Floating Undo Toast on Home */}
       {toastVisible && toastMessage ? (
@@ -1350,252 +1329,11 @@ export function HomeScreen() {
     </Screen>
   );
 }
+
 const styles = StyleSheet.create({
-  quickLogCard: {
-    borderRadius: 20,
-    borderWidth: 1,
-    elevation: 2,
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-  },
-  quickLogHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  quickLogIconCircle: {
-    alignItems: 'center',
-    borderRadius: 18,
-    height: 48,
-    justifyContent: 'center',
-    width: 48,
-  },
-  quickLogItem: {
-    alignItems: 'center',
-    gap: 6,
-    width: 62,
-  },
-  quickLogLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  quickLogList: {
-    flexDirection: 'row',
-    gap: spacing.sm + 2,
-    paddingVertical: 2,
-  },
-  quickLogSubtitle: {
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  quickLogTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-  },
-  quickLogTitleRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 4,
-  },
-  badgeMiniPill: {
-    borderRadius: radius.pill,
+  cardHeaderLink: {
     paddingHorizontal: 4,
     paddingVertical: 2,
-  },
-  budgetHintText: {
-    fontSize: 11,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  cardHeaderLink: {
-    flexShrink: 0,
-    paddingVertical: 2,
-  },
-  catAmountText: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  catIconBox: {
-    alignItems: 'center',
-    borderRadius: 12,
-    height: 36,
-    justifyContent: 'center',
-    width: 36,
-  },
-  catInfoCol: {
-    flex: 1,
-    gap: 4,
-  },
-  catNameAmountRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  catNameText: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '700',
-    marginRight: 8,
-  },
-  catProgressBarFill: {
-    borderRadius: radius.pill,
-    height: '100%',
-  },
-  catProgressBarTrack: {
-    borderRadius: radius.pill,
-    height: 6,
-    overflow: 'hidden',
-    width: '100%',
-  },
-  categoryItemRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 12,
-  },
-  categoryList: {
-    gap: 12,
-  },
-  content: {
-    gap: spacing.md,
-    padding: spacing.md,
-    paddingBottom: 130,
-  },
-  currencyTag: {
-    borderRadius: radius.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  currencyTagText: {
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  emptyStateSubtitle: {
-    fontSize: 13,
-    lineHeight: 18,
-    textAlign: 'center',
-  },
-  emptyStateTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  emptyTransactionsWrap: {
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: spacing.lg,
-  },
-  errorCard: {
-    alignItems: 'center',
-    borderRadius: radius.lg,
-    borderWidth: 1.5,
-    gap: spacing.sm,
-    padding: spacing.md,
-  },
-  errorCardText: {
-    fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  headerActionBtn: {
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    height: 38,
-    justifyContent: 'center',
-    width: 38,
-  },
-  headerTopRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  iconCircleExpense: {
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    height: 22,
-    justifyContent: 'center',
-    width: 22,
-  },
-  iconCircleIncome: {
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    height: 22,
-    justifyContent: 'center',
-    width: 22,
-  },
-  integratedCard: {
-    borderRadius: 22,
-    borderWidth: 1.5,
-    elevation: 2,
-    gap: spacing.md,
-    padding: spacing.md + 2,
-    shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-  },
-  integratedCardHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.sm,
-    justifyContent: 'space-between',
-  },
-  integratedCardTitle: {
-    flex: 1,
-    flexShrink: 1,
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  linkText: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  miniIconCircle: {
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    height: 32,
-    justifyContent: 'center',
-    width: 32,
-  },
-  miniWidgetCard: {
-    borderRadius: 18,
-    borderWidth: 1.5,
-    elevation: 2,
-    flex: 1,
-    gap: 4,
-    minWidth: 0,
-    padding: spacing.md,
-    shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-  },
-  miniWidgetHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
-  },
-  miniWidgetSubtext: {
-    fontSize: 11,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  miniWidgetTitle: {
-    flex: 1,
-    flexShrink: 1,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  miniWidgetValue: {
-    fontSize: 16,
-    fontWeight: '900',
-    marginTop: 2,
-  },
-  miniWidgetsRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
   },
   cardPeriodBtn: {
     alignItems: 'center',
@@ -1621,6 +1359,34 @@ const styles = StyleSheet.create({
     gap: 2,
     padding: 3,
   },
+  categorySelectIcon: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  categorySelectLeft: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  categorySelectList: {
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  categorySelectName: {
+    fontSize: 14,
+  },
+  categorySelectRow: {
+    alignItems: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+  },
   cleanHeader: {
     alignItems: 'center',
     borderBottomWidth: 1,
@@ -1629,6 +1395,98 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm + 2,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.xs,
+  },
+  closeToastBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 2,
+  },
+  content: {
+    gap: spacing.md,
+    padding: spacing.md,
+    paddingBottom: 130,
+  },
+  customizeModalHeader: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  customizeModalSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    maxHeight: '80%',
+    paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    width: '100%',
+  },
+  customizeModalSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  customizeModalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  customizeQuickLogBtn: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  customizeQuickLogText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  emptyStateSubtitle: {
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  emptyStateTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  emptyTransactionsWrap: {
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: spacing.lg,
+  },
+  errorCard: {
+    alignItems: 'center',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  errorCardText: {
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  floatingUndoToast: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    bottom: spacing.lg,
+    elevation: 8,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
+    left: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    position: 'absolute',
+    right: spacing.md,
+    shadowColor: '#000000',
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    zIndex: 999,
   },
   headerGreeting: {
     fontSize: 11,
@@ -1640,18 +1498,148 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
+  headerRightActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
   headerTitle: {
     fontSize: 22,
     fontWeight: '900',
     letterSpacing: -0.4,
   },
+  iconCircleExpense: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 22,
+    justifyContent: 'center',
+    width: 22,
+  },
+  iconCircleIncome: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 22,
+    justifyContent: 'center',
+    width: 22,
+  },
+  integratedCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    elevation: 2,
+    gap: spacing.md,
+    padding: spacing.md + 2,
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+  },
+  integratedCardHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  integratedCardTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  linkText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  modalActionsRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+  modalBackdrop: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalCloseBtn: {
+    padding: 4,
+  },
+  modalResetBtn: {
+    alignItems: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
+  },
+  modalResetBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
   pressed: {
     opacity: 0.75,
   },
-  headerRightActions: {
+  quickLogCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    elevation: 2,
+    gap: spacing.sm + 2,
+    padding: spacing.md,
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+  },
+  quickLogHeader: {
     alignItems: 'center',
     flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  quickLogIconCircle: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  quickLogItem: {
+    alignItems: 'center',
+    gap: 6,
+    width: 68,
+  },
+  quickLogLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  quickLogList: {
     gap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  quickLogSubtitle: {
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: 1,
+  },
+  quickLogTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  quickLogTitleCol: {
+    flex: 1,
+  },
+  quickLogTitleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
+  },
+  receiptPill: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  receiptPillText: {
+    color: '#7C3AED',
+    fontSize: 10,
+    fontWeight: '700',
   },
   settingsButton: {
     alignItems: 'center',
@@ -1660,6 +1648,15 @@ const styles = StyleSheet.create({
     height: 42,
     justifyContent: 'center',
     width: 42,
+  },
+  sheetHandle: {
+    borderRadius: radius.pill,
+    height: 4,
+    width: 36,
+  },
+  sheetHandleWrap: {
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
   },
   streakBadge: {
     alignItems: 'center',
@@ -1673,11 +1670,6 @@ const styles = StyleSheet.create({
   streakBadgeText: {
     fontSize: 12,
     fontWeight: '800',
-  },
-  summaryPeriodLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 2,
   },
   summaryCard: {
     borderRadius: 20,
@@ -1697,7 +1689,6 @@ const styles = StyleSheet.create({
   summaryColHeader: {
     alignItems: 'center',
     flexDirection: 'row',
-    flexShrink: 1,
     gap: 6,
   },
   summaryColItem: {
@@ -1706,13 +1697,10 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   summaryColLabel: {
-    flex: 1,
-    flexShrink: 1,
     fontSize: 12,
     fontWeight: '700',
   },
   summaryColsRow: {
-    alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.sm,
     justifyContent: 'space-between',
@@ -1735,6 +1723,11 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     marginTop: 2,
   },
+  summaryPeriodLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
+  },
   summaryTopRow: {
     alignItems: 'flex-start',
     flexDirection: 'row',
@@ -1749,7 +1742,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   timelineCategoryName: {
-    flexShrink: 1,
     fontSize: 12,
     fontWeight: '500',
   },
@@ -1816,31 +1808,6 @@ const styles = StyleSheet.create({
   timelineTrackCol: {
     alignItems: 'center',
     width: 14,
-  },
-  closeToastBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 2,
-  },
-  floatingUndoToast: {
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    bottom: spacing.lg,
-    elevation: 8,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    justifyContent: 'space-between',
-    left: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-    position: 'absolute',
-    right: spacing.md,
-    shadowColor: '#000000',
-    shadowOffset: { height: 4, width: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    zIndex: 999,
   },
   undoButton: {
     alignItems: 'center',
