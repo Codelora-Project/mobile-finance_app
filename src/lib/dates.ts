@@ -156,3 +156,41 @@ export function parseLocalDateStr(value: string): Date {
   }
   return new Date(parts.year, parts.month - 1, parts.day);
 }
+
+export function formatGroupDate(
+  localDate: string,
+  language: string,
+  t: { transactions: { today: string; yesterday: string } },
+) {
+  const parts = parseDatePart(localDate);
+  const date = parts
+    ? new Date(parts.year, parts.month - 1, parts.day)
+    : new Date();
+  const today = new Date();
+  const todayKey = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, '0'),
+    String(today.getDate()).padStart(2, '0'),
+  ].join('-');
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const yesterdayKey = [
+    yesterday.getFullYear(),
+    String(yesterday.getMonth() + 1).padStart(2, '0'),
+    String(yesterday.getDate()).padStart(2, '0'),
+  ].join('-');
+
+  if (localDate === todayKey) {
+    return t.transactions.today;
+  }
+  if (localDate === yesterdayKey) {
+    return t.transactions.yesterday;
+  }
+  const locale = language === 'id' ? 'id-ID' : 'en-US';
+  return new Intl.DateTimeFormat(locale, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
+}
+
