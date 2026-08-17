@@ -19,7 +19,10 @@ const mockCreateTransaction = jest.fn();
 const mockPickManualReceipt =
   jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
+let mockParams: Record<string, string> = {};
+
 jest.mock('expo-router', () => ({
+  useLocalSearchParams: () => mockParams,
   useRouter: () => mockRouter,
 }));
 
@@ -137,6 +140,7 @@ jest.mock('@/features/payment-methods/payment-method-picker', () => ({
 describe('manual transaction form', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockParams = {};
     mockCreateTransaction.mockReset();
     mockPickManualReceipt.mockReset();
   });
@@ -311,5 +315,19 @@ describe('manual transaction form', () => {
     );
     expect(mockRouter.back).not.toHaveBeenCalled();
     alertSpy.mockRestore();
+  });
+  it('prefills category and type when opened via quick category action', async () => {
+    mockParams = { categoryId: '1', categoryName: 'Food & Drink', type: 'expense' };
+
+    await render(
+      <LanguageProvider initialLanguage="en">
+        <ManualTransactionScreen />
+      </LanguageProvider>,
+    );
+
+    expect(
+      screen.getByRole('tab', { name: /Expense/ }).props.accessibilityState,
+    ).toEqual({ selected: true });
+    expect(screen.getAllByText('Food & Drink').length).toBeGreaterThanOrEqual(1);
   });
 });

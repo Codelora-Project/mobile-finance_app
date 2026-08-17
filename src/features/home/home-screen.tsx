@@ -532,7 +532,166 @@ export function HomeScreen() {
           </View>
         ) : null}
 
-        {/* 2.2 MINI WIDGETS: STREAK & GOALS */}
+        {/* 2.2 QUICK CATEGORY LOG (Fast-Track Recording) */}
+        <View
+          style={[
+            styles.quickLogCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              shadowColor: colors.textPrimary,
+            },
+          ]}
+        >
+          <View style={styles.quickLogHeader}>
+            <View style={styles.quickLogTitleRow}>
+              <MaterialCommunityIcons
+                color={colors.primary}
+                name='lightning-bolt'
+                size={18}
+              />
+              <Text
+                style={[
+                  styles.quickLogTitle,
+                  { color: colors.textPrimary },
+                ]}
+              >
+                {language === 'id' ? 'Catat Cepat' : 'Quick Log'}
+              </Text>
+            </View>
+            <Text
+              style={[
+                styles.quickLogSubtitle,
+                { color: colors.textSecondary },
+              ]}
+            >
+              {language === 'id'
+                ? 'Pilih kategori untuk langsung catat'
+                : 'Tap to record instantly'}
+            </Text>
+          </View>
+
+          <ScrollView
+            contentContainerStyle={styles.quickLogList}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+          >
+            {[
+              {
+                id: 1,
+                label: language === 'id' ? 'Makan' : 'Food',
+                name: 'Food & Drink',
+              },
+              {
+                id: 2,
+                label: language === 'id' ? 'Transport' : 'Transport',
+                name: 'Transportation',
+              },
+              {
+                id: 3,
+                label: language === 'id' ? 'Belanja' : 'Shopping',
+                name: 'Shopping',
+              },
+              {
+                id: 4,
+                label: language === 'id' ? 'Tagihan' : 'Bills',
+                name: 'Bills',
+              },
+              {
+                id: 5,
+                label: language === 'id' ? 'Hiburan' : 'Fun',
+                name: 'Entertainment',
+              },
+            ].map((cat) => {
+              const meta = getCategoryMeta(cat.name, 'expense', isDark);
+              return (
+                <Pressable
+                  accessibilityLabel={`Catat ${cat.label}`}
+                  accessibilityRole='button'
+                  key={cat.name}
+                  onPress={() =>
+                    router.push({
+                      params: {
+                        categoryId: String(cat.id),
+                        categoryName: cat.name,
+                        type: 'expense',
+                      },
+                      pathname: '/transactions/new',
+                    })
+                  }
+                  style={({ pressed }) => [
+                    styles.quickLogItem,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.quickLogIconCircle,
+                      { backgroundColor: meta.backgroundColor },
+                    ]}
+                  >
+                    <MaterialCommunityIcons
+                      color={meta.color}
+                      name={meta.icon}
+                      size={22}
+                    />
+                  </View>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.quickLogLabel,
+                      { color: colors.textPrimary },
+                    ]}
+                  >
+                    {cat.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+
+            {/* Custom / Lainnya */}
+            <Pressable
+              accessibilityLabel={language === 'id' ? 'Catat Lainnya' : 'Other'}
+              accessibilityRole='button'
+              onPress={() => router.push('/transactions/new')}
+              style={({ pressed }) => [
+                styles.quickLogItem,
+                pressed && styles.pressed,
+              ]}
+            >
+              <View
+                style={[
+                  styles.quickLogIconCircle,
+                  {
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : '#F1F5F9',
+                    borderColor: isDark ? colors.border : '#CBD5E1',
+                    borderStyle: 'dashed',
+                    borderWidth: 1.5,
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  color={colors.primary}
+                  name='plus'
+                  size={22}
+                />
+              </View>
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.quickLogLabel,
+                  { color: colors.primary, fontWeight: '700' },
+                ]}
+              >
+                {language === 'id' ? '+ Lainnya' : '+ Other'}
+              </Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+
+        {/* 2.3 MINI WIDGETS: STREAK & GOALS */}
         <View style={styles.miniWidgetsRow}>
           {/* Streak Card */}
           <Pressable
@@ -1031,6 +1190,58 @@ export function HomeScreen() {
   );
 }
 const styles = StyleSheet.create({
+  quickLogCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    elevation: 2,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+  },
+  quickLogHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  quickLogIconCircle: {
+    alignItems: 'center',
+    borderRadius: 18,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  quickLogItem: {
+    alignItems: 'center',
+    gap: 6,
+    width: 62,
+  },
+  quickLogLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  quickLogList: {
+    flexDirection: 'row',
+    gap: spacing.sm + 2,
+    paddingVertical: 2,
+  },
+  quickLogSubtitle: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  quickLogTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  quickLogTitleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
+  },
   badgeMiniPill: {
     borderRadius: radius.pill,
     paddingHorizontal: 4,

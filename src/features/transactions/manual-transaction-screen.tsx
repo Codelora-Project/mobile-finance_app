@@ -1,5 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -97,12 +97,15 @@ type ManualTransactionScreenProps = {
   transactionId?: number;
 };
 
-function createDefaultForm(): FormState {
+function createDefaultForm(
+  initialCategory?: SelectedReference | null,
+  initialType?: TransactionType,
+): FormState {
   const now = Date.now();
   const dateTime = toLocalDateTimeInput(now, getTimezoneOffsetMinutes(now));
   return {
     amount: '',
-    category: null,
+    category: initialCategory ?? null,
     counterparty: '',
     date: dateTime.date,
     isReimbursable: false,
@@ -110,7 +113,7 @@ function createDefaultForm(): FormState {
     paymentMethod: null,
     receipt: null,
     time: dateTime.time,
-    type: 'expense',
+    type: initialType ?? 'expense',
   };
 }
 
@@ -280,12 +283,47 @@ export function ManualTransactionScreen({
 }: ManualTransactionScreenProps) {
   const database = useSQLiteContext();
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    categoryId?: string;
+    categoryName?: string;
+    type?: string;
+  }>();
   const { language, t } = useLanguage();
   const { colors, isDark } = useTheme();
   const isEditMode = typeof transactionId === 'number';
 
-  const [form, setForm] = useState<FormState>(createDefaultForm);
-  const [initialForm, setInitialForm] = useState<FormState>(createDefaultForm);
+  const resolvedInitialType: TransactionType =
+    params.type === 'income' ? 'income' : 'expense';
+
+  const resolvedInitialCategory: SelectedReference | null = (() => {
+    if (isEditMode) return null;
+    const catList =
+      resolvedInitialType === 'income'
+        ? INITIAL_INCOME_CATEGORIES
+        : INITIAL_EXPENSE_CATEGORIES;
+    if (params.categoryId) {
+      const idNum = Number(params.categoryId);
+      const found = catList.find((c) => c.id === idNum);
+      if (found) return { id: found.id, name: found.name };
+    }
+    if (params.categoryName) {
+      const targetName = params.categoryName.trim().toLowerCase();
+      const found = catList.find(
+        (c) =>
+          c.name.toLowerCase() === targetName ||
+          c.systemKey?.toLowerCase() === targetName,
+      );
+      if (found) return { id: found.id, name: found.name };
+    }
+    return null;
+  })();
+
+  const [form, setForm] = useState<FormState>(() =>
+    createDefaultForm(resolvedInitialCategory, resolvedInitialType),
+  );
+  const [initialForm, setInitialForm] = useState<FormState>(() =>
+    createDefaultForm(resolvedInitialCategory, resolvedInitialType),
+  );
   const [categoriesList, setCategoriesList] = useState<Category[]>(
     INITIAL_EXPENSE_CATEGORIES,
   );
@@ -324,8 +362,12 @@ export function ManualTransactionScreen({
         toValue: 1,
         useNativeDriver: true,
       }),
-    ]).start();
-  }, [fadeAnim, slideAnim]);
+    ]).start(() => {
+      if (resolvedInitialCategory) {
+        amountInputRef.current?.focus();
+      }
+    });
+  }, [fadeAnim, resolvedInitialCategory, slideAnim]);
 
   const isDirty = useMemo(
     () => serializeForm(form) !== serializeForm(initialForm),
