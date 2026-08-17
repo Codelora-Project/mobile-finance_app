@@ -1,7 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -32,6 +32,7 @@ import {
 import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
+import { parseIntegerInput } from '@/lib/strings';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -106,26 +107,28 @@ export function GoalsScreen() {
     }, [load]),
   );
 
-  const filteredGoals = goals.filter((g) => {
-    if (filterTab === 'active') return !g.isCompleted;
-    if (filterTab === 'completed') return g.isCompleted;
-    return true;
-  });
+  const filteredGoals = useMemo(
+    () =>
+      goals.filter((g) => {
+        if (filterTab === 'active') return !g.isCompleted;
+        if (filterTab === 'completed') return g.isCompleted;
+        return true;
+      }),
+    [goals, filterTab],
+  );
 
   const handleCreateGoal = async () => {
     const trimmedName = name.trim();
     if (!trimmedName) {
-      setFormError('Nama target tabungan harus diisi.');
+      setFormError(t.goals.errorNameRequired);
       return;
     }
-    const targetMinor = parseInt(targetAmount.replace(/\D/g, ''), 10);
-    if (!targetMinor || targetMinor <= 0) {
-      setFormError('Target nominal harus lebih dari 0.');
+    const targetMinor = parseIntegerInput(targetAmount);
+    if (!targetMinor) {
+      setFormError(t.goals.errorTargetRequired);
       return;
     }
-    const initMinor = initialDeposit
-      ? parseInt(initialDeposit.replace(/\D/g, ''), 10)
-      : 0;
+    const initMinor = parseIntegerInput(initialDeposit) ?? 0;
 
     setSaving(true);
     setFormError(null);
@@ -151,9 +154,9 @@ export function GoalsScreen() {
 
   const handleQuickDeposit = async () => {
     if (!depositGoal) return;
-    const amountMinor = parseInt(depositAmount.replace(/\D/g, ''), 10);
-    if (!amountMinor || amountMinor <= 0) {
-      setDepositError('Masukkan nominal setoran yang valid.');
+    const amountMinor = parseIntegerInput(depositAmount);
+    if (!amountMinor) {
+      setDepositError(t.goals.errorDepositInvalid);
       return;
     }
 

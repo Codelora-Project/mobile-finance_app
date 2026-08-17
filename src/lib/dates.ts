@@ -134,3 +134,25 @@ export function parseLocalDateTimeInput(dateValue: string, timeValue: string) {
     timezoneOffsetMinutes: getTimezoneOffsetMinutes(occurredAt),
   };
 }
+
+/**
+ * Parses a local date string in `YYYY-MM-DD` format into a `Date` object
+ * using **local midnight** (no timezone shift).
+ *
+ * Replaces the repeated pattern:
+ * ```ts
+ * const [y, m, d] = localDate.split('-').map(Number);
+ * return new Date(y, m - 1, d);
+ * ```
+ * found across home-screen, transaction-history-screen, habit-repository, and
+ * analytics-repository.
+ *
+ * @throws {RangeError} if the string is not a valid YYYY-MM-DD date.
+ */
+export function parseLocalDateStr(value: string): Date {
+  const parts = parseDatePart(value);
+  if (!parts) {
+    throw new RangeError(`Invalid local date string: "${value}"`);
+  }
+  return new Date(parts.year, parts.month - 1, parts.day);
+}

@@ -27,6 +27,7 @@ import {
 import { isCodedError, mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
+import { parseIntegerInput } from '@/lib/strings';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -115,13 +116,13 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
 
   const handleSubmitTransaction = async () => {
     if (!modalType || !goal) return;
-    const amountMinor = parseInt(amount.replace(/\D/g, ''), 10);
-    if (!amountMinor || amountMinor <= 0) {
-      setModalError('Masukkan nominal angka yang valid.');
+    const amountMinor = parseIntegerInput(amount);
+    if (!amountMinor) {
+      setModalError(t.goals.errorAmountInvalid);
       return;
     }
     if (modalType === 'withdraw' && amountMinor > goal.currentAmountMinor) {
-      setModalError('Nominal penarikan melebihi saldo tabungan saat ini.');
+      setModalError(t.goals.errorDepositInvalid);
       return;
     }
 

@@ -153,7 +153,7 @@ export function WeeklyBarChart({
               </View>
 
               <Text style={[styles.dayLabel, { color: colors.textSecondary }]}>
-                {day.dayName}
+                {t.analytics.dayNames[day.dayOfWeek] ?? ''}
               </Text>
             </View>
           );

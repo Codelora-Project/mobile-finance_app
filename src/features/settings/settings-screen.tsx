@@ -26,21 +26,12 @@ import {
 } from '@/features/settings/settings-repository';
 import { isCodedError, mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
+import { formatShortcutLabel } from '@/lib/money';
+import { parseIntegerInput } from '@/lib/strings';
 import { useTheme, type ThemeSetting } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
-
-function formatShortcutLabel(amount: number): string {
-  if (amount >= 1_000_000) {
-    return `+${amount / 1_000_000}M`;
-  }
-  if (amount >= 1_000) {
-    const k = amount / 1_000;
-    return `+${Number.isInteger(k) ? k : k.toFixed(1)}k`;
-  }
-  return `+${amount}`;
-}
 
 export function SettingsScreen() {
   const database = useSQLiteContext();
@@ -96,13 +87,13 @@ export function SettingsScreen() {
   );
 
   const handleAddShortcut = useCallback(() => {
-    const parsed = parseInt(newShortcutInput.replace(/\D/g, ''), 10);
-    if (!parsed || parsed <= 0) {
-      setShortcutError('Masukkan nominal angka yang valid (contoh: 15000).');
+    const parsed = parseIntegerInput(newShortcutInput);
+    if (!parsed) {
+      setShortcutError(t.settings.errorShortcutInvalid);
       return;
     }
     if (shortcuts.includes(parsed)) {
-      setShortcutError('Nominal ini sudah ada di daftar shortcut.');
+      setShortcutError(t.settings.errorShortcutDuplicate);
       return;
     }
     if (shortcuts.length >= 8) {

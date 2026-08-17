@@ -36,7 +36,7 @@ import type { TransactionListItem } from '@/features/transactions/transaction-re
 import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
 import type { Language } from '@/lib/i18n/translations';
-import { formatMoney } from '@/lib/money';
+import { formatMoney, formatSignedMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -63,15 +63,6 @@ function formatTransactionDate(localDate: string, language: Language) {
   }).format(parseLocalDate(localDate));
 }
 
-function formatNet(amountMinor: number, currencyCode: string) {
-  if (amountMinor < 0) {
-    return `−${formatMoney(Math.abs(amountMinor), currencyCode)}`;
-  }
-  if (amountMinor > 0) {
-    return `+${formatMoney(amountMinor, currencyCode)}`;
-  }
-  return formatMoney(0, currencyCode);
-}
 
 function transactionTitle(
   transaction: TransactionListItem,
@@ -273,7 +264,7 @@ export function HomeScreen() {
 
         {/* Hero Card: Net Balance Overview */}
         <View
-          accessibilityLabel={`Net balance: ${formatNet(summary.netMinor, summary.currencyCode)}`}
+          accessibilityLabel={`Net balance: ${formatSignedMoney(summary.netMinor, summary.currencyCode)}`}
           style={[
             styles.heroCard,
             {
@@ -308,7 +299,7 @@ export function HomeScreen() {
               },
             ]}
           >
-            {formatNet(summary.netMinor, summary.currencyCode)}
+            {formatSignedMoney(summary.netMinor, summary.currencyCode)}
           </Text>
 
           <View
@@ -322,7 +313,7 @@ export function HomeScreen() {
                 <View
                   style={[
                     styles.iconCircleIncome,
-                    { backgroundColor: isDark ? '#14532D' : '#DCFCE7' },
+                    { backgroundColor: colors.incomeBackground },
                   ]}
                 >
                   <MaterialCommunityIcons
@@ -355,7 +346,7 @@ export function HomeScreen() {
                 <View
                   style={[
                     styles.iconCircleExpense,
-                    { backgroundColor: isDark ? '#7F1D1D' : '#FEE2E2' },
+                    { backgroundColor: colors.expenseBackground },
                   ]}
                 >
                   <MaterialCommunityIcons
@@ -488,7 +479,7 @@ export function HomeScreen() {
           ) : null}
 
           {/* Celengan Impian Widget */}
-          <View style={styles.sectionHeaderBetween}>
+          <View style={styles.sectionHeader}>
             <Text
               accessibilityRole="header"
               style={[styles.sectionTitle, { color: colors.textPrimary }]}
@@ -561,7 +552,7 @@ export function HomeScreen() {
 
         {/* Spending by Category Section */}
         <View style={styles.section}>
-          <View style={styles.sectionHeaderBetween}>
+          <View style={styles.sectionHeader}>
             <Text
               accessibilityRole="header"
               style={[styles.sectionTitle, { color: colors.textPrimary }]}
@@ -747,7 +738,7 @@ export function HomeScreen() {
 
         {/* Recent Transactions Section */}
         <View style={styles.section}>
-          <View style={styles.sectionHeaderBetween}>
+          <View style={styles.sectionHeader}>
             <Text
               accessibilityRole="header"
               style={[styles.sectionTitle, { color: colors.textPrimary }]}
@@ -1324,12 +1315,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   sectionHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-  },
-  sectionHeaderBetween: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',

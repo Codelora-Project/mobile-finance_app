@@ -257,3 +257,43 @@ export function sumMoney(amountsMinor: readonly number[]) {
 
   return totalMinor;
 }
+
+/**
+ * Formats a signed net amount with a `+` or `−` prefix.
+ * Positive values get `+`, negative values get `−` (true minus, not hyphen),
+ * and zero returns the plain currency string without a sign.
+ *
+ * Replaces the `formatNet()` helper that was duplicated in home-screen and
+ * analytics-screen.
+ */
+export function formatSignedMoney(
+  amountMinor: number,
+  currencyCode: string,
+  locale?: string,
+) {
+  if (amountMinor < 0) {
+    return `\u2212${formatMoney(Math.abs(amountMinor), currencyCode, locale)}`;
+  }
+  if (amountMinor > 0) {
+    return `+${formatMoney(amountMinor, currencyCode, locale)}`;
+  }
+  return formatMoney(0, currencyCode, locale);
+}
+
+/**
+ * Formats a shortcut amount into a compact label: `+15k`, `+1.5M`, `+500`.
+ *
+ * Replaces the `formatShortcutLabel()` helper that was duplicated in
+ * settings-screen and manual-transaction-screen.
+ */
+export function formatShortcutLabel(amount: number): string {
+  if (amount >= 1_000_000) {
+    return `+${amount / 1_000_000}M`;
+  }
+  if (amount >= 1_000) {
+    const k = amount / 1_000;
+    return `+${Number.isInteger(k) ? k : k.toFixed(1)}k`;
+  }
+  return `+${amount}`;
+}
+

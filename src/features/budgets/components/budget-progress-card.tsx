@@ -29,9 +29,9 @@ export function BudgetProgressCard({
       case 'overbudget':
       case 'danger':
         return {
-          badgeBg: isDark ? '#7F1D1D' : '#FEE2E2',
-          badgeText: '#EF4444',
-          barColor: '#EF4444',
+          badgeBg: colors.expenseBackground,
+          badgeText: colors.destructive,
+          barColor: colors.destructive,
           label:
             budget.status === 'overbudget'
               ? t.budgets.statusOverbudget
@@ -39,14 +39,14 @@ export function BudgetProgressCard({
         };
       case 'warning':
         return {
-          badgeBg: isDark ? '#78350F' : '#FEF3C7',
-          badgeText: '#F59E0B',
-          barColor: '#F59E0B',
+          badgeBg: colors.warningBackground,
+          badgeText: colors.warning,
+          barColor: colors.warning,
           label: t.budgets.statusWarning,
         };
       default:
         return {
-          badgeBg: isDark ? '#14532D' : '#DCFCE7',
+          badgeBg: colors.incomeBackground,
           badgeText: colors.positive,
           barColor: colors.positive,
           label: t.budgets.statusSafe,
@@ -65,7 +65,7 @@ export function BudgetProgressCard({
         {
           backgroundColor: colors.surface,
           borderColor:
-            budget.status === 'overbudget' ? '#EF4444' : colors.border,
+            budget.status === 'overbudget' ? colors.destructive : colors.border,
           shadowColor: colors.textPrimary,
         },
       ]}

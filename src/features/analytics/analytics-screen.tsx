@@ -28,20 +28,11 @@ import {
 import { BudgetProgressCard } from '@/features/budgets/components/budget-progress-card';
 import { SetBudgetModal } from '@/features/budgets/components/set-budget-modal';
 import { useLanguage } from '@/lib/i18n/language-context';
-import { formatMoney } from '@/lib/money';
+import { formatMoney, formatSignedMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 
-function formatNet(amountMinor: number, currencyCode: string) {
-  if (amountMinor < 0) {
-    return `−${formatMoney(Math.abs(amountMinor), currencyCode)}`;
-  }
-  if (amountMinor > 0) {
-    return `+${formatMoney(amountMinor, currencyCode)}`;
-  }
-  return formatMoney(0, currencyCode);
-}
 
 type TabMode = 'overview' | 'budgets' | 'trends';
 
@@ -512,7 +503,7 @@ export function AnalyticsScreen() {
                             },
                           ]}
                         >
-                          {formatNet(flow.netMinor, currencyCode)}
+                          {formatSignedMoney(flow.netMinor, currencyCode)}
                         </Text>
                       </View>
 

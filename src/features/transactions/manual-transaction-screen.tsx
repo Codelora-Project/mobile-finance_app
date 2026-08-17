@@ -57,23 +57,18 @@ import {
 } from '@/features/settings/settings-repository';
 import { isCodedError, mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
-import { formatMoney, formatMoneyInput, parseMoneyInput } from '@/lib/money';
+import {
+  formatMoney,
+  formatMoneyInput,
+  formatShortcutLabel,
+  parseMoneyInput,
+} from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { colors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
-function formatShortcutLabel(amount: number): string {
-  if (amount >= 1_000_000) {
-    return `+${amount / 1_000_000}M`;
-  }
-  if (amount >= 1_000) {
-    const k = amount / 1_000;
-    return `+${Number.isInteger(k) ? k : k.toFixed(1)}k`;
-  }
-  return `+${amount}`;
-}
 
 type SelectedReference = Readonly<{ id: number; name: string }>;
 

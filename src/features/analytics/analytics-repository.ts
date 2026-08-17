@@ -11,7 +11,7 @@ export type CategoryBreakdownItem = Readonly<{
 }>;
 
 export type DailyComparisonItem = Readonly<{
-  dayName: string;
+  dayOfWeek: number; // 0 = Sunday, 1 = Monday, …, 6 = Saturday
   dayIndex: number;
   thisWeekMinor: number;
   lastWeekMinor: number;
@@ -77,7 +77,6 @@ function formatEpochDays(epochDays: number): string {
   return `${y}-${m}-${d}`;
 }
 
-const DAY_LABELS_ID = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
 export async function getAnalyticsData(
   database: SQLiteDatabase,
@@ -185,7 +184,7 @@ export async function getAnalyticsData(
 
     dailyBreakdown.push({
       dayIndex: i,
-      dayName: DAY_LABELS_ID[dayOfWeek] ?? '',
+      dayOfWeek,
       thisWeekMinor: thisMinor,
       lastWeekMinor: lastMinor,
     });

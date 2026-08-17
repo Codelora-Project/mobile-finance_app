@@ -118,6 +118,10 @@ export type TranslationSchema = {
     cancel: string;
     continue: string;
     done: string;
+    // Shortcut validation messages
+    errorShortcutInvalid: string;
+    errorShortcutDuplicate: string;
+    errorShortcutMinimum: string;
   };
   goals: {
     title: string;
@@ -148,6 +152,11 @@ export type TranslationSchema = {
     totalSavingsCollected: string;
     targetNotFound: string;
     daysUnit: string;
+    // Validation messages
+    errorNameRequired: string;
+    errorTargetRequired: string;
+    errorDepositInvalid: string;
+    errorAmountInvalid: string;
   };
   habits: {
     streakTitle: string;
@@ -186,6 +195,8 @@ export type TranslationSchema = {
     incomePrefix: string;
     expensePrefix: string;
     loadingAnalytics: string;
+    /** Short day names, index 0=Sun…6=Sat */
+    dayNames: readonly [string, string, string, string, string, string, string];
   };
   budgets: {
     title: string;
@@ -372,6 +383,9 @@ export const translations: Record<Language, TranslationSchema> = {
       cancel: 'Batal',
       continue: 'Lanjutkan',
       done: 'Selesai',
+      errorShortcutInvalid: 'Masukkan nominal angka yang valid (contoh: 15000).',
+      errorShortcutDuplicate: 'Nominal ini sudah ada di daftar shortcut.',
+      errorShortcutMinimum: 'Aplikasi membutuhkan minimal 1 tombol shortcut nominal.',
     },
     // Goals / Celengan Impian
     goals: {
@@ -405,6 +419,10 @@ export const translations: Record<Language, TranslationSchema> = {
       totalSavingsCollected: 'Total Tabungan Terkumpul',
       targetNotFound: 'Target tabungan tidak ditemukan.',
       daysUnit: 'Hari',
+      errorNameRequired: 'Nama target tabungan harus diisi.',
+      errorTargetRequired: 'Target nominal harus lebih dari 0.',
+      errorDepositInvalid: 'Masukkan nominal setoran yang valid.',
+      errorAmountInvalid: 'Masukkan nominal angka yang valid.',
     },
     // Habits & Streaks
     habits: {
@@ -446,6 +464,7 @@ export const translations: Record<Language, TranslationSchema> = {
       incomePrefix: 'Masuk',
       expensePrefix: 'Keluar',
       loadingAnalytics: 'Memuat analisis finansial...',
+      dayNames: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'],
     },
     // Budgets
     budgets: {
@@ -633,6 +652,9 @@ export const translations: Record<Language, TranslationSchema> = {
       cancel: 'Cancel',
       continue: 'Continue',
       done: 'Done',
+      errorShortcutInvalid: 'Enter a valid amount (e.g. 15000).',
+      errorShortcutDuplicate: 'This amount is already in your shortcuts list.',
+      errorShortcutMinimum: 'At least 1 shortcut button is required.',
     },
     // Goals / Savings Goals
     goals: {
@@ -666,6 +688,10 @@ export const translations: Record<Language, TranslationSchema> = {
       totalSavingsCollected: 'Total Savings Accumulated',
       targetNotFound: 'Savings goal not found.',
       daysUnit: 'Days',
+      errorNameRequired: 'Goal name is required.',
+      errorTargetRequired: 'Target amount must be greater than 0.',
+      errorDepositInvalid: 'Enter a valid deposit amount.',
+      errorAmountInvalid: 'Enter a valid amount.',
     },
     // Habits & Streaks
     habits: {
@@ -707,6 +733,7 @@ export const translations: Record<Language, TranslationSchema> = {
       incomePrefix: 'Income',
       expensePrefix: 'Expense',
       loadingAnalytics: 'Loading financial analytics...',
+      dayNames: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
     },
     // Budgets
     budgets: {
