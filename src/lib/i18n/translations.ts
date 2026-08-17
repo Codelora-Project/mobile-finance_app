@@ -15,6 +15,11 @@ export type TranslationSchema = {
     net: string;
     income: string;
     expensesThisMonth: string;
+    periodDaily: string;
+    periodWeekly: string;
+    periodMonthly: string;
+    periodYearly: string;
+    totalBalance: string;
     quickAddTransaction: string;
     quickScanReceipt: string;
     spendingByCategory: string;
@@ -270,7 +275,12 @@ export const translations: Record<Language, TranslationSchema> = {
       appTitle: 'Personal Finance',
       net: 'Sisa Saldo',
       income: 'Uang Masuk',
-      expensesThisMonth: 'Uang Keluar',
+      expensesThisMonth: 'Pengeluaran',
+      periodDaily: 'Harian',
+      periodWeekly: 'Mingguan',
+      periodMonthly: 'Bulanan',
+      periodYearly: 'Tahunan',
+      totalBalance: 'Total',
       quickAddTransaction: '+ Catat Transaksi',
       quickScanReceipt: 'Foto Struk',
       spendingByCategory: 'Pengeluaran per Kategori',
@@ -552,6 +562,11 @@ export const translations: Record<Language, TranslationSchema> = {
       net: 'Net',
       income: 'Income',
       expensesThisMonth: 'Expenses',
+      periodDaily: 'Daily',
+      periodWeekly: 'Weekly',
+      periodMonthly: 'Monthly',
+      periodYearly: 'Yearly',
+      totalBalance: 'Total',
       quickAddTransaction: '+ Add Transaction',
       quickScanReceipt: 'Photo Receipt',
       spendingByCategory: 'Spending by category',

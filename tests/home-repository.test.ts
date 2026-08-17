@@ -204,7 +204,7 @@ describe('home repository', () => {
     const database = new HomeDatabase();
     const now = Date.UTC(2026, 7, 15, 5, 0, 0);
 
-    const summary = await getHomeSummary(database.asSQLiteDatabase(), now, 420);
+    const summary = await getHomeSummary(database.asSQLiteDatabase(), 'monthly', new Date(2026, 7, 15), 'id');
 
     expect(summary).toMatchObject({
       categoryTotals: [
@@ -222,13 +222,15 @@ describe('home repository', () => {
       currencyCode: 'IDR',
       expenseMinor: 50_000,
       incomeMinor: 100_000,
-      monthStart: '2026-08-01',
+      startDate: '2026-08-01',
+      endDateExclusive: '2026-09-01',
+      period: 'monthly',
       netMinor: 50_000,
-      nextMonthStart: '2026-09-01',
+      
     });
-    expect(summary.recentTransactions).toHaveLength(5);
+    expect(summary.recentTransactions).toHaveLength(6);
     expect(summary.recentTransactions.map(({ id }) => id)).toEqual([
-      1, 2, 3, 4, 5,
+      1, 2, 3, 4, 5, 6,
     ]);
 
     const totalsCall = database.calls.find((call) =>
@@ -251,7 +253,7 @@ describe('home repository', () => {
     const recentCall = database.calls.find((call) =>
       call.sql.includes('ORDER BY t.occurred_at DESC, t.id DESC'),
     );
-    expect(recentCall?.parameters).toEqual([6, 0]);
+    expect(recentCall?.parameters).toEqual([9, 0]);
   });
 
   it('rolls December into the next year and rejects a missing currency setting', async () => {
@@ -263,7 +265,7 @@ describe('home repository', () => {
     const database = new HomeDatabase();
     database.currencyCode = null;
     await expect(
-      getHomeSummary(database.asSQLiteDatabase(), Date.UTC(2026, 7, 15), 420),
+      getHomeSummary(database.asSQLiteDatabase(), 'monthly', new Date(2026, 7, 15), 'id'),
     ).rejects.toMatchObject({
       code: 'DATABASE_WRITE_FAILED',
       message: 'The default currency setting is invalid.',
