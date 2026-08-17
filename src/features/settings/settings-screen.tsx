@@ -777,6 +777,66 @@ export function SettingsScreen() {
                   ]}
                 />
 
+                {/* Backup & Restore Row */}
+                <Pressable
+                  accessibilityLabel={t.backup.title}
+                  accessibilityRole="button"
+                  onPress={() => router.push('/settings/backup')}
+                  style={({ pressed }) => [
+                    styles.navRowItem,
+                    pressed ? styles.rowPressed : null,
+                  ]}
+                >
+                  <View style={styles.navRowLeft}>
+                    <View
+                      style={[
+                        styles.itemIconBadge,
+                        {
+                          backgroundColor: isDark
+                            ? colors.surfaceSecondary
+                            : '#DBEAFE',
+                        },
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        color="#2563EB"
+                        name="database-sync-outline"
+                        size={19}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[
+                          styles.navRowTitle,
+                          { color: colors.textPrimary },
+                        ]}
+                      >
+                        {t.backup.title}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.navRowSubtitle,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {t.backup.subtitle}
+                      </Text>
+                    </View>
+                  </View>
+                  <MaterialCommunityIcons
+                    color={colors.textSecondary}
+                    name="chevron-right"
+                    size={22}
+                  />
+                </Pressable>
+
+                <View
+                  style={[
+                    styles.cardInnerDivider,
+                    { backgroundColor: colors.border },
+                  ]}
+                />
+
                 {/* Currency Row (Read Only) */}
                 <View
                   accessibilityLabel="Currency, Indonesian Rupiah, IDR, read only"

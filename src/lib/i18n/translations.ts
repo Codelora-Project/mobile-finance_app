@@ -266,6 +266,41 @@ export type TranslationSchema = {
     back: string;
     tryAgain: string;
   };
+  backup: {
+    title: string;
+    subtitle: string;
+    vaultBadge: string;
+    vaultDesc: string;
+    statsTitle: string;
+    transactions: string;
+    categories: string;
+    paymentMethods: string;
+    goals: string;
+    claims: string;
+    budgets: string;
+    backupSection: string;
+    backupDesc: string;
+    createBackupBtn: string;
+    restoreSection: string;
+    restoreDesc: string;
+    selectBackupBtn: string;
+    restoreWarning: string;
+    previewTitle: string;
+    previewSubtitle: string;
+    exportedAt: string;
+    confirmRestoreBtn: string;
+    restoreSuccessTitle: string;
+    restoreSuccessDesc: string;
+    csvSection: string;
+    csvDesc: string;
+    exportCsvBtn: string;
+    noTransactions: string;
+    creatingBackup: string;
+    exportingCsv: string;
+    restoringData: string;
+    backupCreatedSuccess: string;
+    csvCreatedSuccess: string;
+  };
 };
 
 export const translations: Record<Language, TranslationSchema> = {
@@ -564,6 +599,48 @@ export const translations: Record<Language, TranslationSchema> = {
       back: 'Kembali',
       tryAgain: 'Coba lagi',
     },
+    // Backup & Restore
+    backup: {
+      title: 'Cadangkan & Pulihkan',
+      subtitle: 'Kelola cadangan data lokal dan ekspor laporan',
+      vaultBadge: '100% Offline & Aman',
+      vaultDesc:
+        'Data keuangan Anda disimpan langsung di perangkat ini. Buat cadangan secara berkala agar catatan keuangan tetap aman saat berganti perangkat.',
+      statsTitle: 'Ringkasan Data Saat Ini',
+      transactions: 'Transaksi',
+      categories: 'Kategori',
+      paymentMethods: 'Metode Bayar',
+      goals: 'Target Tabungan',
+      claims: 'Klaim',
+      budgets: 'Anggaran Kategori',
+      backupSection: 'Cadangkan Data (JSON)',
+      backupDesc:
+        'Ekspor seluruh database aplikasi ke file .json. Anda bisa menyimpannya di Google Drive, membagikannya via WhatsApp, email, atau File Manager.',
+      createBackupBtn: 'Buat & Bagikan Cadangan (JSON)',
+      restoreSection: 'Pulihkan Data (JSON)',
+      restoreDesc:
+        'Pilih file cadangan (.json) dari perangkat Anda untuk memulihkan seluruh data catatan keuangan.',
+      selectBackupBtn: 'Pilih File Cadangan (.json)',
+      restoreWarning:
+        'Perhatian: Pemulihan akan menggantikan semua data lokal saat ini dengan data dari file cadangan.',
+      previewTitle: 'Pratinjau File Cadangan',
+      previewSubtitle: 'Periksa rincian data sebelum memulihkan',
+      exportedAt: 'Tanggal Cadangan Dibuat',
+      confirmRestoreBtn: 'Pulihkan & Timpa Data Sekarang',
+      restoreSuccessTitle: 'Pemulihan Berhasil!',
+      restoreSuccessDesc:
+        'Seluruh data keuangan berhasil dipulihkan dari file cadangan.',
+      csvSection: 'Ekspor Laporan Transaksi (CSV / Excel)',
+      csvDesc:
+        'Ekspor seluruh riwayat transaksi ke format CSV yang dapat dibuka langsung di Microsoft Excel atau Google Sheets.',
+      exportCsvBtn: 'Ekspor Transaksi (.csv)',
+      noTransactions: 'Belum ada data transaksi untuk diekspor.',
+      creatingBackup: 'Membuat file cadangan...',
+      exportingCsv: 'Menyiapkan file CSV...',
+      restoringData: 'Memulihkan data...',
+      backupCreatedSuccess: 'File cadangan berhasil dibuat dan siap dibagikan.',
+      csvCreatedSuccess: 'File CSV berhasil dibuat dan siap dibagikan.',
+    },
   },
   en: {
     // Navigation Tabs
@@ -857,6 +934,48 @@ export const translations: Record<Language, TranslationSchema> = {
       edit: 'Edit',
       back: 'Back',
       tryAgain: 'Try again',
+    },
+    // Backup & Restore
+    backup: {
+      title: 'Backup & Restore',
+      subtitle: 'Manage local data backups and export reports',
+      vaultBadge: '100% Offline & Private',
+      vaultDesc:
+        'Your financial records are stored directly on this device. Create regular backups to keep your data safe when switching phones.',
+      statsTitle: 'Current Data Summary',
+      transactions: 'Transactions',
+      categories: 'Categories',
+      paymentMethods: 'Payment Methods',
+      goals: 'Savings Goals',
+      claims: 'Claims',
+      budgets: 'Category Budgets',
+      backupSection: 'Backup Data (JSON)',
+      backupDesc:
+        'Export your entire database to a .json file. You can store it on Google Drive, share via WhatsApp, email, or save to Files.',
+      createBackupBtn: 'Create & Share Backup (JSON)',
+      restoreSection: 'Restore Data (JSON)',
+      restoreDesc:
+        'Pick a backup (.json) file from your device to restore all your financial records.',
+      selectBackupBtn: 'Select Backup File (.json)',
+      restoreWarning:
+        'Warning: Restoring will replace all current local data with the records from the backup file.',
+      previewTitle: 'Backup File Preview',
+      previewSubtitle: 'Review data details before restoring',
+      exportedAt: 'Backup Created Date',
+      confirmRestoreBtn: 'Restore & Overwrite Data Now',
+      restoreSuccessTitle: 'Restore Successful!',
+      restoreSuccessDesc:
+        'All financial data has been successfully restored from the backup file.',
+      csvSection: 'Export Transaction Report (CSV / Excel)',
+      csvDesc:
+        'Export all transaction history into a clean CSV format that opens directly in Microsoft Excel or Google Sheets.',
+      exportCsvBtn: 'Export Transactions (.csv)',
+      noTransactions: 'No transaction records to export.',
+      creatingBackup: 'Creating backup file...',
+      exportingCsv: 'Preparing CSV file...',
+      restoringData: 'Restoring data...',
+      backupCreatedSuccess: 'Backup file created and ready to share.',
+      csvCreatedSuccess: 'CSV report created and ready to share.',
     },
   },
 };
