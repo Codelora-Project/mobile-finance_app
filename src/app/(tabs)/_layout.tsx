@@ -1,7 +1,8 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Tabs, useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import type { ColorValue } from 'react-native';
+import { useCallback, useEffect, useRef } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useLanguage } from '@/lib/i18n/language-context';
@@ -11,225 +12,337 @@ import { spacing } from '@/theme/spacing';
 
 type TabIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
-function TabIcon({
-  color,
-  focused,
-  name,
-}: {
-  color: ColorValue;
-  focused?: boolean;
-  name: TabIconName;
-}) {
-  const { isDark } = useTheme();
-
-  return (
-    <View
-      style={[
-        styles.iconContainer,
-        focused
-          ? [
-              styles.iconPillFocused,
-              { backgroundColor: isDark ? '#1E3A8A' : '#EFF6FF' },
-            ]
-          : null,
-      ]}
-    >
-      <MaterialCommunityIcons
-        accessibilityElementsHidden
-        color={color}
-        importantForAccessibility="no-hide-descendants"
-        name={name}
-        size={22}
-      />
-    </View>
-  );
+function getTabIcon(routeName: string, focused: boolean): TabIconName {
+  switch (routeName) {
+    case 'index':
+      return focused ? 'home-variant' : 'home-variant-outline';
+    case 'transactions':
+      return focused ? 'format-list-bulleted-square' : 'format-list-bulleted';
+    case 'analytics':
+      return focused ? 'chart-box' : 'chart-box-outline';
+    case 'claims':
+      return focused ? 'file-document' : 'file-document-outline';
+    default:
+      return 'circle';
+  }
 }
 
-function AddActionButton({ label }: { label: string }) {
-  const router = useRouter();
+function TabItem({
+  focused,
+  label,
+  name,
+  onPress,
+}: {
+  focused: boolean;
+  label: string;
+  name: string;
+  onPress: () => void;
+}) {
   const { colors, isDark } = useTheme();
+  const scaleAnim = useRef(new Animated.Value(focused ? 1 : 0.88)).current;
+
+  useEffect(() => {
+    Animated.spring(scaleAnim, {
+      friction: 6,
+      tension: 140,
+      toValue: focused ? 1 : 0.88,
+      useNativeDriver: true,
+    }).start();
+  }, [focused, scaleAnim]);
+
+  const activeBg = isDark ? '#1E3A8A' : '#EFF6FF';
+  const activeColor = colors.primary;
+  const inactiveColor = colors.textSecondary;
+  const iconName = getTabIcon(name, focused);
 
   return (
     <Pressable
       accessibilityLabel={label}
       accessibilityRole="button"
-      hitSlop={8}
-      onPress={() => router.push('/transactions/new')}
-      style={({ pressed }) => [
-        styles.addAction,
-        pressed ? styles.addActionPressed : null,
-      ]}
+      accessibilityState={{ selected: focused }}
+      hitSlop={4}
+      onPress={onPress}
+      style={styles.tabItemPressable}
     >
-      <View
+      <Animated.View
         style={[
-          styles.addCircle,
-          {
-            backgroundColor: colors.primary,
-            borderColor: isDark ? '#334155' : colors.surface,
-            shadowColor: colors.primary,
-          },
+          styles.iconContainer,
+          focused
+            ? [
+                styles.iconPillFocused,
+                {
+                  backgroundColor: activeBg,
+                  transform: [{ scale: scaleAnim }],
+                },
+              ]
+            : null,
         ]}
       >
         <MaterialCommunityIcons
           accessibilityElementsHidden
-          color="#FFFFFF"
+          color={focused ? activeColor : inactiveColor}
           importantForAccessibility="no-hide-descendants"
-          name="plus"
-          size={28}
+          name={iconName}
+          size={22}
         />
-      </View>
+      </Animated.View>
+      <Text
+        numberOfLines={1}
+        style={[
+          styles.tabLabel,
+          {
+            color: focused ? activeColor : inactiveColor,
+            fontWeight: focused ? '800' : '600',
+          },
+        ]}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
 
-export default function MainTabLayout() {
+function FloatingActionButton({ label }: { label: string }) {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { t } = useLanguage();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
+  const fabScale = useRef(new Animated.Value(1)).current;
 
-  const bottomPadding = insets.bottom > 0 ? insets.bottom : spacing.xs + 2;
-  const tabHeight = 60 + bottomPadding;
+  const handlePressIn = useCallback(() => {
+    Animated.spring(fabScale, {
+      friction: 5,
+      tension: 200,
+      toValue: 0.92,
+      useNativeDriver: true,
+    }).start();
+  }, [fabScale]);
+
+  const handlePressOut = useCallback(() => {
+    Animated.spring(fabScale, {
+      friction: 5,
+      tension: 200,
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  }, [fabScale]);
+
+  const bottomMargin = insets.bottom > 0 ? insets.bottom + 10 : 20;
+  const fabBottom = bottomMargin + 72;
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarHideOnKeyboard: true,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarItemStyle: styles.tabBarItem,
-        tabBarLabelStyle: styles.tabLabel,
-        tabBarStyle: [
-          styles.dockTabBar,
+    <View
+      pointerEvents="box-none"
+      style={[styles.fabContainer, { bottom: fabBottom }]}
+    >
+      <Animated.View style={{ transform: [{ scale: fabScale }] }}>
+        <Pressable
+          accessibilityLabel={label}
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={() => router.push('/transactions/new')}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          style={[
+            styles.fabButton,
+            {
+              backgroundColor: colors.primary,
+              shadowColor: colors.primary,
+            },
+          ]}
+        >
+          <MaterialCommunityIcons
+            accessibilityElementsHidden
+            color="#FFFFFF"
+            importantForAccessibility="no-hide-descendants"
+            name="plus"
+            size={28}
+          />
+        </Pressable>
+      </Animated.View>
+    </View>
+  );
+}
+
+function CustomFloatingTabBar({
+  descriptors,
+  navigation,
+  state,
+}: BottomTabBarProps) {
+  const insets = useSafeAreaInsets();
+  const { colors, isDark } = useTheme();
+
+  const bottomMargin = insets.bottom > 0 ? insets.bottom + 10 : 20;
+
+  const visibleRoutes = state.routes.filter(
+    (route) => route.name !== 'action' && route.name !== 'settings',
+  );
+
+  return (
+    <View
+      pointerEvents="box-none"
+      style={[styles.barWrapper, { bottom: bottomMargin }]}
+    >
+      <View
+        style={[
+          styles.floatingPillBar,
           {
             backgroundColor: colors.surface,
-            borderTopColor: isDark ? 'rgba(51, 65, 85, 0.7)' : colors.border,
-            height: tabHeight,
-            paddingBottom: bottomPadding,
+            borderColor: colors.border,
             shadowColor: isDark ? '#000000' : colors.textPrimary,
           },
-        ],
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon
-              color={color}
-              focused={focused}
-              name={focused ? 'home-variant' : 'home-variant-outline'}
+        ]}
+      >
+        {visibleRoutes.map((route) => {
+          const isFocused = state.routes[state.index]?.name === route.name;
+          const { options } = descriptors[route.key] || {};
+          const label =
+            typeof options?.title === 'string' ? options.title : route.name;
+
+          const onPress = () => {
+            const event = navigation.emit({
+              canPreventDefault: true,
+              target: route.key,
+              type: 'tabPress',
+            });
+
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
+
+          return (
+            <TabItem
+              focused={isFocused}
+              key={route.key}
+              label={label}
+              name={route.name}
+              onPress={onPress}
             />
-          ),
-          title: t.tabs.home,
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+export default function MainTabLayout() {
+  const { t } = useLanguage();
+
+  return (
+    <View style={styles.rootContainer}>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarHideOnKeyboard: true,
         }}
-      />
-      <Tabs.Screen
-        name="transactions"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon
-              color={color}
-              focused={focused}
-              name={
-                focused ? 'format-list-bulleted-square' : 'format-list-bulleted'
-              }
-            />
-          ),
-          title: t.tabs.transactions,
-        }}
-      />
-      <Tabs.Screen
-        name="action"
-        options={{
-          tabBarButton: () => <AddActionButton label={t.tabs.add} />,
-          title: t.tabs.add,
-        }}
-      />
-      <Tabs.Screen
-        name="analytics"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon
-              color={color}
-              focused={focused}
-              name={focused ? 'chart-box' : 'chart-box-outline'}
-            />
-          ),
-          title: t.tabs.analytics,
-        }}
-      />
-      <Tabs.Screen
-        name="claims"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon
-              color={color}
-              focused={focused}
-              name={focused ? 'file-document' : 'file-document-outline'}
-            />
-          ),
-          title: t.tabs.claims,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          href: null,
-        }}
-      />
-    </Tabs>
+        tabBar={(props) => <CustomFloatingTabBar {...props} />}
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: t.tabs.home,
+          }}
+        />
+        <Tabs.Screen
+          name="transactions"
+          options={{
+            title: t.tabs.transactions,
+          }}
+        />
+        <Tabs.Screen
+          name="action"
+          options={{
+            href: null,
+            title: t.tabs.add,
+          }}
+        />
+        <Tabs.Screen
+          name="analytics"
+          options={{
+            title: t.tabs.analytics,
+          }}
+        />
+        <Tabs.Screen
+          name="claims"
+          options={{
+            title: t.tabs.claims,
+          }}
+        />
+        <Tabs.Screen
+          name="settings"
+          options={{
+            href: null,
+          }}
+        />
+      </Tabs>
+
+      {/* Floating Action Button (FAB) aligned right with card */}
+      <FloatingActionButton label={t.tabs.add} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  addAction: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-    marginTop: -16,
+  barWrapper: {
+    left: spacing.md,
+    position: 'absolute',
+    right: spacing.md,
+    zIndex: 900,
   },
-  addActionPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.93 }],
-  },
-  addCircle: {
+  fabButton: {
     alignItems: 'center',
     borderRadius: radius.pill,
-    borderWidth: 3.5,
-    elevation: 4,
+    elevation: 8,
     height: 52,
     justifyContent: 'center',
-    shadowOffset: { height: 3, width: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
     width: 52,
   },
-  dockTabBar: {
-    borderTopWidth: 1,
-    elevation: 4,
-    paddingHorizontal: 4,
-    paddingTop: 4,
-    shadowOffset: { height: -2, width: 0 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
+  fabContainer: {
+    alignItems: 'flex-end',
+    position: 'absolute',
+    right: spacing.md,
+    zIndex: 999,
+  },
+  floatingPillBar: {
+    alignItems: 'center',
+    borderRadius: 24,
+    borderWidth: 1,
+    elevation: 8,
+    flexDirection: 'row',
+    height: 64,
+    justifyContent: 'space-around',
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    width: '100%',
   },
   iconContainer: {
     alignItems: 'center',
     borderRadius: radius.pill,
-    height: 26,
+    height: 28,
     justifyContent: 'center',
     width: 48,
   },
   iconPillFocused: {
-    borderRadius: 13,
+    borderRadius: 14,
   },
-  tabBarItem: {
+  rootContainer: {
+    flex: 1,
+  },
+  tabItemPressable: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
     paddingVertical: 2,
   },
   tabLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    marginTop: 1,
+    fontSize: 10,
+    marginTop: 2,
+    textAlign: 'center',
   },
 });

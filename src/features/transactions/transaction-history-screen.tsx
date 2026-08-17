@@ -1188,7 +1188,7 @@ const styles = StyleSheet.create({
   },
 
   list: {
-    paddingBottom: spacing.xxl,
+    paddingBottom: 130,
     paddingTop: spacing.xs,
   },
   pressed: {

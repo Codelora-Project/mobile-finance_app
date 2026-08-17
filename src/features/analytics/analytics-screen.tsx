@@ -622,7 +622,7 @@ const styles = StyleSheet.create({
   },
   content: {
     gap: spacing.lg,
-    paddingBottom: spacing.xl,
+    paddingBottom: 130,
     paddingHorizontal: spacing.md,
   },
   emptyDesc: {

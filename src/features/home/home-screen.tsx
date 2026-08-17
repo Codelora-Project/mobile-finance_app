@@ -1437,7 +1437,7 @@ const styles = StyleSheet.create({
   content: {
     gap: spacing.md,
     padding: spacing.md,
-    paddingBottom: spacing.xxl + spacing.lg,
+    paddingBottom: 130,
   },
   currencyTag: {
     borderRadius: radius.pill,
