@@ -22,13 +22,16 @@ jest.mock('@/features/receipts/receipt-storage', () => ({
 }));
 
 class ResetDatabase {
+  categoryBudgets = 1;
   categorySystemKeys = new Set(['expense_food', 'custom_category']);
   claimItems = 2;
   claims = 1;
   currency = 'IDR';
   executedSql: string[] = [];
+  goalTransactions = 2;
   paymentSystemKeys = new Set(['cash', 'custom_method']);
   receipts = 1;
+  savingsGoals = 1;
   settings = new Map([
     ['default_currency_code', 'IDR'],
     ['welcome_seen', 'true'],
@@ -53,6 +56,9 @@ class ResetDatabase {
 
   async execAsync(source: string) {
     this.executedSql.push(source);
+    this.goalTransactions = 0;
+    this.savingsGoals = 0;
+    this.categoryBudgets = 0;
     this.claimItems = 0;
     this.receipts = 0;
     this.claims = 0;
@@ -106,6 +112,9 @@ describe('settings repository', () => {
 
     await resetApplicationData(database.asSQLiteDatabase());
 
+    expect(database.savingsGoals).toBe(0);
+    expect(database.goalTransactions).toBe(0);
+    expect(database.categoryBudgets).toBe(0);
     expect(database.claimItems).toBe(0);
     expect(database.receipts).toBe(0);
     expect(database.claims).toBe(0);
@@ -123,6 +132,9 @@ describe('settings repository', () => {
         ['language', 'id'],
       ]),
     );
+    expect(database.executedSql[0]).toContain('DELETE FROM goal_transactions');
+    expect(database.executedSql[0]).toContain('DELETE FROM savings_goals');
+    expect(database.executedSql[0]).toContain('DELETE FROM category_budgets');
     expect(database.executedSql[0]).toContain('DELETE FROM claim_items');
     expect(database.executedSql[0]).toContain(
       'DELETE FROM categories WHERE is_default = 0',

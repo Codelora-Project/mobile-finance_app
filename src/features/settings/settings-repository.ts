@@ -150,6 +150,9 @@ export async function setQuickShortcutsSetting(
 async function resetDatabase(database: SQLiteDatabase) {
   await database.withExclusiveTransactionAsync(async (transaction) => {
     await transaction.execAsync(`
+      DELETE FROM goal_transactions;
+      DELETE FROM savings_goals;
+      DELETE FROM category_budgets;
       DELETE FROM claim_items;
       DELETE FROM receipts;
       DELETE FROM claims;
