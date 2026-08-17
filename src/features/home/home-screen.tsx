@@ -223,114 +223,50 @@ export function HomeScreen() {
   const headerBg = isDark ? '#0F172A' : '#1D4ED8';
   return (
     <Screen>
-      {/* 1. TOP SOLID BLUE HEADER */}
-      <View style={[styles.solidHeader, { backgroundColor: headerBg }]}>
-        {/* Row 1: Period Navigator (< Bulan >) & Top Actions */}
-        <View style={styles.headerTopRow}>
-          <View style={styles.periodSwitcher}>
-            <Pressable
-              accessibilityLabel='Previous period'
-              accessibilityRole='button'
-              hitSlop={12}
-              onPress={() => handleShiftDate(-1)}
-              style={({ pressed }) => [
-                styles.navArrowBtn,
-                pressed && styles.pressed,
-              ]}
-            >
-              <MaterialCommunityIcons
-                color='#FFFFFF'
-                name='chevron-left'
-                size={28}
-              />
-            </Pressable>
-
-            <Pressable
-              accessibilityLabel='Period label'
-              onPress={handleResetToToday}
-              style={styles.periodLabelWrap}
-            >
-              <Text numberOfLines={1} style={styles.periodLabelText}>
-                {summary?.periodLabel ?? '...'}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              accessibilityLabel='Next period'
-              accessibilityRole='button'
-              hitSlop={12}
-              onPress={() => handleShiftDate(1)}
-              style={({ pressed }) => [
-                styles.navArrowBtn,
-                pressed && styles.pressed,
-              ]}
-            >
-              <MaterialCommunityIcons
-                color='#FFFFFF'
-                name='chevron-right'
-                size={28}
-              />
-            </Pressable>
-          </View>
-
-          {/* Settings Shortcut */}
-          <Pressable
-            accessibilityLabel={t.tabs.settings}
-            accessibilityRole='button'
-            hitSlop={8}
-            onPress={() => router.push('/settings')}
-            style={({ pressed }) => [
-              styles.headerActionBtn,
-              pressed && styles.pressed,
-            ]}
+      {/* 1. CLEAN MODERN TOP HEADER */}
+      <View
+        style={[
+          styles.cleanHeader,
+          {
+            backgroundColor: colors.surface,
+            borderBottomColor: colors.border,
+          },
+        ]}
+      >
+        <View style={styles.headerLeft}>
+          <Text
+            style={[styles.headerGreeting, { color: colors.textSecondary }]}
           >
-            <MaterialCommunityIcons
-              color='#FFFFFF'
-              name='cog-outline'
-              size={22}
-            />
-          </Pressable>
+            {t.home.greeting}
+          </Text>
+          <Text
+            accessibilityRole='header'
+            style={[styles.headerTitle, { color: colors.textPrimary }]}
+          >
+            {t.home.appTitle}
+          </Text>
         </View>
 
-        {/* Row 2: Period Filter Segment Tabs (Harian | Mingguan | Bulanan | Tahunan) */}
-        <View style={styles.periodTabsRow}>
-          {(
-            [
-              { key: 'daily', label: t.home.periodDaily },
-              { key: 'weekly', label: t.home.periodWeekly },
-              { key: 'monthly', label: t.home.periodMonthly },
-              { key: 'yearly', label: t.home.periodYearly },
-            ] as const
-          ).map((tab) => {
-            const isSelected = period === tab.key;
-            return (
-              <Pressable
-                accessibilityRole='tab'
-                accessibilityState={{ selected: isSelected }}
-                key={tab.key}
-                onPress={() => handlePeriodChange(tab.key)}
-                style={[
-                  styles.periodTabPill,
-                  isSelected
-                    ? styles.periodTabPillActive
-                    : styles.periodTabPillInactive,
-                ]}
-              >
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    styles.periodTabText,
-                    isSelected
-                      ? { color: headerBg, fontWeight: '800' }
-                      : { color: '#FFFFFF', fontWeight: '600' },
-                  ]}
-                >
-                  {tab.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        <Pressable
+          accessibilityLabel={t.tabs.settings}
+          accessibilityRole='button'
+          hitSlop={8}
+          onPress={() => router.push('/settings')}
+          style={({ pressed }) => [
+            styles.settingsButton,
+            {
+              backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+              borderColor: colors.border,
+            },
+            pressed && styles.pressed,
+          ]}
+        >
+          <MaterialCommunityIcons
+            color={colors.textPrimary}
+            name='cog-outline'
+            size={22}
+          />
+        </Pressable>
       </View>
 
       {/* 2. MAIN SCROLLABLE BODY */}
@@ -385,7 +321,7 @@ export function HomeScreen() {
               },
             ]}
           >
-            {/* Total Balance / Sisa Saldo Header */}
+            {/* Hero: Total Expenses + Card-Level Period Toggle */}
             <View style={styles.summaryTopRow}>
               <View style={{ flex: 1 }}>
                 <Text
@@ -394,7 +330,7 @@ export function HomeScreen() {
                     { color: colors.textSecondary },
                   ]}
                 >
-                  {t.home.totalBalance}
+                  {t.home.expensesThisMonth}
                 </Text>
                 <Text
                   adjustsFontSizeToFit
@@ -402,37 +338,74 @@ export function HomeScreen() {
                   numberOfLines={1}
                   style={[
                     styles.summaryNetValue,
-                    {
-                      color:
-                        summary.netMinor >= 0
-                          ? colors.textPrimary
-                          : colors.destructive,
-                    },
+                    { color: colors.textPrimary },
                   ]}
                 >
-                  {formatSignedMoney(summary.netMinor, summary.currencyCode)}
+                  {formatMoney(summary.expenseMinor, summary.currencyCode)}
+                </Text>
+                <Text
+                  style={[
+                    styles.summaryPeriodLabel,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  {summary.periodLabel}
                 </Text>
               </View>
 
-              {/* Currency Tag */}
+              {/* Compact Period Switcher [Harian | Bulanan] */}
               <View
                 style={[
-                  styles.currencyTag,
+                  styles.cardPeriodToggle,
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
                       : '#F1F5F9',
+                    borderColor: colors.border,
                   },
                 ]}
               >
-                <Text
-                  style={[
-                    styles.currencyTagText,
-                    { color: colors.textSecondary },
-                  ]}
-                >
-                  {summary.currencyCode}
-                </Text>
+                {(
+                  [
+                    { key: 'daily', label: t.home.periodDaily },
+                    { key: 'monthly', label: t.home.periodMonthly },
+                  ] as const
+                ).map((tab) => {
+                  const isSelected = period === tab.key;
+                  return (
+                    <Pressable
+                      accessibilityRole='tab'
+                      accessibilityState={{ selected: isSelected }}
+                      key={tab.key}
+                      onPress={() => handlePeriodChange(tab.key)}
+                      style={[
+                        styles.cardPeriodBtn,
+                        isSelected
+                          ? [
+                              styles.cardPeriodBtnActive,
+                              {
+                                backgroundColor: colors.primary,
+                              },
+                            ]
+                          : null,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.cardPeriodBtnText,
+                          {
+                            color: isSelected
+                              ? '#FFFFFF'
+                              : colors.textSecondary,
+                            fontWeight: isSelected ? '700' : '600',
+                          },
+                        ]}
+                      >
+                        {tab.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
 
@@ -440,7 +413,7 @@ export function HomeScreen() {
               style={[styles.summaryDivider, { backgroundColor: colors.border }]}
             />
 
-            {/* Income & Expense 2-Column Split */}
+            {/* Income & Total Net 2-Column Split */}
             <View style={styles.summaryColsRow}>
               {/* Income */}
               <View style={styles.summaryColItem}>
@@ -489,20 +462,30 @@ export function HomeScreen() {
                 ]}
               />
 
-              {/* Expense */}
+              {/* Total Balance / Sisa Saldo */}
               <View style={styles.summaryColItem}>
                 <View style={styles.summaryColHeader}>
                   <View
                     style={[
                       styles.iconCircleExpense,
                       {
-                        backgroundColor: isDark ? '#7F1D1D' : '#FEE2E2',
+                        backgroundColor: isDark
+                          ? summary.netMinor >= 0
+                            ? '#1E3A8A'
+                            : '#7F1D1D'
+                          : summary.netMinor >= 0
+                            ? '#EFF6FF'
+                            : '#FEE2E2',
                       },
                     ]}
                   >
                     <MaterialCommunityIcons
-                      color={colors.destructive}
-                      name='arrow-down'
+                      color={
+                        summary.netMinor >= 0
+                          ? colors.primary
+                          : colors.destructive
+                      }
+                      name='scale-balance'
                       size={14}
                     />
                   </View>
@@ -513,7 +496,7 @@ export function HomeScreen() {
                       { color: colors.textSecondary },
                     ]}
                   >
-                    {t.home.expensesThisMonth}
+                    {t.home.totalBalance}
                   </Text>
                 </View>
                 <Text
@@ -522,10 +505,17 @@ export function HomeScreen() {
                   numberOfLines={1}
                   style={[
                     styles.summaryExpenseValue,
-                    { color: colors.destructive },
+                    {
+                      color:
+                        summary.netMinor >= 0
+                          ? colors.textPrimary
+                          : colors.destructive,
+                    },
                   ]}
                 >
-                  {formatMoney(summary.expenseMinor, summary.currencyCode)}
+                  {summary.netMinor >= 0
+                    ? formatMoney(summary.netMinor, summary.currencyCode)
+                    : `− ${formatMoney(Math.abs(summary.netMinor), summary.currencyCode)}`}
                 </Text>
               </View>
             </View>
@@ -691,282 +681,7 @@ export function HomeScreen() {
           </ScrollView>
         </View>
 
-        {/* 2.3 MINI WIDGETS: STREAK & GOALS */}
-        <View style={styles.miniWidgetsRow}>
-          {/* Streak Card */}
-          <Pressable
-            accessibilityLabel='Habit Streak'
-            accessibilityRole='button'
-            onPress={() => router.push('/goals')}
-            style={({ pressed }) => [
-              styles.miniWidgetCard,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                shadowColor: colors.textPrimary,
-              },
-              pressed && styles.pressed,
-            ]}
-          >
-            <View style={styles.miniWidgetHeader}>
-              <View
-                style={[
-                  styles.miniIconCircle,
-                  { backgroundColor: isDark ? '#78350F' : '#FEF3C7' },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  color='#D97706'
-                  name='fire'
-                  size={18}
-                />
-              </View>
-              <Text
-                numberOfLines={1}
-                style={[
-                  styles.miniWidgetTitle,
-                  { color: colors.textSecondary },
-                ]}
-              >
-                {t.habits.streakTitle}
-              </Text>
-            </View>
-            <Text
-              adjustsFontSizeToFit
-              minimumFontScale={0.8}
-              numberOfLines={1}
-              style={[styles.miniWidgetValue, { color: colors.textPrimary }]}
-            >
-              {habitStats?.currentStreak ?? 0} {t.habits.streakDays}
-            </Text>
-            <Text
-              adjustsFontSizeToFit
-              minimumFontScale={0.8}
-              numberOfLines={1}
-              style={[
-                styles.miniWidgetSubtext,
-                { color: colors.textSecondary },
-              ]}
-            >
-              {habitStats
-                ? (t.habits.noSpendTitle + ': ' + habitStats.noSpendDaysThisMonth + ' ' + t.habits.noSpendDays)
-                : t.habits.streakBest}
-            </Text>
-          </Pressable>
-
-          {/* Goal Card */}
-          <Pressable
-            accessibilityLabel='Savings Goal'
-            accessibilityRole='button'
-            onPress={() => router.push('/goals')}
-            style={({ pressed }) => [
-              styles.miniWidgetCard,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                shadowColor: colors.textPrimary,
-              },
-              pressed && styles.pressed,
-            ]}
-          >
-            <View style={styles.miniWidgetHeader}>
-              <View
-                style={[
-                  styles.miniIconCircle,
-                  { backgroundColor: isDark ? '#1E3A8A' : '#EFF6FF' },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  color='#2563EB'
-                  name='piggy-bank-outline'
-                  size={18}
-                />
-              </View>
-              <Text
-                numberOfLines={1}
-                style={[
-                  styles.miniWidgetTitle,
-                  { color: colors.textSecondary },
-                ]}
-              >
-                {t.goals.title}
-              </Text>
-            </View>
-            <Text
-              adjustsFontSizeToFit
-              minimumFontScale={0.8}
-              numberOfLines={1}
-              style={[styles.miniWidgetValue, { color: colors.textPrimary }]}
-            >
-              {featuredGoal ? featuredGoal.name : t.goals.noGoalsYet}
-            </Text>
-            <Text
-              adjustsFontSizeToFit
-              minimumFontScale={0.8}
-              numberOfLines={1}
-              style={[
-                styles.miniWidgetSubtext,
-                {
-                  color: featuredGoal?.isCompleted
-                    ? colors.positive
-                    : colors.primary,
-                },
-              ]}
-            >
-              {featuredGoal
-                ? (featuredGoal.progressPercent + '% ' + t.goals.saved.toLowerCase())
-                : t.goals.createFirstGoal}
-            </Text>
-          </Pressable>
-        </View>
-        {/* 2.3 CATEGORY SPENDING BREAKDOWN */}
-        {summary && summary.categoryTotals.length > 0 ? (
-          <View
-            style={[
-              styles.integratedCard,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                shadowColor: colors.textPrimary,
-              },
-            ]}
-          >
-            <View style={styles.integratedCardHeader}>
-              <Text
-                numberOfLines={1}
-                style={[
-                  styles.integratedCardTitle,
-                  { color: colors.textPrimary },
-                ]}
-              >
-                {t.home.spendingByCategory}
-              </Text>
-              <Pressable
-                hitSlop={8}
-                onPress={() => router.push('/budgets')}
-                style={({ pressed }) => [
-                  styles.cardHeaderLink,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <Text
-                  numberOfLines={1}
-                  style={[styles.linkText, { color: colors.primary }]}
-                >
-                  {t.budgets.manageBudgets}
-                </Text>
-              </Pressable>
-            </View>
-
-            <View style={styles.categoryList}>
-              {summary.categoryTotals.map((item) => {
-                const meta = getCategoryMeta(item.categoryName, 'expense', isDark);
-                const percent =
-                  summary.expenseMinor > 0
-                    ? Math.round((item.amountMinor / summary.expenseMinor) * 100)
-                    : 0;
-
-                const matchingBudget = categoryBudgets.find(
-                  (b) => b.categoryId === item.categoryId,
-                );
-
-                return (
-                  <View key={item.categoryId} style={styles.categoryItemRow}>
-                    <View
-                      style={[
-                        styles.catIconBox,
-                        { backgroundColor: meta.backgroundColor },
-                      ]}
-                    >
-                      <MaterialCommunityIcons
-                        color={meta.color}
-                        name={meta.icon}
-                        size={18}
-                      />
-                    </View>
-
-                    <View style={styles.catInfoCol}>
-                      <View style={styles.catNameAmountRow}>
-                        <Text
-                          numberOfLines={1}
-                          style={[
-                            styles.catNameText,
-                            { color: colors.textPrimary },
-                          ]}
-                        >
-                          {item.categoryName}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.catAmountText,
-                            { color: colors.textPrimary },
-                          ]}
-                        >
-                          {formatMoney(item.amountMinor, summary.currencyCode)}
-                        </Text>
-                      </View>
-
-                      <View
-                        style={[
-                          styles.catProgressBarTrack,
-                          {
-                            backgroundColor: isDark
-                              ? colors.surfaceSecondary
-                              : '#F1F5F9',
-                          },
-                        ]}
-                      >
-                        <View
-                          style={[
-                            styles.catProgressBarFill,
-                            {
-                              backgroundColor: meta.color,
-                              width: (Math.max(4, Math.min(100, percent)) + '%') as any,
-                            },
-                          ]}
-                        />
-                      </View>
-
-                      {matchingBudget && matchingBudget.monthlyLimitMinor != null ? (
-                        <Text
-                          numberOfLines={1}
-                          style={[
-                            styles.budgetHintText,
-                            {
-                              color:
-                                matchingBudget.spentMinor >
-                                matchingBudget.monthlyLimitMinor
-                                  ? colors.destructive
-                                  : colors.textSecondary,
-                            },
-                          ]}
-                        >
-                          {matchingBudget.spentMinor >
-                          matchingBudget.monthlyLimitMinor
-                            ? (t.budgets.statusOverbudget + ' (' + formatMoney(
-                                matchingBudget.spentMinor -
-                                  matchingBudget.monthlyLimitMinor,
-                                summary.currencyCode,
-                              ) + ')')
-                            : (t.budgets.remainingPrefix + ' ' + formatMoney(
-                                Math.max(
-                                  0,
-                                  matchingBudget.monthlyLimitMinor -
-                                    matchingBudget.spentMinor,
-                                ),
-                                summary.currencyCode,
-                              ))}
-                        </Text>
-                      ) : null}
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-        ) : null}
-
-        {/* 2.4 TIMELINE TREE LIST: RECENT TRANSACTIONS */}
+        {/* 2.3 TIMELINE TREE LIST: RECENT TRANSACTIONS */}
         <View
           style={[
             styles.integratedCard,
@@ -1185,6 +900,282 @@ export function HomeScreen() {
             </View>
           )}
         </View>
+
+        {/* 2.4 MINI WIDGETS: STREAK & GOALS */}
+        <View style={styles.miniWidgetsRow}>
+          {/* Streak Card */}
+          <Pressable
+            accessibilityLabel='Habit Streak'
+            accessibilityRole='button'
+            onPress={() => router.push('/goals')}
+            style={({ pressed }) => [
+              styles.miniWidgetCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                shadowColor: colors.textPrimary,
+              },
+              pressed && styles.pressed,
+            ]}
+          >
+            <View style={styles.miniWidgetHeader}>
+              <View
+                style={[
+                  styles.miniIconCircle,
+                  { backgroundColor: isDark ? '#78350F' : '#FEF3C7' },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  color='#D97706'
+                  name='fire'
+                  size={18}
+                />
+              </View>
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.miniWidgetTitle,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {t.habits.streakTitle}
+              </Text>
+            </View>
+            <Text
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}
+              numberOfLines={1}
+              style={[styles.miniWidgetValue, { color: colors.textPrimary }]}
+            >
+              {habitStats?.currentStreak ?? 0} {t.habits.streakDays}
+            </Text>
+            <Text
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}
+              numberOfLines={1}
+              style={[
+                styles.miniWidgetSubtext,
+                { color: colors.textSecondary },
+              ]}
+            >
+              {habitStats
+                ? (t.habits.noSpendTitle + ': ' + habitStats.noSpendDaysThisMonth + ' ' + t.habits.noSpendDays)
+                : t.habits.streakBest}
+            </Text>
+          </Pressable>
+
+          {/* Goal Card */}
+          <Pressable
+            accessibilityLabel='Savings Goal'
+            accessibilityRole='button'
+            onPress={() => router.push('/goals')}
+            style={({ pressed }) => [
+              styles.miniWidgetCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                shadowColor: colors.textPrimary,
+              },
+              pressed && styles.pressed,
+            ]}
+          >
+            <View style={styles.miniWidgetHeader}>
+              <View
+                style={[
+                  styles.miniIconCircle,
+                  { backgroundColor: isDark ? '#1E3A8A' : '#EFF6FF' },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  color='#2563EB'
+                  name='piggy-bank-outline'
+                  size={18}
+                />
+              </View>
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.miniWidgetTitle,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {t.goals.title}
+              </Text>
+            </View>
+            <Text
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}
+              numberOfLines={1}
+              style={[styles.miniWidgetValue, { color: colors.textPrimary }]}
+            >
+              {featuredGoal ? featuredGoal.name : t.goals.noGoalsYet}
+            </Text>
+            <Text
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}
+              numberOfLines={1}
+              style={[
+                styles.miniWidgetSubtext,
+                {
+                  color: featuredGoal?.isCompleted
+                    ? colors.positive
+                    : colors.primary,
+                },
+              ]}
+            >
+              {featuredGoal
+                ? (featuredGoal.progressPercent + '% ' + t.goals.saved.toLowerCase())
+                : t.goals.createFirstGoal}
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* 2.5 CATEGORY SPENDING BREAKDOWN */}
+        {summary && summary.categoryTotals.length > 0 ? (
+          <View
+            style={[
+              styles.integratedCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                shadowColor: colors.textPrimary,
+              },
+            ]}
+          >
+            <View style={styles.integratedCardHeader}>
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.integratedCardTitle,
+                  { color: colors.textPrimary },
+                ]}
+              >
+                {t.home.spendingByCategory}
+              </Text>
+              <Pressable
+                hitSlop={8}
+                onPress={() => router.push('/budgets')}
+                style={({ pressed }) => [
+                  styles.cardHeaderLink,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text
+                  numberOfLines={1}
+                  style={[styles.linkText, { color: colors.primary }]}
+                >
+                  {t.budgets.manageBudgets}
+                </Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.categoryList}>
+              {summary.categoryTotals.map((item) => {
+                const meta = getCategoryMeta(item.categoryName, 'expense', isDark);
+                const percent =
+                  summary.expenseMinor > 0
+                    ? Math.round((item.amountMinor / summary.expenseMinor) * 100)
+                    : 0;
+
+                const matchingBudget = categoryBudgets.find(
+                  (b) => b.categoryId === item.categoryId,
+                );
+
+                return (
+                  <View key={item.categoryId} style={styles.categoryItemRow}>
+                    <View
+                      style={[
+                        styles.catIconBox,
+                        { backgroundColor: meta.backgroundColor },
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        color={meta.color}
+                        name={meta.icon}
+                        size={18}
+                      />
+                    </View>
+
+                    <View style={styles.catInfoCol}>
+                      <View style={styles.catNameAmountRow}>
+                        <Text
+                          numberOfLines={1}
+                          style={[
+                            styles.catNameText,
+                            { color: colors.textPrimary },
+                          ]}
+                        >
+                          {item.categoryName}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.catAmountText,
+                            { color: colors.textPrimary },
+                          ]}
+                        >
+                          {formatMoney(item.amountMinor, summary.currencyCode)}
+                        </Text>
+                      </View>
+
+                      <View
+                        style={[
+                          styles.catProgressBarTrack,
+                          {
+                            backgroundColor: isDark
+                              ? colors.surfaceSecondary
+                              : '#F1F5F9',
+                          },
+                        ]}
+                      >
+                        <View
+                          style={[
+                            styles.catProgressBarFill,
+                            {
+                              backgroundColor: meta.color,
+                              width: (Math.max(4, Math.min(100, percent)) + '%') as any,
+                            },
+                          ]}
+                        />
+                      </View>
+
+                      {matchingBudget && matchingBudget.monthlyLimitMinor != null ? (
+                        <Text
+                          numberOfLines={1}
+                          style={[
+                            styles.budgetHintText,
+                            {
+                              color:
+                                matchingBudget.spentMinor >
+                                matchingBudget.monthlyLimitMinor
+                                  ? colors.destructive
+                                  : colors.textSecondary,
+                            },
+                          ]}
+                        >
+                          {matchingBudget.spentMinor >
+                          matchingBudget.monthlyLimitMinor
+                            ? (t.budgets.statusOverbudget + ' (' + formatMoney(
+                                matchingBudget.spentMinor -
+                                  matchingBudget.monthlyLimitMinor,
+                                summary.currencyCode,
+                              ) + ')')
+                            : (t.budgets.remainingPrefix + ' ' + formatMoney(
+                                Math.max(
+                                  0,
+                                  matchingBudget.monthlyLimitMinor -
+                                    matchingBudget.spentMinor,
+                                ),
+                                summary.currencyCode,
+                              ))}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        ) : null}
       </ScrollView>
     </Screen>
   );
@@ -1436,75 +1427,79 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
   },
-  navArrowBtn: {
+  cardPeriodBtn: {
     alignItems: 'center',
     borderRadius: radius.pill,
-    height: 36,
     justifyContent: 'center',
-    width: 36,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
-  periodLabelText: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '900',
-    letterSpacing: -0.3,
-  },
-  periodLabelWrap: {
-    paddingHorizontal: 6,
-  },
-  periodSwitcher: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 4,
-  },
-  periodTabPill: {
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    flex: 1,
-    justifyContent: 'center',
-    paddingVertical: 7,
-  },
-  periodTabPillActive: {
-    backgroundColor: '#FFFFFF',
-    elevation: 2,
+  cardPeriodBtnActive: {
+    elevation: 1,
     shadowColor: '#000000',
-    shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+    shadowOffset: { height: 1, width: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
-  periodTabPillInactive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+  cardPeriodBtnText: {
+    fontSize: 11,
   },
-  periodTabText: {
-    fontSize: 12,
-  },
-  periodTabsRow: {
+  cardPeriodToggle: {
+    borderRadius: radius.pill,
+    borderWidth: 1,
     flexDirection: 'row',
-    gap: 6,
-    marginTop: spacing.sm,
+    gap: 2,
+    padding: 3,
+  },
+  cleanHeader: {
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingBottom: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.xs,
+  },
+  headerGreeting: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  headerLeft: {
+    flex: 1,
+    gap: 2,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: -0.4,
   },
   pressed: {
     opacity: 0.75,
   },
-  solidHeader: {
-    elevation: 4,
-    paddingBottom: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    shadowColor: '#1D4ED8',
-    shadowOffset: { height: 4, width: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
+  settingsButton: {
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    height: 42,
+    justifyContent: 'center',
+    width: 42,
+  },
+  summaryPeriodLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
   },
   summaryCard: {
-    borderRadius: 22,
-    borderWidth: 1.5,
-    elevation: 3,
+    borderRadius: 20,
+    borderWidth: 1,
+    elevation: 2,
     gap: spacing.md,
-    marginTop: -4,
+    marginTop: 0,
     padding: spacing.md + 2,
-    shadowOffset: { height: 3, width: 0 },
-    shadowOpacity: 0.07,
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.05,
     shadowRadius: 8,
   },
   summaryCardSubtitle: {
