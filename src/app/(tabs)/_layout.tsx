@@ -53,7 +53,7 @@ function AddActionButton({ label }: { label: string }) {
     <Pressable
       accessibilityLabel={label}
       accessibilityRole="button"
-      hitSlop={6}
+      hitSlop={8}
       onPress={() => router.push('/transactions/new')}
       style={({ pressed }) => [
         styles.addAction,
@@ -78,9 +78,6 @@ function AddActionButton({ label }: { label: string }) {
           size={28}
         />
       </View>
-      <Text style={[styles.addLabel, { color: colors.textSecondary }]}>
-        {label}
-      </Text>
     </Pressable>
   );
 }
@@ -189,32 +186,27 @@ const styles = StyleSheet.create({
   addAction: {
     alignItems: 'center',
     flex: 1,
-    justifyContent: 'flex-start',
-    marginTop: -14,
+    justifyContent: 'center',
+    marginTop: -16,
   },
   addActionPressed: {
     opacity: 0.85,
-    transform: [{ scale: 0.94 }],
+    transform: [{ scale: 0.93 }],
   },
   addCircle: {
     alignItems: 'center',
     borderRadius: radius.pill,
     borderWidth: 3.5,
     elevation: 4,
-    height: 48,
+    height: 52,
     justifyContent: 'center',
-    shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
-    width: 48,
-  },
-  addLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    marginTop: 2,
+    shadowOffset: { height: 3, width: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    width: 52,
   },
   dockTabBar: {
-    borderTopWidth: 1.5,
+    borderTopWidth: 1,
     elevation: 4,
     paddingHorizontal: 4,
     paddingTop: 4,

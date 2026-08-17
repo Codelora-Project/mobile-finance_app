@@ -926,7 +926,7 @@ const styles = StyleSheet.create({
   },
   content: {
     gap: spacing.md + 2,
-    paddingBottom: spacing.xxl + spacing.lg,
+    paddingBottom: spacing.xl,
   },
   dailyGridRow: {
     flexDirection: 'row',

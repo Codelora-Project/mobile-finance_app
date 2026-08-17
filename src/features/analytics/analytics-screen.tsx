@@ -626,8 +626,9 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   content: {
-    gap: spacing.md,
-    paddingBottom: spacing.xxl + spacing.md,
+    gap: spacing.lg,
+    paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.md,
   },
   emptyDesc: {
     fontSize: 13,

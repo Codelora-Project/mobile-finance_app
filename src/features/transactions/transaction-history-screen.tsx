@@ -115,6 +115,7 @@ function buildRows(items: readonly TransactionListItem[]) {
 export function TransactionHistoryScreen() {
   const database = useSQLiteContext();
   const router = useRouter();
+  const { filter } = useLocalSearchParams<{ filter?: string }>();
   const { language, t } = useLanguage();
   const { colors, isDark } = useTheme();
   const { feedback } = useLocalSearchParams<{
@@ -1002,7 +1003,7 @@ const styles = StyleSheet.create({
     paddingLeft: spacing.xs,
   },
   list: {
-    paddingBottom: spacing.xxl + spacing.md,
+    paddingBottom: spacing.xl,
     paddingTop: spacing.xs,
   },
   pressed: {
