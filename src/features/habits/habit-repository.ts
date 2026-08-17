@@ -2,19 +2,27 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { getTimezoneOffsetMinutes, toLocalDate } from '@/lib/dates';
 
+export type StreakBadgeKey =
+  | 'starter'
+  | 'momentum'
+  | 'consistent'
+  | 'champion'
+  | 'master'
+  | 'legend';
+
 export type StreakBadge = Readonly<{
-  title: string;
+  key: StreakBadgeKey;
   emoji: string;
   minDays: number;
 }>;
 
 export const STREAK_BADGES: readonly StreakBadge[] = [
-  { emoji: '🌱', minDays: 1, title: 'Pemula Disiplin' },
-  { emoji: '🔥', minDays: 3, title: 'Api Semangat' },
-  { emoji: '⚡', minDays: 7, title: '1 Minggu Konsisten' },
-  { emoji: '🌟', minDays: 14, title: '2 Minggu Juara' },
-  { emoji: '💎', minDays: 30, title: 'Master Finansial 1 Bulan' },
-  { emoji: '👑', minDays: 60, title: 'Legenda Disiplin' },
+  { emoji: '🌱', key: 'starter', minDays: 1 },
+  { emoji: '🔥', key: 'momentum', minDays: 3 },
+  { emoji: '⚡', key: 'consistent', minDays: 7 },
+  { emoji: '🌟', key: 'champion', minDays: 14 },
+  { emoji: '💎', key: 'master', minDays: 30 },
+  { emoji: '👑', key: 'legend', minDays: 60 },
 ];
 
 export type HabitStats = Readonly<{

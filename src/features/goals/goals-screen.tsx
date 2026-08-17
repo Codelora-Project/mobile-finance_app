@@ -308,7 +308,8 @@ export function GoalsScreen() {
                       ]}
                     >
                       <Text style={styles.badgeTagText}>
-                        {habitStats.currentBadge.title}
+                        {t.habits.badges[habitStats.currentBadge.key] ??
+                          habitStats.currentBadge.key}
                       </Text>
                     </View>
                   </View>

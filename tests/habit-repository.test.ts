@@ -26,7 +26,7 @@ describe('habit repository', () => {
     expect(statsToday.currentStreak).toBe(3);
     expect(statsToday.bestStreak).toBe(3);
     expect(statsToday.currentBadge.emoji).toBe('🔥');
-    expect(statsToday.currentBadge.title).toBe('Api Semangat');
+    expect(statsToday.currentBadge.key).toBe('momentum');
     // On 2026-08-16 (day 16 of month): 14 days had 0 expenses
     expect(statsToday.noSpendDaysThisMonth).toBe(14);
   });

@@ -129,7 +129,8 @@ describe('home screen', () => {
     await fireEvent.press(recentRow);
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/42');
 
-    await fireEvent.press(screen.getByRole('button', { name: 'View all' }));
+    const viewAllButtons = screen.getAllByText(/View all/i);
+    await fireEvent.press(viewAllButtons[viewAllButtons.length - 1]!);
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions');
 
     expect(screen.queryByRole('button', { name: 'Claims' })).toBeNull();

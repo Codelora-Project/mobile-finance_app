@@ -168,6 +168,14 @@ export type TranslationSchema = {
     streakBest: string;
     loggingDays: string;
     streakHelp: string;
+    badges: {
+      starter: string;
+      momentum: string;
+      consistent: string;
+      champion: string;
+      master: string;
+      legend: string;
+    };
   };
   analytics: {
     title: string;
@@ -437,6 +445,14 @@ export const translations: Record<Language, TranslationSchema> = {
       loggingDays: 'Hari Aktif Bulan Ini',
       streakHelp:
         'Catat minimal 1 transaksi setiap hari untuk mempertahankan streak apimu! 🔥',
+      badges: {
+        starter: 'Langkah Awal',
+        momentum: 'Mulai Konsisten',
+        consistent: '1 Minggu Rutin',
+        champion: 'Pejuang Hemat',
+        master: 'Master Finansial',
+        legend: 'Legenda Finansial',
+      },
     },
     // Analytics & Visual Insights
     analytics: {
@@ -706,7 +722,15 @@ export const translations: Record<Language, TranslationSchema> = {
       streakBest: 'Best Streak',
       loggingDays: 'Active Days This Month',
       streakHelp:
-        'Log at least 1 transaction every day to keep your fire streak burning! 🔥',
+        'Log at least 1 transaction every day to keep your fire streak alive! 🔥',
+      badges: {
+        starter: 'First Step',
+        momentum: 'Building Momentum',
+        consistent: '1 Week Habit',
+        champion: 'Frugal Champion',
+        master: 'Financial Master',
+        legend: 'Financial Legend',
+      },
     },
     // Analytics & Visual Insights
     analytics: {

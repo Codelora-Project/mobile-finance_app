@@ -464,8 +464,9 @@ export function HomeScreen() {
                     { color: colors.textSecondary },
                   ]}
                 >
-                  {habitStats.currentBadge.title} ·{' '}
-                  {habitStats.noSpendDaysThisMonth} {t.habits.noSpendDays}
+                  {t.habits.badges[habitStats.currentBadge.key] ??
+                    habitStats.currentBadge.key}{' '}
+                  · {habitStats.noSpendDaysThisMonth} {t.habits.noSpendDays}
                 </Text>
               </View>
             </View>
