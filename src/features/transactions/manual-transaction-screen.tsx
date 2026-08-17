@@ -5,35 +5,36 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
-  BackHandler,
   Easing,
   Modal,
-  PanResponder,
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
 } from 'react-native';
 
 import { AppButton } from '@/components/ui/app-button';
-import { AppInput } from '@/components/ui/app-input';
 import { Screen } from '@/components/ui/screen';
 import { defaultCategories, defaultPaymentMethods } from '@/db/seeds';
-import { getCategoryMeta } from '@/features/categories/category-meta';
 import { CategoryPicker } from '@/features/categories/category-picker';
-import { QuickShortcutsBar } from '@/features/transactions/components/quick-shortcuts-bar';
 import {
   listCategories,
   type Category,
 } from '@/features/categories/category-repository';
+import { PaymentMethodPicker } from '@/features/payment-methods/payment-method-picker';
 import {
   listPaymentMethods,
   type PaymentMethod,
 } from '@/features/payment-methods/payment-method-repository';
-import { PaymentMethodPicker } from '@/features/payment-methods/payment-method-picker';
+import { ManualAmountInput } from '@/features/transactions/components/manual-amount-input';
+import { ManualCategoryGrid } from '@/features/transactions/components/manual-category-grid';
+import { ManualDetailsSection } from '@/features/transactions/components/manual-details-section';
+import { ManualPaymentMethodsStrip } from '@/features/transactions/components/manual-payment-methods-strip';
+import { ManualReceiptModal } from '@/features/transactions/components/manual-receipt-modal';
+import { ManualTransactionHeader } from '@/features/transactions/components/manual-transaction-header';
+import { ManualTypeToggle } from '@/features/transactions/components/manual-type-toggle';
 import {
   pickManualReceipt,
   type ManualReceiptSelection,
@@ -44,38 +45,52 @@ import {
   deleteTransaction,
   getTransaction,
   getTransactionClaimMembership,
-  updateTransaction,
   type SaveTransactionInput,
   type Transaction,
   type TransactionClaimMembership,
   type TransactionType,
+  updateTransaction,
 } from '@/features/transactions/transaction-repository';
+import {
+  DEFAULT_QUICK_SHORTCUTS,
+  getQuickShortcuts,
+} from '@/features/settings/settings-repository';
 import {
   getTimezoneOffsetMinutes,
   parseLocalDateTimeInput,
   toLocalDateTimeInput,
 } from '@/lib/dates';
-import {
-  DEFAULT_QUICK_SHORTCUTS,
-  getQuickShortcuts,
-} from '@/features/settings/settings-repository';
 import { isCodedError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
 import {
   formatMoney,
   formatMoneyInput,
-  formatShortcutLabel,
   parseMoneyInput,
 } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
-import { colors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
-type SelectedReference = Readonly<{ id: number; name: string }>;
+type SelectedReference = Readonly<{
+  id: number;
+  name: string;
+}>;
 
-type FormState = Readonly<{
+type FormErrors = Partial<
+  Record<
+    | 'amount'
+    | 'category'
+    | 'dateTime'
+    | 'note'
+    | 'paymentMethod'
+    | 'receipt'
+    | 'submit',
+    string
+  >
+>;
+
+type FormState = {
   amount: string;
   category: SelectedReference | null;
   counterparty: string;
@@ -86,17 +101,9 @@ type FormState = Readonly<{
   receipt: ManualReceiptSelection | null;
   time: string;
   type: TransactionType;
-}>;
-
-type FormErrors = Partial<
-  Record<'amount' | 'category' | 'dateTime' | 'note' | 'submit', string>
->;
+};
 
 type PickerState = 'category' | 'paymentMethod' | null;
-
-type ManualTransactionScreenProps = {
-  transactionId?: number;
-};
 
 function createDefaultForm(
   initialCategory?: SelectedReference | null,
@@ -235,7 +242,6 @@ function buildSaveInput(form: FormState) {
   return { errors, input };
 }
 
-
 const INITIAL_EXPENSE_CATEGORIES: Category[] = defaultCategories
   .filter((c) => c.type === 'expense')
   .map((c, index) => ({
@@ -251,27 +257,12 @@ const INITIAL_EXPENSE_CATEGORIES: Category[] = defaultCategories
     updatedAt: 0,
   }));
 
-const INITIAL_INCOME_CATEGORIES: Category[] = defaultCategories
-  .filter((c) => c.type === 'income')
-  .map((c, index) => ({
-    createdAt: 0,
-    iconKey: null,
-    id: index + 1,
-    isDefault: true,
-    isFallback: !!c.isFallback,
-    name: c.name,
-    sortOrder: index,
-    systemKey: c.systemKey,
-    type: 'income' as const,
-    updatedAt: 0,
-  }));
-
 const INITIAL_PAYMENT_METHODS: PaymentMethod[] = defaultPaymentMethods.map(
   (pm, index) => ({
     createdAt: 0,
     id: index + 1,
     isDefault: true,
-    isFallback: !!pm.isFallback,
+    isFallback: false,
     name: pm.name,
     sortOrder: index,
     systemKey: pm.systemKey,
@@ -279,51 +270,45 @@ const INITIAL_PAYMENT_METHODS: PaymentMethod[] = defaultPaymentMethods.map(
   }),
 );
 
+export type ManualTransactionScreenProps = {
+  transactionId?: number;
+};
+
 export function ManualTransactionScreen({
-  transactionId,
-}: ManualTransactionScreenProps) {
+  transactionId: propTransactionId,
+}: ManualTransactionScreenProps = {}) {
   const database = useSQLiteContext();
   const router = useRouter();
+  const { language, t } = useLanguage();
+  const { colors, isDark } = useTheme();
+
   const params = useLocalSearchParams<{
     categoryId?: string;
     categoryName?: string;
-    type?: string;
+    id?: string;
+    type?: TransactionType;
   }>();
-  const { language, t } = useLanguage();
-  const { colors, isDark } = useTheme();
-  const isEditMode = typeof transactionId === 'number';
 
-  const resolvedInitialType: TransactionType =
-    params.type === 'income' ? 'income' : 'expense';
+  const transactionId =
+    propTransactionId && propTransactionId > 0
+      ? propTransactionId
+      : params.id
+        ? Number(params.id)
+        : null;
+  const isEditMode = transactionId !== null;
 
-  const resolvedInitialCategory = useMemo<SelectedReference | null>(() => {
-    if (isEditMode) return null;
-    const catList =
-      resolvedInitialType === 'income'
-        ? INITIAL_INCOME_CATEGORIES
-        : INITIAL_EXPENSE_CATEGORIES;
-    if (params.categoryId) {
-      const idNum = Number(params.categoryId);
-      const found = catList.find((c) => c.id === idNum);
-      if (found) return { id: found.id, name: found.name };
-    }
-    if (params.categoryName) {
-      const targetName = params.categoryName.trim().toLowerCase();
-      const found = catList.find(
-        (c) =>
-          c.name.toLowerCase() === targetName ||
-          c.systemKey?.toLowerCase() === targetName,
-      );
-      if (found) return { id: found.id, name: found.name };
+  const initialCategoryParam = useMemo(() => {
+    if (params.categoryId && params.categoryName) {
+      return {
+        id: Number(params.categoryId),
+        name: params.categoryName,
+      };
     }
     return null;
-  }, [isEditMode, params.categoryId, params.categoryName, resolvedInitialType]);
+  }, [params.categoryId, params.categoryName]);
 
   const [form, setForm] = useState<FormState>(() =>
-    createDefaultForm(resolvedInitialCategory, resolvedInitialType),
-  );
-  const [initialForm, setInitialForm] = useState<FormState>(() =>
-    createDefaultForm(resolvedInitialCategory, resolvedInitialType),
+    createDefaultForm(initialCategoryParam, params.type),
   );
   const [categoriesList, setCategoriesList] = useState<Category[]>(
     INITIAL_EXPENSE_CATEGORIES,
@@ -363,727 +348,316 @@ export function ManualTransactionScreen({
         toValue: 1,
         useNativeDriver: true,
       }),
-    ]).start(() => {
-      if (resolvedInitialCategory) {
-        amountInputRef.current?.focus();
-      }
-    });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    ]).start();
+  }, [fadeAnim, slideAnim]);
 
-  // Load Categories, Payment Methods & Custom Shortcuts
-  const loadEntities = useCallback(
-    async (type: TransactionType) => {
+  useEffect(() => {
+    let active = true;
+    async function loadData() {
       try {
-        const [cats, pms, userShortcuts] = await Promise.all([
-          listCategories(database, type),
+        const [cats, pms, shortcuts] = await Promise.all([
+          listCategories(database),
           listPaymentMethods(database),
           getQuickShortcuts(database),
         ]);
-        setCategoriesList(cats);
-        setPaymentMethodsList(pms);
-        setQuickShortcuts(userShortcuts);
+        if (active) {
+          setCategoriesList(cats);
+          setPaymentMethodsList(pms);
+          if (shortcuts && shortcuts.length > 0) {
+            setQuickShortcuts(shortcuts);
+          }
+        }
       } catch (err) {
-        if (__DEV__) console.warn('Could not load categories or methods', err);
+        if (__DEV__) console.warn('Could not load categories/methods', err);
       }
-    },
-    [database],
-  );
-
-  useEffect(() => {
-    void loadEntities(form.type);
-  }, [form.type, loadEntities]);
-
-  // Load Existing Transaction for Edit
-  const loadTransaction = useCallback(async () => {
-    if (!transactionId) return;
-    setLoading(true);
-    try {
-      const [tx, claim] = await Promise.all([
-        getTransaction(database, transactionId),
-        getTransactionClaimMembership(database, transactionId),
-      ]);
-      if (!tx) {
-        setErrors({ submit: 'Transaction was not found.' });
-        return;
-      }
-      const initial = formFromTransaction(tx);
-      setForm(initial);
-      setInitialForm(initial);
-      setClaimMembership(claim);
-      setShowDetailSection(true);
-    } catch (loadError) {
-      setErrors({ submit: getOperationMessage(loadError) });
-    } finally {
-      setLoading(false);
     }
-  }, [database, transactionId]);
+    void loadData();
+    return () => {
+      active = false;
+    };
+  }, [database]);
 
   useEffect(() => {
-    if (isEditMode) {
-      void loadTransaction();
-    }
-  }, [isEditMode, loadTransaction]);
-
-  const isClosingRef = useRef(false);
-
-  // Seamless Animated Exit (Smooth Slide & Fade Out)
-  const handleExit = useCallback(() => {
-    if (savingRef.current || deletingRef.current || isClosingRef.current) return;
-    isClosingRef.current = true;
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        duration: 180,
-        toValue: 500,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        duration: 180,
-        toValue: 0,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      router.back();
-    });
-  }, [fadeAnim, router, slideAnim]);
-
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 5,
-        onPanResponderMove: (_, gestureState) => {
-          if (gestureState.dy > 0) {
-            slideAnim.setValue(gestureState.dy);
-          }
-        },
-        onPanResponderRelease: (_, gestureState) => {
-          if (gestureState.dy > 70 || gestureState.vy > 0.4) {
-            isClosingRef.current = true;
-            Animated.parallel([
-              Animated.timing(slideAnim, {
-                duration: 160,
-                toValue: 500,
-                useNativeDriver: true,
-              }),
-              Animated.timing(fadeAnim, {
-                duration: 160,
-                toValue: 0,
-                useNativeDriver: true,
-              }),
-            ]).start(() => {
-              router.back();
-            });
-          } else {
-            Animated.parallel([
-              Animated.spring(slideAnim, {
-                friction: 8,
-                tension: 100,
-                toValue: 0,
-                useNativeDriver: true,
-              }),
-              Animated.timing(fadeAnim, {
-                duration: 150,
-                toValue: 1,
-                useNativeDriver: true,
-              }),
-            ]).start();
-          }
-        },
-        onStartShouldSetPanResponder: () => true,
-      }),
-    [fadeAnim, router, slideAnim],
-  );
-
-  useEffect(() => {
-    const subscription = BackHandler.addEventListener(
-      'hardwareBackPress',
-      () => {
-        handleExit();
-        return true;
-      },
-    );
-    return () => subscription.remove();
-  }, [handleExit]);
-
-  // Quick Amount Shortcut Handlers
-  const handleAddIncrement = useCallback((inc: number) => {
-    setForm((curr) => {
-      let currentVal = 0;
+    if (!isEditMode) return;
+    let active = true;
+    async function loadTransaction() {
       try {
-        currentVal = parseMoneyInput(curr.amount, 'IDR');
-      } catch {
-        currentVal = 0;
+        const [tx, claim] = await Promise.all([
+          getTransaction(database, transactionId!),
+          getTransactionClaimMembership(database, transactionId!),
+        ]);
+        if (active && tx) {
+          setForm(formFromTransaction(tx));
+          setClaimMembership(claim);
+        }
+      } catch (err) {
+        if (__DEV__) console.warn('Could not load transaction', err);
+      } finally {
+        if (active) setLoading(false);
       }
-      const nextVal = Math.min(currentVal + inc, 1_000_000_000);
-      return { ...curr, amount: formatMoneyInput(nextVal, 'IDR') };
+    }
+    void loadTransaction();
+    return () => {
+      active = false;
+    };
+  }, [database, isEditMode, transactionId]);
+
+  const handleSelectCategory = useCallback((selectedCategory: Category) => {
+    setForm((current) => ({
+      ...current,
+      category: {
+        id: selectedCategory.id,
+        name: selectedCategory.name,
+      },
+    }));
+    setErrors((c) => ({ ...c, category: undefined }));
+  }, []);
+
+  const handleSelectPaymentMethod = useCallback((pm: PaymentMethod) => {
+    setForm((current) => ({
+      ...current,
+      paymentMethod:
+        current.paymentMethod?.id === pm.id
+          ? null
+          : { id: pm.id, name: pm.name },
+    }));
+  }, []);
+
+  const handleAddIncrement = useCallback((amountToAdd: number) => {
+    setForm((current) => {
+      const currentVal = Number(current.amount.replace(/[^0-9]/g, '')) || 0;
+      const nextVal = currentVal + amountToAdd;
+      return {
+        ...current,
+        amount: String(nextVal),
+      };
     });
-    setErrors((curr) => ({ ...curr, amount: undefined }));
+    setErrors((c) => ({ ...c, amount: undefined }));
   }, []);
 
   const handleClearAmount = useCallback(() => {
-    setForm((curr) => ({ ...curr, amount: '' }));
+    setForm((current) => ({ ...current, amount: '' }));
   }, []);
 
-  // Category Selection Handler
-  const handleSelectCategory = useCallback((cat: Category) => {
-    setForm((curr) => ({
-      ...curr,
-      category: { id: cat.id, name: cat.name },
-    }));
-    setErrors((curr) => ({ ...curr, category: undefined }));
-  }, []);
-
-  // Payment Method Selection Handler
-  const handleSelectPaymentMethod = useCallback((pm: PaymentMethod) => {
-    setForm((curr) => ({
-      ...curr,
-      paymentMethod:
-        curr.paymentMethod?.id === pm.id ? null : { id: pm.id, name: pm.name },
-    }));
-  }, []);
-
-  // Direct Photo Attachment Actions
   const handleSelectReceiptSource = useCallback(
     async (source: ManualReceiptSource) => {
       setReceiptMenuVisible(false);
       try {
-        const selection = await pickManualReceipt(source);
-        if (!selection) return;
-
-        setForm((curr) => ({
-          ...curr,
-          receipt: selection,
-        }));
-      } catch (receiptError) {
-        setErrors((curr) => ({
-          ...curr,
-          submit: getOperationMessage(receiptError),
+        const receipt = await pickManualReceipt(source);
+        if (receipt) {
+          setForm((c) => ({ ...c, receipt }));
+        }
+      } catch (error) {
+        setErrors((c) => ({
+          ...c,
+          receipt: getOperationMessage(error),
         }));
       }
     },
     [],
   );
 
-  // Save Transaction
+  const handleClose = useCallback(() => {
+    router.back();
+  }, [router]);
+
   const handleSave = useCallback(async () => {
     if (savingRef.current || deletingRef.current) return;
-    const { errors: nextErrors, input } = buildSaveInput(form);
-    setErrors(nextErrors);
-    if (!input) return;
+    const { errors: validationErrors, input } = buildSaveInput(form);
+    if (!input) {
+      setErrors(validationErrors);
+      return;
+    }
 
     savingRef.current = true;
     setSaving(true);
+    setErrors({});
+
     try {
-      if (isEditMode && transactionId) {
-        await updateTransaction(database, transactionId, input);
+      if (isEditMode) {
+        await updateTransaction(database, transactionId!, input);
         router.dismissTo({
           params: {
             feedback:
               language === 'id'
-                ? 'Transaksi berhasil diubah'
-                : 'Transaction updated.',
+                ? 'Transaksi berhasil diperbarui'
+                : 'Transaction updated successfully',
           },
           pathname: '/transactions',
         });
       } else {
-        const created = await createTransaction(database, input);
+        const result = await createTransaction(database, input);
         router.dismissTo({
           params: {
             feedback:
               language === 'id'
                 ? 'Transaksi berhasil dicatat'
-                : 'Transaction recorded.',
-            undoCreatedId: String(created.id),
+                : 'Transaction recorded successfully',
+            undoCreatedId: String(result.id),
           },
-          pathname: '/transactions',
+          pathname: '/',
         });
       }
-    } catch (saveError) {
+    } catch (error) {
+      setErrors({ submit: getOperationMessage(error) });
       savingRef.current = false;
       setSaving(false);
-      setErrors((curr) => ({
-        ...curr,
-        submit: getOperationMessage(saveError),
-      }));
     }
   }, [database, form, isEditMode, language, router, transactionId]);
 
-  // Delete Transaction (for Edit Mode)
   const handleDelete = useCallback(async () => {
-    if (!transactionId || deletingRef.current || savingRef.current) return;
+    if (savingRef.current || deletingRef.current || !transactionId) return;
     deletingRef.current = true;
     setDeleting(true);
+
     try {
-      const { input: undoInput } = buildSaveInput(form);
       await deleteTransaction(database, transactionId);
       router.dismissTo({
         params: {
           feedback:
             language === 'id'
-              ? 'Transaksi berhasil dihapus'
-              : 'Transaction deleted.',
-          undoPayload: undoInput ? JSON.stringify(undoInput) : undefined,
+              ? 'Transaksi telah dihapus'
+              : 'Transaction deleted',
         },
         pathname: '/transactions',
       });
-    } catch (delError) {
+    } catch (error) {
+      setErrors({ submit: getOperationMessage(error) });
       deletingRef.current = false;
       setDeleting(false);
-      setErrors((curr) => ({
-        ...curr,
-        submit: getOperationMessage(delError),
-      }));
     }
-  }, [database, form, language, router, transactionId]);
+  }, [database, language, router, transactionId]);
+
+  const isExpense = form.type === 'expense';
+  const parsedAmountMinor = useMemo(() => {
+    try {
+      return parseMoneyInput(form.amount, 'IDR');
+    } catch {
+      return 0;
+    }
+  }, [form.amount]);
+
+  const screenTitle = isEditMode
+    ? language === 'id'
+      ? 'Edit Transaksi'
+      : 'Edit Transaction'
+    : language === 'id'
+      ? 'Catat Transaksi'
+      : 'Record Transaction';
 
   if (loading) {
     return (
       <Screen>
         <View style={styles.loadingContainer}>
           <ActivityIndicator color={colors.primary} size="large" />
-          <Text style={styles.loadingText}>Loading transaction details…</Text>
         </View>
       </Screen>
     );
   }
 
-  const isExpense = form.type === 'expense';
-  const parsedAmountMinor = (() => {
-    try {
-      return parseMoneyInput(form.amount, 'IDR');
-    } catch {
-      return 0;
-    }
-  })();
-
   return (
-    <View style={styles.rootContainer}>
-      {/* Static Fade Backdrop (fades away without sliding down) */}
+    <Screen>
       <Animated.View
         style={[
-          styles.backdropOverlay,
+          styles.container,
           {
-            opacity: Animated.multiply(
-              fadeAnim,
-              slideAnim.interpolate({
-                extrapolate: 'clamp',
-                inputRange: [0, 300],
-                outputRange: [1, 0],
-              }),
-            ),
-          },
-        ]}
-      >
-        <Pressable
-          accessibilityLabel="Close transaction form"
-          onPress={handleExit}
-          style={styles.backdropTouchArea}
-        />
-      </Animated.View>
-
-      <Animated.View
-        style={[
-          styles.bottomSheetModal,
-          {
-            backgroundColor: isDark ? colors.surface : '#FFFFFF',
+            opacity: fadeAnim,
             transform: [{ translateY: slideAnim }],
           },
         ]}
       >
-        {/* Drag Indicator (Drag to dismiss area) */}
-        <View
-          {...panResponder.panHandlers}
-          style={styles.dragHandleWrap}
-        >
-          <View
-            style={[
-              styles.dragHandle,
-              { backgroundColor: isDark ? '#475569' : '#E2E8F0' },
-            ]}
-          />
-        </View>
+        {/* 1. TOP NAVIGATION HEADER */}
+        <ManualTransactionHeader
+          deleting={deleting}
+          isEditMode={isEditMode}
+          onClose={handleClose}
+          onDelete={isEditMode ? handleDelete : undefined}
+          title={screenTitle}
+        />
 
-        {/* Header: Type Toggle + Close (Drag to dismiss area) */}
-        <View
-          {...panResponder.panHandlers}
-          style={styles.sheetHeader}
-        >
-          <View style={styles.typeSegment}>
-            <Pressable
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isExpense }}
-              onPress={() => {
-                setForm((c) => ({
-                  ...c,
-                  category: null,
-                  receipt: null,
-                  type: 'expense',
-                }));
-                setErrors({});
-              }}
-              style={[
-                styles.typeButton,
-                isExpense ? styles.typeButtonActiveExpense : null,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.typeButtonText,
-                  isExpense ? styles.typeButtonTextActive : null,
-                ]}
-              >
-                💸 {language === 'id' ? 'Pengeluaran' : 'Expense'}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              accessibilityRole="tab"
-              accessibilityState={{ selected: !isExpense }}
-              onPress={() => {
-                setForm((c) => ({
-                  ...c,
-                  category: null,
-                  isReimbursable: false,
-                  receipt: null,
-                  type: 'income',
-                }));
-                setErrors({});
-              }}
-              style={[
-                styles.typeButton,
-                !isExpense ? styles.typeButtonActiveIncome : null,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.typeButtonText,
-                  !isExpense ? styles.typeButtonTextActive : null,
-                ]}
-              >
-                💰 {language === 'id' ? 'Pemasukan' : 'Income'}
-              </Text>
-            </Pressable>
-          </View>
-
-          <Pressable
-            accessibilityLabel="Close modal"
-            accessibilityRole="button"
-            hitSlop={12}
-            onPress={handleExit}
-            style={styles.closeIconButton}
-          >
-            <MaterialCommunityIcons color="#64748B" name="close" size={24} />
-          </Pressable>
-        </View>
-
+        {/* 2. FORM BODY */}
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Hero Amount Display & Number Pad input */}
-          <Pressable
-            onPress={() => amountInputRef.current?.focus()}
-            style={[
-              styles.amountHeroContainer,
-              errors.amount ? styles.amountHeroError : null,
-            ]}
-          >
-            <Text style={styles.currencyPrefix}>Rp</Text>
-            <TextInput
-              accessibilityLabel="Amount *"
-              autoFocus={false}
-              inputMode="decimal"
-              keyboardType="number-pad"
-              onChangeText={(text) => {
-                setForm((c) => ({ ...c, amount: text }));
-                setErrors((c) => ({ ...c, amount: undefined }));
-              }}
-              placeholder="0"
-              placeholderTextColor="#94A3B8"
-              ref={amountInputRef}
-              style={styles.amountHeroInput}
-              value={form.amount}
-            />
-          </Pressable>
-          {errors.amount ? (
-            <Text style={styles.errorBanner}>{errors.amount}</Text>
-          ) : null}
+          {/* Type Toggle: Expense / Income */}
+          <ManualTypeToggle
+            onChangeType={(type) => {
+              setForm((c) => ({
+                ...c,
+                category: null,
+                isReimbursable: false,
+                receipt: null,
+                type,
+              }));
+              setErrors({});
+            }}
+            selectedType={form.type}
+            t={t}
+          />
 
-          {/* Quick Cash Shortcuts (Customizable) */}
-          <QuickShortcutsBar
+          {/* Amount Hero Input */}
+          <ManualAmountInput
+            amount={form.amount}
+            amountInputRef={amountInputRef}
+            error={errors.amount}
             onAddIncrement={handleAddIncrement}
-            onReset={handleClearAmount}
+            onChangeAmount={(amount) => {
+              setForm((c) => ({ ...c, amount }));
+              setErrors((c) => ({ ...c, amount: undefined }));
+            }}
+            onPressCard={() => amountInputRef.current?.focus()}
+            onResetAmount={handleClearAmount}
             quickShortcuts={quickShortcuts}
           />
 
           {/* 1-Tap Category Grid */}
-          <View style={styles.sectionContainer}>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionLabel}>
-                {language === 'id' ? 'PILIH KATEGORI' : 'SELECT CATEGORY'} *
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Category *"
-                onPress={() => setPicker('category')}
-                style={styles.moreCategoriesBtn}
-              >
-                <Text style={styles.moreCategoriesText}>
-                  {language === 'id' ? '+ Kategori Lain' : '+ More'}
-                </Text>
-              </Pressable>
-            </View>
+          <ManualCategoryGrid
+            categories={categoriesList}
+            error={errors.category}
+            onOpenMoreCategories={() => setPicker('category')}
+            onSelectCategory={handleSelectCategory}
+            selectedCategoryId={form.category?.id}
+            transactionType={form.type}
+          />
 
-            <ScrollView
-              contentContainerStyle={styles.categoryGrid}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-            >
-              {categoriesList.slice(0, 10).map((cat) => {
-                const meta = getCategoryMeta(cat.name, form.type);
-                const isSelected = form.category?.id === cat.id;
-                return (
-                  <Pressable
-                    accessibilityLabel={cat.name}
-                    accessibilityRole="button"
-                    key={cat.id}
-                    onPress={() => handleSelectCategory(cat)}
-                    style={[
-                      styles.categoryCard,
-                      isSelected ? styles.categoryCardSelected : null,
-                    ]}
-                  >
-                    <View
-                      style={[
-                        styles.categoryIconBadge,
-                        { backgroundColor: meta.backgroundColor },
-                        isSelected ? styles.categoryIconBadgeSelected : null,
-                      ]}
-                    >
-                      <MaterialCommunityIcons
-                        color={meta.color}
-                        name={meta.icon}
-                        size={26}
-                      />
-                    </View>
-                    <Text
-                      numberOfLines={1}
-                      style={[
-                        styles.categoryNameText,
-                        isSelected ? styles.categoryNameTextSelected : null,
-                      ]}
-                    >
-                      {cat.name}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-            {errors.category ? (
-              <Text style={styles.errorBanner}>{errors.category}</Text>
-            ) : null}
-          </View>
+          {/* Quick Payment Methods Strip */}
+          <ManualPaymentMethodsStrip
+            onSelectPaymentMethod={handleSelectPaymentMethod}
+            paymentMethods={paymentMethodsList}
+            selectedPaymentMethodId={form.paymentMethod?.id}
+          />
 
-          {/* Quick Payment Method Chips */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionLabel}>
-              {language === 'id' ? 'METODE PEMBAYARAN' : 'PAYMENT METHOD'}
-            </Text>
-            <ScrollView
-              contentContainerStyle={styles.paymentMethodsList}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-            >
-              {paymentMethodsList.map((pm) => {
-                const isSelected = form.paymentMethod?.id === pm.id;
-                return (
-                  <Pressable
-                    accessibilityLabel={pm.name}
-                    accessibilityRole="button"
-                    key={pm.id}
-                    onPress={() => handleSelectPaymentMethod(pm)}
-                    style={[
-                      styles.paymentMethodChip,
-                      isSelected ? styles.paymentMethodChipSelected : null,
-                    ]}
-                  >
-                    <MaterialCommunityIcons
-                      color={isSelected ? '#FFFFFF' : '#475569'}
-                      name={
-                        pm.name.toLowerCase().includes('cash') ||
-                        pm.name.toLowerCase().includes('tunai')
-                          ? 'cash'
-                          : pm.name.toLowerCase().includes('qris') ||
-                              pm.name.toLowerCase().includes('gopay') ||
-                              pm.name.toLowerCase().includes('ovo')
-                            ? 'qrcode-scan'
-                            : 'credit-card-outline'
-                      }
-                      size={16}
-                    />
-                    <Text
-                      style={[
-                        styles.paymentMethodChipText,
-                        isSelected
-                          ? styles.paymentMethodChipTextSelected
-                          : null,
-                      ]}
-                    >
-                      {pm.name}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </View>
-
-          {/* Quick Compact Details & Toggle */}
-          <View style={styles.sectionContainer}>
-            <View style={styles.compactDetailRow}>
-              <View style={styles.counterpartyInputWrap}>
-                <MaterialCommunityIcons
-                  color="#94A3B8"
-                  name="store-outline"
-                  size={20}
-                />
-                <TextInput
-                  accessibilityLabel="Merchant"
-                  onChangeText={(text) =>
-                    setForm((c) => ({ ...c, counterparty: text }))
-                  }
-                  placeholder={
-                    language === 'id'
-                      ? 'Nama toko / catatan (opsional)'
-                      : 'Merchant / note (optional)'
-                  }
-                  placeholderTextColor="#94A3B8"
-                  style={styles.compactInput}
-                  value={form.counterparty}
-                />
-              </View>
-
-              {isExpense ? (
-                <Pressable
-                  accessibilityLabel="Add receipt"
-                  accessibilityRole="button"
-                  onPress={() => setReceiptMenuVisible(true)}
-                  style={[
-                    styles.receiptActionChip,
-                    form.receipt ? styles.receiptActionChipActive : null,
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    color={form.receipt ? colors.primary : '#64748B'}
-                    name={form.receipt ? 'image-check' : 'camera-plus-outline'}
-                    size={20}
-                  />
-                  <Text
-                    numberOfLines={1}
-                    style={[
-                      styles.receiptActionChipText,
-                      form.receipt ? styles.receiptActionChipTextActive : null,
-                    ]}
-                  >
-                    {form.receipt
-                      ? form.receipt.displayName
-                      : language === 'id'
-                        ? '+ Foto'
-                        : '+ Photo'}
-                  </Text>
-                </Pressable>
-              ) : null}
-            </View>
-
-            {claimMembership ? (
-              <Text style={styles.claimMembershipNotice}>
-                {language === 'id'
-                  ? `Terikat pada Klaim #${claimMembership.claimId} (${claimMembership.claimStatus})`
-                  : `Included in Claim #${claimMembership.claimId} (${claimMembership.claimStatus})`}
-              </Text>
-            ) : null}
-
-            {/* Expandable Advanced Options */}
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => setShowDetailSection((prev) => !prev)}
-              style={styles.advancedToggleBtn}
-            >
-              <Text style={styles.advancedToggleText}>
-                {showDetailSection
-                  ? language === 'id'
-                    ? '▲ Sembunyikan Opsi Lanjutan'
-                    : '▲ Hide Details'
-                  : language === 'id'
-                    ? '▼ Tanggal, Catatan & Klaim'
-                    : '▼ Date, Note & Claim Details'}
-              </Text>
-            </Pressable>
-
-            {showDetailSection ? (
-              <View style={styles.advancedFieldsPanel}>
-                <View style={styles.dateRow}>
-                  <View style={styles.dateField}>
-                    <AppInput
-                      accessibilityLabel="Transaction date"
-                      label={language === 'id' ? 'Tanggal' : 'Date'}
-                      onChangeText={(date) => setForm((c) => ({ ...c, date }))}
-                      placeholder="YYYY-MM-DD"
-                      value={form.date}
-                    />
-                  </View>
-                  <View style={styles.timeField}>
-                    <AppInput
-                      accessibilityLabel="Transaction time"
-                      label={language === 'id' ? 'Waktu' : 'Time'}
-                      onChangeText={(time) => setForm((c) => ({ ...c, time }))}
-                      placeholder="HH:mm"
-                      value={form.time}
-                    />
-                  </View>
-                </View>
-
-                {isExpense ? (
-                  <View style={styles.reimbursableRow}>
-                    <View>
-                      <Text style={styles.reimbursableTitle}>
-                        {language === 'id'
-                          ? 'Dapat Diklaim (Reimburse)'
-                          : 'Reimbursable Expense'}
-                      </Text>
-                      <Text style={styles.reimbursableSubtitle}>
-                        {language === 'id'
-                          ? 'Tandai untuk klaim kantor / dinas'
-                          : 'Mark to claim reimbursement'}
-                      </Text>
-                    </View>
-                    <Switch
-                      accessibilityLabel="Reimbursable"
-                      onValueChange={(isReimbursable) =>
-                        setForm((c) => ({ ...c, isReimbursable }))
-                      }
-                      trackColor={{ false: '#CBD5E1', true: colors.primary }}
-                      value={form.isReimbursable}
-                    />
-                  </View>
-                ) : null}
-
-                <AppInput
-                  label={language === 'id' ? 'Catatan Lengkap' : 'Full Note'}
-                  multiline
-                  numberOfLines={2}
-                  onChangeText={(note) => setForm((c) => ({ ...c, note }))}
-                  placeholder="Optional"
-                  value={form.note}
-                />
-              </View>
-            ) : null}
-          </View>
+          {/* Compact Merchant, Receipt & Expandable Advanced Options */}
+          <ManualDetailsSection
+            claimMembership={claimMembership}
+            counterparty={form.counterparty}
+            date={form.date}
+            isExpense={isExpense}
+            isReimbursable={form.isReimbursable}
+            note={form.note}
+            onChangeCounterparty={(counterparty) =>
+              setForm((c) => ({ ...c, counterparty }))
+            }
+            onChangeDate={(date) => setForm((c) => ({ ...c, date }))}
+            onChangeNote={(note) => setForm((c) => ({ ...c, note }))}
+            onChangeReimbursable={(isReimbursable) =>
+              setForm((c) => ({ ...c, isReimbursable }))
+            }
+            onChangeTime={(time) => setForm((c) => ({ ...c, time }))}
+            onOpenReceiptMenu={() => setReceiptMenuVisible(true)}
+            onToggleShowDetails={() => setShowDetailSection((prev) => !prev)}
+            receipt={form.receipt}
+            showDetailSection={showDetailSection}
+            time={form.time}
+          />
 
           {errors.submit ? (
             <Text style={styles.errorBanner}>{errors.submit}</Text>
           ) : null}
 
-          {/* Big Action Save Button */}
+          {/* Big Save Button */}
           <View style={styles.actionBtnContainer}>
             <Pressable
               accessibilityRole="button"
@@ -1101,18 +675,53 @@ export function ManualTransactionScreen({
               {saving ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text adjustsFontSizeToFit minimumFontScale={0.8} numberOfLines={1} style={styles.saveBigButtonText}>
+                <Text
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.8}
+                  numberOfLines={1}
+                  style={styles.saveBigButtonText}
+                >
                   {isEditMode
                     ? language === 'id'
-                      ? 'Update Transaksi' + (parsedAmountMinor > 0 ? ' (' + formatMoney(parsedAmountMinor, 'IDR') + ')' : '')
-                      : 'Update Transaction' + (parsedAmountMinor > 0 ? ' (' + formatMoney(parsedAmountMinor, 'IDR') + ')' : '')
+                      ? 'Update Transaksi' +
+                        (parsedAmountMinor > 0
+                          ? ' (' +
+                            formatMoney(parsedAmountMinor, 'IDR') +
+                            ')'
+                          : '')
+                      : 'Update Transaction' +
+                        (parsedAmountMinor > 0
+                          ? ' (' +
+                            formatMoney(parsedAmountMinor, 'IDR') +
+                            ')'
+                          : '')
                     : isExpense
                       ? language === 'id'
-                        ? '✓ Simpan Pengeluaran' + (parsedAmountMinor > 0 ? ' (' + formatMoney(parsedAmountMinor, 'IDR') + ')' : '')
-                        : '✓ Save Expense' + (parsedAmountMinor > 0 ? ' (' + formatMoney(parsedAmountMinor, 'IDR') + ')' : '')
+                        ? '✓ Simpan Pengeluaran' +
+                          (parsedAmountMinor > 0
+                            ? ' (' +
+                              formatMoney(parsedAmountMinor, 'IDR') +
+                              ')'
+                            : '')
+                        : '✓ Save Expense' +
+                          (parsedAmountMinor > 0
+                            ? ' (' +
+                              formatMoney(parsedAmountMinor, 'IDR') +
+                              ')'
+                            : '')
                       : language === 'id'
-                        ? '✓ Simpan Pemasukan' + (parsedAmountMinor > 0 ? ' (' + formatMoney(parsedAmountMinor, 'IDR') + ')' : '')
-                        : '✓ Save Income' + (parsedAmountMinor > 0 ? ' (' + formatMoney(parsedAmountMinor, 'IDR') + ')' : '')}
+                        ? '✓ Simpan Pemasukan' +
+                          (parsedAmountMinor > 0
+                            ? ' (' +
+                              formatMoney(parsedAmountMinor, 'IDR') +
+                              ')'
+                            : '')
+                        : '✓ Save Income' +
+                          (parsedAmountMinor > 0
+                            ? ' (' +
+                              formatMoney(parsedAmountMinor, 'IDR') +
+                              ')'
+                            : '')}
                 </Text>
               )}
             </Pressable>
@@ -1137,8 +746,21 @@ export function ManualTransactionScreen({
         visible={picker === 'category'}
       >
         <Screen>
-          <View style={styles.modalScreenHeader}>
-            <Text style={styles.actionSheetTitle}>
+          <View
+            style={[
+              styles.modalScreenHeader,
+              {
+                backgroundColor: colors.surface,
+                borderBottomColor: colors.border,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.actionSheetTitle,
+                { color: colors.textPrimary },
+              ]}
+            >
               {language === 'id' ? 'Pilih Kategori' : 'Select Category'}
             </Text>
             <Pressable
@@ -1169,8 +791,21 @@ export function ManualTransactionScreen({
         visible={picker === 'paymentMethod'}
       >
         <Screen>
-          <View style={styles.modalScreenHeader}>
-            <Text style={styles.actionSheetTitle}>
+          <View
+            style={[
+              styles.modalScreenHeader,
+              {
+                backgroundColor: colors.surface,
+                borderBottomColor: colors.border,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.actionSheetTitle,
+                { color: colors.textPrimary },
+              ]}
+            >
               {language === 'id'
                 ? 'Metode Pembayaran'
                 : 'Select Payment Method'}
@@ -1198,462 +833,93 @@ export function ManualTransactionScreen({
       </Modal>
 
       {/* Receipt Action Sheet Modal */}
-      <Modal
-        animationType="fade"
-        onRequestClose={() => setReceiptMenuVisible(false)}
-        transparent
+      <ManualReceiptModal
+        hasReceipt={Boolean(form.receipt)}
+        onClose={() => setReceiptMenuVisible(false)}
+        onRemoveReceipt={() => {
+          setForm((c) => ({ ...c, receipt: null }));
+          setReceiptMenuVisible(false);
+        }}
+        onSelectSource={(source) => void handleSelectReceiptSource(source)}
         visible={receiptMenuVisible}
-      >
-        <Pressable
-          onPress={() => setReceiptMenuVisible(false)}
-          style={styles.modalOverlay}
-        >
-          <View style={styles.actionSheetContent}>
-            <Text style={styles.actionSheetTitle}>
-              {language === 'id' ? 'Foto Bukti / Struk' : 'Attach Photo Proof'}
-            </Text>
-            <AppButton
-              label={language === 'id' ? 'Ambil Foto (Kamera)' : 'Take photo'}
-              onPress={() => void handleSelectReceiptSource('camera')}
-              variant="secondary"
-            />
-            <AppButton
-              label={
-                language === 'id' ? 'Pilih dari Galeri' : 'Choose from gallery'
-              }
-              onPress={() => void handleSelectReceiptSource('gallery')}
-              variant="secondary"
-            />
-            {form.receipt ? (
-              <AppButton
-                label={language === 'id' ? 'Hapus Foto' : 'Remove Photo'}
-                onPress={() => {
-                  setForm((c) => ({ ...c, receipt: null }));
-                  setReceiptMenuVisible(false);
-                }}
-                variant="destructive"
-              />
-            ) : null}
-            <AppButton
-              label={t.common.cancel}
-              onPress={() => setReceiptMenuVisible(false)}
-              variant="ghost"
-            />
-          </View>
-        </Pressable>
-      </Modal>
-    </View>
+      />
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  backdropOverlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(15, 23, 42, 0.65)',
-  },
-  backdropTouchArea: {
-    ...StyleSheet.absoluteFill,
-  },
-  dragHandleWrap: {
-    alignItems: 'center',
-    paddingBottom: spacing.xs,
-    paddingTop: spacing.sm,
-  },
-  rootContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  bottomSheetModal: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    maxHeight: '92%',
-    paddingBottom: spacing.lg,
-    shadowColor: '#000000',
-    shadowOffset: { height: -4, width: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    zIndex: 10,
-  },
-  dragHandle: {
-    alignSelf: 'center',
-    backgroundColor: '#E2E8F0',
-    borderRadius: 3,
-    height: 5,
-    marginTop: spacing.sm,
-    width: 44,
-  },
-  sheetHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-  },
-  typeSegment: {
-    backgroundColor: '#F1F5F9',
-    borderRadius: radius.pill,
-    flexDirection: 'row',
-    padding: 3,
-  },
-  typeButton: {
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-  },
-  typeButtonActiveExpense: {
-    backgroundColor: '#EF4444',
-  },
-  typeButtonActiveIncome: {
-    backgroundColor: '#10B981',
-  },
-  typeButtonText: {
-    color: '#64748B',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  typeButtonTextActive: {
-    color: '#FFFFFF',
-  },
-  closeIconButton: {
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: radius.pill,
-    height: 36,
-    justifyContent: 'center',
-    width: 36,
-  },
-  scrollContent: {
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-  },
-  amountHeroContainer: {
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderColor: '#E2E8F0',
-    borderRadius: 18,
-    borderWidth: 1.5,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: spacing.xs,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  amountHeroError: {
-    borderColor: colors.destructive,
-  },
-  currencyPrefix: {
-    color: '#64748B',
-    fontSize: 22,
-    fontWeight: '800',
-    marginRight: 6,
-  },
-  amountHeroInput: {
-    color: '#0F172A',
-    fontSize: 34,
-    fontWeight: '900',
-    minWidth: 100,
-    textAlign: 'center',
-  },
-  quickShortcutsRow: {
-    marginTop: -spacing.xs,
-  },
-  shortcutsList: {
-    flexDirection: 'row',
-    gap: spacing.xs + 2,
-    paddingVertical: 2,
-  },
-  shortcutChip: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  shortcutChipPressed: {
-    opacity: 0.7,
-  },
-  shortcutChipText: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  shortcutChipClear: {
-    backgroundColor: '#F1F5F9',
-    borderColor: '#CBD5E1',
-  },
-  shortcutChipClearText: {
-    color: '#64748B',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  sectionContainer: {
-    gap: spacing.xs,
-  },
-  sectionHeaderRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  sectionLabel: {
-    color: '#64748B',
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  moreCategoriesBtn: {
-    paddingVertical: 2,
-  },
-  moreCategoriesText: {
-    color: colors.primary,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  categoryGrid: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingVertical: spacing.xs,
-  },
-  categoryCard: {
-    alignItems: 'center',
-    gap: 6,
-    width: 68,
-  },
-  categoryCardSelected: {
-    transform: [{ scale: 1.05 }],
-  },
-  categoryIconBadge: {
-    alignItems: 'center',
-    borderColor: 'transparent',
-    borderRadius: 20,
-    borderWidth: 2,
-    height: 52,
-    justifyContent: 'center',
-    width: 52,
-  },
-  categoryIconBadgeSelected: {
-    borderColor: colors.primary,
-    elevation: 3,
-    shadowColor: colors.primary,
-    shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-  },
-  categoryNameText: {
-    color: '#64748B',
-    fontSize: 11,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  categoryNameTextSelected: {
-    color: colors.primary,
-    fontWeight: '800',
-  },
-  paymentMethodsList: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  paymentMethodChip: {
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderColor: '#E2E8F0',
-    borderRadius: radius.pill,
-    borderWidth: 1.5,
-    flexDirection: 'row',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  paymentMethodChipSelected: {
-    backgroundColor: '#1E293B',
-    borderColor: '#1E293B',
-  },
-  paymentMethodChipText: {
-    color: '#475569',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  paymentMethodChipTextSelected: {
-    color: '#FFFFFF',
-  },
-  compactDetailRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  counterpartyInputWrap: {
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderColor: '#E2E8F0',
-    borderRadius: 14,
-    borderWidth: 1.5,
-    flex: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-  },
-  compactInput: {
-    color: '#0F172A',
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  receiptActionChip: {
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderColor: '#E2E8F0',
-    borderRadius: 14,
-    borderWidth: 1.5,
-    flexDirection: 'row',
-    gap: 4,
-    maxWidth: 130,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  receiptActionChipActive: {
-    backgroundColor: '#EFF6FF',
-    borderColor: colors.primary,
-  },
-  receiptActionChipText: {
-    color: '#64748B',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  receiptActionChipTextActive: {
-    color: colors.primary,
-  },
-  advancedToggleBtn: {
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-  advancedToggleText: {
-    color: '#64748B',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  advancedFieldsPanel: {
-    backgroundColor: '#F8FAFC',
-    borderColor: '#E2E8F0',
-    borderRadius: 16,
-    borderWidth: 1,
-    gap: spacing.sm,
-    padding: spacing.md,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  dateField: {
-    flex: 2,
-  },
-  timeField: {
-    flex: 1,
-  },
-  reimbursableRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.xs,
-  },
-  reimbursableTitle: {
-    color: '#0F172A',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  reimbursableSubtitle: {
-    color: '#64748B',
-    fontSize: 12,
-  },
   actionBtnContainer: {
     gap: spacing.sm,
-    marginTop: spacing.xs,
-    paddingBottom: spacing.md,
+    paddingTop: spacing.xs,
   },
-  saveBigButton: {
-    alignItems: 'center',
-    borderRadius: 18,
-    elevation: 4,
-    minHeight: 56,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 12,
-    shadowColor: '#2563EB',
-    shadowOffset: { height: 4, width: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-  },
-  saveBigButtonExpense: {
-    backgroundColor: colors.primary,
-  },
-  saveBigButtonIncome: {
-    backgroundColor: '#10B981',
-    shadowColor: '#10B981',
-  },
-  saveBigButtonDisabled: {
-    opacity: 0.6,
-  },
-  saveBigButtonText: {
-    color: '#FFFFFF',
+  actionSheetTitle: {
+    ...typography.sectionTitle,
     fontSize: 16,
     fontWeight: '800',
-    textAlign: 'center',
+  },
+  closeIconButton: {
+    padding: spacing.xs,
+  },
+  container: {
+    flex: 1,
   },
   errorBanner: {
-    color: colors.destructive,
+    ...typography.metadata,
+    color: '#EF4444',
     fontSize: 12,
     fontWeight: '600',
-    paddingHorizontal: 4,
-  },
-  claimMembershipNotice: {
-    backgroundColor: '#FEF3C7',
-    borderColor: '#FDE68A',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    color: '#92400E',
-    fontSize: 12,
-    fontWeight: '600',
-    padding: spacing.sm,
+    paddingHorizontal: spacing.xs,
   },
   loadingContainer: {
     alignItems: 'center',
     flex: 1,
-    gap: spacing.sm,
     justifyContent: 'center',
-  },
-  loadingText: {
-    color: colors.textSecondary,
-    fontSize: typography.body.fontSize,
-  },
-  modalOverlay: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    flex: 1,
-    justifyContent: 'flex-end',
-    padding: spacing.md,
-  },
-  actionSheetContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    gap: spacing.sm,
-    padding: spacing.lg,
-    width: '100%',
-  },
-  actionSheetTitle: {
-    color: '#0F172A',
-    fontSize: 18,
-    fontWeight: '800',
-    textAlign: 'center',
   },
   modalScreenHeader: {
     alignItems: 'center',
-    borderBottomColor: '#E2E8F0',
     borderBottomWidth: 1,
     flexDirection: 'row',
+    height: 56,
     justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+  },
+  saveBigButton: {
+    alignItems: 'center',
+    borderRadius: radius.md,
+    height: 54,
+    justifyContent: 'center',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+  },
+  saveBigButtonDisabled: {
+    opacity: 0.6,
+  },
+  saveBigButtonExpense: {
+    backgroundColor: '#EF4444',
+    elevation: 3,
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  saveBigButtonIncome: {
+    backgroundColor: '#10B981',
+    elevation: 3,
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  saveBigButtonText: {
+    ...typography.body,
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  scrollContent: {
+    gap: spacing.md,
+    paddingBottom: spacing.xxl + 24,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
   },
 });
