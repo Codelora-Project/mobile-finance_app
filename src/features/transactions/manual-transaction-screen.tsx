@@ -5,7 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   BackHandler,
+  Easing,
   Modal,
   Pressable,
   ScrollView,
@@ -259,6 +261,24 @@ export function ManualTransactionScreen({
   const savingRef = useRef(false);
   const deletingRef = useRef(false);
   const amountInputRef = useRef<TextInput | null>(null);
+  const slideAnim = useRef(new Animated.Value(450)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        duration: 280,
+        easing: Easing.out(Easing.cubic),
+        toValue: 0,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        duration: 240,
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fadeAnim, slideAnim]);
 
   const isDirty = useMemo(
     () => serializeForm(form) !== serializeForm(initialForm),
@@ -494,10 +514,15 @@ export function ManualTransactionScreen({
   })();
 
   return (
-    <View style={styles.backdropOverlay}>
+    <Animated.View style={[styles.backdropOverlay, { opacity: fadeAnim }]}>
       <Pressable onPress={handleExit} style={styles.backdropTouchArea} />
 
-      <View style={styles.bottomSheetModal}>
+      <Animated.View
+        style={[
+          styles.bottomSheetModal,
+          { transform: [{ translateY: slideAnim }] },
+        ]}
+      >
         {/* Drag Indicator */}
         <View style={styles.dragHandle} />
 
@@ -587,7 +612,7 @@ export function ManualTransactionScreen({
             <Text style={styles.currencyPrefix}>Rp</Text>
             <TextInput
               accessibilityLabel="Amount *"
-              autoFocus={!isEditMode}
+              autoFocus={false}
               inputMode="decimal"
               keyboardType="number-pad"
               onChangeText={(text) => {
@@ -982,7 +1007,7 @@ export function ManualTransactionScreen({
             ) : null}
           </View>
         </ScrollView>
-      </View>
+      </Animated.View>
 
       {/* Category Picker Modal */}
       <Modal
@@ -1096,7 +1121,7 @@ export function ManualTransactionScreen({
           </View>
         </Pressable>
       </Modal>
-    </View>
+    </Animated.View>
   );
 }
 
