@@ -277,80 +277,98 @@ export function TransactionHistoryScreen() {
     });
   };
 
+  const headerBg = isDark ? '#0F172A' : '#1D4ED8';
+
   return (
     <Screen>
-      {/* Top Header */}
-      <View
-        style={[
-          styles.header,
-          {
-            backgroundColor: colors.surface,
-            borderBottomColor: colors.border,
-          },
-        ]}
-      >
-        <View style={styles.headerLeft}>
-          <Text
-            accessibilityRole="header"
-            style={[styles.title, { color: colors.textPrimary }]}
+      {/* TOP SOLID BLUE HEADER */}
+      <View style={[styles.solidHeader, { backgroundColor: headerBg }]}>
+        {/* Row 1: Title + Filter button */}
+        <View style={styles.headerTopRow}>
+          <View style={styles.headerLeft}>
+            <Text
+              accessibilityRole="header"
+              style={styles.headerTitle}
+            >
+              {t.transactions.title}
+            </Text>
+            <Text style={styles.headerSubtitle}>
+              {t.transactions.subtitle}
+            </Text>
+          </View>
+
+          <Pressable
+            accessibilityLabel={
+              activeFilterCount > 0
+                ? `${t.transactions.filters} (${activeFilterCount})`
+                : t.transactions.filters
+            }
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => setFiltersVisible(true)}
+            style={({ pressed }) => [
+              styles.filterHeaderBtn,
+              activeFilterCount > 0
+                ? { backgroundColor: 'rgba(255,255,255,0.25)', borderColor: '#FFFFFF' }
+                : { backgroundColor: 'rgba(255,255,255,0.15)', borderColor: 'rgba(255,255,255,0.35)' },
+              pressed ? styles.pressed : null,
+            ]}
           >
-            {t.transactions.title}
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            {t.transactions.subtitle}
-          </Text>
+            <MaterialCommunityIcons
+              color='#FFFFFF'
+              name='tune-variant'
+              size={20}
+            />
+            {activeFilterCount > 0 ? (
+              <View
+                style={[
+                  styles.filterBadgePill,
+                  { backgroundColor: '#FFFFFF' },
+                ]}
+              >
+                <Text style={[styles.filterBadgeText, { color: headerBg }]}>{activeFilterCount}</Text>
+              </View>
+            ) : null}
+          </Pressable>
         </View>
 
-        <Pressable
-          accessibilityLabel={
-            activeFilterCount > 0
-              ? `${t.transactions.filters} (${activeFilterCount})`
-              : t.transactions.filters
-          }
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={() => setFiltersVisible(true)}
-          style={({ pressed }) => [
-            styles.filterHeaderBtn,
-            {
-              backgroundColor:
-                activeFilterCount > 0
-                  ? isDark
-                    ? '#1E3A8A'
-                    : '#EFF6FF'
-                  : isDark
-                    ? colors.surfaceSecondary
-                    : '#F1F5F9',
-              borderColor:
-                activeFilterCount > 0
-                  ? colors.primary
-                  : isDark
-                    ? colors.border
-                    : '#E2E8F0',
-            },
-            pressed ? styles.pressed : null,
+        {/* Row 2: Search bar embedded in header */}
+        <View
+          style={[
+            styles.searchContainer,
+            { backgroundColor: 'rgba(255,255,255,0.15)', borderColor: 'rgba(255,255,255,0.25)' },
           ]}
         >
           <MaterialCommunityIcons
-            color={activeFilterCount > 0 ? colors.primary : colors.textPrimary}
-            name="tune-variant"
+            color='rgba(255,255,255,0.7)'
+            name='magnify'
             size={20}
           />
-          {activeFilterCount > 0 ? (
-            <View
-              style={[
-                styles.filterBadgePill,
-                { backgroundColor: colors.primary },
-              ]}
+          <TextInput
+            accessibilityLabel={t.transactions.searchPlaceholder}
+            onChangeText={setSearch}
+            placeholder={t.transactions.searchPlaceholder}
+            placeholderTextColor='rgba(255,255,255,0.55)'
+            style={[styles.searchInput, { color: '#FFFFFF' }]}
+            value={search}
+          />
+          {search.length > 0 ? (
+            <Pressable
+              accessibilityLabel='Clear search'
+              hitSlop={8}
+              onPress={() => setSearch('')}
             >
-              <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
-            </View>
+              <MaterialCommunityIcons
+                color='rgba(255,255,255,0.7)'
+                name='close-circle'
+                size={18}
+              />
+            </Pressable>
           ) : null}
-        </Pressable>
+        </View>
       </View>
-
-      {/* Search & Quick Filter Section */}
-      <View style={styles.controls}>
+      {/* Quick Filters */}
+      <View style={[styles.controls, { backgroundColor: colors.background }]}>
         {feedbackMessage ? (
           <View
             style={[
@@ -374,45 +392,6 @@ export function TransactionHistoryScreen() {
             </Text>
           </View>
         ) : null}
-
-        {/* Modern Search Bar */}
-        <View
-          style={[
-            styles.searchContainer,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-              shadowColor: colors.textPrimary,
-            },
-          ]}
-        >
-          <MaterialCommunityIcons
-            color={colors.textSecondary}
-            name="magnify"
-            size={20}
-          />
-          <TextInput
-            accessibilityLabel={t.transactions.searchPlaceholder}
-            onChangeText={setSearch}
-            placeholder={t.transactions.searchPlaceholder}
-            placeholderTextColor={colors.textSecondary}
-            style={[styles.searchInput, { color: colors.textPrimary }]}
-            value={search}
-          />
-          {search.length > 0 ? (
-            <Pressable
-              accessibilityLabel="Clear search"
-              hitSlop={8}
-              onPress={() => setSearch('')}
-            >
-              <MaterialCommunityIcons
-                color={colors.textSecondary}
-                name="close-circle"
-                size={18}
-              />
-            </Pressable>
-          ) : null}
-        </View>
 
         {/* Quick Filter Chips Horizontal Scroll */}
         <ScrollView
@@ -696,15 +675,17 @@ export function TransactionHistoryScreen() {
                   : `−${formatMoney(Math.abs(row.totalNetMinor), 'IDR')}`;
 
               return (
-                <View style={styles.dateHeaderRow}>
-                  <Text
-                    style={[
-                      styles.dateHeaderTitle,
-                      { color: colors.textPrimary },
-                    ]}
-                  >
-                    {formattedDate}
-                  </Text>
+                <View style={[styles.dateHeaderRow, { backgroundColor: colors.background }]}>
+                  <View style={[styles.dateHeaderPill, { backgroundColor: isDark ? colors.surfaceSecondary : '#EFF6FF' }]}>
+                    <Text
+                      style={[
+                        styles.dateHeaderTitle,
+                        { color: isDark ? colors.textSecondary : '#1D4ED8' },
+                      ]}
+                    >
+                      {formattedDate.toUpperCase()}
+                    </Text>
+                  </View>
                   <Text
                     style={[
                       styles.dateHeaderNet,
@@ -731,125 +712,125 @@ export function TransactionHistoryScreen() {
             const title =
               transaction.counterparty?.trim() || transaction.categoryName;
 
+            const isLast = (() => {
+              const idx = rows.findIndex((r) => r.key === row.key);
+              return idx === rows.length - 1 || rows[idx + 1]?.kind === 'header';
+            })();
+
             return (
-              <View
-                style={[
-                  styles.cardContainer,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    shadowColor: colors.textPrimary,
-                  },
+              <Pressable
+                accessibilityLabel={`${title}, ${formatMoney(
+                  transaction.amountMinor,
+                  transaction.currencyCode,
+                )}`}
+                accessibilityRole='button'
+                onPress={() => router.push(`/transactions/${transaction.id}`)}
+                style={({ pressed }) => [
+                  styles.timelineRow,
+                  { backgroundColor: colors.surface },
+                  pressed ? { opacity: 0.75 } : null,
                 ]}
               >
-                <Pressable
-                  accessibilityLabel={`${title}, ${formatMoney(
-                    transaction.amountMinor,
-                    transaction.currencyCode,
-                  )}`}
-                  accessibilityRole="button"
-                  onPress={() => router.push(`/transactions/${transaction.id}`)}
-                  style={({ pressed }) => [
-                    styles.transactionRow,
-                    pressed ? styles.pressed : null,
-                  ]}
-                >
-                  {/* Category Avatar Badge */}
+                {/* Timeline Dot & Connecting Line */}
+                <View style={styles.timelineTrackCol}>
                   <View
                     style={[
-                      styles.avatarBadge,
-                      { backgroundColor: meta.backgroundColor },
+                      styles.timelineDot,
+                      { backgroundColor: meta.color },
                     ]}
-                  >
-                    <MaterialCommunityIcons
-                      accessibilityElementsHidden
-                      color={meta.color}
-                      importantForAccessibility="no-hide-descendants"
-                      name={meta.icon}
-                      size={24}
+                  />
+                  {!isLast ? (
+                    <View
+                      style={[
+                        styles.timelineLine,
+                        { backgroundColor: colors.border },
+                      ]}
                     />
-                  </View>
+                  ) : null}
+                </View>
 
-                  {/* Info Column */}
-                  <View style={styles.rowText}>
+                {/* Content */}
+                <View style={styles.timelineContentCol}>
+                  {/* Row 1: title + amount */}
+                  <View style={styles.timelineMainRow}>
                     <Text
                       numberOfLines={1}
-                      style={[styles.rowTitle, { color: colors.textPrimary }]}
+                      style={[styles.timelineItemTitle, { color: colors.textPrimary }]}
                     >
                       {title}
                     </Text>
-
-                    <View style={styles.rowMetadataWrap}>
-                      <Text
-                        numberOfLines={1}
-                        style={[
-                          styles.rowMetadata,
-                          { color: colors.textSecondary },
-                        ]}
-                      >
-                        {transaction.categoryName}
-                      </Text>
-
-                      {transaction.hasReceipt ? (
-                        <View
-                          style={[
-                            styles.receiptPill,
-                            {
-                              backgroundColor: isDark ? '#312E81' : '#EDE9FE',
-                              borderColor: isDark ? '#4338CA' : '#DDD6FE',
-                            },
-                          ]}
-                        >
-                          <MaterialCommunityIcons
-                            color="#7C3AED"
-                            name="receipt-outline"
-                            size={10}
-                          />
-                          <Text style={styles.receiptPillText}>
-                            {t.home.receiptBadge}
-                          </Text>
-                        </View>
-                      ) : null}
-
-                      {transaction.isReimbursable ? (
-                        <View
-                          style={[
-                            styles.reimbursablePill,
-                            {
-                              backgroundColor: isDark ? '#78350F' : '#FEF3C7',
-                              borderColor: isDark ? '#92400E' : '#FDE68A',
-                            },
-                          ]}
-                        >
-                          <MaterialCommunityIcons
-                            color="#D97706"
-                            name="briefcase-outline"
-                            size={10}
-                          />
-                          <Text style={styles.reimbursablePillText}>
-                            {t.transactions.reimbursableBadge}
-                          </Text>
-                        </View>
-                      ) : null}
-                    </View>
+                    <Text
+                      style={[
+                        styles.timelineAmount,
+                        {
+                          color:
+                            transaction.type === 'expense'
+                              ? colors.destructive
+                              : colors.positive,
+                        },
+                      ]}
+                    >
+                      {transaction.type === 'expense' ? '−' : '+'}
+                      {formatMoney(
+                        transaction.amountMinor,
+                        transaction.currencyCode,
+                      )}
+                    </Text>
                   </View>
 
-                  {/* Amount Column */}
-                  <Text
-                    style={
-                      transaction.type === 'expense'
-                        ? [styles.expenseAmount, { color: colors.destructive }]
-                        : [styles.incomeAmount, { color: colors.positive }]
-                    }
-                  >
-                    {transaction.type === 'expense' ? '−' : '+'}
-                    {formatMoney(
-                      transaction.amountMinor,
-                      transaction.currencyCode,
-                    )}
-                  </Text>
-                </Pressable>
-              </View>
+                  {/* Row 2: category + badges */}
+                  <View style={styles.timelineMetaRow}>
+                    <Text
+                      numberOfLines={1}
+                      style={[styles.timelineCategoryName, { color: colors.textSecondary }]}
+                    >
+                      {transaction.categoryName}
+                    </Text>
+
+                    {transaction.hasReceipt ? (
+                      <View
+                        style={[
+                          styles.receiptPill,
+                          {
+                            backgroundColor: isDark ? '#312E81' : '#EDE9FE',
+                            borderColor: isDark ? '#4338CA' : '#DDD6FE',
+                          },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          color='#7C3AED'
+                          name='receipt-outline'
+                          size={10}
+                        />
+                        <Text style={styles.receiptPillText}>
+                          {t.home.receiptBadge}
+                        </Text>
+                      </View>
+                    ) : null}
+
+                    {transaction.isReimbursable ? (
+                      <View
+                        style={[
+                          styles.reimbursablePill,
+                          {
+                            backgroundColor: isDark ? '#78350F' : '#FEF3C7',
+                            borderColor: isDark ? '#92400E' : '#FDE68A',
+                          },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          color='#D97706'
+                          name='briefcase-outline'
+                          size={10}
+                        />
+                        <Text style={styles.reimbursablePillText}>
+                          {t.transactions.reimbursableBadge}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </View>
+              </Pressable>
             );
           }}
         />
@@ -872,46 +853,34 @@ export function TransactionHistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  avatarBadge: {
-    alignItems: 'center',
-    borderRadius: 14,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
-  cardContainer: {
-    borderRadius: 16,
-    borderWidth: 1.5,
-    elevation: 2,
-    marginHorizontal: spacing.md,
-    marginVertical: 4,
-    overflow: 'hidden',
-    shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-  },
+
   controls: {
     gap: spacing.sm,
+    paddingBottom: spacing.xs,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.xs,
   },
   dateHeaderNet: {
     fontSize: 12,
     fontWeight: '700',
   },
+  dateHeaderPill: {
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
   dateHeaderRow: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.lg,
+    paddingBottom: 4,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md + 4,
   },
   dateHeaderTitle: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 0.2,
-    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   emptyAction: {
     marginTop: spacing.lg,
@@ -938,12 +907,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
-  expenseAmount: {
-    flexShrink: 0,
-    fontSize: 15,
-    fontWeight: '800',
-    paddingLeft: spacing.xs,
-  },
+
   feedbackBanner: {
     alignItems: 'center',
     borderRadius: radius.md,
@@ -983,32 +947,44 @@ const styles = StyleSheet.create({
   footerLoader: {
     padding: spacing.lg,
   },
-  header: {
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingBottom: spacing.sm + 2,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.xs,
-  },
   headerLeft: {
     flex: 1,
     gap: 2,
   },
-  incomeAmount: {
-    flexShrink: 0,
-    fontSize: 15,
-    fontWeight: '800',
-    paddingLeft: spacing.xs,
+  headerSubtitle: {
+    color: 'rgba(255,255,255,0.70)',
+    fontSize: 12,
+    fontWeight: '500',
   },
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: -0.3,
+  },
+  headerTopRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+
   list: {
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xxl,
     paddingTop: spacing.xs,
   },
   pressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.985 }],
+    opacity: 0.78,
+  },
+  solidHeader: {
+    elevation: 4,
+    gap: spacing.sm,
+    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    shadowColor: '#1D4ED8',
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
   },
   quickChip: {
     alignItems: 'center',
@@ -1054,38 +1030,15 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
   },
-  rowMetadata: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  rowMetadataWrap: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 3,
-  },
-  rowText: {
-    flex: 1,
-    gap: 1,
-    minWidth: 0,
-  },
-  rowTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
+
   searchContainer: {
     alignItems: 'center',
-    borderRadius: 16,
-    borderWidth: 1.5,
-    elevation: 2,
+    borderRadius: radius.pill,
+    borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.xs + 2,
     paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    shadowOffset: { height: 1, width: 0 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
+    paddingVertical: 10,
   },
   searchInput: {
     flex: 1,
@@ -1105,19 +1058,59 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     textAlign: 'center',
   },
-  subtitle: {
+  timelineAmount: {
+    flexShrink: 0,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  timelineCategoryName: {
+    flexShrink: 1,
     fontSize: 12,
     fontWeight: '500',
   },
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
+  timelineContentCol: {
+    flex: 1,
+    gap: 3,
+    minWidth: 0,
+    paddingBottom: 10,
+    paddingTop: 2,
   },
-  transactionRow: {
+  timelineDot: {
+    borderRadius: radius.pill,
+    height: 10,
+    marginTop: 6,
+    width: 10,
+  },
+  timelineItemTitle: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+    marginRight: 8,
+  },
+  timelineLine: {
+    flex: 1,
+    marginTop: 2,
+    width: 2,
+  },
+  timelineMainRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: spacing.md,
+    justifyContent: 'space-between',
+  },
+  timelineMetaRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    gap: 12,
     paddingHorizontal: spacing.md,
-    paddingVertical: 12,
+    paddingTop: spacing.sm,
+  },
+  timelineTrackCol: {
+    alignItems: 'center',
+    width: 14,
   },
 });
