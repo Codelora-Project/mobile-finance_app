@@ -295,7 +295,7 @@ export function ManualTransactionScreen({
   const resolvedInitialType: TransactionType =
     params.type === 'income' ? 'income' : 'expense';
 
-  const resolvedInitialCategory: SelectedReference | null = (() => {
+  const resolvedInitialCategory = useMemo<SelectedReference | null>(() => {
     if (isEditMode) return null;
     const catList =
       resolvedInitialType === 'income'
@@ -316,7 +316,7 @@ export function ManualTransactionScreen({
       if (found) return { id: found.id, name: found.name };
     }
     return null;
-  })();
+  }, [isEditMode, params.categoryId, params.categoryName, resolvedInitialType]);
 
   const [form, setForm] = useState<FormState>(() =>
     createDefaultForm(resolvedInitialCategory, resolvedInitialType),
@@ -352,13 +352,13 @@ export function ManualTransactionScreen({
   useEffect(() => {
     Animated.parallel([
       Animated.timing(slideAnim, {
-        duration: 280,
+        duration: 250,
         easing: Easing.out(Easing.cubic),
         toValue: 0,
         useNativeDriver: true,
       }),
       Animated.timing(fadeAnim, {
-        duration: 240,
+        duration: 200,
         toValue: 1,
         useNativeDriver: true,
       }),
@@ -367,7 +367,7 @@ export function ManualTransactionScreen({
         amountInputRef.current?.focus();
       }
     });
-  }, [fadeAnim, resolvedInitialCategory, slideAnim]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isDirty = useMemo(
     () => serializeForm(form) !== serializeForm(initialForm),
@@ -428,22 +428,11 @@ export function ManualTransactionScreen({
     }
   }, [isEditMode, loadTransaction]);
 
-  // Navigation Guard
+  // Seamless Instant Exit (Frictionless Dismiss)
   const handleExit = useCallback(() => {
     if (savingRef.current || deletingRef.current) return;
-    if (isDirty) {
-      Alert.alert('Discard changes?', 'Your unsaved changes will be lost.', [
-        { style: 'cancel', text: 'Keep Editing' },
-        {
-          onPress: () => router.back(),
-          style: 'destructive',
-          text: 'Discard',
-        },
-      ]);
-      return;
-    }
     router.back();
-  }, [isDirty, router]);
+  }, [router]);
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener(
@@ -528,13 +517,24 @@ export function ManualTransactionScreen({
       if (isEditMode && transactionId) {
         await updateTransaction(database, transactionId, input);
         router.dismissTo({
-          params: { feedback: 'Transaction updated.' },
+          params: {
+            feedback:
+              language === 'id'
+                ? 'Transaksi berhasil diubah'
+                : 'Transaction updated.',
+          },
           pathname: '/transactions',
         });
       } else {
-        await createTransaction(database, input);
+        const created = await createTransaction(database, input);
         router.dismissTo({
-          params: { feedback: 'Transaction recorded.' },
+          params: {
+            feedback:
+              language === 'id'
+                ? 'Transaksi berhasil dicatat'
+                : 'Transaction recorded.',
+            undoCreatedId: String(created.id),
+          },
           pathname: '/transactions',
         });
       }
@@ -549,38 +549,32 @@ export function ManualTransactionScreen({
   }, [database, form, isEditMode, router, transactionId]);
 
   // Delete Transaction (for Edit Mode)
-  const handleDelete = useCallback(() => {
+  const handleDelete = useCallback(async () => {
     if (!transactionId || deletingRef.current || savingRef.current) return;
-    Alert.alert(
-      'Delete transaction?',
-      'This transaction and attached receipts will be deleted permanently.',
-      [
-        { style: 'cancel', text: 'Cancel' },
-        {
-          onPress: async () => {
-            deletingRef.current = true;
-            setDeleting(true);
-            try {
-              await deleteTransaction(database, transactionId);
-              router.dismissTo({
-                params: { feedback: 'Transaction deleted.' },
-                pathname: '/transactions',
-              });
-            } catch (delError) {
-              deletingRef.current = false;
-              setDeleting(false);
-              setErrors((curr) => ({
-                ...curr,
-                submit: getOperationMessage(delError),
-              }));
-            }
-          },
-          style: 'destructive',
-          text: 'Delete',
+    deletingRef.current = true;
+    setDeleting(true);
+    try {
+      const { input: undoInput } = buildSaveInput(form);
+      await deleteTransaction(database, transactionId);
+      router.dismissTo({
+        params: {
+          feedback:
+            language === 'id'
+              ? 'Transaksi berhasil dihapus'
+              : 'Transaction deleted.',
+          undoPayload: undoInput ? JSON.stringify(undoInput) : undefined,
         },
-      ],
-    );
-  }, [database, router, transactionId]);
+        pathname: '/transactions',
+      });
+    } catch (delError) {
+      deletingRef.current = false;
+      setDeleting(false);
+      setErrors((curr) => ({
+        ...curr,
+        submit: getOperationMessage(delError),
+      }));
+    }
+  }, [database, form, language, router, transactionId]);
 
   if (loading) {
     return (
@@ -1221,7 +1215,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   backdropTouchArea: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
   },
   bottomSheetModal: {
     backgroundColor: '#FFFFFF',
@@ -1233,6 +1227,7 @@ const styles = StyleSheet.create({
     shadowOffset: { height: -4, width: 0 },
     shadowOpacity: 0.15,
     shadowRadius: 16,
+    zIndex: 10,
   },
   dragHandle: {
     alignSelf: 'center',

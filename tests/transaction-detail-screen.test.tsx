@@ -5,7 +5,6 @@ import {
   waitFor,
 } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { Alert } from 'react-native';
 
 import { TransactionDetailScreen } from '@/features/transactions/transaction-detail-screen';
 
@@ -105,13 +104,7 @@ describe('transaction detail screen', () => {
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/42/receipt');
   });
 
-  it('deletes with confirmation and returns to the refetching list', async () => {
-    const alertSpy = jest
-      .spyOn(Alert, 'alert')
-      .mockImplementation((_title, _message, buttons) => {
-        const deleteButton = buttons?.find((button) => button.text === 'Hapus');
-        deleteButton?.onPress?.();
-      });
+  it('deletes instantly without blocking modal and returns to the refetching list', async () => {
     await render(<TransactionDetailScreen transactionId={42} />);
     await screen.findAllByText('Coffee Shop');
 
@@ -125,16 +118,13 @@ describe('transaction detail screen', () => {
     );
     await waitFor(() =>
       expect(mockRouter.dismissTo).toHaveBeenCalledWith({
-        params: { feedback: 'Transaksi berhasil dihapus.' },
+        params: expect.objectContaining({
+          feedback: 'Transaksi berhasil dihapus.',
+          undoPayload: expect.any(String),
+        }),
         pathname: '/transactions',
       }),
     );
-    expect(alertSpy).toHaveBeenCalledWith(
-      'Hapus transaksi?',
-      'Tindakan ini tidak dapat dibatalkan.',
-      expect.any(Array),
-    );
-    alertSpy.mockRestore();
   });
 
   it('locks edit and delete while the transaction is in a submitted claim', async () => {

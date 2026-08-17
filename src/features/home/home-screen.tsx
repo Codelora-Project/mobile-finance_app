@@ -1,7 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -34,7 +34,12 @@ import {
   type HomePeriod,
   type HomeSummary,
 } from '@/features/home/home-repository';
-import type { TransactionListItem } from '@/features/transactions/transaction-repository';
+import {
+  createTransaction,
+  deleteTransaction,
+  type SaveTransactionInput,
+  type TransactionListItem,
+} from '@/features/transactions/transaction-repository';
 import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
 import type { Language } from '@/lib/i18n/translations';
@@ -111,6 +116,79 @@ export function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestId = useRef(0);
+
+  const { feedback, undoCreatedId, undoPayload } = useLocalSearchParams<{
+    feedback?: string | string[];
+    undoCreatedId?: string;
+    undoPayload?: string;
+  }>();
+  const feedbackMessage = Array.isArray(feedback) ? feedback[0] : feedback;
+
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [undoCreatedTransactionId, setUndoCreatedTransactionId] = useState<number | null>(null);
+  const [undoDeletedPayload, setUndoDeletedPayload] = useState<SaveTransactionInput | null>(null);
+  const [isUndoing, setIsUndoing] = useState(false);
+  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (feedbackMessage) {
+      setToastMessage(feedbackMessage);
+      if (undoCreatedId) {
+        setUndoCreatedTransactionId(Number(undoCreatedId));
+        setUndoDeletedPayload(null);
+      } else if (undoPayload) {
+        try {
+          const parsed = JSON.parse(undoPayload) as SaveTransactionInput;
+          setUndoDeletedPayload(parsed);
+          setUndoCreatedTransactionId(null);
+        } catch {
+          setUndoDeletedPayload(null);
+        }
+      } else {
+        setUndoCreatedTransactionId(null);
+        setUndoDeletedPayload(null);
+      }
+      setToastVisible(true);
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => {
+        setToastVisible(false);
+      }, 5000);
+    }
+  }, [feedbackMessage, undoCreatedId, undoPayload]);
+
+  const handleUndo = useCallback(async () => {
+    if (isUndoing) return;
+    setIsUndoing(true);
+    try {
+      if (undoCreatedTransactionId) {
+        await deleteTransaction(database, undoCreatedTransactionId);
+        setUndoCreatedTransactionId(null);
+        setToastMessage(
+          language === 'id'
+            ? 'Penambahan transaksi dibatalkan'
+            : 'Transaction addition undone',
+        );
+      } else if (undoDeletedPayload) {
+        await createTransaction(database, undoDeletedPayload);
+        setUndoDeletedPayload(null);
+        setToastMessage(
+          language === 'id'
+            ? 'Transaksi berhasil dipulihkan'
+            : 'Transaction restored',
+        );
+      }
+      void loadSummary(period, referenceDate, 'refresh');
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => {
+        setToastVisible(false);
+      }, 2500);
+    } catch (err) {
+      if (__DEV__) console.warn('Could not execute undo action', err);
+    } finally {
+      setIsUndoing(false);
+    }
+  }, [database, isUndoing, language, loadSummary, period, referenceDate, undoCreatedTransactionId, undoDeletedPayload]);
 
   const loadSummary = useCallback(
     async (
@@ -1177,6 +1255,71 @@ export function HomeScreen() {
           </View>
         ) : null}
       </ScrollView>
+
+      {/* Modern Floating Undo Toast on Home */}
+      {toastVisible && toastMessage ? (
+        <View
+          style={[
+            styles.floatingUndoToast,
+            {
+              backgroundColor: isDark ? '#1E293B' : '#0F172A',
+              borderColor: isDark ? '#334155' : '#1E293B',
+            },
+          ]}
+        >
+          <View style={styles.undoToastLeft}>
+            <MaterialCommunityIcons
+              color='#38BDF8'
+              name='information-outline'
+              size={20}
+            />
+            <Text
+              accessibilityLiveRegion='polite'
+              numberOfLines={1}
+              style={styles.undoToastText}
+            >
+              {toastMessage}
+            </Text>
+          </View>
+
+          {undoCreatedTransactionId || undoDeletedPayload ? (
+            <Pressable
+              accessibilityLabel='Undo action'
+              accessibilityRole='button'
+              disabled={isUndoing}
+              hitSlop={8}
+              onPress={() => void handleUndo()}
+              style={({ pressed }) => [
+                styles.undoButton,
+                pressed && styles.pressed,
+              ]}
+            >
+              <MaterialCommunityIcons
+                color='#FBBF24'
+                name='undo-variant'
+                size={16}
+              />
+              <Text style={styles.undoButtonText}>
+                {language === 'id' ? 'BATALKAN' : 'UNDO'}
+              </Text>
+            </Pressable>
+          ) : null}
+
+          <Pressable
+            accessibilityLabel='Close notification'
+            accessibilityRole='button'
+            hitSlop={8}
+            onPress={() => setToastVisible(false)}
+            style={styles.closeToastBtn}
+          >
+            <MaterialCommunityIcons
+              color='#94A3B8'
+              name='close'
+              size={18}
+            />
+          </Pressable>
+        </View>
+      ) : null}
     </Screen>
   );
 }
@@ -1628,5 +1771,58 @@ const styles = StyleSheet.create({
   timelineTrackCol: {
     alignItems: 'center',
     width: 14,
+  },
+  closeToastBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 2,
+  },
+  floatingUndoToast: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    bottom: spacing.lg,
+    elevation: 8,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
+    left: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    position: 'absolute',
+    right: spacing.md,
+    shadowColor: '#000000',
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    zIndex: 999,
+  },
+  undoButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(251, 191, 36, 0.15)',
+    borderRadius: radius.pill,
+    flexDirection: 'row',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  undoButtonText: {
+    color: '#FBBF24',
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  undoToastLeft: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    gap: spacing.xs + 2,
+    minWidth: 0,
+  },
+  undoToastText: {
+    color: '#FFFFFF',
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

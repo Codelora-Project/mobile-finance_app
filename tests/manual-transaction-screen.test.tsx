@@ -297,8 +297,7 @@ describe('manual transaction form', () => {
     await waitFor(() => expect(mockRouter.dismissTo).toHaveBeenCalled());
   });
 
-  it('guards Back when the form has unsaved changes', async () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(jest.fn());
+  it('dismisses cleanly without blocking alert when Close modal is pressed', async () => {
     await render(
       <LanguageProvider initialLanguage="en">
         <ManualTransactionScreen />
@@ -308,13 +307,7 @@ describe('manual transaction form', () => {
     await fireEvent.changeText(screen.getByLabelText('Amount *'), '1000');
     await fireEvent.press(screen.getByLabelText('Close modal'));
 
-    expect(alertSpy).toHaveBeenCalledWith(
-      'Discard changes?',
-      'Your unsaved changes will be lost.',
-      expect.any(Array),
-    );
-    expect(mockRouter.back).not.toHaveBeenCalled();
-    alertSpy.mockRestore();
+    expect(mockRouter.back).toHaveBeenCalled();
   });
   it('prefills category and type when opened via quick category action', async () => {
     mockParams = { categoryId: '1', categoryName: 'Food & Drink', type: 'expense' };

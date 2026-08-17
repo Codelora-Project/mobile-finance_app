@@ -136,39 +136,48 @@ export function TransactionDetailScreen({
     if (!transaction || deletingRef.current) {
       return;
     }
-    const warning = claimMembership
-      ? `${t.transactions.deleteClaimWarning} (${claimMembership.claimTitle})`
-      : t.transactions.deleteDialogDesc;
+    deletingRef.current = true;
+    setDeleting(true);
+    const undoPayload = {
+      amountMinor: transaction.amountMinor,
+      categoryId: transaction.categoryId,
+      counterparty: transaction.counterparty,
+      currencyCode: transaction.currencyCode,
+      isReimbursable: transaction.isReimbursable,
+      localDate: transaction.localDate,
+      note: transaction.note,
+      occurredAt: transaction.occurredAt,
+      paymentMethodId: transaction.paymentMethodId,
+      receipt: transaction.receipt
+        ? {
+            mimeType: transaction.receipt.mimeType,
+            sourceImageUri: transaction.receipt.storageKey,
+          }
+        : null,
+      timezoneOffsetMinutes: transaction.timezoneOffsetMinutes,
+      type: transaction.type,
+    };
 
-    Alert.alert(t.transactions.deleteDialogTitle, warning, [
-      { style: 'cancel', text: t.common.cancel },
-      {
-        onPress: () => {
-          if (deletingRef.current) return;
-          deletingRef.current = true;
-          setDeleting(true);
-          deleteTransaction(database, transactionId)
-            .then(() => {
-              router.dismissTo({
-                params: { feedback: t.transactions.deletedSuccess },
-                pathname: '/transactions',
-              });
-            })
-            .catch((deleteError) => {
-              const message = isCodedError(deleteError)
-                ? deleteError.message
-                : mapError(deleteError, 'DATABASE_WRITE_FAILED').message;
-              setError(message);
-            })
-            .finally(() => {
-              deletingRef.current = false;
-              setDeleting(false);
-            });
-        },
-        style: 'destructive',
-        text: t.common.delete,
-      },
-    ]);
+    deleteTransaction(database, transactionId)
+      .then(() => {
+        router.dismissTo({
+          params: {
+            feedback: t.transactions.deletedSuccess,
+            undoPayload: JSON.stringify(undoPayload),
+          },
+          pathname: '/transactions',
+        });
+      })
+      .catch((deleteError) => {
+        const message = isCodedError(deleteError)
+          ? deleteError.message
+          : mapError(deleteError, 'DATABASE_WRITE_FAILED').message;
+        setError(message);
+      })
+      .finally(() => {
+        deletingRef.current = false;
+        setDeleting(false);
+      });
   }
 
   if (loading && !transaction) {
