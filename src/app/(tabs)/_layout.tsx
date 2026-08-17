@@ -18,6 +18,8 @@ function getTabIcon(routeName: string, focused: boolean): TabIconName {
       return focused ? 'home-variant' : 'home-variant-outline';
     case 'transactions':
       return focused ? 'format-list-bulleted-square' : 'format-list-bulleted';
+    case 'goals':
+      return focused ? 'bullseye-arrow' : 'bullseye';
     case 'analytics':
       return focused ? 'chart-box' : 'chart-box-outline';
     case 'claims':
@@ -250,6 +252,12 @@ export default function MainTabLayout() {
           }}
         />
         <Tabs.Screen
+          name="goals"
+          options={{
+            title: t.tabs.goals,
+          }}
+        />
+        <Tabs.Screen
           name="action"
           options={{
             href: null,
@@ -314,7 +322,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     height: 64,
     justifyContent: 'space-around',
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
     paddingVertical: 4,
     shadowOffset: { height: 4, width: 0 },
     shadowOpacity: 0.1,
@@ -326,7 +334,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     height: 28,
     justifyContent: 'center',
-    width: 48,
+    width: 44,
   },
   iconPillFocused: {
     borderRadius: 14,

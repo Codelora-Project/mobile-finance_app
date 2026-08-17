@@ -325,26 +325,53 @@ export function HomeScreen() {
           </Text>
         </View>
 
-        <Pressable
-          accessibilityLabel={t.tabs.settings}
-          accessibilityRole='button'
-          hitSlop={8}
-          onPress={() => router.push('/settings')}
-          style={({ pressed }) => [
-            styles.settingsButton,
-            {
-              backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
-              borderColor: colors.border,
-            },
-            pressed && styles.pressed,
-          ]}
-        >
-          <MaterialCommunityIcons
-            color={colors.textPrimary}
-            name='cog-outline'
-            size={22}
-          />
-        </Pressable>
+        <View style={styles.headerRightActions}>
+          {/* Flame Streak Badge */}
+          <View
+            style={[
+              styles.streakBadge,
+              {
+                backgroundColor: isDark ? '#78350F' : '#FEF3C7',
+                borderColor: isDark ? '#92400E' : '#FDE68A',
+              },
+            ]}
+          >
+            <MaterialCommunityIcons
+              color='#F59E0B'
+              name='fire'
+              size={18}
+            />
+            <Text
+              style={[
+                styles.streakBadgeText,
+                { color: isDark ? '#FDE68A' : '#B45309' },
+              ]}
+            >
+              {habitStats?.currentStreak ?? 0} {t.habits.streakDays}
+            </Text>
+          </View>
+
+          <Pressable
+            accessibilityLabel={t.tabs.settings}
+            accessibilityRole='button'
+            hitSlop={8}
+            onPress={() => router.push('/settings')}
+            style={({ pressed }) => [
+              styles.settingsButton,
+              {
+                backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+                borderColor: colors.border,
+              },
+              pressed && styles.pressed,
+            ]}
+          >
+            <MaterialCommunityIcons
+              color={colors.textPrimary}
+              name='cog-outline'
+              size={22}
+            />
+          </Pressable>
+        </View>
       </View>
 
       {/* 2. MAIN SCROLLABLE BODY */}
@@ -1621,6 +1648,11 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.75,
   },
+  headerRightActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
   settingsButton: {
     alignItems: 'center',
     borderRadius: 14,
@@ -1628,6 +1660,19 @@ const styles = StyleSheet.create({
     height: 42,
     justifyContent: 'center',
     width: 42,
+  },
+  streakBadge: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  streakBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
   },
   summaryPeriodLabel: {
     fontSize: 12,

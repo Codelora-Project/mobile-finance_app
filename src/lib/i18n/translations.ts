@@ -4,6 +4,7 @@ export type TranslationSchema = {
   tabs: {
     home: string;
     transactions: string;
+    goals: string;
     add: string;
     analytics: string;
     claims: string;
@@ -266,6 +267,7 @@ export const translations: Record<Language, TranslationSchema> = {
     tabs: {
       home: 'Beranda',
       transactions: 'Riwayat',
+      goals: 'Target',
       add: 'Catat',
       analytics: 'Laporan',
       claims: 'Klaim',
@@ -554,6 +556,7 @@ export const translations: Record<Language, TranslationSchema> = {
     tabs: {
       home: 'Home',
       transactions: 'Transactions',
+      goals: 'Goals',
       add: 'Add',
       analytics: 'Reports',
       claims: 'Claims',
