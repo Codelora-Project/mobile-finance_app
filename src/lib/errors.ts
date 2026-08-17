@@ -1,8 +1,6 @@
 export const appErrorCodes = [
   'VALIDATION_FAILED',
   'DATABASE_WRITE_FAILED',
-  'OCR_FAILED',
-  'OCR_TIMEOUT',
   'FILE_OPERATION_FAILED',
   'CLAIM_LOCKED',
   'CLAIM_CURRENCY_MISMATCH',
@@ -27,15 +25,6 @@ const errorDefinitions: Record<AppErrorCode, Omit<UserFacingError, 'code'>> = {
   DATABASE_WRITE_FAILED: {
     title: 'Changes not saved',
     message: "We couldn't save your changes. Try again.",
-  },
-  OCR_FAILED: {
-    title: 'Receipt not recognized',
-    message:
-      "We couldn't read this receipt. Try another photo or enter the details manually.",
-  },
-  OCR_TIMEOUT: {
-    title: 'Receipt scan timed out',
-    message: 'The scan took too long. Try again or enter the details manually.',
   },
   FILE_OPERATION_FAILED: {
     title: 'File unavailable',

@@ -464,7 +464,7 @@ export function TransactionDetailScreen({
             label={t.transactions.receipt}
             value={
               transaction.receipt
-                ? `${receiptName(transaction.receipt.storageKey)} (${transaction.receipt.ocrStatus.replaceAll('_', ' ')})`
+                ? receiptName(transaction.receipt.storageKey)
                 : t.transactions.noReceipt
             }
           />

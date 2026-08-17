@@ -31,10 +31,6 @@ export type TransactionReceipt = Readonly<{
   id: number;
   storageKey: string;
   mimeType: ReceiptMimeType;
-  ocrStatus: 'not_processed' | 'processed' | 'partial' | 'failed';
-  ocrRawText: string | null;
-  subtotalMinor: number | null;
-  taxMinor: number | null;
 }>;
 
 export type Transaction = Readonly<{
@@ -72,10 +68,6 @@ export type SaveTransactionInput = Readonly<{
   receipt: Readonly<{
     sourceImageUri: string;
     mimeType: ReceiptMimeType;
-    ocrStatus?: TransactionReceipt['ocrStatus'];
-    ocrRawText?: string | null;
-    subtotalMinor?: number | null;
-    taxMinor?: number | null;
   }> | null;
 }>;
 
@@ -136,7 +128,7 @@ type TransactionRow = {
   receipt_id: number | null;
   receipt_storage_key: string | null;
   receipt_mime_type: ReceiptMimeType | null;
-  receipt_ocr_status: TransactionReceipt['ocrStatus'] | null;
+  receipt_ocr_status: string | null;
   receipt_ocr_raw_text: string | null;
   receipt_subtotal_minor: number | null;
   receipt_tax_minor: number | null;
@@ -212,8 +204,7 @@ function mapTransaction(row: TransactionRow): Transaction {
   const hasReceipt =
     row.receipt_id !== null &&
     row.receipt_storage_key !== null &&
-    row.receipt_mime_type !== null &&
-    row.receipt_ocr_status !== null;
+    row.receipt_mime_type !== null;
 
   return {
     amountMinor: row.amount_minor,
@@ -233,11 +224,7 @@ function mapTransaction(row: TransactionRow): Transaction {
       ? {
           id: row.receipt_id as number,
           mimeType: row.receipt_mime_type as ReceiptMimeType,
-          ocrStatus: row.receipt_ocr_status as TransactionReceipt['ocrStatus'],
-          ocrRawText: row.receipt_ocr_raw_text,
           storageKey: row.receipt_storage_key as string,
-          subtotalMinor: row.receipt_subtotal_minor,
-          taxMinor: row.receipt_tax_minor,
         }
       : null,
     timezoneOffsetMinutes: row.timezone_offset_minutes,
@@ -390,30 +377,9 @@ function normalizeReceipt(input: SaveTransactionInput['receipt']) {
       'Choose a JPEG, PNG, or WEBP receipt image.',
     );
   }
-  const ocrStatus = input.ocrStatus ?? 'not_processed';
-  if (
-    !['not_processed', 'processed', 'partial', 'failed'].includes(ocrStatus)
-  ) {
-    throw createCodedError(
-      'VALIDATION_FAILED',
-      'Receipt OCR status is invalid.',
-    );
-  }
-  const ocrRawText = input.ocrRawText?.normalize('NFC').trim() || null;
-  const normalizeOptionalMoney = (value: number | null | undefined) => {
-    if (value === null || value === undefined) return null;
-    if (!Number.isSafeInteger(value) || value < 0) {
-      throw createCodedError('VALIDATION_FAILED', 'Receipt amount is invalid.');
-    }
-    return value;
-  };
   return {
     mimeType: input.mimeType,
-    ocrRawText,
-    ocrStatus,
     sourceImageUri,
-    subtotalMinor: normalizeOptionalMoney(input.subtotalMinor),
-    taxMinor: normalizeOptionalMoney(input.taxMinor),
   };
 }
 
@@ -435,25 +401,11 @@ function normalizeInput(input: SaveTransactionInput, now: number) {
   ) {
     throw createCodedError(
       'VALIDATION_FAILED',
-      'Choose a valid payment method.',
+      'Choose a payment method.',
     );
   }
-
-  const currencyCode = input.currencyCode.trim().toUpperCase();
-  if (!/^[A-Z]{3}$/.test(currencyCode)) {
-    throw createCodedError('VALIDATION_FAILED', 'Currency is invalid.');
-  }
-  if (
-    !Number.isSafeInteger(input.occurredAt) ||
-    !Number.isInteger(input.timezoneOffsetMinutes) ||
-    !isLocalDate(input.localDate) ||
-    toLocalDate(input.occurredAt, input.timezoneOffsetMinutes) !==
-      input.localDate
-  ) {
-    throw createCodedError(
-      'VALIDATION_FAILED',
-      'Enter a valid transaction date and time.',
-    );
+  if (!Number.isSafeInteger(input.occurredAt)) {
+    throw createCodedError('VALIDATION_FAILED', 'Enter a valid date.');
   }
   if (input.occurredAt > now) {
     throw createCodedError(
@@ -461,7 +413,36 @@ function normalizeInput(input: SaveTransactionInput, now: number) {
       'Transaction date cannot be in the future.',
     );
   }
-
+  if (!Number.isInteger(input.timezoneOffsetMinutes)) {
+    throw createCodedError('VALIDATION_FAILED', 'Enter a valid date.');
+  }
+  const localDate = toLocalDate(
+    input.occurredAt,
+    input.timezoneOffsetMinutes,
+  );
+  if (input.localDate !== localDate) {
+    throw createCodedError('VALIDATION_FAILED', 'Enter a valid date.');
+  }
+  if (input.currencyCode !== 'IDR') {
+    throw createCodedError(
+      'VALIDATION_FAILED',
+      'Only Indonesian Rupiah (IDR) is supported.',
+    );
+  }
+  const counterparty = normalizeOptionalText(input.counterparty ?? '');
+  if (counterparty && Array.from(counterparty).length > 100) {
+    throw createCodedError(
+      'VALIDATION_FAILED',
+      'Merchant or payer must be 100 characters or fewer.',
+    );
+  }
+  const note = normalizeOptionalText(input.note ?? '');
+  if (note && Array.from(note).length > 500) {
+    throw createCodedError(
+      'VALIDATION_FAILED',
+      'Note must be 500 characters or fewer.',
+    );
+  }
   const receipt = normalizeReceipt(input.receipt);
   if (input.type === 'income' && input.isReimbursable) {
     throw createCodedError(
@@ -475,14 +456,19 @@ function normalizeInput(input: SaveTransactionInput, now: number) {
       'Income cannot have a receipt.',
     );
   }
-
   return {
-    ...input,
-    counterparty: normalizeOptionalText(input.counterparty ?? ''),
-    currencyCode,
+    amountMinor: input.amountMinor,
+    categoryId: input.categoryId,
+    counterparty,
+    currencyCode: 'IDR',
     isReimbursable: input.type === 'expense' && input.isReimbursable,
-    note: normalizeNote(input.note),
-    receipt,
+    localDate,
+    note,
+    occurredAt: input.occurredAt,
+    paymentMethodId: input.paymentMethodId,
+    receipt: input.type === 'expense' ? receipt : null,
+    timezoneOffsetMinutes: input.timezoneOffsetMinutes,
+    type: input.type,
   };
 }
 
@@ -515,17 +501,15 @@ async function validateReferences(
   }
 }
 
+type PreparedReceipt = {
+  storageKey: string;
+  mimeType: ReceiptMimeType;
+} | null;
+
 async function writeReceipt(
   database: SQLiteDatabase,
   transactionId: number,
-  receipt:
-    | (Omit<
-        NonNullable<ReturnType<typeof normalizeReceipt>>,
-        'sourceImageUri'
-      > & {
-        storageKey: string;
-      })
-    | null,
+  receipt: PreparedReceipt,
   timestamp: number,
 ) {
   if (!receipt) {
@@ -543,16 +527,10 @@ async function writeReceipt(
   if (existingReceipt) {
     await database.runAsync(
       `UPDATE receipts
-       SET storage_key = ?, mime_type = ?, ocr_status = ?,
-           ocr_raw_text = ?, subtotal_minor = ?, tax_minor = ?,
-           updated_at = ?
+       SET storage_key = ?, mime_type = ?, updated_at = ?
        WHERE transaction_id = ?`,
       receipt.storageKey,
       receipt.mimeType,
-      receipt.ocrStatus,
-      receipt.ocrRawText,
-      receipt.subtotalMinor,
-      receipt.taxMinor,
       timestamp,
       transactionId,
     );
@@ -565,25 +543,16 @@ async function writeReceipt(
       storage_key,
       mime_type,
       ocr_status,
-      ocr_raw_text,
-      subtotal_minor,
-      tax_minor,
       created_at,
       updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, 'not_processed', ?, ?)`,
     transactionId,
     receipt.storageKey,
     receipt.mimeType,
-    receipt.ocrStatus,
-    receipt.ocrRawText,
-    receipt.subtotalMinor,
-    receipt.taxMinor,
     timestamp,
     timestamp,
   );
 }
-
-type PreparedReceipt = Parameters<typeof writeReceipt>[2];
 
 async function prepareReceipt(
   receipt: ReturnType<typeof normalizeReceipt>,

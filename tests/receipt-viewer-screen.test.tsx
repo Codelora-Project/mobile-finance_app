@@ -36,11 +36,7 @@ const transaction = {
   receipt: {
     id: 7,
     mimeType: 'image/jpeg',
-    ocrRawText: null,
-    ocrStatus: 'processed',
     storageKey: 'receipts/saved.jpg',
-    subtotalMinor: null,
-    taxMinor: null,
   },
 };
 

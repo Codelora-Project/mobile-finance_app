@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
-    "@infinitered/react-native-mlkit-text-recognition": "^5.0.1",
     "expo": "~57.0.13",
     "expo-camera": "~57.0.3",
     "expo-constants": "~57.0.11",

@@ -64,7 +64,6 @@ const savedTransaction = {
   receipt: {
     id: 7,
     mimeType: 'image/jpeg',
-    ocrStatus: 'not_processed',
     storageKey: 'receipts/receipt.jpg',
   },
   timezoneOffsetMinutes: 420,
@@ -90,7 +89,7 @@ describe('transaction detail screen', () => {
     expect(screen.getByText('Food & Drink')).toBeOnTheScreen();
     expect(screen.getByText('Cash')).toBeOnTheScreen();
     expect(screen.getByText('Client meeting')).toBeOnTheScreen();
-    expect(screen.getByText('receipt.jpg (not processed)')).toBeOnTheScreen();
+    expect(screen.getByText('receipt.jpg')).toBeOnTheScreen();
     expect(screen.getAllByText('Dapat Diklaim').length).toBeGreaterThanOrEqual(
       1,
     );

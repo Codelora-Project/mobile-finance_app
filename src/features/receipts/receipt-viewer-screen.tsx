@@ -95,9 +95,7 @@ export function ReceiptViewerScreen({
             source={{ uri: receipt.uri }}
             style={styles.image}
           />
-          <Text style={styles.metadata}>
-            {receipt.mimeType} · {receipt.ocrStatus.replaceAll('_', ' ')}
-          </Text>
+          <Text style={styles.metadata}>{receipt.mimeType}</Text>
           <AppButton
             label="Replace or remove receipt"
             onPress={() => router.push(`/transactions/${transactionId}/edit`)}
