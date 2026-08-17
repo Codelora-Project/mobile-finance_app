@@ -11,18 +11,18 @@ import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
 export type TransactionRowItemProps = {
-  isLast: boolean;
+  isLast?: boolean;
   onPress: (id: number) => void;
-  receiptBadgeText: string;
-  reimbursableBadgeText: string;
+  receiptBadgeText?: string;
+  reimbursableBadgeText?: string;
   transaction: TransactionListItem;
 };
 
 export const TransactionRowItem = memo(function TransactionRowItem({
-  isLast,
+  isLast = false,
   onPress,
-  receiptBadgeText,
-  reimbursableBadgeText,
+  receiptBadgeText = 'Struk',
+  reimbursableBadgeText = 'Reimburse',
   transaction,
 }: TransactionRowItemProps) {
   const { colors, isDark } = useTheme();
