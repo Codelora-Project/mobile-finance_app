@@ -4,7 +4,9 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Modal,
+  PanResponder,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -305,9 +307,92 @@ export function HomeScreen() {
     void loadSummary(newPeriod, referenceDate, 'focus');
   };
 
+  const panY = useRef(new Animated.Value(0)).current;
+  const backdropAnim = useRef(new Animated.Value(0)).current;
+
+  const handleCloseCustomizeModal = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(panY, {
+        duration: 180,
+        toValue: 450,
+        useNativeDriver: true,
+      }),
+      Animated.timing(backdropAnim, {
+        duration: 180,
+        toValue: 0,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setCustomizeModalVisible(false);
+      panY.setValue(0);
+    });
+  }, [backdropAnim, panY]);
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 5,
+        onPanResponderMove: (_, gestureState) => {
+          if (gestureState.dy > 0) {
+            panY.setValue(gestureState.dy);
+          }
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dy > 70 || gestureState.vy > 0.4) {
+            Animated.parallel([
+              Animated.timing(panY, {
+                duration: 160,
+                toValue: 450,
+                useNativeDriver: true,
+              }),
+              Animated.timing(backdropAnim, {
+                duration: 160,
+                toValue: 0,
+                useNativeDriver: true,
+              }),
+            ]).start(() => {
+              setCustomizeModalVisible(false);
+              panY.setValue(0);
+            });
+          } else {
+            Animated.parallel([
+              Animated.spring(panY, {
+                friction: 8,
+                tension: 100,
+                toValue: 0,
+                useNativeDriver: true,
+              }),
+              Animated.timing(backdropAnim, {
+                duration: 150,
+                toValue: 1,
+                useNativeDriver: true,
+              }),
+            ]).start();
+          }
+        },
+        onStartShouldSetPanResponder: () => true,
+      }),
+    [backdropAnim, panY],
+  );
+
   const handleOpenCustomizeModal = () => {
+    panY.setValue(400);
+    backdropAnim.setValue(0);
     setSelectedIdsInModal(pinnedCategoryIds);
     setCustomizeModalVisible(true);
+    Animated.parallel([
+      Animated.spring(panY, {
+        friction: 8,
+        tension: 100,
+        toValue: 0,
+        useNativeDriver: true,
+      }),
+      Animated.timing(backdropAnim, {
+        duration: 200,
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const handleToggleModalCategory = (id: number) => {
@@ -324,7 +409,7 @@ export function HomeScreen() {
     try {
       await setQuickLogCategoryIds(database, selectedIdsInModal);
       setPinnedCategoryIds(selectedIdsInModal);
-      setCustomizeModalVisible(false);
+      handleCloseCustomizeModal();
     } catch (err) {
       if (__DEV__) console.warn('Could not save quick log categories', err);
     }
@@ -1096,27 +1181,52 @@ export function HomeScreen() {
 
       {/* Quick Log Customization Bottom Sheet Modal */}
       <Modal
-        animationType='slide'
-        onRequestClose={() => setCustomizeModalVisible(false)}
+        animationType='none'
+        onRequestClose={handleCloseCustomizeModal}
         transparent
         visible={customizeModalVisible}
       >
-        <Pressable
-          onPress={() => setCustomizeModalVisible(false)}
-          style={styles.modalBackdrop}
-        >
-          <Pressable
-            onPress={(e) => e.stopPropagation()}
+        <View style={styles.modalRoot}>
+          {/* Static Fade Backdrop (fades away without sliding down) */}
+          <Animated.View
+            style={[
+              StyleSheet.absoluteFill,
+              styles.modalBackdrop,
+              {
+                opacity: Animated.multiply(
+                  backdropAnim,
+                  panY.interpolate({
+                    extrapolate: 'clamp',
+                    inputRange: [0, 300],
+                    outputRange: [1, 0],
+                  }),
+                ),
+              },
+            ]}
+          >
+            <Pressable
+              accessibilityLabel='Close modal'
+              onPress={handleCloseCustomizeModal}
+              style={StyleSheet.absoluteFill}
+            />
+          </Animated.View>
+
+          {/* Animated Sliding Bottom Sheet */}
+          <Animated.View
             style={[
               styles.customizeModalSheet,
               {
                 backgroundColor: colors.surface,
                 borderColor: colors.border,
+                transform: [{ translateY: panY }],
               },
             ]}
           >
-            {/* Sheet Handle */}
-            <View style={styles.sheetHandleWrap}>
+            {/* Sheet Handle (Drag to dismiss area) */}
+            <View
+              {...panResponder.panHandlers}
+              style={styles.sheetHandleWrap}
+            >
               <View
                 style={[
                   styles.sheetHandle,
@@ -1125,8 +1235,11 @@ export function HomeScreen() {
               />
             </View>
 
-            {/* Modal Header */}
-            <View style={styles.customizeModalHeader}>
+            {/* Modal Header (Drag to dismiss area) */}
+            <View
+              {...panResponder.panHandlers}
+              style={styles.customizeModalHeader}
+            >
               <View style={{ flex: 1 }}>
                 <Text
                   style={[
@@ -1148,7 +1261,7 @@ export function HomeScreen() {
               <Pressable
                 accessibilityLabel='Close modal'
                 hitSlop={8}
-                onPress={() => setCustomizeModalVisible(false)}
+                onPress={handleCloseCustomizeModal}
                 style={styles.modalCloseBtn}
               >
                 <MaterialCommunityIcons
@@ -1258,8 +1371,8 @@ export function HomeScreen() {
                 />
               </View>
             </View>
-          </Pressable>
-        </Pressable>
+          </Animated.View>
+        </View>
       </Modal>
 
       {/* Modern Floating Undo Toast on Home */}
@@ -1553,6 +1666,8 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalRoot: {
     flex: 1,
     justifyContent: 'flex-end',
   },

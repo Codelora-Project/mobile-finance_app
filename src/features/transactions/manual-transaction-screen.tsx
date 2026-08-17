@@ -9,6 +9,7 @@ import {
   BackHandler,
   Easing,
   Modal,
+  PanResponder,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -428,11 +429,74 @@ export function ManualTransactionScreen({
     }
   }, [isEditMode, loadTransaction]);
 
-  // Seamless Instant Exit (Frictionless Dismiss)
+  const isClosingRef = useRef(false);
+
+  // Seamless Animated Exit (Smooth Slide & Fade Out)
   const handleExit = useCallback(() => {
-    if (savingRef.current || deletingRef.current) return;
-    router.back();
-  }, [router]);
+    if (savingRef.current || deletingRef.current || isClosingRef.current) return;
+    isClosingRef.current = true;
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        duration: 180,
+        toValue: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        duration: 180,
+        toValue: 0,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      router.back();
+    });
+  }, [fadeAnim, router, slideAnim]);
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 5,
+        onPanResponderMove: (_, gestureState) => {
+          if (gestureState.dy > 0) {
+            slideAnim.setValue(gestureState.dy);
+          }
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dy > 70 || gestureState.vy > 0.4) {
+            isClosingRef.current = true;
+            Animated.parallel([
+              Animated.timing(slideAnim, {
+                duration: 160,
+                toValue: 500,
+                useNativeDriver: true,
+              }),
+              Animated.timing(fadeAnim, {
+                duration: 160,
+                toValue: 0,
+                useNativeDriver: true,
+              }),
+            ]).start(() => {
+              router.back();
+            });
+          } else {
+            Animated.parallel([
+              Animated.spring(slideAnim, {
+                friction: 8,
+                tension: 100,
+                toValue: 0,
+                useNativeDriver: true,
+              }),
+              Animated.timing(fadeAnim, {
+                duration: 150,
+                toValue: 1,
+                useNativeDriver: true,
+              }),
+            ]).start();
+          }
+        },
+        onStartShouldSetPanResponder: () => true,
+      }),
+    [fadeAnim, router, slideAnim],
+  );
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener(
@@ -597,20 +661,57 @@ export function ManualTransactionScreen({
   })();
 
   return (
-    <Animated.View style={[styles.backdropOverlay, { opacity: fadeAnim }]}>
-      <Pressable onPress={handleExit} style={styles.backdropTouchArea} />
+    <View style={styles.rootContainer}>
+      {/* Static Fade Backdrop (fades away without sliding down) */}
+      <Animated.View
+        style={[
+          styles.backdropOverlay,
+          {
+            opacity: Animated.multiply(
+              fadeAnim,
+              slideAnim.interpolate({
+                extrapolate: 'clamp',
+                inputRange: [0, 300],
+                outputRange: [1, 0],
+              }),
+            ),
+          },
+        ]}
+      >
+        <Pressable
+          accessibilityLabel="Close transaction form"
+          onPress={handleExit}
+          style={styles.backdropTouchArea}
+        />
+      </Animated.View>
 
       <Animated.View
         style={[
           styles.bottomSheetModal,
-          { transform: [{ translateY: slideAnim }] },
+          {
+            backgroundColor: isDark ? colors.surface : '#FFFFFF',
+            transform: [{ translateY: slideAnim }],
+          },
         ]}
       >
-        {/* Drag Indicator */}
-        <View style={styles.dragHandle} />
+        {/* Drag Indicator (Drag to dismiss area) */}
+        <View
+          {...panResponder.panHandlers}
+          style={styles.dragHandleWrap}
+        >
+          <View
+            style={[
+              styles.dragHandle,
+              { backgroundColor: isDark ? '#475569' : '#E2E8F0' },
+            ]}
+          />
+        </View>
 
-        {/* Header: Type Toggle + Close */}
-        <View style={styles.sheetHeader}>
+        {/* Header: Type Toggle + Close (Drag to dismiss area) */}
+        <View
+          {...panResponder.panHandlers}
+          style={styles.sheetHeader}
+        >
           <View style={styles.typeSegment}>
             <Pressable
               accessibilityRole="tab"
@@ -1204,18 +1305,26 @@ export function ManualTransactionScreen({
           </View>
         </Pressable>
       </Modal>
-    </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   backdropOverlay: {
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(15, 23, 42, 0.65)',
-    flex: 1,
-    justifyContent: 'flex-end',
   },
   backdropTouchArea: {
     ...StyleSheet.absoluteFill,
+  },
+  dragHandleWrap: {
+    alignItems: 'center',
+    paddingBottom: spacing.xs,
+    paddingTop: spacing.sm,
+  },
+  rootContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
   },
   bottomSheetModal: {
     backgroundColor: '#FFFFFF',

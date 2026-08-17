@@ -307,7 +307,7 @@ describe('manual transaction form', () => {
     await fireEvent.changeText(screen.getByLabelText('Amount *'), '1000');
     await fireEvent.press(screen.getByLabelText('Close modal'));
 
-    expect(mockRouter.back).toHaveBeenCalled();
+    await waitFor(() => expect(mockRouter.back).toHaveBeenCalled());
   });
   it('prefills category and type when opened via quick category action', async () => {
     mockParams = { categoryId: '1', categoryName: 'Food & Drink', type: 'expense' };
