@@ -21,6 +21,7 @@ import {
 import { AppButton } from '@/components/ui/app-button';
 import { AppInput } from '@/components/ui/app-input';
 import { Screen } from '@/components/ui/screen';
+import { defaultCategories, defaultPaymentMethods } from '@/db/seeds';
 import { getCategoryMeta } from '@/features/categories/category-meta';
 import { CategoryPicker } from '@/features/categories/category-picker';
 import {
@@ -230,6 +231,50 @@ function buildSaveInput(form: FormState) {
   return { errors, input };
 }
 
+
+const INITIAL_EXPENSE_CATEGORIES: Category[] = defaultCategories
+  .filter((c) => c.type === 'expense')
+  .map((c, index) => ({
+    createdAt: 0,
+    iconKey: null,
+    id: index + 1,
+    isDefault: true,
+    isFallback: !!c.isFallback,
+    name: c.name,
+    sortOrder: index,
+    systemKey: c.systemKey,
+    type: 'expense' as const,
+    updatedAt: 0,
+  }));
+
+const INITIAL_INCOME_CATEGORIES: Category[] = defaultCategories
+  .filter((c) => c.type === 'income')
+  .map((c, index) => ({
+    createdAt: 0,
+    iconKey: null,
+    id: index + 1,
+    isDefault: true,
+    isFallback: !!c.isFallback,
+    name: c.name,
+    sortOrder: index,
+    systemKey: c.systemKey,
+    type: 'income' as const,
+    updatedAt: 0,
+  }));
+
+const INITIAL_PAYMENT_METHODS: PaymentMethod[] = defaultPaymentMethods.map(
+  (pm, index) => ({
+    createdAt: 0,
+    id: index + 1,
+    isDefault: true,
+    isFallback: !!pm.isFallback,
+    name: pm.name,
+    sortOrder: index,
+    systemKey: pm.systemKey,
+    updatedAt: 0,
+  }),
+);
+
 export function ManualTransactionScreen({
   transactionId,
 }: ManualTransactionScreenProps) {
@@ -241,9 +286,11 @@ export function ManualTransactionScreen({
 
   const [form, setForm] = useState<FormState>(createDefaultForm);
   const [initialForm, setInitialForm] = useState<FormState>(createDefaultForm);
-  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
+  const [categoriesList, setCategoriesList] = useState<Category[]>(
+    INITIAL_EXPENSE_CATEGORIES,
+  );
   const [paymentMethodsList, setPaymentMethodsList] = useState<PaymentMethod[]>(
-    [],
+    INITIAL_PAYMENT_METHODS,
   );
   const [quickShortcuts, setQuickShortcuts] = useState<number[]>([
     ...DEFAULT_QUICK_SHORTCUTS,
