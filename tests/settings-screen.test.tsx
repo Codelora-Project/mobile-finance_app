@@ -102,7 +102,7 @@ describe('settings screen', () => {
       await screen.findByRole('header', { name: 'Settings' }),
     ).toBeOnTheScreen();
     expect(screen.getByText('Base Currency')).toBeOnTheScreen();
-    expect(screen.getByText('Local Storage & Cache')).toBeOnTheScreen();
+    expect(screen.getByText('Storage & Cache')).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Clear Cache' })).toBeOnTheScreen();
     expect(
       screen.getByText(/All information stays on this device/),
@@ -159,7 +159,7 @@ describe('settings screen', () => {
         </LanguageProvider>
       </ThemeProvider>,
     );
-    await screen.findByText('Local Storage & Cache');
+    await screen.findByText('Storage & Cache');
 
     await fireEvent.press(
       screen.getByRole('button', { name: 'Delete All Data' }),
@@ -228,7 +228,7 @@ describe('settings screen', () => {
     await fireEvent.press(clearBtn);
 
     await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(
-      'Local Storage & Cache',
+      'Storage & Cache',
       expect.stringContaining('Cache cleared successfully'),
     ));
     alertSpy.mockRestore();

@@ -1,6 +1,12 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { memo } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import type { StorageStats } from '@/features/settings/settings-repository';
 import { formatStorageSize } from '@/features/settings/settings-repository';
@@ -42,6 +48,10 @@ export const SettingsDataManagementCard = memo(
   }: SettingsDataManagementCardProps) {
     const { colors, isDark } = useTheme();
 
+    const totalStorageBytes = storageStats
+      ? storageStats.receiptsSizeBytes + storageStats.cacheSizeBytes
+      : 0;
+
     return (
       <View style={styles.sectionGroup}>
         <Text
@@ -63,7 +73,7 @@ export const SettingsDataManagementCard = memo(
             },
           ]}
         >
-          {/* Categories Row */}
+          {/* 1. Categories Row */}
           <Pressable
             accessibilityLabel={t.settings.categories}
             accessibilityRole="button"
@@ -90,7 +100,7 @@ export const SettingsDataManagementCard = memo(
                   size={19}
                 />
               </View>
-              <View>
+              <View style={styles.navTextWrap}>
                 <Text
                   style={[
                     styles.navRowTitle,
@@ -114,7 +124,7 @@ export const SettingsDataManagementCard = memo(
             <MaterialCommunityIcons
               color={colors.textSecondary}
               name="chevron-right"
-              size={22}
+              size={20}
             />
           </Pressable>
 
@@ -125,7 +135,7 @@ export const SettingsDataManagementCard = memo(
             ]}
           />
 
-          {/* Payment Methods Row */}
+          {/* 2. Payment Methods Row */}
           <Pressable
             accessibilityLabel={t.settings.paymentMethods}
             accessibilityRole="button"
@@ -152,7 +162,7 @@ export const SettingsDataManagementCard = memo(
                   size={19}
                 />
               </View>
-              <View>
+              <View style={styles.navTextWrap}>
                 <Text
                   style={[
                     styles.navRowTitle,
@@ -176,7 +186,7 @@ export const SettingsDataManagementCard = memo(
             <MaterialCommunityIcons
               color={colors.textSecondary}
               name="chevron-right"
-              size={22}
+              size={20}
             />
           </Pressable>
 
@@ -187,7 +197,7 @@ export const SettingsDataManagementCard = memo(
             ]}
           />
 
-          {/* Backup & Restore Row */}
+          {/* 3. Backup & Restore Row */}
           <Pressable
             accessibilityLabel={t.backup.title}
             accessibilityRole="button"
@@ -214,7 +224,7 @@ export const SettingsDataManagementCard = memo(
                   size={19}
                 />
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={styles.navTextWrap}>
                 <Text
                   style={[
                     styles.navRowTitle,
@@ -236,7 +246,7 @@ export const SettingsDataManagementCard = memo(
             <MaterialCommunityIcons
               color={colors.textSecondary}
               name="chevron-right"
-              size={22}
+              size={20}
             />
           </Pressable>
 
@@ -247,7 +257,7 @@ export const SettingsDataManagementCard = memo(
             ]}
           />
 
-          {/* Quick Export CSV Row */}
+          {/* 4. Quick Export CSV Row */}
           <Pressable
             accessibilityLabel={t.settings.quickExportTitle}
             accessibilityRole="button"
@@ -276,7 +286,7 @@ export const SettingsDataManagementCard = memo(
                   size={19}
                 />
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={styles.navTextWrap}>
                 <Text
                   style={[
                     styles.navRowTitle,
@@ -301,7 +311,7 @@ export const SettingsDataManagementCard = memo(
               <MaterialCommunityIcons
                 color={colors.textSecondary}
                 name="chevron-right"
-                size={22}
+                size={20}
               />
             )}
           </Pressable>
@@ -313,10 +323,11 @@ export const SettingsDataManagementCard = memo(
             ]}
           />
 
-          {/* Storage & Local Cache Section */}
+          {/* 5. Storage & Local Cache Section (Option A: Storage Bar + 3 Columns) */}
           <View style={styles.storageSectionContainer}>
+            {/* Header with Title & Action Button */}
             <View style={styles.storageHeaderRow}>
-              <View style={styles.navRowLeft}>
+              <View style={styles.storageHeaderLeft}>
                 <View
                   style={[
                     styles.itemIconBadge,
@@ -333,7 +344,7 @@ export const SettingsDataManagementCard = memo(
                     size={19}
                   />
                 </View>
-                <View>
+                <View style={styles.navTextWrap}>
                   <Text
                     style={[
                       styles.navRowTitle,
@@ -349,10 +360,7 @@ export const SettingsDataManagementCard = memo(
                     ]}
                   >
                     {storageStats
-                      ? `${storageStats.transactionsCount} ${t.backup.transactions.toLowerCase()} · ${formatStorageSize(
-                          storageStats.receiptsSizeBytes +
-                            storageStats.cacheSizeBytes,
-                        )}`
+                      ? `Total: ${formatStorageSize(totalStorageBytes)} · ${storageStats.transactionsCount} transaksi`
                       : language === 'id'
                         ? 'Memuat rincian...'
                         : 'Loading details...'}
@@ -371,7 +379,8 @@ export const SettingsDataManagementCard = memo(
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
-                      : '#F1F5F9',
+                      : '#EFF6FF',
+                    borderColor: isDark ? colors.border : '#BFDBFE',
                   },
                   pressed && styles.rowPressed,
                   clearingCache && { opacity: 0.6 },
@@ -384,7 +393,7 @@ export const SettingsDataManagementCard = memo(
                     <MaterialCommunityIcons
                       color={colors.primary}
                       name="broom"
-                      size={14}
+                      size={13}
                     />
                     <Text
                       style={[
@@ -399,12 +408,47 @@ export const SettingsDataManagementCard = memo(
               </Pressable>
             </View>
 
-            {/* Breakdown Mini Chips */}
+            {/* Storage Indicator Progress Bar */}
             {storageStats ? (
-              <View style={styles.storageChipsRow}>
+              <View
+                style={[
+                  styles.storageProgressBarTrack,
+                  {
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : '#E2E8F0',
+                  },
+                ]}
+              >
+                <View style={[styles.progressSegment, { backgroundColor: '#3B82F6', flex: 3 }]} />
                 <View
                   style={[
-                    styles.storageChip,
+                    styles.progressSegment,
+                    {
+                      backgroundColor: '#8B5CF6',
+                      flex: storageStats.receiptsSizeBytes > 0 ? 5 : 1,
+                    },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.progressSegment,
+                    {
+                      backgroundColor: '#F59E0B',
+                      flex: storageStats.cacheSizeBytes > 0 ? 2 : 1,
+                    },
+                  ]}
+                />
+              </View>
+            ) : null}
+
+            {/* 3 Balanced Metric Columns */}
+            {storageStats ? (
+              <View style={styles.metricsGridRow}>
+                {/* Column 1: Transaksi */}
+                <View
+                  style={[
+                    styles.metricColumnCard,
                     {
                       backgroundColor: isDark
                         ? colors.surfaceSecondary
@@ -413,25 +457,35 @@ export const SettingsDataManagementCard = memo(
                     },
                   ]}
                 >
-                  <MaterialCommunityIcons
-                    color={colors.textSecondary}
-                    name="swap-horizontal"
-                    size={13}
-                  />
+                  <View style={styles.metricCardHeader}>
+                    <View
+                      style={[styles.indicatorDot, { backgroundColor: '#3B82F6' }]}
+                    />
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.metricCardLabel,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {t.settings.storageTransactions}
+                    </Text>
+                  </View>
                   <Text
+                    numberOfLines={1}
                     style={[
-                      styles.storageChipText,
+                      styles.metricCardValue,
                       { color: colors.textPrimary },
                     ]}
                   >
-                    {storageStats.transactionsCount}{' '}
-                    {t.settings.storageTransactions}
+                    {storageStats.transactionsCount} data
                   </Text>
                 </View>
 
+                {/* Column 2: Foto Struk */}
                 <View
                   style={[
-                    styles.storageChip,
+                    styles.metricColumnCard,
                     {
                       backgroundColor: isDark
                         ? colors.surfaceSecondary
@@ -440,26 +494,35 @@ export const SettingsDataManagementCard = memo(
                     },
                   ]}
                 >
-                  <MaterialCommunityIcons
-                    color={colors.textSecondary}
-                    name="image-outline"
-                    size={13}
-                  />
+                  <View style={styles.metricCardHeader}>
+                    <View
+                      style={[styles.indicatorDot, { backgroundColor: '#8B5CF6' }]}
+                    />
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.metricCardLabel,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {t.settings.storageReceipts}
+                    </Text>
+                  </View>
                   <Text
+                    numberOfLines={1}
                     style={[
-                      styles.storageChipText,
+                      styles.metricCardValue,
                       { color: colors.textPrimary },
                     ]}
                   >
-                    {storageStats.receiptsCount}{' '}
-                    {t.settings.storageReceipts} (
-                    {formatStorageSize(storageStats.receiptsSizeBytes)})
+                    {formatStorageSize(storageStats.receiptsSizeBytes)}
                   </Text>
                 </View>
 
+                {/* Column 3: Cache / PDF */}
                 <View
                   style={[
-                    styles.storageChip,
+                    styles.metricColumnCard,
                     {
                       backgroundColor: isDark
                         ? colors.surfaceSecondary
@@ -468,19 +531,33 @@ export const SettingsDataManagementCard = memo(
                     },
                   ]}
                 >
-                  <MaterialCommunityIcons
-                    color={colors.textSecondary}
-                    name="cached"
-                    size={13}
-                  />
+                  <View style={styles.metricCardHeader}>
+                    <View
+                      style={[styles.indicatorDot, { backgroundColor: '#F59E0B' }]}
+                    />
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.metricCardLabel,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {t.settings.storageCache}
+                    </Text>
+                  </View>
                   <Text
+                    numberOfLines={1}
                     style={[
-                      styles.storageChipText,
-                      { color: colors.textPrimary },
+                      styles.metricCardValue,
+                      {
+                        color:
+                          storageStats.cacheSizeBytes > 0
+                            ? '#D97706'
+                            : colors.textPrimary,
+                      },
                     ]}
                   >
-                    {t.settings.storageCache} (
-                    {formatStorageSize(storageStats.cacheSizeBytes)})
+                    {formatStorageSize(storageStats.cacheSizeBytes)}
                   </Text>
                 </View>
               </View>
@@ -500,10 +577,12 @@ const styles = StyleSheet.create({
   clearCacheButton: {
     alignItems: 'center',
     borderRadius: radius.pill,
+    borderWidth: 1,
     flexDirection: 'row',
+    flexShrink: 0,
     gap: 4,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 5,
   },
   clearCacheButtonText: {
     ...typography.metadata,
@@ -515,12 +594,45 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: 'hidden',
   },
+  indicatorDot: {
+    borderRadius: radius.pill,
+    height: 6,
+    width: 6,
+  },
   itemIconBadge: {
     alignItems: 'center',
     borderRadius: radius.pill,
-    height: 32,
+    height: 34,
     justifyContent: 'center',
-    width: 32,
+    width: 34,
+  },
+  metricCardHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
+  },
+  metricCardLabel: {
+    ...typography.metadata,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  metricCardValue: {
+    ...typography.body,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  metricColumnCard: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flex: 1,
+    gap: 2,
+    paddingHorizontal: spacing.xs + 2,
+    paddingVertical: spacing.xs + 2,
+  },
+  metricsGridRow: {
+    flexDirection: 'row',
+    gap: spacing.xs + 2,
+    marginTop: spacing.xs,
   },
   navRowItem: {
     alignItems: 'center',
@@ -531,8 +643,10 @@ const styles = StyleSheet.create({
   },
   navRowLeft: {
     alignItems: 'center',
+    flex: 1,
     flexDirection: 'row',
-    gap: spacing.md,
+    gap: spacing.sm,
+    marginRight: spacing.xs,
   },
   navRowSubtitle: {
     ...typography.metadata,
@@ -541,6 +655,12 @@ const styles = StyleSheet.create({
   navRowTitle: {
     ...typography.body,
     fontWeight: '700',
+  },
+  navTextWrap: {
+    flex: 1,
+  },
+  progressSegment: {
+    height: '100%',
   },
   rowPressed: {
     opacity: 0.75,
@@ -555,32 +675,28 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     paddingHorizontal: spacing.xs,
   },
-  storageChip: {
+  storageHeaderLeft: {
     alignItems: 'center',
-    borderRadius: radius.sm,
-    borderWidth: 1,
+    flex: 1,
     flexDirection: 'row',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  storageChipText: {
-    ...typography.metadata,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  storageChipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: spacing.sm,
+    gap: spacing.sm,
+    marginRight: spacing.xs,
   },
   storageHeaderRow: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
+  storageProgressBarTrack: {
+    borderRadius: radius.pill,
+    flexDirection: 'row',
+    height: 6,
+    marginTop: spacing.sm,
+    overflow: 'hidden',
+    width: '100%',
+  },
   storageSectionContainer: {
+    gap: spacing.xs + 2,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
   },
