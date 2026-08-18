@@ -345,10 +345,11 @@ export function HomeScreen() {
           </View>
         ) : null}
 
-        {/* 2.1 Multi-Wallet Carousel Slider */}
+        {/* 2.1 Multi-Wallet Interactive Carousel & Balance Slider */}
         <HomeWalletCarousel
           currencyCode={summary?.currencyCode ?? 'IDR'}
           language={language}
+          onAddWalletPress={() => router.push('/wallets')}
           onSelectWallet={handleSelectWallet}
           selectedWalletId={selectedWalletId}
           walletSummary={walletSummary}

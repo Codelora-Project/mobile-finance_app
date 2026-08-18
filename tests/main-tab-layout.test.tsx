@@ -66,6 +66,7 @@ describe('main tab layout', () => {
     );
 
     expect(screen.getByText('Home')).toBeOnTheScreen();
+    expect(screen.getByText('Wallets')).toBeOnTheScreen();
     expect(screen.getByText('Transactions')).toBeOnTheScreen();
     expect(screen.getByText('Goals')).toBeOnTheScreen();
     expect(screen.getByText('Reports')).toBeOnTheScreen();
@@ -90,6 +91,7 @@ describe('main tab layout', () => {
     );
 
     expect(screen.getByText('Beranda')).toBeOnTheScreen();
+    expect(screen.getByText('Dompet')).toBeOnTheScreen();
     expect(screen.getByText('Riwayat')).toBeOnTheScreen();
     expect(screen.getByText('Target')).toBeOnTheScreen();
     expect(screen.getByText('Laporan')).toBeOnTheScreen();

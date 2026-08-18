@@ -3,6 +3,7 @@ export type Language = 'id' | 'en';
 export type TranslationSchema = {
   tabs: {
     home: string;
+    wallets: string;
     transactions: string;
     goals: string;
     add: string;
@@ -370,6 +371,7 @@ export const translations: Record<Language, TranslationSchema> = {
     // Navigation Tabs
     tabs: {
       home: 'Beranda',
+      wallets: 'Dompet',
       transactions: 'Riwayat',
       goals: 'Target',
       add: 'Catat',
@@ -775,6 +777,7 @@ export const translations: Record<Language, TranslationSchema> = {
     // Navigation Tabs
     tabs: {
       home: 'Home',
+      wallets: 'Wallets',
       transactions: 'Transactions',
       goals: 'Goals',
       add: 'Add',

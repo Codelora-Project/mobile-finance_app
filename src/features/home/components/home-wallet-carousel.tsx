@@ -81,9 +81,28 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
               size={14}
             />
           </Pressable>
+        ) : onAddWalletPress ? (
+          <Pressable
+            accessibilityLabel={
+              language === 'id' ? 'Kelola Dompet' : 'Manage Wallets'
+            }
+            accessibilityRole="button"
+            onPress={onAddWalletPress}
+            style={styles.manageHeaderBtn}
+          >
+            <Text style={[styles.manageHeaderText, { color: colors.primary }]}>
+              {language === 'id' ? 'Kelola' : 'Manage'}
+            </Text>
+            <MaterialCommunityIcons
+              color={colors.primary}
+              name="chevron-right"
+              size={16}
+            />
+          </Pressable>
         ) : (
           <Text style={[styles.walletsCount, { color: colors.textMuted }]}>
-            {wallets.length} {language === 'id' ? 'Akun Aktif' : 'Active Accounts'}
+            {wallets.length}{' '}
+            {language === 'id' ? 'Akun Aktif' : 'Active Accounts'}
           </Text>
         )}
       </View>
@@ -335,6 +354,53 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
             </Pressable>
           );
         })}
+
+        {/* Add Account Card */}
+        {onAddWalletPress ? (
+          <Pressable
+            accessibilityLabel={
+              language === 'id' ? 'Tambah Akun / Dompet Baru' : 'Add New Wallet'
+            }
+            accessibilityRole="button"
+            onPress={onAddWalletPress}
+            style={({ pressed }) => [
+              styles.card,
+              styles.addCard,
+              {
+                backgroundColor: isDark
+                  ? colors.surfaceSecondary
+                  : '#F8FAFC',
+                borderColor: colors.border,
+              },
+              pressed ? { opacity: 0.75 } : null,
+            ]}
+          >
+            <View
+              style={[
+                styles.addIconCircle,
+                { backgroundColor: isDark ? colors.surface : '#EFF6FF' },
+              ]}
+            >
+              <MaterialCommunityIcons
+                color={colors.primary}
+                name="plus"
+                size={22}
+              />
+            </View>
+            <Text
+              style={[styles.addCardText, { color: colors.textPrimary }]}
+            >
+              {language === 'id' ? 'Tambah Akun' : 'Add Account'}
+            </Text>
+            <Text
+              style={[styles.addCardSubtext, { color: colors.textMuted }]}
+            >
+              {language === 'id'
+                ? 'Bank, E-Wallet, dll'
+                : 'Bank, E-Wallet, etc'}
+            </Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -352,6 +418,32 @@ const styles = StyleSheet.create({
     height: 18,
     justifyContent: 'center',
     width: 18,
+  },
+  addCard: {
+    alignItems: 'center',
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    width: 140,
+  },
+  addCardSubtext: {
+    ...typography.metadata,
+    fontSize: 10,
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  addCardText: {
+    ...typography.metadata,
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  addIconCircle: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
   },
   breakdownText: {
     ...typography.metadata,
@@ -419,6 +511,17 @@ const styles = StyleSheet.create({
     height: 36,
     justifyContent: 'center',
     width: 36,
+  },
+  manageHeaderBtn: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 2,
+    paddingVertical: 2,
+  },
+  manageHeaderText: {
+    ...typography.metadata,
+    fontSize: 12,
+    fontWeight: '700',
   },
   netWorthCard: {
     width: 210,

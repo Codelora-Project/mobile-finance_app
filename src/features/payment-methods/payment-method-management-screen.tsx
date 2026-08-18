@@ -32,7 +32,13 @@ import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
-export function PaymentMethodManagementScreen() {
+export type PaymentMethodManagementScreenProps = {
+  hideBackButton?: boolean;
+};
+
+export function PaymentMethodManagementScreen({
+  hideBackButton = false,
+}: PaymentMethodManagementScreenProps = {}) {
   const database = useSQLiteContext();
   const router = useRouter();
   const { colors, isDark } = useTheme();
@@ -75,13 +81,16 @@ export function PaymentMethodManagementScreen() {
 
   function handleConfirmArchive(wallet: Wallet) {
     Alert.alert(
-      t.wallets.archiveWallet,
-      t.wallets.archiveWalletConfirm,
+      language === 'id' ? 'Arsipkan Dompet' : 'Archive Wallet',
+      language === 'id'
+        ? `Apakah Anda yakin ingin mengarsipkan "${wallet.name}"? Dompet ini akan disembunyikan dari daftar aktif.`
+        : `Are you sure you want to archive "${wallet.name}"? It will be hidden from active lists.`,
       [
-        { text: t.common.cancel, style: 'cancel' },
         {
-          text: t.wallets.archiveWallet,
-          style: 'destructive',
+          style: 'cancel',
+          text: t.common.cancel,
+        },
+        {
           onPress: async () => {
             try {
               await archiveWallet(database, wallet.id);
@@ -90,6 +99,8 @@ export function PaymentMethodManagementScreen() {
               Alert.alert('Error', mapError(err, 'DATABASE_WRITE_FAILED').message);
             }
           },
+          style: 'destructive',
+          text: language === 'id' ? 'Arsipkan' : 'Archive',
         },
       ],
     );
@@ -134,19 +145,23 @@ export function PaymentMethodManagementScreen() {
           },
         ]}
       >
-        <Pressable
-          accessibilityLabel={t.common.back}
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={() => router.back()}
-          style={styles.backBtn}
-        >
-          <MaterialCommunityIcons
-            color={colors.textPrimary}
-            name="arrow-left"
-            size={22}
-          />
-        </Pressable>
+        {!hideBackButton ? (
+          <Pressable
+            accessibilityLabel={t.common.back}
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => router.back()}
+            style={styles.backBtn}
+          >
+            <MaterialCommunityIcons
+              color={colors.textPrimary}
+              name="arrow-left"
+              size={22}
+            />
+          </Pressable>
+        ) : (
+          <View style={{ width: 8 }} />
+        )}
 
         <Text
           accessibilityRole="header"
@@ -717,7 +732,7 @@ const styles = StyleSheet.create({
   listContainer: {
     gap: spacing.sm,
     padding: spacing.md,
-    paddingBottom: spacing.xxl + 24,
+    paddingBottom: spacing.xxl + 84,
   },
   loadingText: {
     ...typography.body,

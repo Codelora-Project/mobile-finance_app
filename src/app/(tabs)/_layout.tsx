@@ -18,6 +18,8 @@ function getTabIcon(routeName: string, focused: boolean): TabIconName {
   switch (routeName) {
     case 'index':
       return focused ? 'home-variant' : 'home-variant-outline';
+    case 'wallets':
+      return focused ? 'wallet' : 'wallet-outline';
     case 'transactions':
       return focused ? 'format-list-bulleted-square' : 'format-list-bulleted';
     case 'goals':
@@ -180,9 +182,15 @@ function CustomFloatingTabBar({
 
   const bottomMargin = insets.bottom > 0 ? insets.bottom + 10 : 20;
 
-  const visibleRoutes = state.routes.filter(
-    (route) => route.name !== 'action' && route.name !== 'settings',
-  );
+  const HIDDEN_TAB_NAMES = new Set(['action', 'settings', 'goals', 'claims']);
+
+  const visibleRoutes = state.routes.filter((route) => {
+    if (HIDDEN_TAB_NAMES.has(route.name)) return false;
+    const href = (
+      descriptors[route.key]?.options as { href?: string | null } | undefined
+    )?.href;
+    return href !== null;
+  });
 
   return (
     <View
@@ -251,14 +259,27 @@ export default function MainTabLayout() {
           }}
         />
         <Tabs.Screen
+          name="wallets"
+          options={{
+            title: t.tabs.wallets,
+          }}
+        />
+        <Tabs.Screen
           name="transactions"
           options={{
             title: t.tabs.transactions,
           }}
         />
         <Tabs.Screen
+          name="analytics"
+          options={{
+            title: t.tabs.analytics,
+          }}
+        />
+        <Tabs.Screen
           name="goals"
           options={{
+            href: null,
             title: t.tabs.goals,
           }}
         />
@@ -270,14 +291,9 @@ export default function MainTabLayout() {
           }}
         />
         <Tabs.Screen
-          name="analytics"
-          options={{
-            title: t.tabs.analytics,
-          }}
-        />
-        <Tabs.Screen
           name="claims"
           options={{
+            href: null,
             title: t.tabs.claims,
           }}
         />
