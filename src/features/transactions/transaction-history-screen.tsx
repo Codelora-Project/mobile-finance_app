@@ -20,26 +20,26 @@ import {
 import { formatGroupDate } from '@/lib/dates';
 import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
+import type { Language, TranslationSchema } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/theme-context';
+import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 
 const PAGE_SIZE = 50;
 
-type HistoryRow =
-  | Readonly<{
-      key: string;
-      kind: 'header';
-      localDate: string;
-      totalNetMinor: number;
-    }>
-  | Readonly<{
-      key: string;
-      kind: 'transaction';
-      transaction: TransactionListItem;
-    }>;
+type DateGroup = Readonly<{
+  formattedDate: string;
+  key: string;
+  localDate: string;
+  totalNetMinor: number;
+  transactions: TransactionListItem[];
+}>;
 
-function buildRows(items: readonly TransactionListItem[]) {
-  const rows: HistoryRow[] = [];
+function buildDateGroups(
+  items: readonly TransactionListItem[],
+  language: Language,
+  t: TranslationSchema,
+): DateGroup[] {
   const grouped: Record<string, TransactionListItem[]> = {};
   for (const transaction of items) {
     if (!grouped[transaction.localDate]) {
@@ -50,7 +50,7 @@ function buildRows(items: readonly TransactionListItem[]) {
 
   const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
-  for (const date of sortedDates) {
+  return sortedDates.map((date) => {
     const dayTransactions = grouped[date] ?? [];
     const totalNetMinor = dayTransactions.reduce((acc, curr) => {
       return curr.type === 'income'
@@ -58,23 +58,14 @@ function buildRows(items: readonly TransactionListItem[]) {
         : acc - curr.amountMinor;
     }, 0);
 
-    rows.push({
-      key: `header-${date}`,
-      kind: 'header',
+    return {
+      formattedDate: formatGroupDate(date, language, t),
+      key: `date-${date}`,
       localDate: date,
       totalNetMinor,
-    });
-
-    for (const transaction of dayTransactions) {
-      rows.push({
-        key: `tx-${transaction.id}`,
-        kind: 'transaction',
-        transaction,
-      });
-    }
-  }
-
-  return rows;
+      transactions: dayTransactions,
+    };
+  });
 }
 
 export function TransactionHistoryScreen() {
@@ -223,30 +214,47 @@ export function TransactionHistoryScreen() {
     return { totalExpenseMinor: exp, totalIncomeMinor: inc };
   }, [transactions]);
 
-  const rows = useMemo(() => buildRows(transactions), [transactions]);
-
-  const renderItem = useCallback(
-    ({ item }: { item: HistoryRow }) => {
-      if (item.kind === 'header') {
-        return (
-          <TransactionDateGroupHeader
-            formattedDate={formatGroupDate(item.localDate, language, t)}
-            totalNetMinor={item.totalNetMinor}
-          />
-        );
-      }
-      return (
-        <TransactionRowItem
-          onPress={handleOpenDetail}
-          receiptBadgeText={t.home.receiptBadge}
-          transaction={item.transaction}
-        />
-      );
-    },
-    [handleOpenDetail, language, t],
+  const dateGroups = useMemo(
+    () => buildDateGroups(transactions, language, t),
+    [language, t, transactions],
   );
 
-  const keyExtractor = useCallback((item: HistoryRow) => item.key, []);
+  const renderItem = useCallback(
+    ({ item }: { item: DateGroup }) => (
+      <View
+        style={[
+          styles.dateGroupCard,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            shadowColor: colors.textPrimary,
+          },
+        ]}
+      >
+        <TransactionDateGroupHeader
+          formattedDate={item.formattedDate}
+          totalNetMinor={item.totalNetMinor}
+        />
+        <View style={styles.timelineItemsWrap}>
+          {item.transactions.map((tx, idx) => (
+            <TransactionRowItem
+              isLast={idx === item.transactions.length - 1}
+              key={tx.id}
+              onPress={handleOpenDetail}
+              receiptBadgeText={t.home.receiptBadge}
+              reimbursableBadgeText={
+                t.transactions.reimbursementStatus || 'Reimburse'
+              }
+              transaction={tx}
+            />
+          ))}
+        </View>
+      </View>
+    ),
+    [colors.border, colors.surface, colors.textPrimary, handleOpenDetail, t],
+  );
+
+  const keyExtractor = useCallback((item: DateGroup) => item.key, []);
 
   return (
     <Screen>
@@ -279,7 +287,7 @@ export function TransactionHistoryScreen() {
       ) : (
         <FlatList
           contentContainerStyle={styles.listContent}
-          data={rows}
+          data={dateGroups}
           initialNumToRender={15}
           keyExtractor={keyExtractor}
           ListEmptyComponent={
@@ -337,14 +345,27 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
+  dateGroupCard: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    elevation: 2,
+    gap: spacing.xs,
+    padding: spacing.md,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+  },
   footerLoading: {
     alignItems: 'center',
     paddingVertical: spacing.md,
   },
   listContent: {
-    gap: spacing.xs,
-    paddingBottom: spacing.xxl + 24,
+    gap: spacing.sm + 2,
+    paddingBottom: spacing.xxl + 84,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
+  },
+  timelineItemsWrap: {
+    paddingTop: 2,
   },
 });

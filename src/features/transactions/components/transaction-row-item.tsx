@@ -33,12 +33,26 @@ export const TransactionRowItem = memo(function TransactionRowItem({
     isDark,
   );
   const isTransfer = transaction.type === 'transfer';
+
+  // 1. Determine Title
+  const hasCounterparty = Boolean(transaction.counterparty?.trim());
   const title =
     isTransfer &&
     transaction.paymentMethodName &&
     transaction.transferToPaymentMethodName
       ? `${transaction.paymentMethodName} ➔ ${transaction.transferToPaymentMethodName}`
-      : transaction.counterparty?.trim() || transaction.categoryName;
+      : hasCounterparty
+      ? transaction.counterparty?.trim()
+      : transaction.categoryName;
+
+  // 2. Determine Subtitle (avoid duplicate category name when no counterparty)
+  const metaSubtitle = isTransfer
+    ? 'Transfer Antar Dompet'
+    : hasCounterparty
+    ? `${transaction.categoryName}${
+        transaction.paymentMethodName ? ` · ${transaction.paymentMethodName}` : ''
+      }`
+    : transaction.paymentMethodName || '';
 
   return (
     <Pressable
@@ -50,23 +64,30 @@ export const TransactionRowItem = memo(function TransactionRowItem({
       onPress={() => onPress(transaction.id)}
       style={({ pressed }) => [
         styles.timelineRow,
-        { backgroundColor: colors.surface },
-        pressed ? { opacity: 0.75 } : null,
+        pressed ? { opacity: 0.7 } : null,
       ]}
     >
       {/* Timeline Dot & Connecting Line */}
       <View style={styles.timelineTrackCol}>
-        <View style={[styles.timelineDot, { backgroundColor: isTransfer ? '#2563EB' : meta.color }]} />
+        <View
+          style={[
+            styles.timelineDot,
+            { backgroundColor: isTransfer ? '#2563EB' : meta.color },
+          ]}
+        />
         {!isLast ? (
           <View
-            style={[styles.timelineLine, { backgroundColor: colors.border }]}
+            style={[
+              styles.timelineLine,
+              { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)' },
+            ]}
           />
         ) : null}
       </View>
 
-      {/* Content */}
+      {/* Content Column */}
       <View style={styles.timelineContentCol}>
-        {/* Row 1: title + amount */}
+        {/* Row 1: Title & Amount */}
         <View style={styles.timelineMainRow}>
           <Text
             numberOfLines={1}
@@ -96,17 +117,19 @@ export const TransactionRowItem = memo(function TransactionRowItem({
           </Text>
         </View>
 
-        {/* Row 2: category + badges */}
+        {/* Row 2: Subtitle & Badges */}
         <View style={styles.timelineMetaRow}>
-          <Text
-            numberOfLines={1}
-            style={[
-              styles.timelineCategoryName,
-              { color: colors.textSecondary },
-            ]}
-          >
-            {isTransfer ? 'Transfer Antar Dompet' : transaction.categoryName}
-          </Text>
+          {metaSubtitle ? (
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.timelineCategoryName,
+                { color: colors.textSecondary },
+              ]}
+            >
+              {metaSubtitle}
+            </Text>
+          ) : null}
 
           {isTransfer ? (
             <View
@@ -144,7 +167,9 @@ export const TransactionRowItem = memo(function TransactionRowItem({
                 name="receipt-outline"
                 size={10}
               />
-              <Text style={styles.receiptPillText}>{receiptBadgeText}</Text>
+              <Text style={styles.receiptPillText}>
+                {receiptBadgeText}
+              </Text>
             </View>
           ) : null}
 
@@ -153,8 +178,8 @@ export const TransactionRowItem = memo(function TransactionRowItem({
               style={[
                 styles.reimbursablePill,
                 {
-                  backgroundColor: isDark ? '#78350F' : '#FEF3C7',
-                  borderColor: isDark ? '#92400E' : '#FDE68A',
+                  backgroundColor: isDark ? '#451A03' : '#FEF3C7',
+                  borderColor: isDark ? '#D97706' : '#FDE68A',
                 },
               ]}
             >
@@ -175,56 +200,6 @@ export const TransactionRowItem = memo(function TransactionRowItem({
 });
 
 const styles = StyleSheet.create({
-  timelineRow: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  timelineTrackCol: {
-    alignItems: 'center',
-    marginRight: spacing.sm,
-    width: 16,
-  },
-  timelineDot: {
-    borderRadius: radius.pill,
-    height: 10,
-    marginTop: 5,
-    width: 10,
-  },
-  timelineLine: {
-    bottom: -spacing.sm,
-    position: 'absolute',
-    top: 19,
-    width: 2,
-  },
-  timelineContentCol: {
-    flex: 1,
-    gap: 3,
-  },
-  timelineMainRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  timelineItemTitle: {
-    ...typography.body,
-    flex: 1,
-    fontWeight: '600',
-    marginRight: spacing.sm,
-  },
-  timelineAmount: {
-    ...typography.body,
-    fontWeight: '700',
-  },
-  timelineMetaRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  timelineCategoryName: {
-    ...typography.metadata,
-    flexShrink: 1,
-  },
   receiptPill: {
     alignItems: 'center',
     borderRadius: radius.pill,
@@ -256,5 +231,55 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     lineHeight: 12,
+  },
+  timelineAmount: {
+    ...typography.body,
+    fontWeight: '700',
+  },
+  timelineCategoryName: {
+    ...typography.metadata,
+    flexShrink: 1,
+  },
+  timelineContentCol: {
+    flex: 1,
+    gap: 2,
+  },
+  timelineDot: {
+    borderRadius: radius.pill,
+    height: 10,
+    marginTop: 5,
+    width: 10,
+  },
+  timelineItemTitle: {
+    ...typography.body,
+    flex: 1,
+    fontWeight: '600',
+    marginRight: spacing.sm,
+  },
+  timelineLine: {
+    bottom: -8,
+    position: 'absolute',
+    top: 18,
+    width: 2,
+  },
+  timelineMainRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  timelineMetaRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    paddingVertical: spacing.xs + 2,
+  },
+  timelineTrackCol: {
+    alignItems: 'center',
+    marginRight: spacing.sm,
+    width: 16,
   },
 });

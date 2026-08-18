@@ -27,24 +27,19 @@ export const TransactionDateGroupHeader = memo(
         : `−${formatMoney(Math.abs(totalNetMinor), currencyCode)}`;
 
     return (
-      <View
-        style={[
-          styles.dateHeaderRow,
-          { backgroundColor: colors.background },
-        ]}
-      >
+      <View style={[styles.dateHeaderRow, { borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)' }]}>
         <View
           style={[
             styles.dateHeaderPill,
             {
-              backgroundColor: isDark ? colors.surfaceSecondary : '#EFF6FF',
+              backgroundColor: isDark ? 'rgba(37, 99, 235, 0.2)' : '#EFF6FF',
             },
           ]}
         >
           <Text
             style={[
               styles.dateHeaderTitle,
-              { color: isDark ? colors.textSecondary : '#1D4ED8' },
+              { color: isDark ? '#93C5FD' : '#1D4ED8' },
             ]}
           >
             {formattedDate.toUpperCase()}
@@ -67,27 +62,27 @@ export const TransactionDateGroupHeader = memo(
 );
 
 const styles = StyleSheet.create({
-  dateHeaderRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingBottom: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
+  dateHeaderNet: {
+    ...typography.metadata,
+    fontSize: 12,
+    fontWeight: '700',
   },
   dateHeaderPill: {
     borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.sm + 2,
     paddingVertical: 3,
+  },
+  dateHeaderRow: {
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingBottom: spacing.xs + 2,
   },
   dateHeaderTitle: {
     ...typography.metadata,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: 0.5,
-  },
-  dateHeaderNet: {
-    ...typography.metadata,
-    fontWeight: '700',
   },
 });
