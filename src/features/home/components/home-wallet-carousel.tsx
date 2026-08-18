@@ -1,5 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -34,18 +34,24 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
   walletSummary,
 }: HomeWalletCarouselProps) {
   const { colors, isDark } = useTheme();
+  const [isBalanceHidden, setIsBalanceHidden] = useState(false);
 
   const isAllSelected = selectedWalletId === null;
   const totalNetWorth = walletSummary?.totalNetWorthMinor ?? 0;
-  const operationalCash = walletSummary?.operationalCashMinor ?? 0;
-  const trackingAssets = walletSummary?.trackingAssetsMinor ?? 0;
   const wallets = walletSummary?.wallets ?? [];
+
+  function renderBalance(amountMinor: number) {
+    if (isBalanceHidden) {
+      return '••••••';
+    }
+    return formatMoney(amountMinor, currencyCode);
+  }
 
   return (
     <View style={styles.container}>
-      {/* Header Section with Title & Active Filter Badge */}
+      {/* Header Section with Title, Privacy Eye Toggle & Manage Button */}
       <View style={styles.headerRow}>
-        <View style={styles.titleWithIcon}>
+        <View style={styles.titleGroup}>
           <MaterialCommunityIcons
             color={colors.primary}
             name="wallet-outline"
@@ -54,8 +60,35 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
             {language === 'id' ? 'Dompet & Saldo' : 'Wallets & Balance'}
           </Text>
+
+          {/* Privacy Eye Toggle */}
+          <Pressable
+            accessibilityLabel={
+              isBalanceHidden
+                ? language === 'id'
+                  ? 'Tampilkan Saldo'
+                  : 'Show Balance'
+                : language === 'id'
+                ? 'Sembunyikan Saldo'
+                : 'Hide Balance'
+            }
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => setIsBalanceHidden((prev) => !prev)}
+            style={({ pressed }) => [
+              styles.eyeButton,
+              pressed ? { opacity: 0.6 } : null,
+            ]}
+          >
+            <MaterialCommunityIcons
+              color={isBalanceHidden ? colors.primary : colors.textMuted}
+              name={isBalanceHidden ? 'eye-off-outline' : 'eye-outline'}
+              size={17}
+            />
+          </Pressable>
         </View>
 
+        {/* Right Header Action: Reset Filter or Manage Link */}
         {selectedWalletId !== null ? (
           <Pressable
             accessibilityLabel="Reset filter dompet ke Semua"
@@ -78,7 +111,7 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
             <MaterialCommunityIcons
               color={colors.primary}
               name="close-circle-outline"
-              size={14}
+              size={13}
             />
           </Pressable>
         ) : onAddWalletPress ? (
@@ -96,7 +129,7 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
             <MaterialCommunityIcons
               color={colors.primary}
               name="chevron-right"
-              size={16}
+              size={15}
             />
           </Pressable>
         ) : (
@@ -107,255 +140,190 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
         )}
       </View>
 
-      {/* Horizontal Carousel */}
+      {/* Horizontal Carousel (Compact Mini-Pills) */}
       <ScrollView
         contentContainerStyle={styles.scrollList}
         horizontal
         showsHorizontalScrollIndicator={false}
       >
-        {/* 1. All Wallets / Net Worth Card */}
+        {/* 1. All Wallets / Net Worth Mini Card */}
         <Pressable
-          accessibilityLabel="Semua Dompet, Total Kekayaan"
+          accessibilityLabel={`Semua Dompet, Total Kekayaan ${renderBalance(totalNetWorth)}`}
           accessibilityRole="button"
           onPress={() => onSelectWallet(null)}
           style={({ pressed }) => [
-            styles.card,
-            styles.netWorthCard,
+            styles.miniCard,
             {
               backgroundColor: isAllSelected
                 ? isDark
-                  ? '#1E293B'
-                  : '#1E3A8A'
+                  ? '#1E3A8A'
+                  : '#EFF6FF'
                 : isDark
                 ? colors.surface
-                : '#F8FAFC',
-              borderColor: isAllSelected ? colors.primary : colors.border,
+                : '#FFFFFF',
+              borderColor: isAllSelected
+                ? colors.primary
+                : colors.border,
             },
             isAllSelected ? styles.cardActiveGlow : null,
             pressed ? { opacity: 0.85 } : null,
           ]}
         >
-          <View style={styles.cardTopRow}>
-            <View
-              style={[
-                styles.iconBadge,
-                {
-                  backgroundColor: isAllSelected
-                    ? 'rgba(255, 255, 255, 0.2)'
-                    : 'rgba(37, 99, 235, 0.15)',
-                },
-              ]}
-            >
-              <MaterialCommunityIcons
-                color={isAllSelected ? '#FFFFFF' : colors.primary}
-                name="bank"
-                size={20}
-              />
-            </View>
-            <View
-              style={[
-                styles.typeBadge,
-                {
-                  backgroundColor: isAllSelected
-                    ? 'rgba(255, 255, 255, 0.25)'
-                    : isDark
-                    ? '#334155'
-                    : '#E2E8F0',
-                },
-              ]}
-            >
+          <View
+            style={[
+              styles.iconBadge,
+              {
+                backgroundColor: isAllSelected
+                  ? isDark
+                    ? '#2563EB'
+                    : '#DBEAFE'
+                  : isDark
+                  ? 'rgba(37, 99, 235, 0.2)'
+                  : '#EFF6FF',
+              },
+            ]}
+          >
+            <MaterialCommunityIcons
+              color={colors.primary}
+              name="wallet"
+              size={19}
+            />
+          </View>
+
+          <View style={styles.miniCardTextWrap}>
+            <View style={styles.nameRow}>
               <Text
+                numberOfLines={1}
                 style={[
-                  styles.typeBadgeText,
-                  { color: isAllSelected ? '#FFFFFF' : colors.textMuted },
+                  styles.miniCardName,
+                  {
+                    color: isAllSelected
+                      ? colors.primary
+                      : colors.textSecondary,
+                  },
                 ]}
               >
                 {language === 'id' ? 'Semua Akun' : 'All Accounts'}
               </Text>
+              {isAllSelected ? (
+                <View
+                  style={[
+                    styles.activeDot,
+                    { backgroundColor: colors.primary },
+                  ]}
+                />
+              ) : null}
             </View>
-          </View>
 
-          <View style={styles.cardBody}>
-            <Text
-              style={[
-                styles.cardLabel,
-                {
-                  color: isAllSelected
-                    ? 'rgba(255, 255, 255, 0.8)'
-                    : colors.textMuted,
-                },
-              ]}
-            >
-              {language === 'id' ? 'Total Kekayaan' : 'Total Net Worth'}
-            </Text>
             <Text
               adjustsFontSizeToFit
-              minimumFontScale={0.8}
+              minimumFontScale={0.75}
               numberOfLines={1}
               style={[
-                styles.cardBalance,
-                { color: isAllSelected ? '#FFFFFF' : colors.textPrimary },
+                styles.miniCardBalance,
+                { color: colors.textPrimary },
               ]}
             >
-              {formatMoney(totalNetWorth, currencyCode)}
-            </Text>
-          </View>
-
-          <View style={styles.cardFooter}>
-            <Text
-              numberOfLines={1}
-              style={[
-                styles.breakdownText,
-                {
-                  color: isAllSelected
-                    ? 'rgba(255, 255, 255, 0.7)'
-                    : colors.textSecondary,
-                },
-              ]}
-            >
-              {language === 'id'
-                ? `Kas: ${formatMoney(operationalCash, currencyCode)}`
-                : `Cash: ${formatMoney(operationalCash, currencyCode)}`}
-              {trackingAssets > 0
-                ? ` · ${language === 'id' ? 'Aset' : 'Assets'}: ${formatMoney(trackingAssets, currencyCode)}`
-                : ''}
+              {renderBalance(totalNetWorth)}
             </Text>
           </View>
         </Pressable>
 
-        {/* 2. Individual Wallet Cards */}
-        {wallets.map((wallet) => {
+        {/* 2. Individual Wallet Mini Cards */}
+        {wallets.map((wallet: Wallet) => {
           const isSelected = selectedWalletId === wallet.id;
           const walletColor = wallet.color || colors.primary;
 
           return (
             <Pressable
-              accessibilityLabel={`${wallet.name}, Saldo ${formatMoney(wallet.currentBalanceMinor, currencyCode)}`}
+              accessibilityLabel={`${wallet.name}, Saldo ${renderBalance(wallet.currentBalanceMinor)}`}
               accessibilityRole="button"
               key={wallet.id}
               onPress={() => onSelectWallet(wallet.id)}
               style={({ pressed }) => [
-                styles.card,
+                styles.miniCard,
                 {
                   backgroundColor: isSelected
                     ? isDark
-                      ? 'rgba(37, 99, 235, 0.18)'
-                      : '#EFF6FF'
-                    : colors.surface,
+                      ? `${walletColor}22`
+                      : `${walletColor}10`
+                    : isDark
+                    ? colors.surface
+                    : '#FFFFFF',
                   borderColor: isSelected ? walletColor : colors.border,
                 },
                 isSelected ? styles.cardActiveGlow : null,
                 pressed ? { opacity: 0.85 } : null,
               ]}
             >
-              <View style={styles.cardTopRow}>
-                <View
-                  style={[
-                    styles.iconBadge,
-                    {
-                      backgroundColor: isDark
-                        ? `${walletColor}25`
-                        : `${walletColor}15`,
-                    },
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    color={walletColor}
-                    name={
-                      (wallet.iconKey as any) ||
-                      (wallet.accountType === 'bank'
-                        ? 'bank'
-                        : wallet.accountType === 'ewallet'
-                        ? 'cellphone'
-                        : wallet.accountType === 'investment'
-                        ? 'trending-up'
-                        : 'wallet')
-                    }
-                    size={20}
-                  />
-                </View>
+              <View
+                style={[
+                  styles.iconBadge,
+                  {
+                    backgroundColor: isDark
+                      ? `${walletColor}30`
+                      : `${walletColor}18`,
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  color={walletColor}
+                  name={
+                    (wallet.iconKey as any) ||
+                    (wallet.accountType === 'bank'
+                      ? 'bank'
+                      : wallet.accountType === 'ewallet'
+                      ? 'cellphone'
+                      : wallet.accountType === 'investment'
+                      ? 'trending-up'
+                      : 'wallet')
+                  }
+                  size={19}
+                />
+              </View>
 
-                <View
-                  style={[
-                    styles.typeBadge,
-                    {
-                      backgroundColor: wallet.includeInCashflow
-                        ? isDark
-                          ? 'rgba(16, 185, 129, 0.2)'
-                          : '#DCFCE7'
-                        : isDark
-                        ? '#334155'
-                        : '#E2E8F0',
-                    },
-                  ]}
-                >
+              <View style={styles.miniCardTextWrap}>
+                <View style={styles.nameRow}>
                   <Text
+                    numberOfLines={1}
                     style={[
-                      styles.typeBadgeText,
+                      styles.miniCardName,
                       {
-                        color: wallet.includeInCashflow
-                          ? '#10B981'
-                          : colors.textMuted,
+                        color: isSelected
+                          ? walletColor
+                          : colors.textSecondary,
                       },
                     ]}
                   >
-                    {wallet.includeInCashflow
-                      ? language === 'id'
-                        ? 'Kas'
-                        : 'Cashflow'
-                      : language === 'id'
-                      ? 'Aset'
-                      : 'Asset'}
+                    {wallet.name}
                   </Text>
+                  {isSelected ? (
+                    <View
+                      style={[
+                        styles.activeDot,
+                        { backgroundColor: walletColor },
+                      ]}
+                    />
+                  ) : null}
                 </View>
-              </View>
 
-              <View style={styles.cardBody}>
-                <Text
-                  numberOfLines={1}
-                  style={[styles.walletCardName, { color: colors.textPrimary }]}
-                >
-                  {wallet.name}
-                </Text>
                 <Text
                   adjustsFontSizeToFit
-                  minimumFontScale={0.8}
+                  minimumFontScale={0.75}
                   numberOfLines={1}
-                  style={[styles.cardBalance, { color: colors.textPrimary }]}
+                  style={[
+                    styles.miniCardBalance,
+                    { color: colors.textPrimary },
+                  ]}
                 >
-                  {formatMoney(wallet.currentBalanceMinor, currencyCode)}
+                  {renderBalance(wallet.currentBalanceMinor)}
                 </Text>
-              </View>
-
-              <View style={styles.cardFooter}>
-                <Text
-                  numberOfLines={1}
-                  style={[styles.accountTypeLabel, { color: colors.textMuted }]}
-                >
-                  {wallet.accountNumber
-                    ? `•••• ${wallet.accountNumber.slice(-4)}`
-                    : wallet.accountType.toUpperCase()}
-                </Text>
-                {isSelected ? (
-                  <View
-                    style={[
-                      styles.activeIndicator,
-                      { backgroundColor: walletColor },
-                    ]}
-                  >
-                    <MaterialCommunityIcons
-                      color="#FFFFFF"
-                      name="check"
-                      size={12}
-                    />
-                  </View>
-                ) : null}
               </View>
             </Pressable>
           );
         })}
 
-        {/* Add Account Card */}
+        {/* 3. Add Account Mini Card */}
         {onAddWalletPress ? (
           <Pressable
             accessibilityLabel={
@@ -364,8 +332,8 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
             accessibilityRole="button"
             onPress={onAddWalletPress}
             style={({ pressed }) => [
-              styles.card,
-              styles.addCard,
+              styles.miniCard,
+              styles.addMiniCard,
               {
                 backgroundColor: isDark
                   ? colors.surfaceSecondary
@@ -377,27 +345,20 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
           >
             <View
               style={[
-                styles.addIconCircle,
+                styles.addIconBadge,
                 { backgroundColor: isDark ? colors.surface : '#EFF6FF' },
               ]}
             >
               <MaterialCommunityIcons
                 color={colors.primary}
                 name="plus"
-                size={22}
+                size={18}
               />
             </View>
             <Text
-              style={[styles.addCardText, { color: colors.textPrimary }]}
+              style={[styles.addCardText, { color: colors.textSecondary }]}
             >
-              {language === 'id' ? 'Tambah Akun' : 'Add Account'}
-            </Text>
-            <Text
-              style={[styles.addCardSubtext, { color: colors.textMuted }]}
-            >
-              {language === 'id'
-                ? 'Bank, E-Wallet, dll'
-                : 'Bank, E-Wallet, etc'}
+              {language === 'id' ? '+ Tambah' : '+ Add'}
             </Text>
           </Pressable>
         ) : null}
@@ -407,115 +368,62 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
 });
 
 const styles = StyleSheet.create({
-  accountTypeLabel: {
-    ...typography.metadata,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  activeIndicator: {
-    alignItems: 'center',
+  activeDot: {
     borderRadius: radius.pill,
-    height: 18,
-    justifyContent: 'center',
-    width: 18,
-  },
-  addCard: {
-    alignItems: 'center',
-    borderStyle: 'dashed',
-    justifyContent: 'center',
-    width: 140,
-  },
-  addCardSubtext: {
-    ...typography.metadata,
-    fontSize: 10,
-    marginTop: 2,
-    textAlign: 'center',
+    height: 6,
+    width: 6,
   },
   addCardText: {
     ...typography.metadata,
     fontSize: 12,
     fontWeight: '700',
-    marginTop: 6,
-    textAlign: 'center',
   },
-  addIconCircle: {
+  addIconBadge: {
     alignItems: 'center',
     borderRadius: radius.pill,
-    height: 36,
+    height: 28,
     justifyContent: 'center',
-    width: 36,
+    width: 28,
   },
-  breakdownText: {
-    ...typography.metadata,
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  card: {
-    borderRadius: radius.lg,
-    borderWidth: 1.5,
-    elevation: 2,
-    height: 138,
-    justifyContent: 'space-between',
-    padding: spacing.md,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    width: 190,
+  addMiniCard: {
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    minWidth: 105,
+    paddingHorizontal: spacing.sm,
   },
   cardActiveGlow: {
-    elevation: 5,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.22,
-    shadowRadius: 8,
-  },
-  cardBody: {
-    justifyContent: 'center',
-    marginVertical: 4,
-  },
-  cardBalance: {
-    ...typography.sectionTitle,
-    fontSize: 17,
-    fontWeight: '800',
-    letterSpacing: 0.2,
-    marginTop: 2,
-  },
-  cardFooter: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  cardLabel: {
-    ...typography.metadata,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  cardTopRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    elevation: 3,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
   },
   container: {
     marginBottom: spacing.xs,
+  },
+  eyeButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 2,
   },
   headerRow: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs + 2,
     paddingHorizontal: spacing.md,
   },
   iconBadge: {
     alignItems: 'center',
     borderRadius: radius.md,
-    height: 36,
+    height: 38,
     justifyContent: 'center',
-    width: 36,
+    width: 38,
   },
   manageHeaderBtn: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 2,
+    gap: 1,
     paddingVertical: 2,
   },
   manageHeaderText: {
@@ -523,8 +431,43 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  netWorthCard: {
-    width: 210,
+  miniCard: {
+    alignItems: 'center',
+    borderRadius: radius.md + 2,
+    borderWidth: 1.2,
+    elevation: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    height: 64,
+    minWidth: 155,
+    paddingHorizontal: spacing.sm + 4,
+    paddingVertical: spacing.xs,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+  },
+  miniCardBalance: {
+    ...typography.body,
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 0.1,
+    marginTop: 2,
+  },
+  miniCardName: {
+    ...typography.metadata,
+    flexShrink: 1,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  miniCardTextWrap: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  nameRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
   },
   resetFilterBtn: {
     alignItems: 'center',
@@ -541,7 +484,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   scrollList: {
-    gap: spacing.sm,
+    gap: spacing.xs + 2,
     paddingHorizontal: spacing.md,
     paddingVertical: 2,
   },
@@ -552,25 +495,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     textTransform: 'uppercase',
   },
-  titleWithIcon: {
+  titleGroup: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: 6,
-  },
-  typeBadge: {
-    borderRadius: radius.sm,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  typeBadgeText: {
-    ...typography.metadata,
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  walletCardName: {
-    ...typography.body,
-    fontSize: 14,
-    fontWeight: '700',
   },
   walletsCount: {
     ...typography.metadata,

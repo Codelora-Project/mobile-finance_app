@@ -287,7 +287,7 @@ describe('home screen', () => {
     );
 
     expect(await screen.findByText('Dompet & Saldo')).toBeOnTheScreen();
-    expect(screen.getByText('Total Kekayaan')).toBeOnTheScreen();
+    expect(screen.getByText('Semua Akun')).toBeOnTheScreen();
     expect(screen.getByText('Bank BCA')).toBeOnTheScreen();
     expect(screen.getByText('Dompet Tunai')).toBeOnTheScreen();
 
