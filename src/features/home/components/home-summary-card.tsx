@@ -7,7 +7,7 @@ import type {
   HomeSummary,
 } from '@/features/home/home-repository';
 import type { TranslationSchema } from '@/lib/i18n/translations';
-import { formatMoney, formatSignedMoney } from '@/lib/money';
+import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -55,17 +55,35 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
     onPeriodChange(PERIODS[nextIndex] ?? 'monthly');
   }
 
+  const isNegative = summary.netMinor < 0;
+  const isPositive = summary.netMinor > 0;
+
   const formattedNet = hideBalance
     ? '••••••'
-    : summary.netMinor < 0
+    : isNegative
     ? `\u2212${formatMoney(Math.abs(summary.netMinor), summary.currencyCode)}`
     : formatMoney(summary.netMinor, summary.currencyCode);
+
   const formattedIncome = hideBalance
     ? '••••••'
     : formatMoney(summary.incomeMinor, summary.currencyCode);
+
   const formattedExpense = hideBalance
     ? '••••••'
     : formatMoney(summary.expenseMinor, summary.currencyCode);
+
+  // Status Badge Label
+  const statusLabel = isNegative
+    ? 'Defisit Arus Kas'
+    : isPositive
+    ? 'Surplus Arus Kas'
+    : 'Arus Kas Seimbang';
+
+  const statusColor = isNegative
+    ? colors.destructive
+    : isPositive
+    ? colors.positive
+    : colors.textSecondary;
 
   return (
     <View
@@ -78,19 +96,20 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
         },
       ]}
     >
-      {/* 1. Header: Total Label & Privacy + Period Dropdown + Settings Button */}
+      {/* 1. Header: Total · Period Label + Privacy Eye + Dropdown + Settings Button */}
       <View style={styles.topRow}>
         <View style={styles.topLeftGroup}>
-          <Text style={[styles.cardTitleLabel, { color: colors.textSecondary }]}>
-            {t.home.totalBalance}
+          <Text
+            numberOfLines={1}
+            style={[styles.cardTitleLabel, { color: colors.textSecondary }]}
+          >
+            {t.home.totalBalance.toUpperCase()} · {summary.periodLabel.toUpperCase()}
           </Text>
 
           {onToggleHideBalance ? (
             <Pressable
               accessibilityLabel={
-                hideBalance
-                  ? 'Tampilkan Saldo'
-                  : 'Sembunyikan Saldo'
+                hideBalance ? 'Tampilkan Saldo' : 'Sembunyikan Saldo'
               }
               accessibilityRole="button"
               hitSlop={8}
@@ -167,40 +186,83 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
         </View>
       </View>
 
-      {/* 2. Main Net Amount */}
+      {/* 2. Main Net Amount with Status Badge */}
       <View style={styles.mainAmountSection}>
         <Text
           adjustsFontSizeToFit
           minimumFontScale={0.75}
           numberOfLines={1}
-          style={[styles.mainAmountValue, { color: colors.textPrimary }]}
+          style={[
+            styles.mainAmountValue,
+            {
+              color: isNegative
+                ? colors.destructive
+                : isPositive
+                ? colors.positive
+                : colors.textPrimary,
+            },
+          ]}
         >
           {formattedNet}
         </Text>
-        <Text
-          style={[styles.periodSubLabel, { color: colors.textSecondary }]}
+
+        {/* Status Pill Badge */}
+        <View
+          style={[
+            styles.statusBadge,
+            {
+              backgroundColor: isNegative
+                ? isDark
+                  ? '#7F1D1D30'
+                  : '#FEE2E2'
+                : isPositive
+                ? isDark
+                  ? '#14532D30'
+                  : '#DCFCE7'
+                : isDark
+                ? colors.surfaceSecondary
+                : '#F1F5F9',
+              borderColor: isNegative
+                ? isDark
+                  ? '#991B1B'
+                  : '#FCA5A5'
+                : isPositive
+                ? isDark
+                  ? '#166534'
+                  : '#86EFAC'
+                : colors.border,
+            },
+          ]}
         >
-          {summary.periodLabel}
-        </Text>
+          <View
+            style={[
+              styles.statusDot,
+              { backgroundColor: statusColor },
+            ]}
+          />
+          <Text style={[styles.statusBadgeText, { color: statusColor }]}>
+            {statusLabel}
+          </Text>
+        </View>
       </View>
 
-      {/* 3. Divider Line */}
-      <View
-        style={[
-          styles.divider,
-          {
-            backgroundColor: isDark
-              ? 'rgba(255, 255, 255, 0.08)'
-              : 'rgba(0, 0, 0, 0.06)',
-          },
-        ]}
-      />
-
-      {/* 4. Two-Column Split: Pemasukan (Income) & Pengeluaran (Expense) */}
-      <View style={styles.bottomColsRow}>
-        {/* Income Column */}
-        <View style={styles.colItem}>
-          <View style={styles.colHeader}>
+      {/* 3. Symmetrical 50/50 Sub-Cards for Income & Expense */}
+      <View style={styles.subCardsRow}>
+        {/* Income Sub-Card */}
+        <View
+          style={[
+            styles.subCard,
+            {
+              backgroundColor: isDark
+                ? '#14532D1F'
+                : '#F0FDF4',
+              borderColor: isDark
+                ? '#166534'
+                : '#DCFCE7',
+            },
+          ]}
+        >
+          <View style={styles.subCardHeader}>
             <View
               style={[
                 styles.iconCircle,
@@ -217,7 +279,7 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
             </View>
             <Text
               numberOfLines={1}
-              style={[styles.colLabel, { color: colors.textSecondary }]}
+              style={[styles.subCardLabel, { color: colors.textSecondary }]}
             >
               {t.home.income}
             </Text>
@@ -226,27 +288,27 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
             adjustsFontSizeToFit
             minimumFontScale={0.75}
             numberOfLines={1}
-            style={[styles.colValue, { color: colors.positive }]}
+            style={[styles.subCardValue, { color: colors.positive }]}
           >
             {formattedIncome}
           </Text>
         </View>
 
-        {/* Vertical Separator */}
+        {/* Expense Sub-Card */}
         <View
           style={[
-            styles.verticalDivider,
+            styles.subCard,
             {
               backgroundColor: isDark
-                ? 'rgba(255, 255, 255, 0.08)'
-                : 'rgba(0, 0, 0, 0.06)',
+                ? '#7F1D1D1F'
+                : '#FEF2F2',
+              borderColor: isDark
+                ? '#991B1B'
+                : '#FEE2E2',
             },
           ]}
-        />
-
-        {/* Expense Column */}
-        <View style={styles.colItem}>
-          <View style={styles.colHeader}>
+        >
+          <View style={styles.subCardHeader}>
             <View
               style={[
                 styles.iconCircle,
@@ -263,7 +325,7 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
             </View>
             <Text
               numberOfLines={1}
-              style={[styles.colLabel, { color: colors.textSecondary }]}
+              style={[styles.subCardLabel, { color: colors.textSecondary }]}
             >
               {t.home.expensesThisMonth}
             </Text>
@@ -272,7 +334,7 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
             adjustsFontSizeToFit
             minimumFontScale={0.75}
             numberOfLines={1}
-            style={[styles.colValue, { color: colors.destructive }]}
+            style={[styles.subCardValue, { color: colors.destructive }]}
           >
             {formattedExpense}
           </Text>
@@ -283,42 +345,12 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
 });
 
 const styles = StyleSheet.create({
-  bottomColsRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: 2,
-  },
   cardTitleLabel: {
     ...typography.metadata,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  colHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 3,
-  },
-  colItem: {
-    flex: 1,
-  },
-  colLabel: {
-    ...typography.metadata,
+    flexShrink: 1,
     fontSize: 11,
-    fontWeight: '600',
-  },
-  colValue: {
-    ...typography.sectionTitle,
-    fontSize: 16,
     fontWeight: '800',
-    letterSpacing: 0.1,
-  },
-  divider: {
-    height: 1,
-    marginVertical: spacing.sm + 2,
+    letterSpacing: 0.5,
   },
   eyeBtn: {
     padding: 2,
@@ -331,11 +363,13 @@ const styles = StyleSheet.create({
     width: 20,
   },
   mainAmountSection: {
-    marginVertical: 4,
+    alignItems: 'flex-start',
+    gap: 6,
+    marginVertical: spacing.sm,
   },
   mainAmountValue: {
     ...typography.displayAmount,
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: '800',
     letterSpacing: 0.2,
   },
@@ -353,11 +387,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-  periodSubLabel: {
-    ...typography.metadata,
-    fontSize: 12,
-    marginTop: 2,
-  },
   settingsBtn: {
     alignItems: 'center',
     borderRadius: radius.pill,
@@ -366,20 +395,68 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 30,
   },
+  statusBadge: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 5,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 3,
+  },
+  statusBadgeText: {
+    ...typography.metadata,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  statusDot: {
+    borderRadius: radius.pill,
+    height: 6,
+    width: 6,
+  },
+  subCard: {
+    borderRadius: radius.md + 2,
+    borderWidth: 1,
+    flex: 1,
+    padding: spacing.md,
+  },
+  subCardHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 4,
+  },
+  subCardLabel: {
+    ...typography.metadata,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  subCardValue: {
+    ...typography.sectionTitle,
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.1,
+  },
+  subCardsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
   summaryCard: {
-    borderRadius: radius.lg + 2,
+    borderRadius: radius.lg,
     borderWidth: 1,
     elevation: 2,
-    marginHorizontal: spacing.md,
-    padding: spacing.lg,
+    padding: spacing.md + 2,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.05,
     shadowRadius: 8,
   },
   topLeftGroup: {
     alignItems: 'center',
+    flex: 1,
     flexDirection: 'row',
     gap: 6,
+    marginRight: spacing.xs,
   },
   topRightGroup: {
     alignItems: 'center',
@@ -391,10 +468,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: spacing.xs,
-  },
-  verticalDivider: {
-    height: 34,
-    marginHorizontal: spacing.md,
-    width: 1,
   },
 });

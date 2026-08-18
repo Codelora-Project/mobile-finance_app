@@ -184,6 +184,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   container: {
+    marginHorizontal: -spacing.md,
     marginTop: -spacing.xs,
   },
   dot: {

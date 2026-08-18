@@ -204,7 +204,7 @@ describe('home screen', () => {
     expect(screen.getByText(formatMoney(100_000, 'IDR'))).toBeOnTheScreen();
     expect(screen.getByText('Income')).toBeOnTheScreen();
     expect(screen.getByText(formatMoney(250_000, 'IDR'))).toBeOnTheScreen();
-    expect(screen.getByText('Total')).toBeOnTheScreen();
+    expect(screen.getByText(/Total/i)).toBeOnTheScreen();
     expect(screen.getByText(formatMoney(150_000, 'IDR'))).toBeOnTheScreen();
 
     expect(screen.getByText('Coffee Shop')).toBeOnTheScreen();
@@ -281,7 +281,7 @@ describe('home screen', () => {
     expect(await screen.findByText('RINGKASAN KEUANGAN')).toBeOnTheScreen();
     expect(screen.getByText('Pengeluaran')).toBeOnTheScreen();
     expect(screen.getByText('Uang Masuk')).toBeOnTheScreen();
-    expect(screen.getByText('Total')).toBeOnTheScreen();
+    expect(screen.getByText(/Total/i)).toBeOnTheScreen();
     expect(screen.getByText('Catat Cepat')).toBeOnTheScreen();
     expect(screen.getByText('Transaksi Terakhir')).toBeOnTheScreen();
   });
