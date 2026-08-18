@@ -32,6 +32,7 @@ export const ManualTypeToggle = memo(function ManualTypeToggle({
         },
       ]}
     >
+      {/* 1. Expense Tab */}
       <Pressable
         accessibilityLabel={t.transactions.expense}
         accessibilityRole="tab"
@@ -45,9 +46,10 @@ export const ManualTypeToggle = memo(function ManualTypeToggle({
         <MaterialCommunityIcons
           color={selectedType === 'expense' ? '#FFFFFF' : '#64748B'}
           name="arrow-down-bold-circle-outline"
-          size={18}
+          size={16}
         />
         <Text
+          numberOfLines={1}
           style={[
             styles.typeTabText,
             selectedType === 'expense' ? styles.typeTabTextActive : null,
@@ -57,6 +59,7 @@ export const ManualTypeToggle = memo(function ManualTypeToggle({
         </Text>
       </Pressable>
 
+      {/* 2. Income Tab */}
       <Pressable
         accessibilityLabel={t.transactions.income}
         accessibilityRole="tab"
@@ -70,15 +73,43 @@ export const ManualTypeToggle = memo(function ManualTypeToggle({
         <MaterialCommunityIcons
           color={selectedType === 'income' ? '#FFFFFF' : '#64748B'}
           name="arrow-up-bold-circle-outline"
-          size={18}
+          size={16}
         />
         <Text
+          numberOfLines={1}
           style={[
             styles.typeTabText,
             selectedType === 'income' ? styles.typeTabTextActive : null,
           ]}
         >
           {t.transactions.income}
+        </Text>
+      </Pressable>
+
+      {/* 3. Transfer Tab */}
+      <Pressable
+        accessibilityLabel={t.transactions.transfer}
+        accessibilityRole="tab"
+        accessibilityState={{ selected: selectedType === 'transfer' }}
+        onPress={() => onChangeType('transfer')}
+        style={[
+          styles.typeTab,
+          selectedType === 'transfer' ? styles.typeTabActiveTransfer : null,
+        ]}
+      >
+        <MaterialCommunityIcons
+          color={selectedType === 'transfer' ? '#FFFFFF' : '#64748B'}
+          name="swap-horizontal"
+          size={18}
+        />
+        <Text
+          numberOfLines={1}
+          style={[
+            styles.typeTabText,
+            selectedType === 'transfer' ? styles.typeTabTextActive : null,
+          ]}
+        >
+          {t.transactions.transfer}
         </Text>
       </Pressable>
     </View>
@@ -91,8 +122,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     flex: 1,
     flexDirection: 'row',
-    gap: 6,
+    gap: 4,
     justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
     paddingVertical: spacing.sm + 2,
   },
   typeTabActiveExpense: {
@@ -111,10 +143,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 4,
   },
+  typeTabActiveTransfer: {
+    backgroundColor: '#2563EB',
+    elevation: 3,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
+  },
   typeTabText: {
     ...typography.body,
     color: '#64748B',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
   },
   typeTabTextActive: {

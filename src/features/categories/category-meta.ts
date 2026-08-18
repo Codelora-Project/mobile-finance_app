@@ -134,7 +134,7 @@ const CATEGORY_MAP: Record<string, CategoryDef> = {
 
 export function getCategoryMeta(
   categoryName: string | null | undefined,
-  type: 'expense' | 'income' = 'expense',
+  type: 'expense' | 'income' | 'transfer' = 'expense',
   isDark = false,
 ): CategoryMeta {
   const normalized = categoryName?.trim().toLowerCase() ?? '';
@@ -144,6 +144,14 @@ export function getCategoryMeta(
       icon: def.icon,
       color: isDark ? def.darkColor : def.color,
       backgroundColor: isDark ? def.darkBackgroundColor : def.backgroundColor,
+    };
+  }
+
+  if (type === 'transfer') {
+    return {
+      icon: 'swap-horizontal',
+      color: isDark ? '#60A5FA' : '#2563EB',
+      backgroundColor: isDark ? '#1E3A8A' : '#EFF6FF',
     };
   }
 

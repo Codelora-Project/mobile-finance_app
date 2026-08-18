@@ -19,7 +19,7 @@ import { createCodedError } from '@/lib/errors';
 import { assertMoney } from '@/lib/money';
 import { normalizeOptionalText } from '@/lib/strings';
 
-export type TransactionType = 'expense' | 'income';
+export type TransactionType = 'expense' | 'income' | 'transfer';
 
 export type TransactionClaimMembership = Readonly<{
   claimId: number;
@@ -42,6 +42,12 @@ export type Transaction = Readonly<{
   categoryName: string;
   paymentMethodId: number | null;
   paymentMethodName: string | null;
+  transferToPaymentMethodId: number | null;
+  transferToPaymentMethodName: string | null;
+  transferFeeMinor: number;
+  transferFeeCategoryId: number | null;
+  transferFeeCategoryName: string | null;
+  transferFeeNote: string | null;
   counterparty: string | null;
   note: string | null;
   occurredAt: number;
@@ -59,6 +65,10 @@ export type SaveTransactionInput = Readonly<{
   currencyCode: string;
   categoryId: number;
   paymentMethodId: number | null;
+  transferToPaymentMethodId?: number | null;
+  transferFeeMinor?: number;
+  transferFeeCategoryId?: number | null;
+  transferFeeNote?: string | null;
   counterparty: string | null;
   note: string | null;
   occurredAt: number;
@@ -92,6 +102,8 @@ export type TransactionListItem = Readonly<{
   amountMinor: number;
   currencyCode: string;
   categoryName: string;
+  paymentMethodName?: string | null;
+  transferToPaymentMethodName?: string | null;
   counterparty: string | null;
   occurredAt: number;
   timezoneOffsetMinutes: number;
@@ -122,6 +134,12 @@ type TransactionRow = {
   category_name: string;
   payment_method_id: number | null;
   payment_method_name: string | null;
+  transfer_to_payment_method_id: number | null;
+  transfer_to_payment_method_name: string | null;
+  transfer_fee_minor: number | null;
+  transfer_fee_category_id: number | null;
+  transfer_fee_category_name: string | null;
+  transfer_fee_note: string | null;
   counterparty: string | null;
   note: string | null;
   occurred_at: number;
@@ -145,6 +163,8 @@ type TransactionListRow = {
   amount_minor: number;
   currency_code: string;
   category_name: string;
+  payment_method_name: string | null;
+  transfer_to_payment_method_name: string | null;
   counterparty: string | null;
   occurred_at: number;
   timezone_offset_minutes: number;
@@ -163,6 +183,12 @@ const TRANSACTION_SELECT = `
     c.name AS category_name,
     t.payment_method_id,
     pm.name AS payment_method_name,
+    t.transfer_to_payment_method_id,
+    tpm.name AS transfer_to_payment_method_name,
+    t.transfer_fee_minor,
+    t.transfer_fee_category_id,
+    tfc.name AS transfer_fee_category_name,
+    t.transfer_fee_note,
     t.counterparty,
     t.note,
     t.occurred_at,
@@ -181,6 +207,8 @@ const TRANSACTION_SELECT = `
   FROM transactions t
   JOIN categories c ON c.id = t.category_id
   LEFT JOIN payment_methods pm ON pm.id = t.payment_method_id
+  LEFT JOIN payment_methods tpm ON tpm.id = t.transfer_to_payment_method_id
+  LEFT JOIN categories tfc ON tfc.id = t.transfer_fee_category_id
   LEFT JOIN receipts r ON r.transaction_id = t.id
 `;
 
@@ -191,6 +219,8 @@ const TRANSACTION_LIST_SELECT = `
     t.amount_minor,
     t.currency_code,
     c.name AS category_name,
+    pm.name AS payment_method_name,
+    tpm.name AS transfer_to_payment_method_name,
     t.counterparty,
     t.occurred_at,
     t.timezone_offset_minutes,
@@ -200,6 +230,7 @@ const TRANSACTION_LIST_SELECT = `
   FROM transactions t
   JOIN categories c ON c.id = t.category_id
   LEFT JOIN payment_methods pm ON pm.id = t.payment_method_id
+  LEFT JOIN payment_methods tpm ON tpm.id = t.transfer_to_payment_method_id
   LEFT JOIN receipts r ON r.transaction_id = t.id
 `;
 
@@ -223,6 +254,12 @@ function mapTransaction(row: TransactionRow): Transaction {
     occurredAt: row.occurred_at,
     paymentMethodId: row.payment_method_id,
     paymentMethodName: row.payment_method_name,
+    transferToPaymentMethodId: row.transfer_to_payment_method_id,
+    transferToPaymentMethodName: row.transfer_to_payment_method_name,
+    transferFeeMinor: row.transfer_fee_minor ?? 0,
+    transferFeeCategoryId: row.transfer_fee_category_id,
+    transferFeeCategoryName: row.transfer_fee_category_name,
+    transferFeeNote: row.transfer_fee_note,
     receipt: hasReceipt
       ? {
           id: row.receipt_id as number,
@@ -247,6 +284,8 @@ function mapTransactionListItem(row: TransactionListRow): TransactionListItem {
     isReimbursable: row.is_reimbursable === 1,
     localDate: row.local_date,
     occurredAt: row.occurred_at,
+    paymentMethodName: row.payment_method_name,
+    transferToPaymentMethodName: row.transfer_to_payment_method_name,
     timezoneOffsetMinutes: row.timezone_offset_minutes,
     type: row.type,
   };
@@ -397,7 +436,11 @@ function normalizeReceipt(input: SaveTransactionInput['receipt']) {
 }
 
 function normalizeInput(input: SaveTransactionInput, now: number) {
-  if (input.type !== 'expense' && input.type !== 'income') {
+  if (
+    input.type !== 'expense' &&
+    input.type !== 'income' &&
+    input.type !== 'transfer'
+  ) {
     throw createCodedError('VALIDATION_FAILED', 'Choose a transaction type.');
   }
   try {
@@ -413,6 +456,24 @@ function normalizeInput(input: SaveTransactionInput, now: number) {
     (!Number.isSafeInteger(input.paymentMethodId) || input.paymentMethodId <= 0)
   ) {
     throw createCodedError('VALIDATION_FAILED', 'Choose a payment method.');
+  }
+  if (input.type === 'transfer') {
+    if (
+      !input.transferToPaymentMethodId ||
+      !Number.isSafeInteger(input.transferToPaymentMethodId) ||
+      input.transferToPaymentMethodId <= 0
+    ) {
+      throw createCodedError(
+        'VALIDATION_FAILED',
+        'Choose a destination wallet.',
+      );
+    }
+    if (input.transferToPaymentMethodId === input.paymentMethodId) {
+      throw createCodedError(
+        'VALIDATION_FAILED',
+        'Source and destination wallet cannot be the same.',
+      );
+    }
   }
   if (!Number.isSafeInteger(input.occurredAt)) {
     throw createCodedError('VALIDATION_FAILED', 'Enter a valid date.');
@@ -458,7 +519,13 @@ function normalizeInput(input: SaveTransactionInput, now: number) {
       'Income cannot be reimbursable.',
     );
   }
-  if (input.type === 'income' && receipt) {
+  if (input.type === 'transfer' && input.isReimbursable) {
+    throw createCodedError(
+      'VALIDATION_FAILED',
+      'Transfers cannot be reimbursable.',
+    );
+  }
+  if (input.type !== 'expense' && receipt) {
     throw createCodedError(
       'VALIDATION_FAILED',
       'Income cannot have a receipt.',
@@ -476,6 +543,20 @@ function normalizeInput(input: SaveTransactionInput, now: number) {
     paymentMethodId: input.paymentMethodId,
     receipt: input.type === 'expense' ? receipt : null,
     timezoneOffsetMinutes: input.timezoneOffsetMinutes,
+    transferFeeCategoryId:
+      input.type === 'transfer' ? input.transferFeeCategoryId ?? null : null,
+    transferFeeMinor:
+      input.type === 'transfer'
+        ? Math.max(0, Math.round(input.transferFeeMinor ?? 0))
+        : 0,
+    transferFeeNote:
+      input.type === 'transfer'
+        ? normalizeOptionalText(input.transferFeeNote ?? '')
+        : null,
+    transferToPaymentMethodId:
+      input.type === 'transfer'
+        ? input.transferToPaymentMethodId ?? null
+        : null,
     type: input.type,
   };
 }
@@ -484,15 +565,17 @@ async function validateReferences(
   database: SQLiteDatabase,
   input: ReturnType<typeof normalizeInput>,
 ) {
-  const category = await database.getFirstAsync<{
-    id: number;
-    type: TransactionType;
-  }>('SELECT id, type FROM categories WHERE id = ?', input.categoryId);
-  if (!category || category.type !== input.type) {
-    throw createCodedError(
-      'VALIDATION_FAILED',
-      `Choose an ${input.type} category.`,
-    );
+  if (input.type !== 'transfer') {
+    const category = await database.getFirstAsync<{
+      id: number;
+      type: TransactionType;
+    }>('SELECT id, type FROM categories WHERE id = ?', input.categoryId);
+    if (!category || category.type !== input.type) {
+      throw createCodedError(
+        'VALIDATION_FAILED',
+        `Choose an ${input.type} category.`,
+      );
+    }
   }
 
   if (input.paymentMethodId !== null) {
@@ -504,6 +587,19 @@ async function validateReferences(
       throw createCodedError(
         'VALIDATION_FAILED',
         'Payment method no longer exists.',
+      );
+    }
+  }
+
+  if (input.type === 'transfer' && input.transferToPaymentMethodId !== null) {
+    const targetWallet = await database.getFirstAsync<{ id: number }>(
+      'SELECT id FROM payment_methods WHERE id = ?',
+      input.transferToPaymentMethodId,
+    );
+    if (!targetWallet) {
+      throw createCodedError(
+        'VALIDATION_FAILED',
+        'Destination wallet no longer exists.',
       );
     }
   }
@@ -686,6 +782,10 @@ export async function createTransaction(
         currency_code,
         category_id,
         payment_method_id,
+        transfer_to_payment_method_id,
+        transfer_fee_minor,
+        transfer_fee_category_id,
+        transfer_fee_note,
         counterparty,
         note,
         occurred_at,
@@ -694,12 +794,16 @@ export async function createTransaction(
         is_reimbursable,
         created_at,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         normalized.type,
         normalized.amountMinor,
         normalized.currencyCode,
         normalized.categoryId,
         normalized.paymentMethodId,
+        normalized.transferToPaymentMethodId,
+        normalized.transferFeeMinor,
+        normalized.transferFeeCategoryId,
+        normalized.transferFeeNote,
         normalized.counterparty,
         normalized.note,
         normalized.occurredAt,
@@ -822,7 +926,9 @@ export async function updateTransaction(
       await transaction.runAsync(
         `UPDATE transactions
        SET type = ?, amount_minor = ?, currency_code = ?, category_id = ?,
-           payment_method_id = ?, counterparty = ?, note = ?, occurred_at = ?,
+           payment_method_id = ?, transfer_to_payment_method_id = ?,
+           transfer_fee_minor = ?, transfer_fee_category_id = ?, transfer_fee_note = ?,
+           counterparty = ?, note = ?, occurred_at = ?,
            timezone_offset_minutes = ?, local_date = ?, is_reimbursable = ?,
            updated_at = ?
        WHERE id = ?`,
@@ -831,6 +937,10 @@ export async function updateTransaction(
         normalized.currencyCode,
         normalized.categoryId,
         normalized.paymentMethodId,
+        normalized.transferToPaymentMethodId,
+        normalized.transferFeeMinor,
+        normalized.transferFeeCategoryId,
+        normalized.transferFeeNote,
         normalized.counterparty,
         normalized.note,
         normalized.occurredAt,
@@ -862,7 +972,7 @@ export async function updateTransaction(
   if (!saved) {
     throw createCodedError(
       'DATABASE_WRITE_FAILED',
-      'The transaction could not be loaded after saving.',
+      'The transaction could not be loaded after updating.',
     );
   }
   return saved;

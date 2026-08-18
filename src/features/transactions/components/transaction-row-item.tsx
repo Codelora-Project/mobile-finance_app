@@ -32,7 +32,13 @@ export const TransactionRowItem = memo(function TransactionRowItem({
     transaction.type,
     isDark,
   );
-  const title = transaction.counterparty?.trim() || transaction.categoryName;
+  const isTransfer = transaction.type === 'transfer';
+  const title =
+    isTransfer &&
+    transaction.paymentMethodName &&
+    transaction.transferToPaymentMethodName
+      ? `${transaction.paymentMethodName} ➔ ${transaction.transferToPaymentMethodName}`
+      : transaction.counterparty?.trim() || transaction.categoryName;
 
   return (
     <Pressable
@@ -50,7 +56,7 @@ export const TransactionRowItem = memo(function TransactionRowItem({
     >
       {/* Timeline Dot & Connecting Line */}
       <View style={styles.timelineTrackCol}>
-        <View style={[styles.timelineDot, { backgroundColor: meta.color }]} />
+        <View style={[styles.timelineDot, { backgroundColor: isTransfer ? '#2563EB' : meta.color }]} />
         {!isLast ? (
           <View
             style={[styles.timelineLine, { backgroundColor: colors.border }]}
@@ -75,11 +81,17 @@ export const TransactionRowItem = memo(function TransactionRowItem({
                 color:
                   transaction.type === 'expense'
                     ? colors.destructive
-                    : colors.positive,
+                    : transaction.type === 'income'
+                    ? colors.positive
+                    : '#2563EB',
               },
             ]}
           >
-            {transaction.type === 'expense' ? '−' : '+'}
+            {transaction.type === 'expense'
+              ? '−'
+              : transaction.type === 'income'
+              ? '+'
+              : '⇄ '}
             {formatMoney(transaction.amountMinor, transaction.currencyCode)}
           </Text>
         </View>
@@ -93,8 +105,29 @@ export const TransactionRowItem = memo(function TransactionRowItem({
               { color: colors.textSecondary },
             ]}
           >
-            {transaction.categoryName}
+            {isTransfer ? 'Transfer Antar Dompet' : transaction.categoryName}
           </Text>
+
+          {isTransfer ? (
+            <View
+              style={[
+                styles.receiptPill,
+                {
+                  backgroundColor: isDark ? '#1E3A8A' : '#EFF6FF',
+                  borderColor: isDark ? '#2563EB' : '#BFDBFE',
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                color="#2563EB"
+                name="swap-horizontal"
+                size={10}
+              />
+              <Text style={[styles.receiptPillText, { color: '#2563EB' }]}>
+                Transfer
+              </Text>
+            </View>
+          ) : null}
 
           {transaction.hasReceipt ? (
             <View

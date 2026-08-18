@@ -209,18 +209,18 @@ class TransactionDatabase {
       this.transactions.push({
         amountMinor: Number(params[1]),
         categoryId: Number(params[3]),
-        counterparty: params[5] == null ? null : String(params[5]),
-        createdAt: Number(params[11]),
+        counterparty: params[9] == null ? null : String(params[9]),
+        createdAt: Number(params[15]),
         currencyCode: String(params[2]),
         id,
-        isReimbursable: Number(params[10]),
-        localDate: String(params[9]),
-        note: params[6] == null ? null : String(params[6]),
-        occurredAt: Number(params[7]),
+        isReimbursable: Number(params[14]),
+        localDate: String(params[13]),
+        note: params[10] == null ? null : String(params[10]),
+        occurredAt: Number(params[11]),
         paymentMethodId: params[4] == null ? null : Number(params[4]),
-        timezoneOffsetMinutes: Number(params[8]),
+        timezoneOffsetMinutes: Number(params[12]),
         type: params[0] as 'expense' | 'income',
-        updatedAt: Number(params[12]),
+        updatedAt: Number(params[16]),
       });
       return { changes: 1, lastInsertRowId: id };
     }
@@ -240,22 +240,22 @@ class TransactionDatabase {
 
     if (sql.startsWith('UPDATE transactions SET type = ?')) {
       const transaction = this.transactions.find(
-        (candidate) => candidate.id === params[12],
+        (candidate) => candidate.id === params[16],
       );
       if (transaction) {
         Object.assign(transaction, {
           amountMinor: Number(params[1]),
           categoryId: Number(params[3]),
-          counterparty: params[5] == null ? null : String(params[5]),
+          counterparty: params[9] == null ? null : String(params[9]),
           currencyCode: String(params[2]),
-          isReimbursable: Number(params[10]),
-          localDate: String(params[9]),
-          note: params[6] == null ? null : String(params[6]),
-          occurredAt: Number(params[7]),
+          isReimbursable: Number(params[14]),
+          localDate: String(params[13]),
+          note: params[10] == null ? null : String(params[10]),
+          occurredAt: Number(params[11]),
           paymentMethodId: params[4] == null ? null : Number(params[4]),
-          timezoneOffsetMinutes: Number(params[8]),
+          timezoneOffsetMinutes: Number(params[12]),
           type: params[0] as 'expense' | 'income',
-          updatedAt: Number(params[11]),
+          updatedAt: Number(params[15]),
         });
       }
       return { changes: transaction ? 1 : 0, lastInsertRowId: 0 };

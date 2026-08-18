@@ -12,6 +12,7 @@ import {
 
 import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
+import { WalletPicker } from '@/features/accounts/components/wallet-picker';
 import { CategoryPicker } from '@/features/categories/category-picker';
 import { PaymentMethodPicker } from '@/features/payment-methods/payment-method-picker';
 import { ManualAmountInput } from '@/features/transactions/components/manual-amount-input';
@@ -20,6 +21,7 @@ import { ManualDetailsSection } from '@/features/transactions/components/manual-
 import { ManualPaymentMethodsStrip } from '@/features/transactions/components/manual-payment-methods-strip';
 import { ManualReceiptModal } from '@/features/transactions/components/manual-receipt-modal';
 import { ManualTransactionHeader } from '@/features/transactions/components/manual-transaction-header';
+import { ManualTransferSection } from '@/features/transactions/components/manual-transfer-section';
 import { ManualTypeToggle } from '@/features/transactions/components/manual-type-toggle';
 import {
   useManualTransactionViewModel,
@@ -52,6 +54,8 @@ export function ManualTransactionScreen({
     );
   }
 
+  const isTransfer = state.form.type === 'transfer';
+
   return (
     <Screen>
       <Animated.View
@@ -78,7 +82,7 @@ export function ManualTransactionScreen({
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Type Toggle: Expense / Income */}
+          {/* Type Toggle: Expense / Income / Transfer */}
           <ManualTypeToggle
             onChangeType={(type) => {
               actions.setForm((c) => ({
@@ -110,22 +114,57 @@ export function ManualTransactionScreen({
             quickShortcuts={state.quickShortcuts}
           />
 
-          {/* 1-Tap Category Grid */}
-          <ManualCategoryGrid
-            categories={state.categoriesList}
-            error={state.errors.category}
-            onOpenMoreCategories={() => actions.setPicker('category')}
-            onSelectCategory={actions.handleSelectCategory}
-            selectedCategoryId={state.form.category?.id}
-            transactionType={state.form.type}
-          />
+          {/* Conditional Form Body: Transfer vs Standard Expense/Income */}
+          {isTransfer ? (
+            <ManualTransferSection
+              currencySymbol={state.currencySymbol}
+              destinationWallet={state.form.transferToPaymentMethod}
+              errorDestination={state.errors.transferToPaymentMethod}
+              errorFeeAmount={state.errors.transferFeeAmount}
+              errorSource={state.errors.paymentMethod}
+              hasTransferFee={state.form.hasTransferFee}
+              onChangeFeeAmount={(fee) => {
+                actions.setForm((c) => ({ ...c, transferFeeAmount: fee }));
+                actions.setErrors((c) => ({ ...c, transferFeeAmount: undefined }));
+              }}
+              onChangeFeeNote={(feeNote) =>
+                actions.setForm((c) => ({ ...c, transferFeeNote: feeNote }))
+              }
+              onOpenDestinationPicker={() => actions.setPicker('transferDestination')}
+              onOpenFeeCategoryPicker={() => actions.setPicker('transferFeeCategory')}
+              onOpenSourcePicker={() => actions.setPicker('transferSource')}
+              onSetQuickFee={(fee) => {
+                actions.setForm((c) => ({ ...c, transferFeeAmount: fee }));
+                actions.setErrors((c) => ({ ...c, transferFeeAmount: undefined }));
+              }}
+              onSwapWallets={actions.handleSwapWallets}
+              onToggleTransferFee={actions.handleToggleTransferFee}
+              sourceWallet={state.form.paymentMethod}
+              t={state.t}
+              transferFeeAmount={state.form.transferFeeAmount}
+              transferFeeCategory={state.form.transferFeeCategory}
+              transferFeeNote={state.form.transferFeeNote}
+            />
+          ) : (
+            <>
+              {/* 1-Tap Category Grid */}
+              <ManualCategoryGrid
+                categories={state.categoriesList}
+                error={state.errors.category}
+                onOpenMoreCategories={() => actions.setPicker('category')}
+                onSelectCategory={actions.handleSelectCategory}
+                selectedCategoryId={state.form.category?.id}
+                transactionType={state.form.type}
+              />
 
-          {/* Quick Payment Methods Strip */}
-          <ManualPaymentMethodsStrip
-            onSelectPaymentMethod={actions.handleSelectPaymentMethod}
-            paymentMethods={state.paymentMethodsList}
-            selectedPaymentMethodId={state.form.paymentMethod?.id}
-          />
+              {/* Quick Payment Methods Strip */}
+              <ManualPaymentMethodsStrip
+                onSelectPaymentMethod={actions.handleSelectPaymentMethod}
+                paymentMethods={state.paymentMethodsList}
+                selectedPaymentMethodId={state.form.paymentMethod?.id}
+              />
+            </>
+          )}
 
           {/* Compact Merchant, Receipt & Expandable Advanced Options */}
           <ManualDetailsSection
@@ -165,7 +204,9 @@ export function ManualTransactionScreen({
               onPress={() => void actions.handleSave()}
               style={[
                 styles.saveBigButton,
-                state.isExpense
+                isTransfer
+                  ? styles.saveBigButtonTransfer
+                  : state.isExpense
                   ? styles.saveBigButtonExpense
                   : styles.saveBigButtonIncome,
                 state.saving ? styles.saveBigButtonDisabled : null,
@@ -195,33 +236,47 @@ export function ManualTransactionScreen({
                             formatMoney(state.parsedAmountMinor, state.currencyCode) +
                             ')'
                           : '')
+                    : isTransfer
+                    ? state.language === 'id'
+                      ? '✓ Simpan Transfer' +
+                        (state.parsedAmountMinor > 0
+                          ? ' (' +
+                            formatMoney(state.parsedAmountMinor, state.currencyCode) +
+                            ')'
+                          : '')
+                      : '✓ Save Transfer' +
+                        (state.parsedAmountMinor > 0
+                          ? ' (' +
+                            formatMoney(state.parsedAmountMinor, state.currencyCode) +
+                            ')'
+                          : '')
                     : state.isExpense
-                      ? state.language === 'id'
-                        ? '✓ Simpan Pengeluaran' +
-                          (state.parsedAmountMinor > 0
-                            ? ' (' +
-                              formatMoney(state.parsedAmountMinor, state.currencyCode) +
-                              ')'
-                            : '')
-                        : '✓ Save Expense' +
-                          (state.parsedAmountMinor > 0
-                            ? ' (' +
-                              formatMoney(state.parsedAmountMinor, state.currencyCode) +
-                              ')'
-                            : '')
-                      : state.language === 'id'
-                        ? '✓ Simpan Pemasukan' +
-                          (state.parsedAmountMinor > 0
-                            ? ' (' +
-                              formatMoney(state.parsedAmountMinor, state.currencyCode) +
-                              ')'
-                            : '')
-                        : '✓ Save Income' +
-                          (state.parsedAmountMinor > 0
-                            ? ' (' +
-                              formatMoney(state.parsedAmountMinor, state.currencyCode) +
-                              ')'
-                            : '')}
+                    ? state.language === 'id'
+                      ? '✓ Simpan Pengeluaran' +
+                        (state.parsedAmountMinor > 0
+                          ? ' (' +
+                            formatMoney(state.parsedAmountMinor, state.currencyCode) +
+                            ')'
+                          : '')
+                      : '✓ Save Expense' +
+                        (state.parsedAmountMinor > 0
+                          ? ' (' +
+                            formatMoney(state.parsedAmountMinor, state.currencyCode) +
+                            ')'
+                          : '')
+                    : state.language === 'id'
+                      ? '✓ Simpan Pemasukan' +
+                        (state.parsedAmountMinor > 0
+                          ? ' (' +
+                            formatMoney(state.parsedAmountMinor, state.currencyCode) +
+                            ')'
+                          : '')
+                      : '✓ Save Income' +
+                        (state.parsedAmountMinor > 0
+                          ? ' (' +
+                            formatMoney(state.parsedAmountMinor, state.currencyCode) +
+                            ')'
+                          : '')}
                 </Text>
               )}
             </Pressable>
@@ -279,12 +334,12 @@ export function ManualTransactionScreen({
               actions.setPicker(null);
             }}
             selectedId={state.form.category?.id}
-            type={state.form.type}
+            type={state.form.type === 'income' ? 'income' : 'expense'}
           />
         </Screen>
       </Modal>
 
-      {/* Payment Method Picker Modal */}
+      {/* Payment Method Picker Modal (for standard Expense/Income) */}
       <Modal
         animationType="slide"
         onRequestClose={() => actions.setPicker(null)}
@@ -332,6 +387,143 @@ export function ManualTransactionScreen({
         </Screen>
       </Modal>
 
+      {/* Transfer Source Wallet Picker Modal */}
+      <Modal
+        animationType="slide"
+        onRequestClose={() => actions.setPicker(null)}
+        visible={state.picker === 'transferSource'}
+      >
+        <Screen>
+          <View
+            style={[
+              styles.modalScreenHeader,
+              {
+                backgroundColor: colors.surface,
+                borderBottomColor: colors.border,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.actionSheetTitle,
+                { color: colors.textPrimary },
+              ]}
+            >
+              {state.language === 'id'
+                ? 'Pilih Dompet Pengirim'
+                : 'Select Source Wallet'}
+            </Text>
+            <Pressable
+              accessibilityLabel="Close source wallet picker"
+              accessibilityRole="button"
+              hitSlop={12}
+              onPress={() => actions.setPicker(null)}
+              style={styles.closeIconButton}
+            >
+              <MaterialCommunityIcons color="#64748B" name="close" size={24} />
+            </Pressable>
+          </View>
+          <WalletPicker
+            onSelect={actions.handleSelectTransferSource}
+            selectedId={state.form.paymentMethod?.id}
+          />
+        </Screen>
+      </Modal>
+
+      {/* Transfer Destination Wallet Picker Modal */}
+      <Modal
+        animationType="slide"
+        onRequestClose={() => actions.setPicker(null)}
+        visible={state.picker === 'transferDestination'}
+      >
+        <Screen>
+          <View
+            style={[
+              styles.modalScreenHeader,
+              {
+                backgroundColor: colors.surface,
+                borderBottomColor: colors.border,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.actionSheetTitle,
+                { color: colors.textPrimary },
+              ]}
+            >
+              {state.language === 'id'
+                ? 'Pilih Dompet Penerima'
+                : 'Select Destination Wallet'}
+            </Text>
+            <Pressable
+              accessibilityLabel="Close destination wallet picker"
+              accessibilityRole="button"
+              hitSlop={12}
+              onPress={() => actions.setPicker(null)}
+              style={styles.closeIconButton}
+            >
+              <MaterialCommunityIcons color="#64748B" name="close" size={24} />
+            </Pressable>
+          </View>
+          <WalletPicker
+            excludeWalletId={state.form.paymentMethod?.id}
+            onSelect={actions.handleSelectTransferDestination}
+            selectedId={state.form.transferToPaymentMethod?.id}
+          />
+        </Screen>
+      </Modal>
+
+      {/* Transfer Fee Category Picker Modal */}
+      <Modal
+        animationType="slide"
+        onRequestClose={() => actions.setPicker(null)}
+        visible={state.picker === 'transferFeeCategory'}
+      >
+        <Screen>
+          <View
+            style={[
+              styles.modalScreenHeader,
+              {
+                backgroundColor: colors.surface,
+                borderBottomColor: colors.border,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.actionSheetTitle,
+                { color: colors.textPrimary },
+              ]}
+            >
+              {state.language === 'id'
+                ? 'Kategori Biaya Transfer'
+                : 'Transfer Fee Category'}
+            </Text>
+            <Pressable
+              accessibilityLabel="Close fee category picker"
+              accessibilityRole="button"
+              hitSlop={12}
+              onPress={() => actions.setPicker(null)}
+              style={styles.closeIconButton}
+            >
+              <MaterialCommunityIcons color="#64748B" name="close" size={24} />
+            </Pressable>
+          </View>
+          <CategoryPicker
+            onSelect={(selectedCategory) => {
+              actions.setForm((c) => ({
+                ...c,
+                transferFeeCategory: selectedCategory,
+              }));
+              actions.setPicker(null);
+            }}
+            selectedId={state.form.transferFeeCategory?.id}
+            type="expense"
+          />
+        </Screen>
+      </Modal>
+
       {/* Action Sheet Modal: Choose Camera vs Gallery */}
       <ManualReceiptModal
         hasReceipt={Boolean(state.form.receipt)}
@@ -362,12 +554,13 @@ const styles = StyleSheet.create({
   },
   errorBanner: {
     ...typography.metadata,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
     borderRadius: radius.md,
     color: '#EF4444',
+    fontSize: 13,
     fontWeight: '600',
-    overflow: 'hidden',
-    padding: spacing.md,
+    marginTop: spacing.xs,
+    padding: spacing.sm + 2,
     textAlign: 'center',
   },
   loadingContainer: {
@@ -381,37 +574,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
+    paddingVertical: spacing.sm + 4,
   },
   saveBigButton: {
     alignItems: 'center',
     borderRadius: radius.lg,
     elevation: 4,
     justifyContent: 'center',
-    paddingVertical: spacing.md + 2,
+    paddingVertical: spacing.md,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
   },
   saveBigButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
   saveBigButtonExpense: {
     backgroundColor: '#EF4444',
+    shadowColor: '#EF4444',
   },
   saveBigButtonIncome: {
     backgroundColor: '#10B981',
+    shadowColor: '#10B981',
+  },
+  saveBigButtonTransfer: {
+    backgroundColor: '#2563EB',
+    shadowColor: '#2563EB',
   },
   saveBigButtonText: {
     ...typography.body,
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '900',
-    letterSpacing: -0.2,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   scrollContent: {
     gap: spacing.md,
-    paddingBottom: spacing.xxl + 32,
+    paddingBottom: spacing.xxl,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.xs,
   },

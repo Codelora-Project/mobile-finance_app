@@ -4,12 +4,14 @@ import { initialMigration } from '@/db/migrations/001-initial';
 import { goalsAndHabitsMigration } from '@/db/migrations/002-goals-and-habits';
 import { categoryBudgetsMigration } from '@/db/migrations/003-category-budgets';
 import { queryOptimizationIndexesMigration } from '@/db/migrations/004-query-optimization-indexes';
+import { multiWalletsAndTransfersMigration } from '@/db/migrations/005-multi-wallets-and-transfers';
 
 const migrations = [
   initialMigration,
   goalsAndHabitsMigration,
   categoryBudgetsMigration,
   queryOptimizationIndexesMigration,
+  multiWalletsAndTransfersMigration,
 ] as const;
 
 export const latestDatabaseVersion = migrations.at(-1)?.version ?? 0;

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, type TextInput } from 'react-native';
 
 import { defaultCategories, defaultPaymentMethods } from '@/db/seeds';
+import type { Wallet } from '@/features/accounts/account-types';
 import {
   listCategories,
   type Category,
@@ -54,6 +55,8 @@ export type FormErrors = Partial<
     | 'dateTime'
     | 'note'
     | 'paymentMethod'
+    | 'transferToPaymentMethod'
+    | 'transferFeeAmount'
     | 'receipt'
     | 'submit',
     string
@@ -68,12 +71,23 @@ export type FormState = {
   isReimbursable: boolean;
   note: string;
   paymentMethod: SelectedReference | null;
+  transferToPaymentMethod: SelectedReference | null;
+  hasTransferFee: boolean;
+  transferFeeAmount: string;
+  transferFeeCategory: Category | null;
+  transferFeeNote: string;
   receipt: ManualReceiptSelection | null;
   time: string;
   type: TransactionType;
 };
 
-export type PickerState = 'category' | 'paymentMethod' | null;
+export type PickerState =
+  | 'category'
+  | 'paymentMethod'
+  | 'transferSource'
+  | 'transferDestination'
+  | 'transferFeeCategory'
+  | null;
 
 function createDefaultForm(
   initialCategory?: SelectedReference | null,
@@ -86,11 +100,16 @@ function createDefaultForm(
     category: initialCategory ?? null,
     counterparty: '',
     date: dateTime.date,
+    hasTransferFee: false,
     isReimbursable: false,
     note: '',
     paymentMethod: null,
     receipt: null,
     time: dateTime.time,
+    transferFeeAmount: '',
+    transferFeeCategory: null,
+    transferFeeNote: '',
+    transferToPaymentMethod: null,
     type: initialType ?? 'expense',
   };
 }
@@ -105,6 +124,8 @@ function formFromTransaction(transaction: Transaction): FormState {
     transaction.occurredAt,
     transaction.timezoneOffsetMinutes,
   );
+  const hasFee = (transaction.transferFeeMinor ?? 0) > 0;
+
   return {
     amount: formatMoneyInput(transaction.amountMinor, transaction.currencyCode),
     category: {
@@ -113,6 +134,7 @@ function formFromTransaction(transaction: Transaction): FormState {
     },
     counterparty: transaction.counterparty ?? '',
     date: dateTime.date,
+    hasTransferFee: hasFee,
     isReimbursable: transaction.isReimbursable,
     note: transaction.note ?? '',
     paymentMethod:
@@ -131,6 +153,19 @@ function formFromTransaction(transaction: Transaction): FormState {
         }
       : null,
     time: dateTime.time,
+    transferFeeAmount: hasFee
+      ? String(transaction.transferFeeMinor)
+      : '',
+    transferFeeCategory: null,
+    transferFeeNote: transaction.transferFeeNote ?? '',
+    transferToPaymentMethod:
+      transaction.transferToPaymentMethodId !== null &&
+      transaction.transferToPaymentMethodName !== null
+        ? {
+            id: transaction.transferToPaymentMethodId,
+            name: transaction.transferToPaymentMethodName,
+          }
+        : null,
     type: transaction.type,
   };
 }
@@ -144,7 +179,11 @@ function getOperationMessage(error: unknown) {
     : 'An unexpected error occurred.';
 }
 
-function buildSaveInput(form: FormState, currencyCode = 'IDR') {
+function buildSaveInput(
+  form: FormState,
+  currencyCode = 'IDR',
+  fallbackCategoryId = 1,
+) {
   const errors: FormErrors = {};
   let amountMinor: number | null = null;
   let dateTime: ReturnType<typeof parseLocalDateTimeInput> | null = null;
@@ -154,9 +193,41 @@ function buildSaveInput(form: FormState, currencyCode = 'IDR') {
   } catch {
     errors.amount = 'Enter an amount.';
   }
-  if (!form.category) {
-    errors.category = 'Choose a category.';
+
+  if (form.type !== 'transfer') {
+    if (!form.category) {
+      errors.category = 'Choose a category.';
+    }
+  } else {
+    if (!form.paymentMethod) {
+      errors.paymentMethod = 'Pilih dompet asal.';
+    }
+    if (!form.transferToPaymentMethod) {
+      errors.transferToPaymentMethod = 'Pilih dompet tujuan.';
+    }
+    if (
+      form.paymentMethod &&
+      form.transferToPaymentMethod &&
+      form.paymentMethod.id === form.transferToPaymentMethod.id
+    ) {
+      errors.transferToPaymentMethod =
+        'Dompet asal dan tujuan tidak boleh sama.';
+    }
   }
+
+  let feeMinor = 0;
+  if (form.type === 'transfer' && form.hasTransferFee) {
+    if (!form.transferFeeAmount.trim()) {
+      errors.transferFeeAmount = 'Masukkan nominal biaya transfer.';
+    } else {
+      try {
+        feeMinor = parseMoneyInput(form.transferFeeAmount, currencyCode);
+      } catch {
+        errors.transferFeeAmount = 'Nominal biaya transfer tidak valid.';
+      }
+    }
+  }
+
   try {
     dateTime = parseLocalDateTimeInput(form.date, form.time);
     if (dateTime.occurredAt > Date.now()) {
@@ -172,7 +243,6 @@ function buildSaveInput(form: FormState, currencyCode = 'IDR') {
   if (
     Object.keys(errors).length > 0 ||
     amountMinor === null ||
-    !form.category ||
     dateTime === null
   ) {
     return { errors, input: null };
@@ -180,7 +250,7 @@ function buildSaveInput(form: FormState, currencyCode = 'IDR') {
 
   const input: SaveTransactionInput = {
     amountMinor,
-    categoryId: form.category.id,
+    categoryId: form.category?.id ?? fallbackCategoryId,
     counterparty: form.counterparty,
     currencyCode,
     isReimbursable: form.type === 'expense' && form.isReimbursable,
@@ -196,6 +266,20 @@ function buildSaveInput(form: FormState, currencyCode = 'IDR') {
           }
         : null,
     timezoneOffsetMinutes: dateTime.timezoneOffsetMinutes,
+    transferFeeCategoryId:
+      form.type === 'transfer' && form.hasTransferFee
+        ? form.transferFeeCategory?.id ?? null
+        : null,
+    transferFeeMinor:
+      form.type === 'transfer' && form.hasTransferFee ? feeMinor : 0,
+    transferFeeNote:
+      form.type === 'transfer' && form.hasTransferFee
+        ? form.transferFeeNote
+        : null,
+    transferToPaymentMethodId:
+      form.type === 'transfer'
+        ? form.transferToPaymentMethod?.id ?? null
+        : null,
     type: form.type,
   };
   return { errors, input };
@@ -386,6 +470,50 @@ export function useManualTransactionViewModel({
     }));
   }, []);
 
+  const handleSelectTransferSource = useCallback((wallet: Wallet | null) => {
+    setForm((current) => ({
+      ...current,
+      paymentMethod: wallet ? { id: wallet.id, name: wallet.name } : null,
+    }));
+    setErrors((c) => ({ ...c, paymentMethod: undefined }));
+    setPicker(null);
+  }, []);
+
+  const handleSelectTransferDestination = useCallback(
+    (wallet: Wallet | null) => {
+      setForm((current) => ({
+        ...current,
+        transferToPaymentMethod: wallet
+          ? { id: wallet.id, name: wallet.name }
+          : null,
+      }));
+      setErrors((c) => ({ ...c, transferToPaymentMethod: undefined }));
+      setPicker(null);
+    },
+    [],
+  );
+
+  const handleSwapWallets = useCallback(() => {
+    setForm((current) => ({
+      ...current,
+      paymentMethod: current.transferToPaymentMethod,
+      transferToPaymentMethod: current.paymentMethod,
+    }));
+    setErrors((c) => ({
+      ...c,
+      paymentMethod: undefined,
+      transferToPaymentMethod: undefined,
+    }));
+  }, []);
+
+  const handleToggleTransferFee = useCallback((enabled: boolean) => {
+    setForm((current) => ({
+      ...current,
+      hasTransferFee: enabled,
+    }));
+    setErrors((c) => ({ ...c, transferFeeAmount: undefined }));
+  }, []);
+
   const handleAddIncrement = useCallback((amountToAdd: number) => {
     setForm((current) => {
       const currentVal = Number(current.amount.replace(/[^0-9]/g, '')) || 0;
@@ -431,7 +559,12 @@ export function useManualTransactionViewModel({
 
   const handleSave = useCallback(async () => {
     if (savingRef.current || deletingRef.current) return;
-    const { errors: validationErrors, input } = buildSaveInput(form, currencyCode);
+    const fallbackCategory = categoriesList[0]?.id ?? 1;
+    const { errors: validationErrors, input } = buildSaveInput(
+      form,
+      currencyCode,
+      fallbackCategory,
+    );
     if (!input) {
       setErrors(validationErrors);
       return;
@@ -471,7 +604,7 @@ export function useManualTransactionViewModel({
       savingRef.current = false;
       setSaving(false);
     }
-  }, [currencyCode, database, form, isEditMode, language, router, transactionId]);
+  }, [categoriesList, currencyCode, database, form, isEditMode, language, router, transactionId]);
 
   const handleDelete = useCallback(async () => {
     if (savingRef.current || deletingRef.current || !transactionId) return;
@@ -524,6 +657,10 @@ export function useManualTransactionViewModel({
       handleSelectCategory,
       handleSelectPaymentMethod,
       handleSelectReceiptSource,
+      handleSelectTransferDestination,
+      handleSelectTransferSource,
+      handleSwapWallets,
+      handleToggleTransferFee,
       setErrors,
       setForm,
       setPicker,

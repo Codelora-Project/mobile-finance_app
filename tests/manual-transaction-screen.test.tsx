@@ -108,6 +108,47 @@ jest.mock('@/features/payment-methods/payment-method-repository', () => ({
   ]),
 }));
 
+jest.mock('@/features/accounts/account-repository', () => ({
+  getWallets: jest.fn<() => Promise<unknown[]>>().mockResolvedValue([
+    {
+      accountNumber: null,
+      accountType: 'bank',
+      color: '#2563EB',
+      createdAt: 0,
+      currentBalanceMinor: 5000000,
+      iconKey: 'bank',
+      id: 1,
+      includeInCashflow: true,
+      initialBalanceMinor: 5000000,
+      isArchived: false,
+      isDefault: true,
+      isFallback: false,
+      name: 'Bank BCA',
+      sortOrder: 1,
+      systemKey: 'bank_transfer',
+      updatedAt: 0,
+    },
+    {
+      accountNumber: null,
+      accountType: 'ewallet',
+      color: '#00AED6',
+      createdAt: 0,
+      currentBalanceMinor: 250000,
+      iconKey: 'cellphone',
+      id: 2,
+      includeInCashflow: true,
+      initialBalanceMinor: 250000,
+      isArchived: false,
+      isDefault: false,
+      isFallback: false,
+      name: 'GoPay',
+      sortOrder: 2,
+      systemKey: null,
+      updatedAt: 0,
+    },
+  ]),
+}));
+
 jest.mock('@/features/transactions/manual-receipt-picker', () => ({
   pickManualReceipt: (...args: unknown[]) => mockPickManualReceipt(...args),
 }));
@@ -322,5 +363,65 @@ describe('manual transaction form', () => {
       screen.getByRole('tab', { name: /Expense/ }).props.accessibilityState,
     ).toEqual({ selected: true });
     expect(screen.getAllByText('Food & Drink').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('switches to Transfer tab and handles transfer with optional transfer fee toggle', async () => {
+    mockParams = {};
+    mockCreateTransaction.mockResolvedValueOnce({ id: 99, type: 'transfer' });
+
+    await render(
+      <LanguageProvider initialLanguage="id">
+        <ManualTransactionScreen />
+      </LanguageProvider>,
+    );
+
+    // 1. Switch to Transfer tab
+    const transferTab = screen.getByRole('tab', { name: 'Transfer' });
+    await fireEvent.press(transferTab);
+
+    expect(transferTab.props.accessibilityState).toEqual({ selected: true });
+
+    // 2. Set transfer amount
+    const amountInput = screen.getByLabelText('Amount *');
+    await fireEvent.changeText(amountInput, '500000');
+
+    // 3. Open Source Wallet picker and select BCA
+    const sourcePickerBtn = screen.getByLabelText('Dari Dompet / Rekening');
+    await fireEvent.press(sourcePickerBtn);
+
+    await waitFor(() => expect(screen.getAllByText('Bank BCA').length).toBeGreaterThanOrEqual(1));
+    await fireEvent.press(screen.getAllByText('Bank BCA')[0]);
+
+    // 4. Open Destination Wallet picker and select GoPay
+    const destPickerBtn = screen.getByLabelText('Ke Dompet / Rekening');
+    await fireEvent.press(destPickerBtn);
+
+    await waitFor(() => expect(screen.getAllByText('GoPay').length).toBeGreaterThanOrEqual(1));
+    await fireEvent.press(screen.getAllByText('GoPay')[0]);
+
+    // 5. Toggle Transfer Fee Switch ON
+    const feeToggle = screen.getByLabelText('Biaya Transfer');
+    await fireEvent(feeToggle, 'valueChange', true);
+
+    // 6. Set Transfer Fee amount to 2500
+    const feeAmountInput = screen.getByLabelText('Masukkan biaya transfer');
+    await fireEvent.changeText(feeAmountInput, '2500');
+
+    // 7. Save Transfer
+    const saveBtn = screen.getByTestId('save-transaction');
+    await fireEvent.press(saveBtn);
+
+    await waitFor(() =>
+      expect(mockCreateTransaction).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          amountMinor: 500000,
+          paymentMethodId: 1,
+          transferFeeMinor: 2500,
+          transferToPaymentMethodId: 2,
+          type: 'transfer',
+        }),
+      ),
+    );
   });
 });

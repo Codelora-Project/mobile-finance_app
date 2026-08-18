@@ -246,6 +246,14 @@ export function TransactionDetailScreen({
       : t.transactions.source;
   const isExpense = transaction.type === 'expense';
 
+  const isTransfer = transaction.type === 'transfer';
+  const heroTitle =
+    isTransfer &&
+    transaction.paymentMethodName &&
+    transaction.transferToPaymentMethodName
+      ? `${transaction.paymentMethodName} ➔ ${transaction.transferToPaymentMethodName}`
+      : transaction.counterparty?.trim() || transaction.categoryName;
+
   return (
     <Screen>
       {/* Top App Bar Header */}
@@ -326,12 +334,18 @@ export function TransactionDetailScreen({
           <View
             style={[
               styles.heroAvatarCircle,
-              { backgroundColor: meta.backgroundColor },
+              {
+                backgroundColor: isTransfer
+                  ? isDark
+                    ? '#1E3A8A'
+                    : '#EFF6FF'
+                  : meta.backgroundColor,
+              },
             ]}
           >
             <MaterialCommunityIcons
-              color={meta.color}
-              name={meta.icon}
+              color={isTransfer ? '#2563EB' : meta.color}
+              name={isTransfer ? 'swap-horizontal' : meta.icon}
               size={32}
             />
           </View>
@@ -341,16 +355,26 @@ export function TransactionDetailScreen({
             numberOfLines={2}
             style={[styles.heroCounterparty, { color: colors.textPrimary }]}
           >
-            {transaction.counterparty?.trim() || transaction.categoryName}
+            {heroTitle}
           </Text>
 
           {/* Large Amount Display */}
           <Text
-            adjustsFontSizeToFit minimumFontScale={0.7} numberOfLines={1} style={[styles.heroAmount,
-              { color: isExpense ? colors.destructive : colors.positive },
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+            numberOfLines={1}
+            style={[
+              styles.heroAmount,
+              {
+                color: isTransfer
+                  ? '#2563EB'
+                  : isExpense
+                  ? colors.destructive
+                  : colors.positive,
+              },
             ]}
           >
-            {isExpense ? '−' : '+'}
+            {isTransfer ? '⇄ ' : isExpense ? '−' : '+'}
             {formatMoney(transaction.amountMinor, transaction.currencyCode)}
           </Text>
 
@@ -360,23 +384,35 @@ export function TransactionDetailScreen({
               style={[
                 styles.heroTypePill,
                 {
-                  backgroundColor: isExpense
+                  backgroundColor: isTransfer
+                    ? isDark
+                      ? '#1E3A8A'
+                      : '#EFF6FF'
+                    : isExpense
                     ? isDark
                       ? '#7F1D1D'
                       : '#FEE2E2'
                     : isDark
-                      ? '#14532D'
-                      : '#DCFCE7',
+                    ? '#14532D'
+                    : '#DCFCE7',
                 },
               ]}
             >
               <Text
                 style={[
                   styles.heroTypePillText,
-                  { color: isExpense ? colors.destructive : colors.positive },
+                  {
+                    color: isTransfer
+                      ? '#2563EB'
+                      : isExpense
+                      ? colors.destructive
+                      : colors.positive,
+                  },
                 ]}
               >
-                {isExpense
+                {isTransfer
+                  ? '⇄ Transfer'
+                  : isExpense
                   ? `💸 ${t.transactions.expense}`
                   : `💰 ${t.transactions.income}`}
               </Text>
@@ -435,18 +471,62 @@ export function TransactionDetailScreen({
             },
           ]}
         >
-          <DetailItemRow
-            icon={meta.icon}
-            iconColor={meta.color}
-            label={t.transactions.category}
-            value={transaction.categoryName}
-          />
+          {isTransfer ? (
+            <>
+              <DetailItemRow
+                icon="wallet-outline"
+                iconColor="#2563EB"
+                label={t.transactions.transferFrom}
+                value={transaction.paymentMethodName || t.transactions.none}
+              />
+              <DetailItemRow
+                icon="bank-transfer-in"
+                iconColor="#10B981"
+                label={t.transactions.transferTo}
+                value={
+                  transaction.transferToPaymentMethodName ||
+                  t.transactions.none
+                }
+              />
+              {transaction.transferFeeMinor > 0 ? (
+                <DetailItemRow
+                  icon="tag-outline"
+                  iconColor="#EF4444"
+                  label={t.transactions.transferFeeToggle}
+                  value={
+                    formatMoney(
+                      transaction.transferFeeMinor,
+                      transaction.currencyCode,
+                    ) +
+                    (transaction.transferFeeNote
+                      ? ` (${transaction.transferFeeNote})`
+                      : '')
+                  }
+                />
+              ) : null}
+            </>
+          ) : (
+            <>
+              <DetailItemRow
+                icon={meta.icon}
+                iconColor={meta.color}
+                label={t.transactions.category}
+                value={transaction.categoryName}
+              />
 
-          <DetailItemRow
-            icon="storefront-outline"
-            label={counterpartyLabel}
-            value={transaction.counterparty || t.transactions.none}
-          />
+              <DetailItemRow
+                icon="storefront-outline"
+                label={counterpartyLabel}
+                value={transaction.counterparty || t.transactions.none}
+              />
+
+              <DetailItemRow
+                icon="credit-card-outline"
+                label={t.transactions.paymentMethod}
+                value={transaction.paymentMethodName || t.transactions.none}
+              />
+            </>
+          )}
 
           <DetailItemRow
             icon="calendar-clock-outline"
@@ -455,39 +535,37 @@ export function TransactionDetailScreen({
           />
 
           <DetailItemRow
-            icon="credit-card-outline"
-            label={t.transactions.paymentMethod}
-            value={transaction.paymentMethodName || t.transactions.none}
-          />
-
-          <DetailItemRow
             icon="note-text-outline"
             label={t.transactions.note}
             value={transaction.note || t.transactions.none}
           />
 
-          <DetailItemRow
-            icon="receipt-text-outline"
-            label={t.transactions.receipt}
-            value={
-              transaction.receipt
-                ? receiptName(transaction.receipt.storageKey)
-                : t.transactions.noReceipt
-            }
-          />
+          {!isTransfer ? (
+            <>
+              <DetailItemRow
+                icon="receipt-text-outline"
+                label={t.transactions.receipt}
+                value={
+                  transaction.receipt
+                    ? receiptName(transaction.receipt.storageKey)
+                    : t.transactions.noReceipt
+                }
+              />
 
-          <DetailItemRow
-            icon="briefcase-check-outline"
-            isLast={!claimMembership}
-            label={t.transactions.reimbursementStatus}
-            value={
-              transaction.type === 'income'
-                ? t.transactions.notApplicable
-                : transaction.isReimbursable
-                  ? t.transactions.reimbursableBadge
-                  : t.transactions.notReimbursable
-            }
-          />
+              <DetailItemRow
+                icon="briefcase-check-outline"
+                isLast={!claimMembership}
+                label={t.transactions.reimbursementStatus}
+                value={
+                  transaction.type === 'income'
+                    ? t.transactions.notApplicable
+                    : transaction.isReimbursable
+                    ? t.transactions.reimbursableBadge
+                    : t.transactions.notReimbursable
+                }
+              />
+            </>
+          ) : null}
 
           {claimMembership ? (
             <DetailItemRow

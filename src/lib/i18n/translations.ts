@@ -51,6 +51,14 @@ export type TranslationSchema = {
     all: string;
     expense: string;
     income: string;
+    transfer: string;
+    transferFrom: string;
+    transferTo: string;
+    transferFeeToggle: string;
+    transferFeeSubtitle: string;
+    transferFeeAmountPlaceholder: string;
+    transferFeeCategoryLabel: string;
+    transferFeeNotePlaceholder: string;
     withReceipt: string;
     reimbursable: string;
     nonCash: string;
@@ -380,6 +388,14 @@ export const translations: Record<Language, TranslationSchema> = {
       all: 'Semua',
       expense: 'Pengeluaran',
       income: 'Pemasukan',
+      transfer: 'Transfer',
+      transferFrom: 'Dari Dompet / Rekening',
+      transferTo: 'Ke Dompet / Rekening',
+      transferFeeToggle: 'Biaya Transfer',
+      transferFeeSubtitle: 'Catat sebagai transaksi terpisah',
+      transferFeeAmountPlaceholder: 'Masukkan biaya transfer',
+      transferFeeCategoryLabel: 'Pilih Kategori Biaya',
+      transferFeeNotePlaceholder: 'Tambah catatan biaya (opsional)',
       withReceipt: 'Ada Struk',
       reimbursable: 'Klaim Kantor',
       nonCash: 'Non-Tunai',
@@ -740,6 +756,14 @@ export const translations: Record<Language, TranslationSchema> = {
       all: 'All',
       expense: 'Expenses',
       income: 'Income',
+      transfer: 'Transfer',
+      transferFrom: 'From Wallet / Account',
+      transferTo: 'To Wallet / Account',
+      transferFeeToggle: 'Transfer Fee',
+      transferFeeSubtitle: 'Record as a separate expense',
+      transferFeeAmountPlaceholder: 'Enter transfer fee',
+      transferFeeCategoryLabel: 'Choose Fee Category',
+      transferFeeNotePlaceholder: 'Add fee note (optional)',
       withReceipt: 'With Receipt',
       reimbursable: 'Reimbursable',
       nonCash: 'Non-Cash',
