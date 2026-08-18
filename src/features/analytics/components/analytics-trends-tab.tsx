@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -22,222 +23,755 @@ export const AnalyticsTrendsTab = memo(function AnalyticsTrendsTab({
 }: AnalyticsTrendsTabProps) {
   const { colors, isDark } = useTheme();
 
+  // Find max value across all months for proportional chart scaling
+  const maxFlowOverall = Math.max(
+    ...monthlyCashFlow.map((m) => Math.max(m.incomeMinor, m.expenseMinor)),
+    1,
+  );
+
+  const currentMonthFlow =
+    monthlyCashFlow.length > 0
+      ? monthlyCashFlow[monthlyCashFlow.length - 1]
+      : null;
+
+  const savingsRate =
+    currentMonthFlow && currentMonthFlow.incomeMinor > 0
+      ? Math.round(
+          (Math.max(0, currentMonthFlow.netMinor) /
+            currentMonthFlow.incomeMinor) *
+            100,
+        )
+      : 0;
+
+  const activeMonths = monthlyCashFlow.filter(
+    (m) => m.incomeMinor > 0 || m.expenseMinor > 0,
+  );
+  const inactiveMonths = monthlyCashFlow.filter(
+    (m) => m.incomeMinor === 0 && m.expenseMinor === 0,
+  );
+
   return (
     <View style={styles.tabContent}>
+      {/* 1. Top KPI Summary Card */}
+      {currentMonthFlow ? (
+        <View
+          style={[
+            styles.kpiCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <View style={styles.kpiHeader}>
+            <View style={styles.kpiTitleWrap}>
+              <Text
+                numberOfLines={1}
+                style={[styles.kpiSubtitle, { color: colors.textSecondary }]}
+              >
+                ARUS KAS BERSIH ({currentMonthFlow.monthLabel})
+              </Text>
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.kpiAmount,
+                  {
+                    color:
+                      currentMonthFlow.netMinor >= 0
+                        ? colors.positive
+                        : colors.destructive,
+                  },
+                ]}
+              >
+                {formatSignedMoney(currentMonthFlow.netMinor, currencyCode)}
+              </Text>
+            </View>
+
+            {currentMonthFlow.incomeMinor > 0 ? (
+              <View
+                style={[
+                  styles.savingsBadge,
+                  {
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : '#EFF6FF',
+                  },
+                ]}
+              >
+                <Text
+                  style={[styles.savingsBadgeLabel, { color: colors.primary }]}
+                >
+                  Tabungan: {savingsRate}%
+                </Text>
+              </View>
+            ) : null}
+          </View>
+
+          <View
+            style={[
+              styles.kpiDivider,
+              { backgroundColor: colors.border },
+            ]}
+          />
+
+          <View style={styles.kpiDetailsRow}>
+            <View style={styles.kpiDetailCol}>
+              <View style={styles.kpiIndicatorRow}>
+                <View
+                  style={[
+                    styles.indicatorDot,
+                    { backgroundColor: colors.positive },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.kpiDetailLabel,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  {t.analytics.incomePrefix}
+                </Text>
+              </View>
+              <Text
+                numberOfLines={1}
+                style={[styles.kpiDetailValue, { color: colors.textPrimary }]}
+              >
+                {formatMoney(currentMonthFlow.incomeMinor, currencyCode)}
+              </Text>
+            </View>
+
+            <View style={styles.kpiDetailCol}>
+              <View style={styles.kpiIndicatorRow}>
+                <View
+                  style={[
+                    styles.indicatorDot,
+                    { backgroundColor: colors.destructive },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.kpiDetailLabel,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  {t.analytics.expensePrefix}
+                </Text>
+              </View>
+              <Text
+                numberOfLines={1}
+                style={[styles.kpiDetailValue, { color: colors.textPrimary }]}
+              >
+                {formatMoney(currentMonthFlow.expenseMinor, currencyCode)}
+              </Text>
+            </View>
+          </View>
+        </View>
+      ) : null}
+
+      {/* 2. Visual Monthly Comparison Vertical Bar Chart */}
       <View
         style={[
-          styles.cashFlowCard,
+          styles.chartCard,
           {
             backgroundColor: colors.surface,
             borderColor: colors.border,
           },
         ]}
       >
-        <Text
-          accessibilityRole="header"
-          style={[styles.sectionTitle, { color: colors.textPrimary }]}
-        >
-          {t.analytics.cashFlowTrend}
-        </Text>
-        <Text
-          style={[
-            styles.sectionSubtitle,
-            { color: colors.textSecondary },
-          ]}
-        >
-          {t.analytics.cashFlowSubtitle}
-        </Text>
+        <View style={styles.chartHeader}>
+          <Text
+            accessibilityRole="header"
+            style={[styles.sectionTitle, { color: colors.textPrimary }]}
+          >
+            {t.analytics.cashFlowTrend}
+          </Text>
+          <View style={styles.legendWrap}>
+            <View style={styles.legendItem}>
+              <View
+                style={[
+                  styles.legendDot,
+                  { backgroundColor: colors.positive },
+                ]}
+              />
+              <Text
+                style={[styles.legendText, { color: colors.textSecondary }]}
+              >
+                {t.analytics.incomePrefix}
+              </Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View
+                style={[
+                  styles.legendDot,
+                  { backgroundColor: colors.destructive },
+                ]}
+              />
+              <Text
+                style={[styles.legendText, { color: colors.textSecondary }]}
+              >
+                {t.analytics.expensePrefix}
+              </Text>
+            </View>
+          </View>
+        </View>
 
-        <View style={styles.cashFlowList}>
+        {/* Vertical Bars Chart Container */}
+        <View style={styles.chartBarsContainer}>
           {monthlyCashFlow.map((flow) => {
-            const maxFlow = Math.max(
-              flow.incomeMinor,
-              flow.expenseMinor,
-              1,
-            );
-            const incomeWidth = Math.max(
-              4,
-              Math.round((flow.incomeMinor / maxFlow) * 100),
-            );
-            const expenseWidth = Math.max(
-              4,
-              Math.round((flow.expenseMinor / maxFlow) * 100),
-            );
+            const hasData = flow.incomeMinor > 0 || flow.expenseMinor > 0;
+            const incomeHeightPercent = hasData
+              ? Math.max(6, Math.round((flow.incomeMinor / maxFlowOverall) * 100))
+              : 4;
+            const expenseHeightPercent = hasData
+              ? Math.max(
+                  6,
+                  Math.round((flow.expenseMinor / maxFlowOverall) * 100),
+                )
+              : 4;
 
             return (
-              <View key={flow.monthStart} style={styles.cashFlowMonthRow}>
-                <View style={styles.monthHeaderRow}>
+              <View key={flow.monthStart} style={styles.chartColumn}>
+                {/* Bar pairs */}
+                <View style={styles.barsTrackWrapper}>
+                  <View style={styles.barPair}>
+                    {/* Income vertical bar */}
+                    <View style={styles.singleBarSlot}>
+                      <View
+                        style={[
+                          styles.verticalBarFill,
+                          {
+                            backgroundColor: hasData
+                              ? colors.positive
+                              : isDark
+                                ? '#334155'
+                                : '#E2E8F0',
+                            height: `${incomeHeightPercent}%`,
+                          },
+                        ]}
+                      />
+                    </View>
+
+                    {/* Expense vertical bar */}
+                    <View style={styles.singleBarSlot}>
+                      <View
+                        style={[
+                          styles.verticalBarFill,
+                          {
+                            backgroundColor: hasData
+                              ? colors.destructive
+                              : isDark
+                                ? '#334155'
+                                : '#E2E8F0',
+                            height: `${expenseHeightPercent}%`,
+                          },
+                        ]}
+                      />
+                    </View>
+                  </View>
+                </View>
+
+                {/* X-axis Month Label */}
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.chartMonthLabel,
+                    {
+                      color: hasData
+                        ? colors.textPrimary
+                        : colors.textSecondary,
+                      fontWeight: hasData ? '700' : '500',
+                    },
+                  ]}
+                >
+                  {flow.monthLabel}
+                </Text>
+
+                {/* Net Badge */}
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.chartNetLabel,
+                    {
+                      color: hasData
+                        ? flow.netMinor >= 0
+                          ? colors.positive
+                          : colors.destructive
+                        : colors.textSecondary,
+                    },
+                  ]}
+                >
+                  {hasData
+                    ? formatSignedMoney(flow.netMinor, currencyCode)
+                    : 'Rp 0'}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* 3. Section: Detailed Breakdown per Month */}
+      <View style={styles.sectionWrap}>
+        <Text
+          style={[styles.sectionHeaderTitle, { color: colors.textSecondary }]}
+        >
+          RINCIAN BULANAN
+        </Text>
+
+        {/* Active Month Detailed Cards */}
+        {activeMonths.map((flow) => {
+          const maxMonthAmount = Math.max(
+            flow.incomeMinor,
+            flow.expenseMinor,
+            1,
+          );
+          const incRatio = Math.max(
+            6,
+            Math.round((flow.incomeMinor / maxMonthAmount) * 100),
+          );
+          const expRatio = Math.max(
+            6,
+            Math.round((flow.expenseMinor / maxMonthAmount) * 100),
+          );
+
+          return (
+            <View
+              key={flow.monthStart}
+              style={[
+                styles.detailedMonthCard,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <View style={styles.detailedHeaderRow}>
+                <View style={styles.detailedMonthNameWrap}>
+                  <MaterialCommunityIcons
+                    color={colors.primary}
+                    name="calendar-month-outline"
+                    size={18}
+                  />
                   <Text
                     style={[
-                      styles.monthNameText,
+                      styles.detailedMonthTitle,
                       { color: colors.textPrimary },
                     ]}
                   >
                     {flow.monthLabel}
                   </Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.netBadgePill,
+                    {
+                      backgroundColor:
+                        flow.netMinor >= 0
+                          ? isDark
+                            ? '#064E3B'
+                            : '#DCFCE7'
+                          : isDark
+                            ? '#7F1D1D'
+                            : '#FEE2E2',
+                    },
+                  ]}
+                >
                   <Text
                     style={[
-                      styles.monthNetText,
+                      styles.netBadgeText,
                       {
                         color:
                           flow.netMinor >= 0
-                            ? colors.positive
-                            : colors.destructive,
+                            ? isDark
+                              ? '#34D399'
+                              : '#16A34A'
+                            : isDark
+                              ? '#FCA5A5'
+                              : '#DC2626',
                       },
                     ]}
                   >
-                    {formatSignedMoney(flow.netMinor, currencyCode)}
+                    {formatSignedMoney(flow.netMinor, currencyCode)}{' '}
+                    {flow.netMinor >= 0 ? '(Surplus)' : '(Defisit)'}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Progress Bars Breakdown */}
+              <View style={styles.breakdownRowsWrap}>
+                {/* Income Row */}
+                <View style={styles.breakdownRow}>
+                  <Text
+                    style={[
+                      styles.breakdownLabel,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {t.analytics.incomePrefix}
+                  </Text>
+                  <View
+                    style={[
+                      styles.horizontalTrack,
+                      {
+                        backgroundColor: isDark
+                          ? colors.surfaceSecondary
+                          : '#F1F5F9',
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.horizontalFill,
+                        {
+                          backgroundColor: colors.positive,
+                          width: `${incRatio}%`,
+                        },
+                      ]}
+                    />
+                  </View>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.breakdownAmount,
+                      { color: colors.textPrimary },
+                    ]}
+                  >
+                    {formatMoney(flow.incomeMinor, currencyCode)}
                   </Text>
                 </View>
 
-                {/* Dual Comparison Bars */}
-                <View style={styles.dualBarsWrap}>
-                  {/* Income bar */}
-                  <View style={styles.barItemRow}>
-                    <Text
-                      style={[
-                        styles.barTypeLabel,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      {t.analytics.incomePrefix}
-                    </Text>
+                {/* Expense Row */}
+                <View style={styles.breakdownRow}>
+                  <Text
+                    style={[
+                      styles.breakdownLabel,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {t.analytics.expensePrefix}
+                  </Text>
+                  <View
+                    style={[
+                      styles.horizontalTrack,
+                      {
+                        backgroundColor: isDark
+                          ? colors.surfaceSecondary
+                          : '#F1F5F9',
+                      },
+                    ]}
+                  >
                     <View
                       style={[
-                        styles.barTrack,
+                        styles.horizontalFill,
                         {
-                          backgroundColor: isDark
-                            ? colors.surfaceSecondary
-                            : '#F1F5F9',
+                          backgroundColor: colors.destructive,
+                          width: `${expRatio}%`,
                         },
                       ]}
-                    >
-                      <View
-                        style={[
-                          styles.barFill,
-                          {
-                            backgroundColor: colors.positive,
-                            width: `${incomeWidth}%`,
-                          },
-                        ]}
-                      />
-                    </View>
-                    <Text style={styles.barAmountText}>
-                      {formatMoney(flow.incomeMinor, currencyCode)}
-                    </Text>
+                    />
                   </View>
-
-                  {/* Expense bar */}
-                  <View style={styles.barItemRow}>
-                    <Text
-                      style={[
-                        styles.barTypeLabel,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      {t.analytics.expensePrefix}
-                    </Text>
-                    <View
-                      style={[
-                        styles.barTrack,
-                        {
-                          backgroundColor: isDark
-                            ? colors.surfaceSecondary
-                            : '#F1F5F9',
-                        },
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.barFill,
-                          {
-                            backgroundColor: colors.destructive,
-                            width: `${expenseWidth}%`,
-                          },
-                        ]}
-                      />
-                    </View>
-                    <Text style={styles.barAmountText}>
-                      {formatMoney(flow.expenseMinor, currencyCode)}
-                    </Text>
-                  </View>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.breakdownAmount,
+                      { color: colors.textPrimary },
+                    ]}
+                  >
+                    {formatMoney(flow.expenseMinor, currencyCode)}
+                  </Text>
                 </View>
               </View>
-            );
-          })}
-        </View>
+            </View>
+          );
+        })}
+
+        {/* Compact Inactive Months Group (if any) */}
+        {inactiveMonths.length > 0 ? (
+          <View
+            style={[
+              styles.inactiveMonthsCard,
+              {
+                backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <MaterialCommunityIcons
+              color={colors.textSecondary}
+              name="information-outline"
+              size={16}
+            />
+            <Text
+              style={[
+                styles.inactiveMonthsText,
+                { color: colors.textSecondary },
+              ]}
+            >
+              {inactiveMonths.map((m) => m.monthLabel).join(', ')}: Belum ada
+              catatan transaksi.
+            </Text>
+          </View>
+        ) : null}
       </View>
     </View>
   );
 });
 
 const styles = StyleSheet.create({
-  barAmountText: {
+  barPair: {
+    alignItems: 'flex-end',
+    flexDirection: 'row',
+    gap: 4,
+    height: '100%',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  barsTrackWrapper: {
+    height: 100,
+    justifyContent: 'flex-end',
+    marginBottom: 6,
+    width: '100%',
+  },
+  breakdownAmount: {
     ...typography.metadata,
-    fontSize: 11,
+    flexShrink: 0,
+    fontSize: 12,
     fontWeight: '700',
-    minWidth: 70,
+    minWidth: 80,
     textAlign: 'right',
   },
-  barFill: {
-    borderRadius: radius.pill,
-    height: '100%',
+  breakdownLabel: {
+    ...typography.metadata,
+    flexShrink: 0,
+    fontSize: 12,
+    fontWeight: '600',
+    minWidth: 54,
   },
-  barItemRow: {
+  breakdownRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.xs + 2,
+  },
+  breakdownRowsWrap: {
+    gap: 6,
+    marginTop: spacing.xs,
+  },
+  chartBarsContainer: {
+    alignItems: 'flex-end',
+    flexDirection: 'row',
+    gap: spacing.xs,
+    justifyContent: 'space-between',
+    marginTop: spacing.sm,
+    paddingTop: spacing.xs,
+  },
+  chartCard: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    padding: spacing.md,
+  },
+  chartColumn: {
+    alignItems: 'center',
+    flex: 1,
+    minWidth: 0,
+  },
+  chartHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
+  chartMonthLabel: {
+    ...typography.metadata,
+    fontSize: 11,
+    textAlign: 'center',
+  },
+  chartNetLabel: {
+    ...typography.metadata,
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  detailedHeaderRow: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.xs,
+    justifyContent: 'space-between',
   },
-  barTrack: {
+  detailedMonthCard: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.md,
+  },
+  detailedMonthNameWrap: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    gap: 6,
+    minWidth: 0,
+  },
+  detailedMonthTitle: {
+    ...typography.body,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  horizontalFill: {
+    borderRadius: radius.pill,
+    height: '100%',
+  },
+  horizontalTrack: {
     borderRadius: radius.pill,
     flex: 1,
-    height: 6,
+    height: 7,
     overflow: 'hidden',
   },
-  barTypeLabel: {
-    ...typography.metadata,
-    fontSize: 11,
-    width: 24,
+  inactiveMonthsCard: {
+    alignItems: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
-  cashFlowCard: {
+  inactiveMonthsText: {
+    ...typography.metadata,
+    flex: 1,
+    fontSize: 12,
+  },
+  indicatorDot: {
+    borderRadius: radius.pill,
+    height: 6,
+    width: 6,
+  },
+  kpiAmount: {
+    ...typography.displayAmount,
+    fontSize: 20,
+    fontWeight: '900',
+    letterSpacing: -0.3,
+  },
+  kpiCard: {
     borderRadius: radius.lg,
     borderWidth: 1,
     gap: spacing.sm,
     padding: spacing.md,
   },
-  cashFlowList: {
+  kpiDetailCol: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  kpiDetailLabel: {
+    ...typography.metadata,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  kpiDetailValue: {
+    ...typography.body,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  kpiDetailsRow: {
+    flexDirection: 'row',
     gap: spacing.md,
-    marginTop: spacing.xs,
+    justifyContent: 'space-between',
   },
-  cashFlowMonthRow: {
-    gap: spacing.xs,
+  kpiDivider: {
+    height: StyleSheet.hairlineWidth,
+    width: '100%',
   },
-  dualBarsWrap: {
-    gap: 4,
-  },
-  monthHeaderRow: {
+  kpiHeader: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  monthNameText: {
-    ...typography.body,
-    fontWeight: '700',
+  kpiIndicatorRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
   },
-  monthNetText: {
+  kpiSubtitle: {
     ...typography.metadata,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+  kpiTitleWrap: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  legendDot: {
+    borderRadius: radius.pill,
+    height: 6,
+    width: 6,
+  },
+  legendItem: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
+  },
+  legendText: {
+    ...typography.metadata,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  legendWrap: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  netBadgePill: {
+    borderRadius: radius.pill,
+    flexShrink: 0,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  netBadgeText: {
+    ...typography.metadata,
+    fontSize: 11,
     fontWeight: '800',
   },
-  sectionSubtitle: {
+  savingsBadge: {
+    borderRadius: radius.pill,
+    flexShrink: 0,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
+  savingsBadgeLabel: {
     ...typography.metadata,
-    fontSize: 12,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  sectionHeaderTitle: {
+    ...typography.metadata,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    marginLeft: 2,
+    textTransform: 'uppercase',
   },
   sectionTitle: {
     ...typography.sectionTitle,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
   },
+  singleBarSlot: {
+    height: '100%',
+    justifyContent: 'flex-end',
+    width: 10,
+  },
   tabContent: {
-    gap: spacing.md,
+    gap: spacing.md + 2,
+  },
+  sectionWrap: {
+    gap: spacing.sm,
+  },
+  verticalBarFill: {
+    borderRadius: radius.pill,
+    width: '100%',
   },
 });

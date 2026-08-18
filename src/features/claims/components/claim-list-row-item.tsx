@@ -5,7 +5,6 @@ import type { ClaimStatus, ClaimSummary } from '@/features/claims/claim-reposito
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { spacing } from '@/theme/spacing';
-import { typography } from '@/theme/typography';
 
 export type ClaimListRowItemProps = {
   claim: ClaimSummary;

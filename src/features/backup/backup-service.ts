@@ -18,7 +18,7 @@ import type {
   BackupStats,
   BackupTransaction,
 } from '@/features/backup/backup-types';
-import { createCodedError, isCodedError } from '@/lib/errors';
+import { createCodedError } from '@/lib/errors';
 
 const BACKUP_DIRECTORY = 'backups';
 const EXPORT_DIRECTORY = 'exports';

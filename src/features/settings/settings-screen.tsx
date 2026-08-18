@@ -33,11 +33,9 @@ import {
   getSettingsOverview,
   getStorageStats,
   resetApplicationData,
-  setCurrencySetting,
   setQuickShortcutsSetting,
   type SettingsOverview,
   type StorageStats,
-  type SupportedCurrencyCode,
 } from '@/features/settings/settings-repository';
 import { useCurrency } from '@/lib/currency/currency-context';
 import { isCodedError, mapError } from '@/lib/errors';
@@ -104,7 +102,7 @@ export function SettingsScreen() {
     } catch (err) {
       if (__DEV__) console.warn('Could not reset shortcuts', err);
     }
-  }, [currencyCode, database, overview?.currencyCode]);
+  }, [currencyCode, database, overview]);
 
   const handleRemoveShortcut = useCallback(
     async (amount: number) => {

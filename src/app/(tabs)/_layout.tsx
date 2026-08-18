@@ -1,11 +1,8 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Tabs, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-type BottomTabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>['tabBar']>>[0];
-
 
 import { useLanguage } from '@/lib/i18n/language-context';
 import {
@@ -15,6 +12,8 @@ import {
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
+
+type BottomTabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>['tabBar']>>[0];
 
 type TabIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
@@ -49,7 +48,7 @@ function TabItem({
   onPress: () => void;
 }) {
   const { colors, isDark } = useTheme();
-  const scaleAnim = useRef(new Animated.Value(focused ? 1 : 0.88)).current;
+  const [scaleAnim] = useState(() => new Animated.Value(focused ? 1 : 0.88));
 
   useEffect(() => {
     Animated.spring(scaleAnim, {
@@ -120,7 +119,7 @@ function FloatingActionButton({ label }: { label: string }) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { tabBarAnim } = useTabBarVisibility();
-  const fabScale = useRef(new Animated.Value(1)).current;
+  const [fabScale] = useState(() => new Animated.Value(1));
 
   const handlePressIn = useCallback(() => {
     Animated.spring(fabScale, {

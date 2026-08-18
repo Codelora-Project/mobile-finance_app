@@ -24,7 +24,7 @@ export const ManualReceiptModal = memo(function ManualReceiptModal({
   onSelectSource,
   visible,
 }: ManualReceiptModalProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { language } = useLanguage();
 
   return (

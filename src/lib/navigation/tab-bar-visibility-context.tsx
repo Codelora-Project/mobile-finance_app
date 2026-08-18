@@ -4,6 +4,7 @@ import React, {
   useContext,
   useMemo,
   useRef,
+  useState,
   type PropsWithChildren,
 } from 'react';
 import {
@@ -22,8 +23,15 @@ type TabBarVisibilityContextValue = {
 const TabBarVisibilityContext =
   createContext<TabBarVisibilityContextValue | null>(null);
 
+const DEFAULT_FALLBACK_VALUE: TabBarVisibilityContextValue = {
+  handleScroll: () => {},
+  hideTabBar: () => {},
+  showTabBar: () => {},
+  tabBarAnim: new Animated.Value(0),
+};
+
 export function TabBarVisibilityProvider({ children }: PropsWithChildren) {
-  const tabBarAnim = useRef(new Animated.Value(0)).current; // 0 = visible, 1 = hidden
+  const [tabBarAnim] = useState(() => new Animated.Value(0)); // 0 = visible, 1 = hidden
   const isHiddenRef = useRef(false);
   const lastOffsetY = useRef(0);
 
@@ -89,13 +97,5 @@ export function TabBarVisibilityProvider({ children }: PropsWithChildren) {
 
 export function useTabBarVisibility() {
   const context = useContext(TabBarVisibilityContext);
-  if (!context) {
-    return {
-      handleScroll: () => {},
-      hideTabBar: () => {},
-      showTabBar: () => {},
-      tabBarAnim: new Animated.Value(0),
-    };
-  }
-  return context;
+  return context ?? DEFAULT_FALLBACK_VALUE;
 }

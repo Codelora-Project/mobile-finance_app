@@ -39,7 +39,9 @@ export function useUndoTransaction({
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (feedbackMessage) {
+    if (!feedbackMessage) return;
+
+    const timeoutId = setTimeout(() => {
       setToastMessage(feedbackMessage);
       if (undoCreatedId) {
         setUndoCreatedTransactionId(Number(undoCreatedId));
@@ -57,11 +59,18 @@ export function useUndoTransaction({
         setUndoDeletedPayload(null);
       }
       setToastVisible(true);
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-      toastTimeoutRef.current = setTimeout(() => {
-        setToastVisible(false);
-      }, toastDuration);
-    }
+    }, 0);
+
+    const hideTimeoutId = setTimeout(() => {
+      setToastVisible(false);
+    }, toastDuration);
+
+    toastTimeoutRef.current = hideTimeoutId;
+
+    return () => {
+      clearTimeout(timeoutId);
+      clearTimeout(hideTimeoutId);
+    };
   }, [feedbackMessage, toastDuration, undoCreatedId, undoPayload]);
 
   const handleUndo = useCallback(async () => {

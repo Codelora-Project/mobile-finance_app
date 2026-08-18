@@ -10,7 +10,6 @@ import {
   View,
 } from 'react-native';
 
-import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
 import { WalletPicker } from '@/features/accounts/components/wallet-picker';
 import { CategoryPicker } from '@/features/categories/category-picker';

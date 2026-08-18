@@ -3,7 +3,6 @@ import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/lib/theme/theme-context';
-import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
@@ -22,7 +21,7 @@ export const ManualTransactionHeader = memo(function ManualTransactionHeader({
   onDelete,
   title,
 }: ManualTransactionHeaderProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <View

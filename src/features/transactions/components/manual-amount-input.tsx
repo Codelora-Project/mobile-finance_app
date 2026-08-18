@@ -36,7 +36,7 @@ export const ManualAmountInput = memo(function ManualAmountInput({
   onResetAmount,
   quickShortcuts,
 }: ManualAmountInputProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <View style={styles.container}>

@@ -180,6 +180,8 @@ describe('analytics screen', () => {
     // Switch to Trends Tab (testing positive/negative cash flows)
     await fireEvent.press(screen.getByText('Tren Arus Kas'));
     expect(screen.getByText('Tren Arus Kas Bulanan')).toBeOnTheScreen();
-    expect(screen.getByText('+Rp 2.000.000')).toBeOnTheScreen();
+    expect(
+      screen.getAllByText('+Rp 2.000.000').length,
+    ).toBeGreaterThanOrEqual(1);
   });
 });

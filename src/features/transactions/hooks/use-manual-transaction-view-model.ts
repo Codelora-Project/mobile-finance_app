@@ -471,7 +471,7 @@ export function useManualTransactionViewModel({
     return () => {
       active = false;
     };
-  }, [database]);
+  }, [database, isEditMode]);
 
   useEffect(() => {
     if (!isEditMode) return;

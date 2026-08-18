@@ -3,7 +3,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  View,
 } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
