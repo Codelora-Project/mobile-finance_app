@@ -1,3 +1,4 @@
+import { Directory, File, Paths } from 'expo-file-system';
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { seedDefaultsInTransaction } from '@/db/seeds';
@@ -11,18 +12,41 @@ export const DEFAULT_QUICK_SHORTCUTS = [
 ] as const;
 
 export const SUPPORTED_CURRENCIES = [
-  { code: 'IDR', country: 'Indonesia', name: 'Indonesian Rupiah', symbol: 'Rp' },
-  { code: 'USD', country: 'United States', name: 'US Dollar', symbol: '$' },
-  { code: 'EUR', country: 'European Union', name: 'Euro', symbol: '€' },
-  { code: 'SGD', country: 'Singapore', name: 'Singapore Dollar', symbol: 'S$' },
-  { code: 'MYR', country: 'Malaysia', name: 'Malaysian Ringgit', symbol: 'RM' },
-  { code: 'JPY', country: 'Japan', name: 'Japanese Yen', symbol: '¥' },
-  { code: 'GBP', country: 'United Kingdom', name: 'British Pound', symbol: '£' },
-  { code: 'AUD', country: 'Australia', name: 'Australian Dollar', symbol: 'A$' },
+  { code: 'IDR', country: 'Indonesia', flag: '🇮🇩', name: 'Indonesian Rupiah', symbol: 'Rp' },
+  { code: 'USD', country: 'United States', flag: '🇺🇸', name: 'US Dollar', symbol: '$' },
+  { code: 'EUR', country: 'European Union', flag: '🇪🇺', name: 'Euro', symbol: '€' },
+  { code: 'SGD', country: 'Singapore', flag: '🇸🇬', name: 'Singapore Dollar', symbol: 'S$' },
+  { code: 'MYR', country: 'Malaysia', flag: '🇲🇾', name: 'Malaysian Ringgit', symbol: 'RM' },
+  { code: 'JPY', country: 'Japan', flag: '🇯🇵', name: 'Japanese Yen', symbol: '¥' },
+  { code: 'GBP', country: 'United Kingdom', flag: '🇬🇧', name: 'British Pound', symbol: '£' },
+  { code: 'AUD', country: 'Australia', flag: '🇦🇺', name: 'Australian Dollar', symbol: 'A$' },
 ] as const;
 
 export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
 export type SupportedCurrencyCode = SupportedCurrency['code'];
+
+export const RECOMMENDED_SHORTCUTS_BY_CURRENCY: Record<
+  SupportedCurrencyCode,
+  readonly number[]
+> = {
+  AUD: [1, 2, 5, 10, 20, 50],
+  EUR: [1, 2, 5, 10, 20, 50],
+  GBP: [1, 2, 5, 10, 20, 50],
+  IDR: [2_000, 5_000, 10_000, 20_000, 50_000, 100_000],
+  JPY: [100, 200, 500, 1_000, 2_000, 5_000],
+  MYR: [1, 5, 10, 20, 50, 100],
+  SGD: [1, 2, 5, 10, 20, 50],
+  USD: [1, 2, 5, 10, 20, 50],
+};
+
+export function getRecommendedShortcuts(
+  currencyCode: SupportedCurrencyCode,
+): number[] {
+  return [
+    ...(RECOMMENDED_SHORTCUTS_BY_CURRENCY[currencyCode] ??
+      DEFAULT_QUICK_SHORTCUTS),
+  ];
+}
 
 type SettingRow = {
   value: string;
@@ -105,11 +129,6 @@ export async function setCurrencySetting(
   );
   await database.runAsync(
     `UPDATE transactions SET currency_code = ? WHERE currency_code != ?`,
-    currencyCode,
-    currencyCode,
-  );
-  await database.runAsync(
-    `UPDATE claims SET currency_code = ? WHERE currency_code != ?`,
     currencyCode,
     currencyCode,
   );
@@ -267,4 +286,95 @@ export async function setQuickLogCategoryIds(
     now,
     now,
   );
+}
+
+export type StorageStats = Readonly<{
+  transactionsCount: number;
+  receiptsCount: number;
+  receiptsSizeBytes: number;
+  claimsCount: number;
+  cacheSizeBytes: number;
+}>;
+
+export async function getStorageStats(
+  database: SQLiteDatabase,
+): Promise<StorageStats> {
+  const [txRes, receiptsRes, claimsRes] = await Promise.all([
+    database.getFirstAsync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM transactions;',
+    ),
+    database.getFirstAsync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM receipts;',
+    ),
+    database.getFirstAsync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM claims;',
+    ),
+  ]);
+
+  let receiptsSizeBytes = 0;
+  let receiptsCount = receiptsRes?.count ?? 0;
+  try {
+    const receiptDir = new Directory(Paths.document, 'receipts');
+    if (receiptDir.exists) {
+      const items = receiptDir.list();
+      let calculatedBytes = 0;
+      for (const item of items) {
+        if (item instanceof File && item.exists) {
+          calculatedBytes += item.size || 0;
+        }
+      }
+      receiptsSizeBytes = calculatedBytes;
+    }
+  } catch {
+    // Fallback if filesystem access fails
+  }
+
+  let cacheSizeBytes = 0;
+  try {
+    const exportsDir = new Directory(Paths.cache, 'exports');
+    if (exportsDir.exists) {
+      const items = exportsDir.list();
+      for (const item of items) {
+        if (item instanceof File && item.exists) {
+          cacheSizeBytes += item.size || 0;
+        }
+      }
+    }
+  } catch {
+    // Fallback if cache access fails
+  }
+
+  return {
+    cacheSizeBytes,
+    claimsCount: claimsRes?.count ?? 0,
+    receiptsCount,
+    receiptsSizeBytes,
+    transactionsCount: txRes?.count ?? 0,
+  };
+}
+
+export async function clearTemporaryCache(): Promise<{ freedBytes: number }> {
+  let freedBytes = 0;
+  try {
+    const exportsDir = new Directory(Paths.cache, 'exports');
+    if (exportsDir.exists) {
+      const items = exportsDir.list();
+      for (const item of items) {
+        if (item instanceof File && item.exists) {
+          freedBytes += item.size || 0;
+        }
+      }
+      exportsDir.delete();
+    }
+  } catch (err) {
+    if (__DEV__) console.warn('Cache clearing error:', err);
+  }
+  return { freedBytes };
+}
+
+export function formatStorageSize(bytes: number): string {
+  if (bytes <= 0) return '0 B';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }

@@ -8,12 +8,14 @@ import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
 export type QuickShortcutsBarProps = {
+  currencySymbol?: string;
   onAddIncrement: (amount: number) => void;
   onReset: () => void;
   quickShortcuts: readonly number[];
 };
 
 export const QuickShortcutsBar = memo(function QuickShortcutsBar({
+  currencySymbol,
   onAddIncrement,
   onReset,
   quickShortcuts,
@@ -28,7 +30,7 @@ export const QuickShortcutsBar = memo(function QuickShortcutsBar({
         showsHorizontalScrollIndicator={false}
       >
         {quickShortcuts.map((amount) => {
-          const label = formatShortcutLabel(amount);
+          const label = formatShortcutLabel(amount, currencySymbol);
           return (
             <Pressable
               accessibilityLabel={`Add ${label}`}

@@ -72,6 +72,7 @@ export const ManualAmountInput = memo(function ManualAmountInput({
 
       {/* Quick Cash Shortcuts */}
       <QuickShortcutsBar
+        currencySymbol={currencySymbol}
         onAddIncrement={onAddIncrement}
         onReset={onResetAmount}
         quickShortcuts={quickShortcuts}

@@ -1,10 +1,14 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import React, { memo } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { SupportedCurrencyCode } from '@/features/settings/settings-repository';
+import {
+  SUPPORTED_CURRENCIES,
+  type SupportedCurrencyCode,
+} from '@/features/settings/settings-repository';
+import { QuickShortcutsBar } from '@/features/transactions/components/quick-shortcuts-bar';
 import type { Language, TranslationSchema } from '@/lib/i18n/translations';
-import { formatShortcutLabel } from '@/lib/money';
+import { formatMoney, formatShortcutLabel } from '@/lib/money';
 import type { ThemeSetting } from '@/lib/theme/theme-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -41,6 +45,16 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
   themeSetting,
 }: SettingsAppearanceCardProps) {
   const { colors, isDark } = useTheme();
+
+  const [previewAmount, setPreviewAmount] = useState(0);
+
+  const handlePreviewAdd = useCallback((amount: number) => {
+    setPreviewAmount((prev) => prev + amount);
+  }, []);
+
+  const handlePreviewReset = useCallback(() => {
+    setPreviewAmount(0);
+  }, []);
 
   return (
     <View style={styles.sectionGroup}>
@@ -234,6 +248,49 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
             {t.settings.shortcutsDesc}
           </Text>
 
+          {/* Live Preview Box */}
+          <View
+            style={[
+              styles.previewContainer,
+              {
+                backgroundColor: isDark
+                  ? colors.surfaceSecondary
+                  : '#F8FAFC',
+                borderColor: isDark ? colors.border : '#E2E8F0',
+              },
+            ]}
+          >
+            <View style={styles.previewHeaderRow}>
+              <View style={styles.previewTag}>
+                <MaterialCommunityIcons
+                  color="#059669"
+                  name="eye-outline"
+                  size={14}
+                />
+                <Text style={styles.previewTagText}>
+                  {t.settings.shortcutLivePreview}
+                </Text>
+              </View>
+              <Text
+                style={[
+                  styles.previewAmountDisplay,
+                  { color: colors.textPrimary },
+                ]}
+              >
+                {previewAmount > 0
+                  ? formatMoney(previewAmount, currencyCode)
+                  : `${currencySymbol} 0`}
+              </Text>
+            </View>
+
+            <QuickShortcutsBar
+              currencySymbol={currencySymbol}
+              onAddIncrement={handlePreviewAdd}
+              onReset={handlePreviewReset}
+              quickShortcuts={shortcuts}
+            />
+          </View>
+
           {/* Shortcut Chips Grid */}
           <View style={styles.shortcutChipsWrap}>
             {shortcuts.map((amount) => (
@@ -255,7 +312,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                     { color: colors.primary },
                   ]}
                 >
-                  {formatShortcutLabel(amount)}
+                  {formatShortcutLabel(amount, currencySymbol)}
                 </Text>
                 <Pressable
                   accessibilityLabel={`Hapus shortcut ${amount}`}
@@ -274,35 +331,70 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
             ))}
           </View>
 
-          {shortcuts.length < 8 ? (
+          {/* Action Buttons: Add & Reset to Recommended */}
+          <View style={styles.shortcutActionsRow}>
+            {shortcuts.length < 8 ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={onOpenAddShortcut}
+                style={[
+                  styles.addShortcutCardBtn,
+                  {
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : '#F8FAFC',
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  color={colors.primary}
+                  name="plus"
+                  size={18}
+                />
+                <Text
+                  style={[
+                    styles.addShortcutCardText,
+                    { color: colors.primary },
+                  ]}
+                >
+                  {t.settings.addShortcut}
+                </Text>
+              </Pressable>
+            ) : null}
+
             <Pressable
               accessibilityRole="button"
-              onPress={onOpenAddShortcut}
+              hitSlop={8}
+              onPress={onResetShortcuts}
               style={[
-                styles.addShortcutCardBtn,
+                styles.resetRecommendedBtn,
                 {
                   backgroundColor: isDark
                     ? colors.surfaceSecondary
-                    : '#F8FAFC',
-                  borderColor: colors.border,
+                    : '#EEF2FF',
+                  borderColor: isDark ? colors.border : '#C7D2FE',
                 },
               ]}
             >
               <MaterialCommunityIcons
                 color={colors.primary}
-                name="plus"
-                size={18}
+                name="refresh"
+                size={15}
               />
               <Text
                 style={[
-                  styles.addShortcutCardText,
+                  styles.resetRecommendedText,
                   { color: colors.primary },
                 ]}
               >
-                {t.settings.addShortcut}
+                {t.settings.resetToRecommended.replace(
+                  '{currency}',
+                  currencyCode,
+                )}
               </Text>
             </Pressable>
-          ) : null}
+          </View>
         </View>
 
         <View
@@ -480,18 +572,25 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
-                      : '#F1F5F9',
+                      : '#F8FAFC',
                     borderColor: colors.border,
                   },
                 ]}
               >
+                <Text style={styles.currencyFlagEmoji}>
+                  {SUPPORTED_CURRENCIES.find((c) => c.code === currencyCode)
+                    ?.flag ?? '🌐'}
+                </Text>
                 <Text
                   style={[
                     styles.currencyBadgeText,
-                    { color: colors.primary },
+                    { color: colors.textPrimary },
                   ]}
                 >
-                  {currencyCode} ({currencySymbol})
+                  {currencyCode}{' '}
+                  <Text style={{ color: colors.primary, fontWeight: '700' }}>
+                    ({currencySymbol})
+                  </Text>
                 </Text>
                 <MaterialCommunityIcons
                   color={colors.textSecondary}
@@ -513,15 +612,66 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderStyle: 'dashed',
     borderWidth: 1.5,
+    flex: 1,
     flexDirection: 'row',
     gap: 6,
     justifyContent: 'center',
-    marginTop: spacing.xs,
     paddingVertical: spacing.sm,
   },
   addShortcutCardText: {
     ...typography.metadata,
     fontWeight: '700',
+  },
+  previewAmountDisplay: {
+    ...typography.body,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  previewContainer: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    marginTop: spacing.xs,
+    overflow: 'hidden',
+    paddingBottom: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.xs,
+  },
+  previewHeaderRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+  },
+  previewTag: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
+  },
+  previewTagText: {
+    ...typography.metadata,
+    color: '#059669',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  resetRecommendedBtn: {
+    alignItems: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flex: 1,
+    flexDirection: 'row',
+    gap: 5,
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+  },
+  resetRecommendedText: {
+    ...typography.metadata,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  shortcutActionsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
   },
   cardInnerDivider: {
     height: 1,
@@ -539,6 +689,9 @@ const styles = StyleSheet.create({
   currencyBadgeWrap: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  currencyFlagEmoji: {
+    fontSize: 15,
   },
   currencyPillBadge: {
     alignItems: 'center',

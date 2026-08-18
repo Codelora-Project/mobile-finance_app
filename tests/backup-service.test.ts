@@ -159,4 +159,38 @@ describe('Backup Service', () => {
     expect(result.count).toBe(1);
     expect(result.fileName).toMatch(/^laporan_transaksi_\d+_\d+\.csv$/);
   });
+
+  it('exports CSV filtered by this_month scope', async () => {
+    const mockDb = {
+      getAllAsync: jest.fn(async () => [
+        {
+          amount_minor: 25000,
+          category_name: 'Food',
+          claim_status: null,
+          claim_title: null,
+          counterparty: null,
+          currency_code: 'IDR',
+          id: 2,
+          is_reimbursable: 0,
+          local_date: '2026-08-18',
+          note: null,
+          occurred_at: 20000,
+          payment_method_name: 'Cash',
+          type: 'expense',
+        },
+      ]),
+    } as unknown as SQLiteDatabase;
+
+    const result = await exportTransactionsCsvFile(mockDb, {
+      language: 'en',
+      scope: 'this_month',
+    });
+    expect(result.count).toBe(1);
+    expect(result.fileName).toMatch(/^laporan_transaksi_\d{4}_\d{2}\.csv$/);
+    expect(mockDb.getAllAsync).toHaveBeenCalledWith(
+      expect.stringContaining('WHERE t.local_date >='),
+      expect.any(String),
+      expect.any(String),
+    );
+  });
 });

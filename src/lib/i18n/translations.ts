@@ -104,9 +104,12 @@ export type TranslationSchema = {
     themeSystem: string;
     shortcutsSection: string;
     shortcutsDesc: string;
+    shortcutLivePreview: string;
+    previewAmountLabel: string;
     editShortcuts: string;
     addShortcut: string;
     resetShortcuts: string;
+    resetToRecommended: string;
     enterShortcutAmount: string;
     shortcutLimit: string;
     languageSection: string;
@@ -117,6 +120,8 @@ export type TranslationSchema = {
     categories: string;
     paymentMethods: string;
     currencySection: string;
+    searchCurrencyPlaceholder: string;
+    noCurrenciesFound: string;
     readOnly: string;
     dataSection: string;
     dataDesc: string;
@@ -133,6 +138,22 @@ export type TranslationSchema = {
     cancel: string;
     continue: string;
     done: string;
+    // Storage & Cache
+    storageSection: string;
+    storageTransactions: string;
+    storageReceipts: string;
+    storageCache: string;
+    clearCacheBtn: string;
+    clearingCache: string;
+    clearCacheSuccess: string;
+    clearCacheEmpty: string;
+    // Quick Export
+    quickExportTitle: string;
+    quickExportSubtitle: string;
+    exportThisMonth: string;
+    exportAll: string;
+    exportDialogTitle: string;
+    exportDialogDesc: string;
     // Shortcut validation messages
     errorShortcutInvalid: string;
     errorShortcutDuplicate: string;
@@ -421,9 +442,12 @@ export const translations: Record<Language, TranslationSchema> = {
       shortcutsSection: 'Shortcut Nominal Cepat',
       shortcutsDesc:
         'Sesuaikan tombol nominal cepat (+2k, +5k, dll.) yang tampil di popup catat transaksi.',
+      shortcutLivePreview: 'Live Preview Tampilan Transaksi',
+      previewAmountLabel: 'Simulasi Input:',
       editShortcuts: 'Kustomisasi Shortcut',
       addShortcut: '+ Tambah Nominal',
       resetShortcuts: 'Reset ke Default',
+      resetToRecommended: 'Reset ke Rekomendasi {currency}',
       enterShortcutAmount: 'Masukkan nominal baru (misal: 15000):',
       shortcutLimit: 'Maksimal 8 tombol shortcut.',
       // Language Section
@@ -436,6 +460,9 @@ export const translations: Record<Language, TranslationSchema> = {
       categories: 'Kategori',
       paymentMethods: 'Metode Pembayaran',
       currencySection: 'Mata Uang',
+      searchCurrencyPlaceholder:
+        'Cari mata uang, negara, atau kode (misal: USD, Yen, SGD)...',
+      noCurrenciesFound: 'Mata uang tidak ditemukan',
       readOnly: 'Hanya baca',
       dataSection: 'Data',
       dataDesc:
@@ -457,6 +484,22 @@ export const translations: Record<Language, TranslationSchema> = {
       cancel: 'Batal',
       continue: 'Lanjutkan',
       done: 'Selesai',
+      // Storage & Cache
+      storageSection: 'Penyimpanan & Cache Lokal',
+      storageTransactions: 'Data Transaksi',
+      storageReceipts: 'Lampiran Struk',
+      storageCache: 'Cache Sementara & PDF',
+      clearCacheBtn: 'Bersihkan Cache',
+      clearingCache: 'Membersihkan cache...',
+      clearCacheSuccess: 'Cache berhasil dibersihkan! {size} ruang berhasil dikosongkan.',
+      clearCacheEmpty: 'Cache sudah bersih.',
+      // Quick Export
+      quickExportTitle: 'Ekspor Laporan Cepat (CSV)',
+      quickExportSubtitle: 'Unduh laporan transaksi untuk Excel & Google Sheets',
+      exportThisMonth: 'Transaksi Bulan Ini',
+      exportAll: 'Semua Riwayat Transaksi',
+      exportDialogTitle: 'Pilih Periode Ekspor',
+      exportDialogDesc: 'Pilih data transaksi yang ingin diekspor ke file CSV.',
       errorShortcutInvalid:
         'Masukkan nominal angka yang valid (contoh: 15000).',
       errorShortcutDuplicate: 'Nominal ini sudah ada di daftar shortcut.',
@@ -758,9 +801,12 @@ export const translations: Record<Language, TranslationSchema> = {
       shortcutsSection: 'Quick Amount Shortcuts',
       shortcutsDesc:
         'Customize the quick increment buttons (+2k, +5k, etc.) shown on the quick-entry sheet.',
+      shortcutLivePreview: 'Transaction Screen Live Preview',
+      previewAmountLabel: 'Simulated Input:',
       editShortcuts: 'Customize Shortcuts',
       addShortcut: '+ Add Amount',
       resetShortcuts: 'Reset to Default',
+      resetToRecommended: 'Reset to {currency} Recommended',
       enterShortcutAmount: 'Enter new amount (e.g. 15000):',
       shortcutLimit: 'Maximum 8 shortcut chips.',
       // Language Section
@@ -773,6 +819,9 @@ export const translations: Record<Language, TranslationSchema> = {
       categories: 'Categories',
       paymentMethods: 'Payment Methods',
       currencySection: 'Currency',
+      searchCurrencyPlaceholder:
+        'Search currency, country, or code (e.g. USD, Yen, SGD)...',
+      noCurrenciesFound: 'No matching currency found',
       readOnly: 'Read-only',
       dataSection: 'Data',
       dataDesc:
@@ -794,6 +843,22 @@ export const translations: Record<Language, TranslationSchema> = {
       cancel: 'Cancel',
       continue: 'Continue',
       done: 'Done',
+      // Storage & Cache
+      storageSection: 'Local Storage & Cache',
+      storageTransactions: 'Transactions',
+      storageReceipts: 'Receipt Photos',
+      storageCache: 'Temp Cache & PDFs',
+      clearCacheBtn: 'Clear Cache',
+      clearingCache: 'Clearing cache...',
+      clearCacheSuccess: 'Cache cleared successfully! {size} space freed.',
+      clearCacheEmpty: 'Cache is already clean.',
+      // Quick Export
+      quickExportTitle: 'Quick Report Export (CSV)',
+      quickExportSubtitle: 'Download transaction report for Excel & Google Sheets',
+      exportThisMonth: "This Month's Transactions",
+      exportAll: 'All Transaction History',
+      exportDialogTitle: 'Select Export Period',
+      exportDialogDesc: 'Choose which transaction data you want to export to a CSV file.',
       errorShortcutInvalid: 'Enter a valid amount (e.g. 15000).',
       errorShortcutDuplicate: 'This amount is already in your shortcuts list.',
       errorShortcutMinimum: 'At least 1 shortcut button is required.',

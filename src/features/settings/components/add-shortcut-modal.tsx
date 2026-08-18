@@ -16,6 +16,8 @@ import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
 export type AddShortcutModalProps = {
+  currencyCode?: string;
+  currencySymbol?: string;
   error?: string | null;
   input: string;
   onChangeInput: (val: string) => void;
@@ -26,6 +28,8 @@ export type AddShortcutModalProps = {
 };
 
 export const AddShortcutModal = memo(function AddShortcutModal({
+  currencyCode = 'IDR',
+  currencySymbol = 'Rp',
   error,
   input,
   onChangeInput,
@@ -73,12 +77,12 @@ export const AddShortcutModal = memo(function AddShortcutModal({
               },
             ]}
           >
-            <Text style={styles.modalInputPrefix}>Rp</Text>
+            <Text style={styles.modalInputPrefix}>{currencySymbol}</Text>
             <TextInput
               autoFocus
               keyboardType="number-pad"
               onChangeText={onChangeInput}
-              placeholder="15000"
+              placeholder={currencyCode === 'IDR' ? '15000' : '15'}
               placeholderTextColor={colors.textSecondary}
               style={[styles.modalInput, { color: colors.textPrimary }]}
               value={input}

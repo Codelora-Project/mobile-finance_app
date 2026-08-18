@@ -1,11 +1,12 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import React, { memo } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import {
   Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 
@@ -35,12 +36,30 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
   visible,
 }: CurrencyPickerModalProps) {
   const { colors, isDark } = useTheme();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredCurrencies = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return SUPPORTED_CURRENCIES;
+    return SUPPORTED_CURRENCIES.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.code.toLowerCase().includes(q) ||
+        c.country.toLowerCase().includes(q) ||
+        c.symbol.toLowerCase().includes(q),
+    );
+  }, [searchQuery]);
+
+  const handleClose = () => {
+    setSearchQuery('');
+    onClose();
+  };
 
   return (
     <Modal
       animationType="slide"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
       visible={visible}
     >
       <Screen>
@@ -65,7 +84,7 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
             accessibilityLabel="Close currency picker"
             accessibilityRole="button"
             hitSlop={12}
-            onPress={onClose}
+            onPress={handleClose}
             style={styles.closeBtn}
           >
             <MaterialCommunityIcons
@@ -78,6 +97,7 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
 
         <ScrollView
           contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           {/* Informational Banner */}
@@ -109,107 +129,182 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
             </Text>
           </View>
 
-          {/* List of Currencies */}
+          {/* Search Bar */}
           <View
             style={[
-              styles.currencyListCard,
+              styles.searchBarContainer,
               {
-                backgroundColor: colors.surface,
+                backgroundColor: isDark
+                  ? colors.surfaceSecondary
+                  : '#F1F5F9',
                 borderColor: colors.border,
               },
             ]}
           >
-            {SUPPORTED_CURRENCIES.map((currency: SupportedCurrency, index) => {
-              const isSelected = currency.code === selectedCode;
-              const isLast = index === SUPPORTED_CURRENCIES.length - 1;
-
-              return (
-                <Pressable
-                  accessibilityRole="button"
-                  key={currency.code}
-                  onPress={() => {
-                    onSelectCurrency(currency.code);
-                    onClose();
-                  }}
-                  style={[
-                    styles.currencyRow,
-                    isSelected
-                      ? {
-                          backgroundColor: isDark
-                            ? colors.surfaceSecondary
-                            : '#F0FDF4',
-                        }
-                      : null,
-                    !isLast
-                      ? {
-                          borderBottomColor: colors.border,
-                          borderBottomWidth: 1,
-                        }
-                      : null,
-                  ]}
-                >
-                  <View style={styles.symbolBadge}>
-                    <Text
-                      style={[
-                        styles.symbolText,
-                        { color: colors.primary },
-                      ]}
-                    >
-                      {currency.symbol}
-                    </Text>
-                  </View>
-
-                  <View style={styles.currencyInfo}>
-                    <View style={styles.nameCodeRow}>
-                      <Text
-                        style={[
-                          styles.currencyName,
-                          { color: colors.textPrimary },
-                        ]}
-                      >
-                        {currency.name}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.currencyCode,
-                          {
-                            backgroundColor: isDark
-                              ? colors.surfaceSecondary
-                              : '#F1F5F9',
-                            color: colors.textSecondary,
-                          },
-                        ]}
-                      >
-                        {currency.code}
-                      </Text>
-                    </View>
-                    <Text
-                      style={[
-                        styles.countryText,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      {currency.country}
-                    </Text>
-                  </View>
-
-                  {isSelected ? (
-                    <MaterialCommunityIcons
-                      color="#10B981"
-                      name="check-circle"
-                      size={22}
-                    />
-                  ) : (
-                    <MaterialCommunityIcons
-                      color={colors.border}
-                      name="circle-outline"
-                      size={22}
-                    />
-                  )}
-                </Pressable>
-              );
-            })}
+            <MaterialCommunityIcons
+              color={colors.textSecondary}
+              name="magnify"
+              size={20}
+            />
+            <TextInput
+              clearButtonMode="while-editing"
+              onChangeText={setSearchQuery}
+              placeholder={t.settings.searchCurrencyPlaceholder}
+              placeholderTextColor={colors.textSecondary}
+              style={[styles.searchInput, { color: colors.textPrimary }]}
+              value={searchQuery}
+            />
+            {searchQuery ? (
+              <Pressable
+                accessibilityLabel="Clear search"
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={() => setSearchQuery('')}
+              >
+                <MaterialCommunityIcons
+                  color={colors.textSecondary}
+                  name="close-circle"
+                  size={18}
+                />
+              </Pressable>
+            ) : null}
           </View>
+
+          {/* List of Currencies */}
+          {filteredCurrencies.length > 0 ? (
+            <View
+              style={[
+                styles.currencyListCard,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              {filteredCurrencies.map(
+                (currency: SupportedCurrency, index) => {
+                  const isSelected = currency.code === selectedCode;
+                  const isLast = index === filteredCurrencies.length - 1;
+
+                  return (
+                    <Pressable
+                      accessibilityRole="button"
+                      key={currency.code}
+                      onPress={() => {
+                        onSelectCurrency(currency.code);
+                        handleClose();
+                      }}
+                      style={[
+                        styles.currencyRow,
+                        isSelected
+                          ? {
+                              backgroundColor: isDark
+                                ? colors.surfaceSecondary
+                                : '#F0FDF4',
+                            }
+                          : null,
+                        !isLast
+                          ? {
+                              borderBottomColor: colors.border,
+                              borderBottomWidth: 1,
+                            }
+                          : null,
+                      ]}
+                    >
+                      <View style={styles.flagSymbolRow}>
+                        <Text style={styles.flagEmoji}>
+                          {currency.flag}
+                        </Text>
+                        <View
+                          style={[
+                            styles.symbolBadge,
+                            {
+                              backgroundColor: isDark
+                                ? colors.surface
+                                : '#EEF2FF',
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.symbolText,
+                              { color: colors.primary },
+                            ]}
+                          >
+                            {currency.symbol}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.currencyInfo}>
+                        <View style={styles.nameCodeRow}>
+                          <Text
+                            style={[
+                              styles.currencyName,
+                              { color: colors.textPrimary },
+                            ]}
+                          >
+                            {currency.name}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.currencyCode,
+                              {
+                                backgroundColor: isDark
+                                  ? colors.surfaceSecondary
+                                  : '#F1F5F9',
+                                color: colors.textSecondary,
+                              },
+                            ]}
+                          >
+                            {currency.code}
+                          </Text>
+                        </View>
+                        <Text
+                          style={[
+                            styles.countryText,
+                            { color: colors.textSecondary },
+                          ]}
+                        >
+                          {currency.country}
+                        </Text>
+                      </View>
+
+                      {isSelected ? (
+                        <MaterialCommunityIcons
+                          color="#10B981"
+                          name="check-circle"
+                          size={22}
+                        />
+                      ) : (
+                        <MaterialCommunityIcons
+                          color={colors.border}
+                          name="circle-outline"
+                          size={22}
+                        />
+                      )}
+                    </Pressable>
+                  );
+                },
+              )}
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <MaterialCommunityIcons
+                color={colors.textSecondary}
+                name="currency-usd-off"
+                size={36}
+              />
+              <Text
+                style={[
+                  styles.emptyStateText,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {t.settings.noCurrenciesFound}
+              </Text>
+            </View>
+          )}
         </ScrollView>
       </Screen>
     </Modal>
@@ -253,6 +348,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
   },
+  emptyState: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    justifyContent: 'center',
+    paddingVertical: spacing.xxl,
+  },
+  emptyStateText: {
+    ...typography.body,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  flagEmoji: {
+    fontSize: 22,
+  },
+  flagSymbolRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.xs + 2,
+  },
   infoBanner: {
     alignItems: 'flex-start',
     borderRadius: radius.md,
@@ -290,16 +404,31 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     paddingBottom: spacing.xxl,
   },
+  searchBarContainer: {
+    alignItems: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+  },
+  searchInput: {
+    ...typography.body,
+    flex: 1,
+    fontSize: 13,
+    paddingVertical: 2,
+  },
   symbolBadge: {
     alignItems: 'center',
-    backgroundColor: '#EEF2FF',
     borderRadius: radius.md,
-    height: 40,
+    height: 36,
     justifyContent: 'center',
-    width: 40,
+    minWidth: 36,
+    paddingHorizontal: 6,
   },
   symbolText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '900',
   },
 });

@@ -1,7 +1,9 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { memo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import type { StorageStats } from '@/features/settings/settings-repository';
+import { formatStorageSize } from '@/features/settings/settings-repository';
 import type { Language, TranslationSchema } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -9,23 +11,33 @@ import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
 export type SettingsDataManagementCardProps = {
+  clearingCache?: boolean;
   currencyCode: string;
   currencyName: string;
+  exportingCsv?: boolean;
   language: Language;
+  onClearCache?: () => void;
   onNavigateBackup: () => void;
   onNavigateCategories: () => void;
   onNavigatePaymentMethods: () => void;
+  onQuickExport?: () => void;
+  storageStats?: StorageStats | null;
   t: TranslationSchema;
 };
 
 export const SettingsDataManagementCard = memo(
   function SettingsDataManagementCard({
+    clearingCache = false,
     currencyCode,
     currencyName,
+    exportingCsv = false,
     language,
+    onClearCache,
     onNavigateBackup,
     onNavigateCategories,
     onNavigatePaymentMethods,
+    onQuickExport,
+    storageStats,
     t,
   }: SettingsDataManagementCardProps) {
     const { colors, isDark } = useTheme();
@@ -235,10 +247,17 @@ export const SettingsDataManagementCard = memo(
             ]}
           />
 
-          {/* Currency Row (Read Only) */}
-          <View
-            accessibilityLabel="Currency, Indonesian Rupiah, IDR, read only"
-            style={styles.navRowItem}
+          {/* Quick Export CSV Row */}
+          <Pressable
+            accessibilityLabel={t.settings.quickExportTitle}
+            accessibilityRole="button"
+            disabled={exportingCsv}
+            onPress={onQuickExport}
+            style={({ pressed }) => [
+              styles.navRowItem,
+              pressed ? styles.rowPressed : null,
+              exportingCsv && { opacity: 0.6 },
+            ]}
           >
             <View style={styles.navRowLeft}>
               <View
@@ -253,18 +272,18 @@ export const SettingsDataManagementCard = memo(
               >
                 <MaterialCommunityIcons
                   color="#16A34A"
-                  name="cash"
+                  name="file-delimited-outline"
                   size={19}
                 />
               </View>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text
                   style={[
                     styles.navRowTitle,
                     { color: colors.textPrimary },
                   ]}
                 >
-                  {currencyName}
+                  {t.settings.quickExportTitle}
                 </Text>
                 <Text
                   style={[
@@ -272,29 +291,200 @@ export const SettingsDataManagementCard = memo(
                     { color: colors.textSecondary },
                   ]}
                 >
-                  {currencyCode}
+                  {t.settings.quickExportSubtitle}
                 </Text>
               </View>
             </View>
-            <View
-              style={[
-                styles.readOnlyPillBadge,
-                {
-                  backgroundColor: isDark
-                    ? colors.surfaceSecondary
-                    : '#F1F5F9',
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.readOnlyPillText,
-                  { color: colors.textSecondary },
+            {exportingCsv ? (
+              <ActivityIndicator color={colors.primary} size="small" />
+            ) : (
+              <MaterialCommunityIcons
+                color={colors.textSecondary}
+                name="chevron-right"
+                size={22}
+              />
+            )}
+          </Pressable>
+
+          <View
+            style={[
+              styles.cardInnerDivider,
+              { backgroundColor: colors.border },
+            ]}
+          />
+
+          {/* Storage & Local Cache Section */}
+          <View style={styles.storageSectionContainer}>
+            <View style={styles.storageHeaderRow}>
+              <View style={styles.navRowLeft}>
+                <View
+                  style={[
+                    styles.itemIconBadge,
+                    {
+                      backgroundColor: isDark
+                        ? colors.surfaceSecondary
+                        : '#FEF3C7',
+                    },
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    color="#D97706"
+                    name="folder-sync-outline"
+                    size={19}
+                  />
+                </View>
+                <View>
+                  <Text
+                    style={[
+                      styles.navRowTitle,
+                      { color: colors.textPrimary },
+                    ]}
+                  >
+                    {t.settings.storageSection}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.navRowSubtitle,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {storageStats
+                      ? `${storageStats.transactionsCount} ${t.backup.transactions.toLowerCase()} · ${formatStorageSize(
+                          storageStats.receiptsSizeBytes +
+                            storageStats.cacheSizeBytes,
+                        )}`
+                      : language === 'id'
+                        ? 'Memuat rincian...'
+                        : 'Loading details...'}
+                  </Text>
+                </View>
+              </View>
+
+              <Pressable
+                accessibilityLabel={t.settings.clearCacheBtn}
+                accessibilityRole="button"
+                disabled={clearingCache}
+                hitSlop={8}
+                onPress={onClearCache}
+                style={({ pressed }) => [
+                  styles.clearCacheButton,
+                  {
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : '#F1F5F9',
+                  },
+                  pressed && styles.rowPressed,
+                  clearingCache && { opacity: 0.6 },
                 ]}
               >
-                {t.settings.readOnly}
-              </Text>
+                {clearingCache ? (
+                  <ActivityIndicator color={colors.primary} size="small" />
+                ) : (
+                  <>
+                    <MaterialCommunityIcons
+                      color={colors.primary}
+                      name="broom"
+                      size={14}
+                    />
+                    <Text
+                      style={[
+                        styles.clearCacheButtonText,
+                        { color: colors.primary },
+                      ]}
+                    >
+                      {t.settings.clearCacheBtn}
+                    </Text>
+                  </>
+                )}
+              </Pressable>
             </View>
+
+            {/* Breakdown Mini Chips */}
+            {storageStats ? (
+              <View style={styles.storageChipsRow}>
+                <View
+                  style={[
+                    styles.storageChip,
+                    {
+                      backgroundColor: isDark
+                        ? colors.surfaceSecondary
+                        : '#F8FAFC',
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    color={colors.textSecondary}
+                    name="swap-horizontal"
+                    size={13}
+                  />
+                  <Text
+                    style={[
+                      styles.storageChipText,
+                      { color: colors.textPrimary },
+                    ]}
+                  >
+                    {storageStats.transactionsCount}{' '}
+                    {t.settings.storageTransactions}
+                  </Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.storageChip,
+                    {
+                      backgroundColor: isDark
+                        ? colors.surfaceSecondary
+                        : '#F8FAFC',
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    color={colors.textSecondary}
+                    name="image-outline"
+                    size={13}
+                  />
+                  <Text
+                    style={[
+                      styles.storageChipText,
+                      { color: colors.textPrimary },
+                    ]}
+                  >
+                    {storageStats.receiptsCount}{' '}
+                    {t.settings.storageReceipts} (
+                    {formatStorageSize(storageStats.receiptsSizeBytes)})
+                  </Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.storageChip,
+                    {
+                      backgroundColor: isDark
+                        ? colors.surfaceSecondary
+                        : '#F8FAFC',
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    color={colors.textSecondary}
+                    name="cached"
+                    size={13}
+                  />
+                  <Text
+                    style={[
+                      styles.storageChipText,
+                      { color: colors.textPrimary },
+                    ]}
+                  >
+                    {t.settings.storageCache} (
+                    {formatStorageSize(storageStats.cacheSizeBytes)})
+                  </Text>
+                </View>
+              </View>
+            ) : null}
           </View>
         </View>
       </View>
@@ -306,6 +496,19 @@ const styles = StyleSheet.create({
   cardInnerDivider: {
     height: 1,
     width: '100%',
+  },
+  clearCacheButton: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    flexDirection: 'row',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  clearCacheButtonText: {
+    ...typography.metadata,
+    fontSize: 11,
+    fontWeight: '700',
   },
   groupedCard: {
     borderRadius: radius.lg,
@@ -339,16 +542,6 @@ const styles = StyleSheet.create({
     ...typography.body,
     fontWeight: '700',
   },
-  readOnlyPillBadge: {
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-  },
-  readOnlyPillText: {
-    ...typography.metadata,
-    fontSize: 11,
-    fontWeight: '600',
-  },
   rowPressed: {
     opacity: 0.75,
   },
@@ -361,5 +554,34 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.5,
     paddingHorizontal: spacing.xs,
+  },
+  storageChip: {
+    alignItems: 'center',
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  storageChipText: {
+    ...typography.metadata,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  storageChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: spacing.sm,
+  },
+  storageHeaderRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  storageSectionContainer: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
   },
 });

@@ -7,7 +7,11 @@ import type {
 
 import { defaultCategories, defaultPaymentMethods } from '@/db/seeds';
 import {
+  clearTemporaryCache,
+  formatStorageSize,
+  getRecommendedShortcuts,
   getSettingsOverview,
+  getStorageStats,
   resetApplicationData,
 } from '@/features/settings/settings-repository';
 
@@ -180,5 +184,44 @@ describe('settings repository', () => {
     });
     expect(database.transactions).toBe(0);
     expect(mockRemoveCachedClaimPdfs).toHaveBeenCalledTimes(1);
+  });
+
+  it('formats storage size correctly across units', () => {
+    expect(formatStorageSize(0)).toBe('0 B');
+    expect(formatStorageSize(-10)).toBe('0 B');
+    expect(formatStorageSize(500)).toBe('500 B');
+    expect(formatStorageSize(1024)).toBe('1.0 KB');
+    expect(formatStorageSize(1536)).toBe('1.5 KB');
+    expect(formatStorageSize(1024 * 1024)).toBe('1.0 MB');
+    expect(formatStorageSize(2.5 * 1024 * 1024)).toBe('2.5 MB');
+  });
+
+  it('retrieves storage stats from database and filesystem', async () => {
+    const database = new ResetDatabase();
+    const stats = await getStorageStats(database.asSQLiteDatabase());
+    expect(stats).toMatchObject({
+      claimsCount: expect.any(Number),
+      receiptsCount: expect.any(Number),
+      transactionsCount: expect.any(Number),
+    });
+  });
+
+  it('clears temporary cache without error', async () => {
+    const result = await clearTemporaryCache();
+    expect(result).toHaveProperty('freedBytes');
+    expect(typeof result.freedBytes).toBe('number');
+  });
+
+  it('returns recommended shortcuts per currency code', () => {
+    expect(getRecommendedShortcuts('IDR')).toEqual([
+      2000, 5000, 10000, 20000, 50000, 100000,
+    ]);
+    expect(getRecommendedShortcuts('USD')).toEqual([1, 2, 5, 10, 20, 50]);
+    expect(getRecommendedShortcuts('SGD')).toEqual([1, 2, 5, 10, 20, 50]);
+    expect(getRecommendedShortcuts('EUR')).toEqual([1, 2, 5, 10, 20, 50]);
+    expect(getRecommendedShortcuts('JPY')).toEqual([
+      100, 200, 500, 1000, 2000, 5000,
+    ]);
+    expect(getRecommendedShortcuts('MYR')).toEqual([1, 5, 10, 20, 50, 100]);
   });
 });

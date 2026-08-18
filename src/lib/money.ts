@@ -281,18 +281,23 @@ export function formatSignedMoney(
 }
 
 /**
- * Formats a shortcut amount into a compact label: `+15k`, `+1.5M`, `+500`.
+ * Formats a shortcut amount into a compact label: `+15k`, `+1.5M`, `+$5`, `+€10`.
  *
  * Replaces the `formatShortcutLabel()` helper that was duplicated in
  * settings-screen and manual-transaction-screen.
  */
-export function formatShortcutLabel(amount: number): string {
+export function formatShortcutLabel(
+  amount: number,
+  currencySymbol?: string,
+): string {
+  const sym = currencySymbol && currencySymbol !== 'Rp' ? currencySymbol : '';
   if (amount >= 1_000_000) {
-    return `+${amount / 1_000_000}M`;
+    const m = amount / 1_000_000;
+    return `+${sym}${Number.isInteger(m) ? m : m.toFixed(1)}M`;
   }
   if (amount >= 1_000) {
     const k = amount / 1_000;
-    return `+${Number.isInteger(k) ? k : k.toFixed(1)}k`;
+    return `+${sym}${Number.isInteger(k) ? k : k.toFixed(1)}k`;
   }
-  return `+${amount}`;
+  return `+${sym}${amount}`;
 }

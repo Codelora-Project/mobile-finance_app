@@ -79,11 +79,6 @@ function AppWithProviders() {
               settings.currencyCode,
               settings.currencyCode,
             );
-            await database.runAsync(
-              `UPDATE claims SET currency_code = ? WHERE currency_code != ?`,
-              settings.currencyCode,
-              settings.currencyCode,
-            );
           }
           if (settings.language) setLanguage(settings.language);
           if (settings.theme) setTheme(settings.theme);

@@ -4,6 +4,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Alert } from 'react-native';
@@ -36,10 +37,21 @@ jest.mock('expo-sqlite', () => ({
 jest.mock('@/features/settings/settings-repository', () => ({
   DEFAULT_QUICK_SHORTCUTS: [2000, 5000, 10000, 20000, 50000, 100000],
   SUPPORTED_CURRENCIES: [
-    { code: 'IDR', country: 'Indonesia', name: 'Indonesian Rupiah', symbol: 'Rp' },
-    { code: 'USD', country: 'United States', name: 'US Dollar', symbol: '$' },
+    { code: 'IDR', country: 'Indonesia', flag: '🇮🇩', name: 'Indonesian Rupiah', symbol: 'Rp' },
+    { code: 'USD', country: 'United States', flag: '🇺🇸', name: 'US Dollar', symbol: '$' },
   ],
+  clearTemporaryCache: jest.fn<() => Promise<{ freedBytes: number }>>().mockResolvedValue({ freedBytes: 1024 }),
+  formatStorageSize: (bytes: number) => `${bytes} B`,
+  getRecommendedShortcuts: (code: string) =>
+    code === 'USD' ? [1, 2, 5, 10, 20, 50] : [2000, 5000, 10000, 20000, 50000, 100000],
   getSettingsOverview: () => mockGetSettingsOverview(),
+  getStorageStats: jest.fn<() => Promise<unknown>>().mockResolvedValue({
+    cacheSizeBytes: 1024,
+    claimsCount: 1,
+    receiptsCount: 2,
+    receiptsSizeBytes: 2048,
+    transactionsCount: 10,
+  }),
   resetApplicationData: () => mockResetApplicationData(),
   setCurrencySetting: jest.fn<(...args: unknown[]) => Promise<void>>().mockResolvedValue(undefined),
   setQuickShortcutsSetting: (database: unknown, shortcuts: number[]) =>
@@ -47,6 +59,14 @@ jest.mock('@/features/settings/settings-repository', () => ({
   setThemeSetting: jest
     .fn<(...args: unknown[]) => Promise<void>>()
     .mockResolvedValue(undefined),
+}));
+jest.mock('@/features/backup/backup-service', () => ({
+  exportTransactionsCsvFile: jest.fn<() => Promise<unknown>>().mockResolvedValue({
+    count: 5,
+    fileName: 'laporan_transaksi_2026_08.csv',
+    uri: 'file:///cache/exports/laporan_transaksi_2026_08.csv',
+  }),
+  shareFile: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
 }));
 jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
   const ReactNative = require('react-native');
@@ -69,7 +89,7 @@ describe('settings screen', () => {
     mockSetQuickShortcutsSetting.mockResolvedValue(undefined);
   });
 
-  it('shows management links, read-only IDR, and local-only About details', async () => {
+  it('shows management links, storage stats, base currency, and local-only About details', async () => {
     await render(
       <ThemeProvider>
         <LanguageProvider initialLanguage="en">
@@ -81,10 +101,9 @@ describe('settings screen', () => {
     expect(
       await screen.findByRole('header', { name: 'Settings' }),
     ).toBeOnTheScreen();
-    expect(
-      screen.getByLabelText('Currency, Indonesian Rupiah, IDR, read only'),
-    ).toBeOnTheScreen();
-    expect(screen.getByText('Read-only')).toBeOnTheScreen();
+    expect(screen.getByText('Base Currency')).toBeOnTheScreen();
+    expect(screen.getByText('Local Storage & Cache')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Clear Cache' })).toBeOnTheScreen();
     expect(
       screen.getByText(/All information stays on this device/),
     ).toBeOnTheScreen();
@@ -111,10 +130,21 @@ describe('settings screen', () => {
       await screen.findByRole('header', { name: 'Quick Amount Shortcuts' }),
     ).toBeOnTheScreen();
 
+    // Verify Live Preview is displayed
+    expect(screen.getByText('Transaction Screen Live Preview')).toBeOnTheScreen();
+    expect(screen.getByText('Reset to IDR Recommended')).toBeOnTheScreen();
+
     // Remove one shortcut
     const deleteBtn = screen.getByLabelText('Hapus shortcut 2000');
     await fireEvent.press(deleteBtn);
     expect(mockSetQuickShortcutsSetting).toHaveBeenCalled();
+
+    // Press Reset to Recommended
+    await fireEvent.press(screen.getByText('Reset to IDR Recommended'));
+    expect(mockSetQuickShortcutsSetting).toHaveBeenCalledWith(
+      expect.anything(),
+      [2000, 5000, 10000, 20000, 50000, 100000],
+    );
   });
 
   it('requires two deliberate confirmations before resetting', async () => {
@@ -126,7 +156,7 @@ describe('settings screen', () => {
         </LanguageProvider>
       </ThemeProvider>,
     );
-    await screen.findByText('Indonesian Rupiah');
+    await screen.findByText('Local Storage & Cache');
 
     await fireEvent.press(
       screen.getByRole('button', { name: 'Delete All Data' }),
@@ -179,5 +209,87 @@ describe('settings screen', () => {
     expect(screen.getByText('Manage')).toBeOnTheScreen();
     expect(screen.getByText('Categories')).toBeOnTheScreen();
     expect(screen.getByText('Delete All Data')).toBeOnTheScreen();
+  });
+
+  it('triggers clear cache and displays feedback alert', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    await render(
+      <ThemeProvider>
+        <LanguageProvider initialLanguage="en">
+          <SettingsScreen />
+        </LanguageProvider>
+      </ThemeProvider>,
+    );
+
+    const clearBtn = await screen.findByRole('button', { name: 'Clear Cache' });
+    await fireEvent.press(clearBtn);
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(
+      'Local Storage & Cache',
+      expect.stringContaining('Cache cleared successfully'),
+    ));
+    alertSpy.mockRestore();
+  });
+
+  it('triggers quick CSV export dialog and executes export for this month', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    await render(
+      <ThemeProvider>
+        <LanguageProvider initialLanguage="en">
+          <SettingsScreen />
+        </LanguageProvider>
+      </ThemeProvider>,
+    );
+
+    const exportBtn = await screen.findByRole('button', {
+      name: 'Quick Report Export (CSV)',
+    });
+    await fireEvent.press(exportBtn);
+
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Select Export Period',
+      'Choose which transaction data you want to export to a CSV file.',
+      expect.any(Array),
+      { cancelable: true },
+    );
+
+    const buttons = alertSpy.mock.calls[0]?.[2];
+    await act(async () => {
+      buttons?.[0]?.onPress?.();
+      await Promise.resolve();
+    });
+
+    alertSpy.mockRestore();
+  });
+
+  it('opens currency picker modal, searches for currency, and selects it', async () => {
+    await render(
+      <ThemeProvider>
+        <LanguageProvider initialLanguage="en">
+          <SettingsScreen />
+        </LanguageProvider>
+      </ThemeProvider>,
+    );
+
+    // Look for Base Currency button & badge
+    const currencyBtn = await screen.findByLabelText('Pilih Mata Uang Utama');
+    expect(currencyBtn).toBeOnTheScreen();
+    expect(within(currencyBtn).getByText('🇮🇩')).toBeOnTheScreen();
+
+    // Open Currency Modal
+    await fireEvent.press(currencyBtn);
+    expect(screen.getByText('Select Base Currency')).toBeOnTheScreen();
+
+    // Search for USD
+    const searchInput = screen.getByPlaceholderText(
+      'Search currency, country, or code (e.g. USD, Yen, SGD)...',
+    );
+    await fireEvent.changeText(searchInput, 'USD');
+
+    // USD should be visible
+    expect(screen.getByText('US Dollar')).toBeOnTheScreen();
+
+    // Select USD
+    await fireEvent.press(screen.getByText('US Dollar'));
   });
 });

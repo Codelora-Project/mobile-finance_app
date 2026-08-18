@@ -536,53 +536,113 @@ type CsvTransactionRow = {
   type: string;
 };
 
+export type ExportCsvOptions = {
+  dateFrom?: string;
+  dateTo?: string;
+  language?: 'id' | 'en';
+  scope?: 'this_month' | 'all';
+};
+
 export async function exportTransactionsCsvFile(
   database: SQLiteDatabase,
+  options: ExportCsvOptions = {},
 ): Promise<{ count: number; fileName: string; uri: string }> {
-  const rows = await database.getAllAsync<CsvTransactionRow>(`
-    SELECT 
-      t.id,
-      t.type,
-      t.amount_minor,
-      t.currency_code,
-      c.name AS category_name,
-      pm.name AS payment_method_name,
-      t.counterparty,
-      t.note,
-      t.local_date,
-      t.occurred_at,
-      t.is_reimbursable,
-      cl.title AS claim_title,
-      cl.status AS claim_status
-    FROM transactions t
-    LEFT JOIN categories c ON t.category_id = c.id
-    LEFT JOIN payment_methods pm ON t.payment_method_id = pm.id
-    LEFT JOIN claim_items ci ON ci.transaction_id = t.id
-    LEFT JOIN claims cl ON ci.claim_id = cl.id
-    ORDER BY t.local_date DESC, t.id DESC;
-  `);
+  const language = options.language ?? 'id';
+  let dateFrom = options.dateFrom;
+  let dateTo = options.dateTo;
+  let filenamePrefix = 'laporan_transaksi';
 
-  const headers = [
-    'ID',
-    'Tanggal',
-    'Tipe',
-    'Kategori',
-    'Metode Pembayaran',
-    'Nominal',
-    'Mata Uang',
-    'Merchant / Pihak Terkait',
-    'Catatan',
-    'Dapat Diklaim',
-    'Judul Klaim',
-    'Status Klaim',
-  ];
+  if (options.scope === 'this_month') {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const lastDay = new Date(yyyy, now.getMonth() + 1, 0).getDate();
+    dateFrom = `${yyyy}-${mm}-01`;
+    dateTo = `${yyyy}-${mm}-${String(lastDay).padStart(2, '0')}`;
+    filenamePrefix = `laporan_transaksi_${yyyy}_${mm}`;
+  }
+
+  const queryParams: unknown[] = [];
+  let whereClause = '';
+  if (dateFrom && dateTo) {
+    whereClause = 'WHERE t.local_date >= ? AND t.local_date <= ?';
+    queryParams.push(dateFrom, dateTo);
+  }
+
+  const rows = await database.getAllAsync<CsvTransactionRow>(
+    `SELECT 
+       t.id,
+       t.type,
+       t.amount_minor,
+       t.currency_code,
+       c.name AS category_name,
+       pm.name AS payment_method_name,
+       t.counterparty,
+       t.note,
+       t.local_date,
+       t.occurred_at,
+       t.is_reimbursable,
+       cl.title AS claim_title,
+       cl.status AS claim_status
+     FROM transactions t
+     LEFT JOIN categories c ON t.category_id = c.id
+     LEFT JOIN payment_methods pm ON t.payment_method_id = pm.id
+     LEFT JOIN claim_items ci ON ci.transaction_id = t.id
+     LEFT JOIN claims cl ON ci.claim_id = cl.id
+     ${whereClause}
+     ORDER BY t.local_date DESC, t.id DESC;`,
+    ...queryParams as any,
+  );
+
+  const isEn = language === 'en';
+  const headers = isEn
+    ? [
+        'ID',
+        'Date',
+        'Type',
+        'Category',
+        'Payment Method',
+        'Amount',
+        'Currency',
+        'Merchant / Payee',
+        'Note',
+        'Reimbursable',
+        'Claim Title',
+        'Claim Status',
+      ]
+    : [
+        'ID',
+        'Tanggal',
+        'Tipe',
+        'Kategori',
+        'Metode Pembayaran',
+        'Nominal',
+        'Mata Uang',
+        'Merchant / Pihak Terkait',
+        'Catatan',
+        'Dapat Diklaim',
+        'Judul Klaim',
+        'Status Klaim',
+      ];
 
   const csvLines = [headers.map(escapeCsvField).join(',')];
 
   for (const r of rows) {
-    const typeLabel = r.type === 'expense' ? 'Pengeluaran' : 'Pemasukan';
-    const amountVal = r.amount_minor; // In Rupiah (already in integer Rupiah units)
-    const reimbursableLabel = r.is_reimbursable ? 'Ya' : 'Tidak';
+    const typeLabel = isEn
+      ? r.type === 'expense'
+        ? 'Expense'
+        : 'Income'
+      : r.type === 'expense'
+        ? 'Pengeluaran'
+        : 'Pemasukan';
+    const amountVal = r.amount_minor;
+    const reimbursableLabel = isEn
+      ? r.is_reimbursable
+        ? 'Yes'
+        : 'No'
+      : r.is_reimbursable
+        ? 'Ya'
+        : 'Tidak';
 
     const line = [
       r.id,
@@ -608,15 +668,18 @@ export async function exportTransactionsCsvFile(
   const directory = new Directory(Paths.cache, EXPORT_DIRECTORY);
   directory.create({ idempotent: true, intermediates: true });
 
-  const fileName = `laporan_transaksi_${formatTimestampForFilename()}.csv`;
+  const fileName =
+    options.scope === 'this_month'
+      ? `${filenamePrefix}.csv`
+      : `${filenamePrefix}_${formatTimestampForFilename()}.csv`;
   const file = new File(directory, fileName);
   if (file.exists) file.delete();
 
   await file.write(csvContent);
 
   return {
-    uri: file.uri,
-    fileName,
     count: rows.length,
+    fileName,
+    uri: file.uri,
   };
 }

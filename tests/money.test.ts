@@ -4,6 +4,7 @@ import {
   assertMoney,
   formatMoney,
   formatMoneyInput,
+  formatShortcutLabel,
   getCurrencyFractionDigits,
   parseMoneyInput,
   sumMoney,
@@ -69,5 +70,23 @@ describe('money utilities', () => {
     expect(sumMoney([])).toBe(0);
     expect(sumMoney([100, 250, 650])).toBe(1_000);
     expect(() => sumMoney([Number.MAX_SAFE_INTEGER, 1])).toThrow(RangeError);
+  });
+
+  it('formats shortcut labels correctly with and without currency symbols', () => {
+    // IDR / Default
+    expect(formatShortcutLabel(500)).toBe('+500');
+    expect(formatShortcutLabel(2_000)).toBe('+2k');
+    expect(formatShortcutLabel(15_000)).toBe('+15k');
+    expect(formatShortcutLabel(1_500_000)).toBe('+1.5M');
+    expect(formatShortcutLabel(2_000, 'Rp')).toBe('+2k');
+
+    // Multi-currency symbols
+    expect(formatShortcutLabel(1, '$')).toBe('+$1');
+    expect(formatShortcutLabel(5, '$')).toBe('+$5');
+    expect(formatShortcutLabel(10, '$')).toBe('+$10');
+    expect(formatShortcutLabel(20, '€')).toBe('+€20');
+    expect(formatShortcutLabel(50, 'S$')).toBe('+S$50');
+    expect(formatShortcutLabel(500, '¥')).toBe('+¥500');
+    expect(formatShortcutLabel(1_000, '$')).toBe('+$1k');
   });
 });

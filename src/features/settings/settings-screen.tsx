@@ -15,18 +15,27 @@ import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
 import { AddShortcutModal } from '@/features/settings/components/add-shortcut-modal';
 import { CurrencyPickerModal } from '@/features/settings/components/currency-picker-modal';
+import {
+  exportTransactionsCsvFile,
+  shareFile,
+} from '@/features/backup/backup-service';
 import { SettingsAboutFooter } from '@/features/settings/components/settings-about-footer';
 import { SettingsAppearanceCard } from '@/features/settings/components/settings-appearance-card';
 import { SettingsDangerZoneCard } from '@/features/settings/components/settings-danger-zone-card';
 import { SettingsDataManagementCard } from '@/features/settings/components/settings-data-management-card';
 import { SettingsVaultBanner } from '@/features/settings/components/settings-vault-banner';
 import {
+  clearTemporaryCache,
   DEFAULT_QUICK_SHORTCUTS,
+  formatStorageSize,
+  getRecommendedShortcuts,
   getSettingsOverview,
+  getStorageStats,
   resetApplicationData,
   setCurrencySetting,
   setQuickShortcutsSetting,
   type SettingsOverview,
+  type StorageStats,
   type SupportedCurrencyCode,
 } from '@/features/settings/settings-repository';
 import { useCurrency } from '@/lib/currency/currency-context';
@@ -44,6 +53,9 @@ export function SettingsScreen() {
   const { currencyCode, currencySymbol, setCurrency } = useCurrency();
 
   const [overview, setOverview] = useState<SettingsOverview | null>(null);
+  const [storageStats, setStorageStats] = useState<StorageStats | null>(null);
+  const [clearingCache, setClearingCache] = useState(false);
+  const [exportingCsv, setExportingCsv] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
@@ -59,8 +71,12 @@ export function SettingsScreen() {
     setLoading(true);
     setError(null);
     try {
-      const nextOverview = await getSettingsOverview(database);
+      const [nextOverview, nextStorage] = await Promise.all([
+        getSettingsOverview(database),
+        getStorageStats(database),
+      ]);
       setOverview(nextOverview);
+      setStorageStats(nextStorage);
       setShortcuts(nextOverview.quickShortcuts ?? DEFAULT_QUICK_SHORTCUTS);
     } catch (loadError) {
       const mappedError = mapError(loadError, 'DATABASE_WRITE_FAILED');
@@ -78,12 +94,14 @@ export function SettingsScreen() {
 
   const handleResetShortcuts = useCallback(async () => {
     try {
-      await setQuickShortcutsSetting(database, [...DEFAULT_QUICK_SHORTCUTS]);
-      setShortcuts([...DEFAULT_QUICK_SHORTCUTS]);
+      const targetCode = overview?.currencyCode ?? currencyCode;
+      const recommended = getRecommendedShortcuts(targetCode);
+      await setQuickShortcutsSetting(database, recommended);
+      setShortcuts(recommended);
     } catch (err) {
       if (__DEV__) console.warn('Could not reset shortcuts', err);
     }
-  }, [database]);
+  }, [currencyCode, database, overview?.currencyCode]);
 
   const handleRemoveShortcut = useCallback(
     async (amount: number) => {
@@ -191,6 +209,88 @@ export function SettingsScreen() {
     router.push('/settings/backup');
   }, [router]);
 
+  const handleClearCache = useCallback(async () => {
+    if (clearingCache) return;
+    setClearingCache(true);
+    try {
+      const result = await clearTemporaryCache();
+      const nextStorage = await getStorageStats(database);
+      setStorageStats(nextStorage);
+      if (result.freedBytes > 0) {
+        Alert.alert(
+          t.settings.storageSection,
+          t.settings.clearCacheSuccess.replace(
+            '{size}',
+            formatStorageSize(result.freedBytes),
+          ),
+        );
+      } else {
+        Alert.alert(t.settings.storageSection, t.settings.clearCacheEmpty);
+      }
+    } catch (err) {
+      if (__DEV__) console.warn('Clear cache error:', err);
+    } finally {
+      setClearingCache(false);
+    }
+  }, [clearingCache, database, t.settings]);
+
+  const executeExport = useCallback(
+    async (scope: 'this_month' | 'all') => {
+      if (exportingCsv) return;
+      setExportingCsv(true);
+      try {
+        const result = await exportTransactionsCsvFile(database, {
+          language,
+          scope,
+        });
+        if (result.count === 0) {
+          Alert.alert(t.settings.quickExportTitle, t.backup.noTransactions);
+        } else {
+          await shareFile(
+            result.uri,
+            result.fileName,
+            'text/csv',
+            'public.comma-separated-values-text',
+          );
+        }
+      } catch (err) {
+        if (__DEV__) console.warn('Quick CSV export error:', err);
+        const msg =
+          isCodedError(err) || err instanceof Error
+            ? err.message
+            : language === 'id'
+              ? 'Gagal mengekspor data transaksi.'
+              : 'Failed to export transaction data.';
+        Alert.alert(t.settings.quickExportTitle, msg);
+      } finally {
+        setExportingCsv(false);
+      }
+    },
+    [database, exportingCsv, language, t.backup.noTransactions, t.settings],
+  );
+
+  const handleQuickExport = useCallback(() => {
+    Alert.alert(
+      t.settings.exportDialogTitle,
+      t.settings.exportDialogDesc,
+      [
+        {
+          onPress: () => void executeExport('this_month'),
+          text: t.settings.exportThisMonth,
+        },
+        {
+          onPress: () => void executeExport('all'),
+          text: t.settings.exportAll,
+        },
+        {
+          style: 'cancel',
+          text: t.settings.cancel,
+        },
+      ],
+      { cancelable: true },
+    );
+  }, [executeExport, t.settings]);
+
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content}>
@@ -253,12 +353,17 @@ export function SettingsScreen() {
 
             {/* SECTION 2: KELOLA KEUANGAN (Manage Financial Data) */}
             <SettingsDataManagementCard
+              clearingCache={clearingCache}
               currencyCode={overview.currencyCode}
               currencyName={overview.currencyName}
+              exportingCsv={exportingCsv}
               language={language}
+              onClearCache={handleClearCache}
               onNavigateBackup={handleNavigateBackup}
               onNavigateCategories={handleNavigateCategories}
               onNavigatePaymentMethods={handleNavigatePaymentMethods}
+              onQuickExport={handleQuickExport}
+              storageStats={storageStats}
               t={t}
             />
 
@@ -282,6 +387,8 @@ export function SettingsScreen() {
 
       {/* Add Shortcut Modal */}
       <AddShortcutModal
+        currencyCode={overview?.currencyCode ?? currencyCode}
+        currencySymbol={currencySymbol}
         error={shortcutError}
         input={newShortcutInput}
         onChangeInput={(text) => {
