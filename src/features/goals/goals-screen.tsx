@@ -1,7 +1,4 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
-import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -19,199 +16,46 @@ import { GoalCard } from '@/features/goals/components/goal-card';
 import { GoalsHeader } from '@/features/goals/components/goals-header';
 import { GoalsSummaryCard } from '@/features/goals/components/goals-summary-card';
 import {
-  addGoalTransaction,
-  createSavingsGoal,
-  getGoalsSummary,
-  listSavingsGoals,
-  type GoalsSummary,
-  type SavingsGoal,
-} from '@/features/goals/goals-repository';
-import {
-  getHabitStats,
-  type HabitStats,
-} from '@/features/habits/habit-repository';
-import { mapError } from '@/lib/errors';
-import { useLanguage } from '@/lib/i18n/language-context';
-import { parseIntegerInput } from '@/lib/strings';
+  useGoalsViewModel,
+  type GoalsFilterTab,
+} from '@/features/goals/hooks/use-goals-view-model';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
 export function GoalsScreen() {
-  const database = useSQLiteContext();
-  const router = useRouter();
-  const { language, t } = useLanguage();
   const { colors } = useTheme();
-
-  const [loading, setLoading] = useState(true);
-  const [goals, setGoals] = useState<readonly SavingsGoal[]>([]);
-  const [summary, setSummary] = useState<GoalsSummary | null>(null);
-  const [habitStats, setHabitStats] = useState<HabitStats | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [filterTab, setFilterTab] = useState<'active' | 'all' | 'completed'>(
-    'all',
-  );
-
-  // New Goal Modal State
-  const [newGoalModalVisible, setNewGoalModalVisible] = useState(false);
-  const [name, setName] = useState('');
-  const [targetAmount, setTargetAmount] = useState('');
-  const [initialDeposit, setInitialDeposit] = useState('');
-  const [selectedIcon, setSelectedIcon] = useState('target');
-  const [selectedColor, setSelectedColor] = useState('#3B82F6');
-  const [formError, setFormError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  // Deposit Modal State
-  const [depositGoal, setDepositGoal] = useState<SavingsGoal | null>(null);
-  const [depositAmount, setDepositAmount] = useState('');
-  const [depositNote, setDepositNote] = useState('');
-  const [depositError, setDepositError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [goalsList, sum, habits] = await Promise.all([
-        listSavingsGoals(database),
-        getGoalsSummary(database),
-        getHabitStats(database),
-      ]);
-      setGoals(goalsList);
-      setSummary(sum);
-      setHabitStats(habits);
-    } catch (err) {
-      const mapped = mapError(err, 'DATABASE_WRITE_FAILED');
-      setError(mapped.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [database]);
-
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-    }, [load]),
-  );
-
-  const handleCreateGoal = useCallback(async () => {
-    const trimmedName = name.trim();
-    if (!trimmedName) {
-      setFormError(t.goals.errorNameRequired);
-      return;
-    }
-    const targetMinor = parseIntegerInput(targetAmount);
-    if (!targetMinor || targetMinor <= 0) {
-      setFormError(t.goals.errorTargetRequired);
-      return;
-    }
-    const depositMinor = initialDeposit.trim()
-      ? parseIntegerInput(initialDeposit) ?? 0
-      : 0;
-
-    setSaving(true);
-    setFormError(null);
-    try {
-      await createSavingsGoal(database, {
-        colorKey: selectedColor,
-        iconKey: selectedIcon,
-        initialDepositMinor: depositMinor > 0 ? depositMinor : undefined,
-        name: trimmedName,
-        targetAmountMinor: targetMinor,
-      });
-
-      setName('');
-      setTargetAmount('');
-      setInitialDeposit('');
-      setSelectedIcon('target');
-      setSelectedColor('#3B82F6');
-      setNewGoalModalVisible(false);
-      await load();
-    } catch (err) {
-      const mapped = mapError(err, 'DATABASE_WRITE_FAILED');
-      setFormError(mapped.message);
-    } finally {
-      setSaving(false);
-    }
-  }, [
-    database,
-    initialDeposit,
-    load,
-    name,
-    selectedColor,
-    selectedIcon,
-    t.goals,
-    targetAmount,
-  ]);
-
-  const handleDeposit = useCallback(async () => {
-    if (!depositGoal) return;
-    const amountMinor = parseIntegerInput(depositAmount);
-    if (!amountMinor || amountMinor <= 0) {
-      setDepositError(t.goals.errorAmountInvalid);
-      return;
-    }
-
-    setSaving(true);
-    setDepositError(null);
-    try {
-      await addGoalTransaction(database, {
-        amountMinor,
-        goalId: depositGoal.id,
-        note: depositNote.trim() || undefined,
-        type: 'deposit',
-      });
-      setDepositGoal(null);
-      setDepositAmount('');
-      setDepositNote('');
-      await load();
-    } catch (err) {
-      const mapped = mapError(err, 'DATABASE_WRITE_FAILED');
-      setDepositError(mapped.message);
-    } finally {
-      setSaving(false);
-    }
-  }, [database, depositAmount, depositGoal, depositNote, load, t.goals]);
-
-  const filteredGoals = useMemo(() => {
-    if (filterTab === 'active') {
-      return goals.filter((g) => !g.isCompleted);
-    }
-    if (filterTab === 'completed') {
-      return goals.filter((g) => g.isCompleted);
-    }
-    return goals;
-  }, [filterTab, goals]);
+  const { actions, state } = useGoalsViewModel();
 
   return (
     <Screen>
       {/* 1. Page Header */}
       <GoalsHeader
-        language={language}
-        onOpenCreateGoal={() => {
-          setFormError(null);
-          setNewGoalModalVisible(true);
-        }}
-        streakCount={habitStats?.currentStreak ?? 0}
-        t={t}
+        language={state.language}
+        onOpenCreateGoal={actions.openCreateModal}
+        streakCount={state.habitStats?.currentStreak ?? 0}
+        t={state.t}
       />
 
-      {error ? (
+      {state.error ? (
         <View style={styles.errorPanel}>
-          <Text style={styles.errorText}>{error}</Text>
-          <AppButton label={t.common.tryAgain} onPress={() => void load()} />
+          <Text style={styles.errorText}>{state.error}</Text>
+          <AppButton
+            label={state.t.common.tryAgain}
+            onPress={() => void actions.load()}
+          />
         </View>
       ) : null}
 
-      {loading && goals.length === 0 ? (
+      {state.loading && state.goals.length === 0 ? (
         <View style={styles.centerLoading}>
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
       ) : (
         <FlatList
           contentContainerStyle={styles.listContent}
-          data={filteredGoals}
+          data={state.filteredGoals}
           keyExtractor={(item) => String(item.id)}
           ListEmptyComponent={
             <View style={styles.emptyState}>
@@ -223,7 +67,7 @@ export function GoalsScreen() {
               <Text
                 style={[styles.emptyTitle, { color: colors.textPrimary }]}
               >
-                {t.goals.noGoalsYet}
+                {state.t.goals.noGoalsYet}
               </Text>
               <Text
                 style={[
@@ -231,15 +75,12 @@ export function GoalsScreen() {
                   { color: colors.textSecondary },
                 ]}
               >
-                {t.goals.noGoalsDesc}
+                {state.t.goals.noGoalsDesc}
               </Text>
               <View style={styles.emptyBtnWrap}>
                 <AppButton
-                  label={t.goals.createFirstGoal}
-                  onPress={() => {
-                    setFormError(null);
-                    setNewGoalModalVisible(true);
-                  }}
+                  label={state.t.goals.createFirstGoal}
+                  onPress={actions.openCreateModal}
                   variant="primary"
                 />
               </View>
@@ -248,25 +89,25 @@ export function GoalsScreen() {
           ListHeaderComponent={
             <View style={styles.headerStack}>
               {/* Savings Summary Hero Card */}
-              {summary && summary.totalTargetMinor > 0 ? (
-                <GoalsSummaryCard summary={summary} t={t} />
+              {state.summary && state.summary.totalTargetMinor > 0 ? (
+                <GoalsSummaryCard summary={state.summary} t={state.t} />
               ) : null}
 
               {/* Status Filter Tabs */}
               <View style={styles.filterTabsRow}>
                 {(
                   [
-                    { key: 'all', label: t.goals.all },
-                    { key: 'active', label: t.goals.active },
-                    { key: 'completed', label: t.goals.completed },
+                    { key: 'all', label: state.t.goals.all },
+                    { key: 'active', label: state.t.goals.active },
+                    { key: 'completed', label: state.t.goals.completed },
                   ] as const
                 ).map((tab) => {
-                  const isSelected = filterTab === tab.key;
+                  const isSelected = state.filterTab === tab.key;
                   return (
                     <Pressable
                       accessibilityRole="button"
                       key={tab.key}
-                      onPress={() => setFilterTab(tab.key)}
+                      onPress={() => actions.setFilterTab(tab.key as GoalsFilterTab)}
                       style={[
                         styles.filterTabBtn,
                         {
@@ -298,18 +139,13 @@ export function GoalsScreen() {
               </View>
             </View>
           }
-          onRefresh={() => void load()}
-          refreshing={loading}
+          onRefresh={() => void actions.load()}
+          refreshing={state.loading}
           renderItem={({ item: goal }) => (
             <GoalCard
               goal={goal}
-              onDepositPress={() => {
-                setDepositGoal(goal);
-                setDepositError(null);
-                setDepositAmount('');
-                setDepositNote('');
-              }}
-              onPress={() => router.push(`/goals/${goal.id}`)}
+              onDepositPress={() => actions.openDepositModal(goal)}
+              onPress={() => actions.navigateToDetail(goal.id)}
             />
           )}
         />
@@ -317,36 +153,36 @@ export function GoalsScreen() {
 
       {/* 2. New Goal Modal */}
       <CreateGoalModal
-        formError={formError}
-        initialDeposit={initialDeposit}
-        name={name}
-        onChangeInitialDeposit={setInitialDeposit}
-        onChangeName={setName}
-        onChangeSelectedColor={setSelectedColor}
-        onChangeSelectedIcon={setSelectedIcon}
-        onChangeTargetAmount={setTargetAmount}
-        onClose={() => setNewGoalModalVisible(false)}
-        onSubmit={() => void handleCreateGoal()}
-        saving={saving}
-        selectedColor={selectedColor}
-        selectedIcon={selectedIcon}
-        t={t}
-        targetAmount={targetAmount}
-        visible={newGoalModalVisible}
+        formError={state.formError}
+        initialDeposit={state.initialDeposit}
+        name={state.name}
+        onChangeInitialDeposit={actions.setInitialDeposit}
+        onChangeName={actions.setName}
+        onChangeSelectedColor={actions.setSelectedColor}
+        onChangeSelectedIcon={actions.setSelectedIcon}
+        onChangeTargetAmount={actions.setTargetAmount}
+        onClose={actions.closeCreateModal}
+        onSubmit={() => void actions.handleCreateGoal()}
+        saving={state.saving}
+        selectedColor={state.selectedColor}
+        selectedIcon={state.selectedIcon}
+        t={state.t}
+        targetAmount={state.targetAmount}
+        visible={state.newGoalModalVisible}
       />
 
       {/* 3. Quick Deposit Modal */}
       <DepositGoalModal
-        depositAmount={depositAmount}
-        depositError={depositError}
-        depositGoal={depositGoal}
-        depositNote={depositNote}
-        onChangeAmount={setDepositAmount}
-        onChangeNote={setDepositNote}
-        onClose={() => setDepositGoal(null)}
-        onSubmit={() => void handleDeposit()}
-        saving={saving}
-        t={t}
+        depositAmount={state.depositAmount}
+        depositError={state.depositError}
+        depositGoal={state.depositGoal}
+        depositNote={state.depositNote}
+        onChangeAmount={actions.setDepositAmount}
+        onChangeNote={actions.setDepositNote}
+        onClose={actions.closeDepositModal}
+        onSubmit={() => void actions.handleDeposit()}
+        saving={state.saving}
+        t={state.t}
       />
     </Screen>
   );
