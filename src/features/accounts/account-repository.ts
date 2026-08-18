@@ -284,6 +284,20 @@ export async function archiveWallet(
   );
 }
 
+export async function unarchiveWallet(
+  database: SQLiteDatabase,
+  id: number,
+): Promise<void> {
+  const current = await getWalletById(database, id);
+  if (!current) {
+    throw createCodedError('VALIDATION_FAILED', 'Dompet tidak ditemukan.');
+  }
+  await database.runAsync(
+    'UPDATE payment_methods SET is_archived = 0, updated_at = ? WHERE id = ?;',
+    [Date.now(), id],
+  );
+}
+
 export async function recordTransfer(
   database: SQLiteDatabase,
   input: TransferTransactionInput,

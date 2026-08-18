@@ -152,13 +152,13 @@ export const SettingsDataManagementCard = memo(
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
-                      : '#EDE9FE',
+                      : '#EFF6FF',
                   },
                 ]}
               >
                 <MaterialCommunityIcons
-                  color="#7C3AED"
-                  name="credit-card-outline"
+                  color="#2563EB"
+                  name="wallet-outline"
                   size={19}
                 />
               </View>
@@ -178,8 +178,8 @@ export const SettingsDataManagementCard = memo(
                   ]}
                 >
                   {language === 'id'
-                    ? 'Tunai, rekening bank, & e-wallet'
-                    : 'Cash, bank accounts, & e-wallets'}
+                    ? 'Kelola dompet, saldo awal & rekonsiliasi'
+                    : 'Manage wallets, initial balance & reconcile'}
                 </Text>
               </View>
             </View>

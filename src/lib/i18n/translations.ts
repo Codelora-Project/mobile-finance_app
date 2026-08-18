@@ -330,6 +330,39 @@ export type TranslationSchema = {
     backupCreatedSuccess: string;
     csvCreatedSuccess: string;
   };
+  wallets: {
+    title: string;
+    addWallet: string;
+    editWallet: string;
+    walletNameLabel: string;
+    walletNamePlaceholder: string;
+    accountTypeLabel: string;
+    accountNumberLabel: string;
+    accountNumberPlaceholder: string;
+    initialBalanceLabel: string;
+    initialBalancePlaceholder: string;
+    colorThemeLabel: string;
+    iconLabel: string;
+    includeCashflowTitle: string;
+    includeCashflowDesc: string;
+    reconcileTitle: string;
+    reconcileSubtitle: string;
+    recordedBalance: string;
+    actualBalanceLabel: string;
+    actualBalancePlaceholder: string;
+    differenceLabel: string;
+    reconcileNoteLabel: string;
+    reconcileNotePlaceholder: string;
+    saveReconciliation: string;
+    archiveWallet: string;
+    archiveWalletConfirm: string;
+    unarchiveWallet: string;
+    activeWallets: string;
+    archivedWallets: string;
+    noArchivedWallets: string;
+    saveWalletSuccess: string;
+    reconcileSuccess: string;
+  };
 };
 
 export const translations: Record<Language, TranslationSchema> = {
@@ -700,6 +733,43 @@ export const translations: Record<Language, TranslationSchema> = {
       backupCreatedSuccess: 'File cadangan berhasil dibuat dan siap dibagikan.',
       csvCreatedSuccess: 'File CSV berhasil dibuat dan siap dibagikan.',
     },
+    // Wallets & Accounts
+    wallets: {
+      title: 'Dompet & Rekening',
+      addWallet: 'Tambah Dompet Baru',
+      editWallet: 'Ubah Data Dompet',
+      walletNameLabel: 'Nama Dompet / Rekening *',
+      walletNamePlaceholder: 'contoh: Bank BCA, GoPay Utama',
+      accountTypeLabel: 'Jenis Akun',
+      accountNumberLabel: 'Nomor Rekening / Kartu (opsional)',
+      accountNumberPlaceholder: 'contoh: 1234567890',
+      initialBalanceLabel: 'Saldo Awal',
+      initialBalancePlaceholder: '0',
+      colorThemeLabel: 'Warna Tema',
+      iconLabel: 'Ikon Dompet',
+      includeCashflowTitle: 'Hitung di Arus Kas Bulanan',
+      includeCashflowDesc:
+        'Jika aktif, transaksi dompet ini masuk laporan & analitik. Jika nonaktif, hanya dipantau sebagai aset/investasi.',
+      reconcileTitle: 'Rekonsiliasi / Sesuaikan Saldo',
+      reconcileSubtitle:
+        'Masukkan saldo riil fisik/rekening saat ini. Selisih akan otomatis dicatat sebagai transaksi penyesuaian.',
+      recordedBalance: 'Saldo di Aplikasi',
+      actualBalanceLabel: 'Saldo Riil Saat Ini *',
+      actualBalancePlaceholder: 'Masukkan saldo aktual',
+      differenceLabel: 'Selisih Penyesuaian',
+      reconcileNoteLabel: 'Catatan Penyesuaian (opsional)',
+      reconcileNotePlaceholder: 'contoh: Bunga bank, selisih uang kembalian',
+      saveReconciliation: '✓ Simpan Penyesuaian Saldo',
+      archiveWallet: 'Arsipkan Dompet',
+      archiveWalletConfirm:
+        'Apakah Anda yakin ingin mengarsipkan dompet ini? Dompet yang diarsipkan tidak akan muncul di form pencatatan.',
+      unarchiveWallet: 'Buka Arsip',
+      activeWallets: 'Dompet Aktif',
+      archivedWallets: 'Dompet Terarsip',
+      noArchivedWallets: 'Tidak ada dompet yang diarsipkan.',
+      saveWalletSuccess: 'Data dompet berhasil disimpan!',
+      reconcileSuccess: 'Rekonsiliasi saldo berhasil dicatat!',
+    },
   },
   en: {
     // Navigation Tabs
@@ -1065,6 +1135,43 @@ export const translations: Record<Language, TranslationSchema> = {
       restoringData: 'Restoring data...',
       backupCreatedSuccess: 'Backup file created and ready to share.',
       csvCreatedSuccess: 'CSV report created and ready to share.',
+    },
+    // Wallets & Accounts
+    wallets: {
+      title: 'Wallets & Accounts',
+      addWallet: 'Add New Wallet',
+      editWallet: 'Edit Wallet',
+      walletNameLabel: 'Wallet / Account Name *',
+      walletNamePlaceholder: 'e.g. BCA Savings, Cash Wallet',
+      accountTypeLabel: 'Account Type',
+      accountNumberLabel: 'Account / Card Number (optional)',
+      accountNumberPlaceholder: 'e.g. 1234567890',
+      initialBalanceLabel: 'Initial Balance',
+      initialBalancePlaceholder: '0',
+      colorThemeLabel: 'Theme Color',
+      iconLabel: 'Wallet Icon',
+      includeCashflowTitle: 'Include in Monthly Cashflow',
+      includeCashflowDesc:
+        'When enabled, transactions affect monthly budget and expense reports. When disabled, it is only tracked as assets/investments.',
+      reconcileTitle: 'Reconcile / Adjust Balance',
+      reconcileSubtitle:
+        'Enter your actual physical / bank balance. The difference will be automatically recorded as an adjustment entry.',
+      recordedBalance: 'Recorded in App',
+      actualBalanceLabel: 'Actual Balance *',
+      actualBalancePlaceholder: 'Enter current balance',
+      differenceLabel: 'Adjustment Difference',
+      reconcileNoteLabel: 'Adjustment Note (optional)',
+      reconcileNotePlaceholder: 'e.g. Bank interest, cash rounding discrepancy',
+      saveReconciliation: '✓ Save Balance Adjustment',
+      archiveWallet: 'Archive Wallet',
+      archiveWalletConfirm:
+        'Are you sure you want to archive this wallet? Archived wallets will not appear in the transaction form.',
+      unarchiveWallet: 'Unarchive',
+      activeWallets: 'Active Wallets',
+      archivedWallets: 'Archived Wallets',
+      noArchivedWallets: 'No archived wallets.',
+      saveWalletSuccess: 'Wallet saved successfully!',
+      reconcileSuccess: 'Balance reconciliation recorded successfully!',
     },
   },
 };

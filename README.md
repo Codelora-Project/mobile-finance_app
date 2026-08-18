@@ -8,7 +8,12 @@ Aplikasi dirancang dengan arsitektur **Offline-First**, di mana seluruh data tra
 
 ## 📱 Fitur Utama
 
-- **Pencatatan Transaksi Cepat**: Catat pemasukan (_Income_) dan pengeluaran (_Expense_) harian dengan nominal, kategori, metode pembayaran, catatan, dan tanggal/waktu.
+- **Multi-Dompet & Saldo Terpisah (_Wallets & Accounts_)**: Kelola saldo kas, rekening bank, e-wallet, hingga instrumen aset/investasi secara terpisah dengan perhitungan saldo live berbasis buku kas (*ledger-based*).
+- **Klasifikasi Kas Operasional vs Pantau Aset**: Pisahkan dompet harian yang tercatat di laporan arus kas bulanan dari akun aset/investasi yang saldonya hanya ingin dipantau (*Net Worth*).
+- **Transfer Antar Dompet & Biaya Transfer**: Pindahkan dana antar dompet seketika dengan opsi pencatatan biaya admin transfer terintegrasi.
+- **Rekonsiliasi Saldo (_Opname Saldo_)**: Sesuaikan saldo riil fisik/rekening kapan saja dengan pembuatan jurnal penyesuaian otomatis.
+- **Carousel Dompet & Filter Beranda**: Pantau Total Kekayaan (*Net Worth*) di Beranda dan filter transaksi harian per dompet dalam 1-tap.
+- **Pencatatan Transaksi Cepat**: Catat pemasukan (_Income_), pengeluaran (_Expense_), dan transfer antar dompet dengan nominal, kategori, metode pembayaran, catatan, dan tanggal/waktu.
 - **Lampiran Bukti Struk Manual**: Lampirkan foto bukti struk transaksi langsung dari Kamera atau Galeri perangkat, tersimpan aman di direktori lokal.
 - **Analitik & Grafik Finansial**: Visualisasi pengeluaran bulanan, grafik perbandingan mingguan, dan diagram breakdown kategori (_Donut Chart_).
 - **Anggaran Kategori (_Category Budgets_)**: Tetapkan batas pengeluaran bulanan per kategori dengan indikator visual dan peringatan over-budget.
