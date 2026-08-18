@@ -21,11 +21,10 @@ export const UndoToastBanner = memo(function UndoToastBanner({
   canUndo,
   isUndoing,
   message,
-  onClose,
   onUndo,
   visible,
 }: UndoToastBannerProps) {
-  const { isDark } = useTheme();
+  const { colors, isDark } = useTheme();
   const { language } = useLanguage();
 
   if (!visible || !message) return null;
@@ -35,21 +34,31 @@ export const UndoToastBanner = memo(function UndoToastBanner({
       style={[
         styles.floatingUndoToast,
         {
-          backgroundColor: isDark ? '#1E293B' : '#0F172A',
-          borderColor: isDark ? '#334155' : '#1E293B',
+          backgroundColor: isDark ? colors.surface : '#FFFFFF',
+          borderColor: colors.border,
+          shadowColor: colors.textPrimary,
         },
       ]}
     >
       <View style={styles.undoToastLeft}>
-        <MaterialCommunityIcons
-          color="#38BDF8"
-          name="information-outline"
-          size={20}
-        />
+        <View
+          style={[
+            styles.successIconBadge,
+            {
+              backgroundColor: isDark ? '#064E3B' : '#DCFCE7',
+            },
+          ]}
+        >
+          <MaterialCommunityIcons
+            color={isDark ? '#34D399' : '#16A34A'}
+            name="check"
+            size={14}
+          />
+        </View>
         <Text
           accessibilityLiveRegion="polite"
           numberOfLines={1}
-          style={styles.undoToastText}
+          style={[styles.undoToastText, { color: colors.textPrimary }]}
         >
           {message}
         </Text>
@@ -64,29 +73,23 @@ export const UndoToastBanner = memo(function UndoToastBanner({
           onPress={onUndo}
           style={({ pressed }) => [
             styles.undoButton,
+            {
+              backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+              borderColor: colors.border,
+            },
             pressed ? { opacity: 0.75 } : null,
           ]}
         >
           <MaterialCommunityIcons
-            color="#FBBF24"
+            color={colors.primary}
             name="undo-variant"
-            size={16}
+            size={14}
           />
-          <Text style={styles.undoButtonText}>
-            {language === 'id' ? 'BATALKAN' : 'UNDO'}
+          <Text style={[styles.undoButtonText, { color: colors.primary }]}>
+            {language === 'id' ? 'Batalkan' : 'Undo'}
           </Text>
         </Pressable>
       ) : null}
-
-      <Pressable
-        accessibilityLabel="Close notification"
-        accessibilityRole="button"
-        hitSlop={8}
-        onPress={onClose}
-        style={styles.closeToastBtn}
-      >
-        <MaterialCommunityIcons color="#94A3B8" name="close" size={18} />
-      </Pressable>
     </View>
   );
 });
@@ -94,58 +97,54 @@ export const UndoToastBanner = memo(function UndoToastBanner({
 const styles = StyleSheet.create({
   floatingUndoToast: {
     alignItems: 'center',
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     borderWidth: 1,
-    bottom: spacing.lg,
     elevation: 8,
     flexDirection: 'row',
     gap: spacing.sm,
     justifyContent: 'space-between',
     left: spacing.md,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
+    paddingVertical: spacing.sm,
     position: 'absolute',
     right: spacing.md,
-    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    top: spacing.md + 4,
     zIndex: 999,
+  },
+  successIconBadge: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 22,
+    justifyContent: 'center',
+    width: 22,
+  },
+  undoButton: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 4,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 5,
+  },
+  undoButtonText: {
+    ...typography.metadata,
+    fontSize: 12,
+    fontWeight: '700',
   },
   undoToastLeft: {
     alignItems: 'center',
     flex: 1,
     flexDirection: 'row',
-    gap: spacing.xs + 2,
+    gap: spacing.xs + 4,
     marginRight: spacing.xs,
   },
   undoToastText: {
     ...typography.metadata,
-    color: '#F8FAFC',
-    flex: 1,
+    fontSize: 13,
     fontWeight: '600',
-  },
-  undoButton: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(251, 191, 36, 0.15)',
-    borderColor: 'rgba(251, 191, 36, 0.4)',
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
-  },
-  undoButtonText: {
-    ...typography.metadata,
-    color: '#FBBF24',
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  closeToastBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 2,
   },
 });

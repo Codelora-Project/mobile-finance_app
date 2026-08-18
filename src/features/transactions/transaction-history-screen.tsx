@@ -4,13 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
-import { UndoToastBanner } from '@/components/ui/undo-toast-banner';
 import { TransactionDateGroupHeader } from '@/features/transactions/components/transaction-date-group-header';
 import { TransactionHistoryEmptyState } from '@/features/transactions/components/transaction-history-empty-state';
 import { TransactionHistoryHeader } from '@/features/transactions/components/transaction-history-header';
 import { TransactionHistorySummaryBar } from '@/features/transactions/components/transaction-history-summary-bar';
 import { TransactionRowItem } from '@/features/transactions/components/transaction-row-item';
-import { useUndoTransaction } from '@/features/transactions/hooks/use-undo-transaction';
 import { TransactionFilterModal } from '@/features/transactions/transaction-filter-modal';
 import {
   listTransactions,
@@ -147,19 +145,6 @@ export function TransactionHistoryScreen() {
     },
     [database],
   );
-
-  const {
-    canUndo,
-    dismissToast,
-    handleUndo,
-    isUndoing,
-    toastMessage,
-    toastVisible,
-  } = useUndoTransaction({
-    onSuccess: () => {
-      void loadTransactions(filters, debouncedSearch, 0, false);
-    },
-  });
 
   useFocusEffect(
     useCallback(() => {
@@ -328,16 +313,6 @@ export function TransactionHistoryScreen() {
         }}
         onClose={() => setFilterModalVisible(false)}
         visible={filterModalVisible}
-      />
-
-      {/* Undo Floating Toast */}
-      <UndoToastBanner
-        canUndo={canUndo}
-        isUndoing={isUndoing}
-        message={toastMessage}
-        onClose={dismissToast}
-        onUndo={() => void handleUndo()}
-        visible={toastVisible}
       />
     </Screen>
   );

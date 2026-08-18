@@ -12,7 +12,6 @@ import {
 
 import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
-import { UndoToastBanner } from '@/components/ui/undo-toast-banner';
 import { useBottomSheetGesture } from '@/components/ui/use-bottom-sheet-gesture';
 import {
   getWalletSummary,
@@ -42,7 +41,6 @@ import {
   setHomeDisplayPreferences,
   setQuickLogCategoryIds,
 } from '@/features/settings/settings-repository';
-import { useUndoTransaction } from '@/features/transactions/hooks/use-undo-transaction';
 import type { TransactionListItem } from '@/features/transactions/transaction-repository';
 import { formatGroupDate } from '@/lib/dates';
 import { mapError } from '@/lib/errors';
@@ -159,19 +157,6 @@ export function HomeScreen() {
     },
     [database, language, period, referenceDate, selectedWalletId, t.home.loadFailed],
   );
-
-  const {
-    canUndo,
-    dismissToast,
-    handleUndo,
-    isUndoing,
-    toastMessage,
-    toastVisible,
-  } = useUndoTransaction({
-    onSuccess: () => {
-      void loadSummary(period, referenceDate, 'refresh', selectedWalletId);
-    },
-  });
 
   useFocusEffect(
     useCallback(() => {
@@ -490,16 +475,6 @@ export function HomeScreen() {
         selectedIds={selectedIdsInModal}
         t={t}
         visible={customizeModalVisible}
-      />
-
-      {/* Floating Undo Toast on Home */}
-      <UndoToastBanner
-        canUndo={canUndo}
-        isUndoing={isUndoing}
-        message={toastMessage}
-        onClose={dismissToast}
-        onUndo={() => void handleUndo()}
-        visible={toastVisible}
       />
     </Screen>
   );

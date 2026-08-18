@@ -1,10 +1,12 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
   waitFor,
 } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { Alert } from 'react-native';
 
 import { TransactionDetailScreen } from '@/features/transactions/transaction-detail-screen';
 
@@ -104,7 +106,9 @@ describe('transaction detail screen', () => {
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/42/receipt');
   });
 
-  it('deletes instantly without blocking modal and returns to the refetching list', async () => {
+  it('confirms with Alert dialog before deleting transaction and returns', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+
     await render(<TransactionDetailScreen transactionId={42} />);
     await screen.findAllByText('Coffee Shop');
 
@@ -113,17 +117,23 @@ describe('transaction detail screen', () => {
     });
     await fireEvent.press(deleteButtons[0]!);
 
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Hapus Transaksi?',
+      expect.stringContaining('Transaksi ini akan dihapus'),
+      expect.any(Array),
+    );
+
+    const buttons = alertSpy.mock.calls[0]![2] as Array<{ text: string; onPress?: () => void }>;
+    const confirmBtn = buttons.find((b) => b.text === 'Hapus');
+    await act(async () => {
+      confirmBtn?.onPress?.();
+    });
+
     await waitFor(() =>
       expect(mockDeleteTransaction).toHaveBeenCalledWith(expect.anything(), 42),
     );
     await waitFor(() =>
-      expect(mockRouter.dismissTo).toHaveBeenCalledWith({
-        params: expect.objectContaining({
-          feedback: 'Transaksi berhasil dihapus.',
-          undoPayload: expect.any(String),
-        }),
-        pathname: '/transactions',
-      }),
+      expect(mockRouter.back).toHaveBeenCalled(),
     );
   });
 

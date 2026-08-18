@@ -153,45 +153,4 @@ describe('transaction history screen', () => {
       await screen.findByText('Tidak Ada Transaksi yang Cocok'),
     ).toBeOnTheScreen();
   });
-  it('displays the floating undo toast when undoPayload is present and restores on click', async () => {
-    mockListTransactions.mockResolvedValue({
-      hasMore: false,
-      items: [],
-      nextOffset: 0,
-    });
-    mockLocalParams = {
-      feedback: 'Transaksi berhasil dihapus.',
-      undoPayload: JSON.stringify({
-        amountMinor: 35000,
-        categoryId: 1,
-        counterparty: 'Coffee Shop',
-        currencyCode: 'IDR',
-        isReimbursable: false,
-        localDate: '2026-08-15',
-        note: '',
-        occurredAt: 1755238800000,
-        paymentMethodId: null,
-        receipt: null,
-        timezoneOffsetMinutes: 420,
-        type: 'expense',
-      }),
-    };
-
-    await render(<TransactionHistoryScreen />);
-
-    expect(await screen.findByText('Transaksi berhasil dihapus.')).toBeOnTheScreen();
-    const undoButton = screen.getByRole('button', { name: 'Undo action' });
-    expect(undoButton).toBeOnTheScreen();
-
-    await fireEvent.press(undoButton);
-    await waitFor(() => {
-      expect(mockCreateTransaction).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({
-          amountMinor: 35000,
-          counterparty: 'Coffee Shop',
-        }),
-      );
-    });
-  });
 });

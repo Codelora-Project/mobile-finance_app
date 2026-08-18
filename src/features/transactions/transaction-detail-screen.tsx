@@ -4,6 +4,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -92,7 +93,7 @@ export function TransactionDetailScreen({
 }) {
   const database = useSQLiteContext();
   const router = useRouter();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const { colors, isDark } = useTheme();
   const deletingRef = useRef(false);
 
@@ -135,48 +136,41 @@ export function TransactionDetailScreen({
     if (!transaction || deletingRef.current) {
       return;
     }
-    deletingRef.current = true;
-    setDeleting(true);
-    const undoPayload = {
-      amountMinor: transaction.amountMinor,
-      categoryId: transaction.categoryId,
-      counterparty: transaction.counterparty,
-      currencyCode: transaction.currencyCode,
-      isReimbursable: transaction.isReimbursable,
-      localDate: transaction.localDate,
-      note: transaction.note,
-      occurredAt: transaction.occurredAt,
-      paymentMethodId: transaction.paymentMethodId,
-      receipt: transaction.receipt
-        ? {
-            mimeType: transaction.receipt.mimeType,
-            sourceImageUri: transaction.receipt.storageKey,
-          }
-        : null,
-      timezoneOffsetMinutes: transaction.timezoneOffsetMinutes,
-      type: transaction.type,
-    };
 
-    deleteTransaction(database, transactionId)
-      .then(() => {
-        router.dismissTo({
-          params: {
-            feedback: t.transactions.deletedSuccess,
-            undoPayload: JSON.stringify(undoPayload),
+    Alert.alert(
+      language === 'id' ? 'Hapus Transaksi?' : 'Delete Transaction?',
+      language === 'id'
+        ? 'Transaksi ini akan dihapus dari riwayat dan saldo dompet akan otomatis disesuaikan kembali.'
+        : 'This transaction will be removed from your history and wallet balance will be adjusted accordingly.',
+      [
+        {
+          style: 'cancel',
+          text: language === 'id' ? 'Batal' : 'Cancel',
+        },
+        {
+          onPress: () => {
+            deletingRef.current = true;
+            setDeleting(true);
+            deleteTransaction(database, transactionId)
+              .then(() => {
+                router.back();
+              })
+              .catch((deleteError) => {
+                const message = isCodedError(deleteError)
+                  ? deleteError.message
+                  : mapError(deleteError, 'DATABASE_WRITE_FAILED').message;
+                setError(message);
+              })
+              .finally(() => {
+                deletingRef.current = false;
+                setDeleting(false);
+              });
           },
-          pathname: '/transactions',
-        });
-      })
-      .catch((deleteError) => {
-        const message = isCodedError(deleteError)
-          ? deleteError.message
-          : mapError(deleteError, 'DATABASE_WRITE_FAILED').message;
-        setError(message);
-      })
-      .finally(() => {
-        deletingRef.current = false;
-        setDeleting(false);
-      });
+          style: 'destructive',
+          text: language === 'id' ? 'Hapus' : 'Delete',
+        },
+      ],
+    );
   }
 
   if (loading && !transaction) {
