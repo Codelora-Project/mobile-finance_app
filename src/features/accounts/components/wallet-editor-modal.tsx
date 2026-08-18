@@ -63,6 +63,25 @@ const ACCOUNT_TYPES: { key: AccountType; label: string; icon: string }[] = [
   { key: 'other', label: 'Lainnya', icon: 'wallet' },
 ];
 
+const QUICK_WALLET_PRESETS = [
+  { accountType: 'bank' as const, color: '#2563EB', icon: 'bank', name: 'BCA' },
+  { accountType: 'bank' as const, color: '#1E3A8A', icon: 'bank', name: 'Mandiri' },
+  { accountType: 'bank' as const, color: '#0284C7', icon: 'bank', name: 'BRI' },
+  { accountType: 'bank' as const, color: '#EA580C', icon: 'bank', name: 'BNI' },
+  { accountType: 'bank' as const, color: '#F59E0B', icon: 'bank', name: 'Jago' },
+  { accountType: 'ewallet' as const, color: '#00AED6', icon: 'cellphone', name: 'GoPay' },
+  { accountType: 'ewallet' as const, color: '#8B5CF6', icon: 'cellphone', name: 'OVO' },
+  { accountType: 'ewallet' as const, color: '#0284C7', icon: 'cellphone', name: 'DANA' },
+  { accountType: 'ewallet' as const, color: '#EF4444', icon: 'cellphone', name: 'ShopeePay' },
+  {
+    accountType: 'investment' as const,
+    color: '#10B981',
+    icon: 'trending-up',
+    includeInCashflow: false,
+    name: 'Bibit',
+  },
+];
+
 export const WalletEditorModal = memo(function WalletEditorModal({
   currencyCode,
   currencySymbol,
@@ -151,8 +170,10 @@ export const WalletEditorModal = memo(function WalletEditorModal({
       onSuccess();
       onClose();
     } catch (caughtError) {
-      const mapped = mapError(caughtError, 'DATABASE_WRITE_FAILED');
-      setError(mapped.message);
+      if (__DEV__) {
+        console.error('Wallet save error:', caughtError);
+      }
+      setError(mapError(caughtError, 'DATABASE_WRITE_FAILED').message);
     } finally {
       setSaving(false);
     }
@@ -200,6 +221,65 @@ export const WalletEditorModal = memo(function WalletEditorModal({
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
+            {/* Quick Template Chips (Only on Add New) */}
+            {isNew ? (
+              <View style={styles.inputGroup}>
+                <Text
+                  style={[
+                    styles.fieldLabel,
+                    { color: colors.textSecondary, fontSize: 12 },
+                  ]}
+                >
+                  Pilihan Cepat / Template:
+                </Text>
+                <ScrollView
+                  contentContainerStyle={styles.presetScroll}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                >
+                  {QUICK_WALLET_PRESETS.map((preset) => (
+                    <Pressable
+                      key={preset.name}
+                      onPress={() => {
+                        setName(preset.name);
+                        setAccountType(preset.accountType);
+                        setSelectedColor(preset.color);
+                        setSelectedIcon(preset.icon);
+                        if (preset.includeInCashflow !== undefined) {
+                          setIncludeInCashflow(preset.includeInCashflow);
+                        }
+                      }}
+                      style={({ pressed }) => [
+                        styles.presetChip,
+                        {
+                          backgroundColor: isDark
+                            ? colors.surfaceSecondary
+                            : '#F1F5F9',
+                          borderColor: colors.border,
+                        },
+                        pressed ? { opacity: 0.7 } : null,
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.presetDot,
+                          { backgroundColor: preset.color },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.presetChipText,
+                          { color: colors.textPrimary },
+                        ]}
+                      >
+                        {preset.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            ) : null}
+
             {/* 1. Wallet Name Input */}
             <View style={styles.inputGroup}>
               <Text style={[styles.fieldLabel, { color: colors.textPrimary }]}>
@@ -558,6 +638,30 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     gap: 4,
+  },
+  presetChip: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 5,
+  },
+  presetChipText: {
+    ...typography.metadata,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  presetDot: {
+    borderRadius: radius.pill,
+    height: 8,
+    width: 8,
+  },
+  presetScroll: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    paddingVertical: 2,
   },
   scrollContent: {
     gap: spacing.md,

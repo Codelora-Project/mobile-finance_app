@@ -57,15 +57,7 @@ export const defaultCategories: readonly CategorySeed[] = [
 ];
 
 export const defaultPaymentMethods: readonly PaymentMethodSeed[] = [
-  { name: 'Cash', systemKey: 'cash' },
-  { name: 'Bank Transfer', systemKey: 'bank_transfer' },
-  { name: 'Debit Card', systemKey: 'debit_card' },
-  { name: 'Credit Card', systemKey: 'credit_card' },
-  { name: 'GoPay', systemKey: 'gopay' },
-  { name: 'OVO', systemKey: 'ovo' },
-  { name: 'DANA', systemKey: 'dana' },
-  { name: 'ShopeePay', systemKey: 'shopeepay' },
-  { name: 'Other', systemKey: 'other', isFallback: true },
+  { name: 'Cash', systemKey: 'cash', isFallback: true },
 ];
 
 const defaultSettings = [

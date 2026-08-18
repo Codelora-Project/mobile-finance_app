@@ -5,6 +5,7 @@ import { goalsAndHabitsMigration } from '@/db/migrations/002-goals-and-habits';
 import { categoryBudgetsMigration } from '@/db/migrations/003-category-budgets';
 import { queryOptimizationIndexesMigration } from '@/db/migrations/004-query-optimization-indexes';
 import { multiWalletsAndTransfersMigration } from '@/db/migrations/005-multi-wallets-and-transfers';
+import { cleanUnusedDefaultWalletsMigration } from '@/db/migrations/006-clean-unused-default-wallets';
 
 const migrations = [
   initialMigration,
@@ -12,6 +13,7 @@ const migrations = [
   categoryBudgetsMigration,
   queryOptimizationIndexesMigration,
   multiWalletsAndTransfersMigration,
+  cleanUnusedDefaultWalletsMigration,
 ] as const;
 
 export const latestDatabaseVersion = migrations.at(-1)?.version ?? 0;

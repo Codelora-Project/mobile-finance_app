@@ -101,13 +101,13 @@ describe('database initialization', () => {
     expect(database.userVersion).toBe(latestDatabaseVersion);
     expect(database.migrationRuns).toBe(1);
     expect(database.categories.size).toBe(18);
-    expect(database.paymentMethods.size).toBe(9);
+    expect(database.paymentMethods.size).toBe(1);
     expect(database.settings.get('default_currency_code')).toBe('IDR');
     expect(database.settings.get('welcome_seen')).toBe('false');
     expect(database.settings.get('language')).toBe('id');
     expect(database.categories).toContain('expense_other');
     expect(database.categories).toContain('income_other');
-    expect(database.paymentMethods).toContain('other');
+    expect(database.paymentMethods).toContain('cash');
   });
 
   it('keeps migration and seed data idempotent across restart', async () => {
