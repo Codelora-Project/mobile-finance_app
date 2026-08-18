@@ -13,6 +13,7 @@ export type ManualPaymentMethodsStripProps = {
   onSelectPaymentMethod: (pm: PaymentMethod) => void;
   paymentMethods: readonly PaymentMethod[];
   selectedPaymentMethodId?: number | null;
+  transactionType?: 'expense' | 'income' | 'transfer';
 };
 
 export const ManualPaymentMethodsStrip = memo(
@@ -20,14 +21,24 @@ export const ManualPaymentMethodsStrip = memo(
     onSelectPaymentMethod,
     paymentMethods,
     selectedPaymentMethodId,
+    transactionType = 'expense',
   }: ManualPaymentMethodsStripProps) {
     const { colors, isDark } = useTheme();
     const { language } = useLanguage();
 
+    const sectionLabelText =
+      transactionType === 'income'
+        ? language === 'id'
+          ? 'MASUK KE DOMPET / REKENING'
+          : 'DEPOSIT TO WALLET / ACCOUNT'
+        : language === 'id'
+          ? 'METODE PEMBAYARAN'
+          : 'PAYMENT METHOD';
+
     return (
       <View style={styles.sectionContainer}>
         <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-          {language === 'id' ? 'METODE PEMBAYARAN' : 'PAYMENT METHOD'}
+          {sectionLabelText}
         </Text>
         <ScrollView
           contentContainerStyle={styles.paymentMethodsList}

@@ -72,19 +72,6 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
     ? '••••••'
     : formatMoney(summary.expenseMinor, summary.currencyCode);
 
-  // Status Badge Label
-  const statusLabel = isNegative
-    ? 'Defisit Arus Kas'
-    : isPositive
-    ? 'Surplus Arus Kas'
-    : 'Arus Kas Seimbang';
-
-  const statusColor = isNegative
-    ? colors.destructive
-    : isPositive
-    ? colors.positive
-    : colors.textSecondary;
-
   return (
     <View
       style={[
@@ -186,7 +173,7 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
         </View>
       </View>
 
-      {/* 2. Main Net Amount with Status Badge */}
+      {/* 2. Main Net Amount */}
       <View style={styles.mainAmountSection}>
         <Text
           adjustsFontSizeToFit
@@ -205,45 +192,6 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
         >
           {formattedNet}
         </Text>
-
-        {/* Status Pill Badge */}
-        <View
-          style={[
-            styles.statusBadge,
-            {
-              backgroundColor: isNegative
-                ? isDark
-                  ? '#7F1D1D30'
-                  : '#FEE2E2'
-                : isPositive
-                ? isDark
-                  ? '#14532D30'
-                  : '#DCFCE7'
-                : isDark
-                ? colors.surfaceSecondary
-                : '#F1F5F9',
-              borderColor: isNegative
-                ? isDark
-                  ? '#991B1B'
-                  : '#FCA5A5'
-                : isPositive
-                ? isDark
-                  ? '#166534'
-                  : '#86EFAC'
-                : colors.border,
-            },
-          ]}
-        >
-          <View
-            style={[
-              styles.statusDot,
-              { backgroundColor: statusColor },
-            ]}
-          />
-          <Text style={[styles.statusBadgeText, { color: statusColor }]}>
-            {statusLabel}
-          </Text>
-        </View>
       </View>
 
       {/* 3. Symmetrical 50/50 Sub-Cards for Income & Expense */}
@@ -394,25 +342,6 @@ const styles = StyleSheet.create({
     height: 30,
     justifyContent: 'center',
     width: 30,
-  },
-  statusBadge: {
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 5,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 3,
-  },
-  statusBadgeText: {
-    ...typography.metadata,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  statusDot: {
-    borderRadius: radius.pill,
-    height: 6,
-    width: 6,
   },
   subCard: {
     borderRadius: radius.md + 2,

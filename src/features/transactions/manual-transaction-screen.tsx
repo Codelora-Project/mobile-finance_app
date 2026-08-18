@@ -38,7 +38,7 @@ export { type ManualTransactionScreenProps };
 export function ManualTransactionScreen({
   transactionId: propTransactionId,
 }: ManualTransactionScreenProps = {}) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const { actions, refs, state } = useManualTransactionViewModel({
     propTransactionId,
@@ -46,27 +46,59 @@ export function ManualTransactionScreen({
 
   if (state.loading) {
     return (
-      <Screen>
+      <View style={styles.modalOverlay}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
-      </Screen>
+      </View>
     );
   }
 
   const isTransfer = state.form.type === 'transfer';
 
   return (
-    <Screen>
+    <View style={styles.modalOverlay}>
+      {/* 1. Dimmed Backdrop */}
       <Animated.View
         style={[
-          styles.container,
+          StyleSheet.absoluteFill,
+          styles.backdrop,
+          { opacity: refs.fadeAnim },
+        ]}
+      >
+        <Pressable
+          accessibilityLabel="Tutup dialog"
+          accessibilityRole="button"
+          onPress={actions.handleClose}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+
+      {/* 2. Bottom Sheet Container */}
+      <Animated.View
+        style={[
+          styles.sheetContainer,
           {
-            opacity: refs.fadeAnim,
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
             transform: [{ translateY: refs.slideAnim }],
           },
         ]}
       >
+        {/* Drag Handle Indicator */}
+        <View style={styles.dragHandleContainer}>
+          <View
+            style={[
+              styles.dragHandle,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(255, 255, 255, 0.25)'
+                  : '#CBD5E1',
+              },
+            ]}
+          />
+        </View>
+
         {/* 1. TOP NAVIGATION HEADER */}
         <ManualTransactionHeader
           deleting={state.deleting}
@@ -147,7 +179,7 @@ export function ManualTransactionScreen({
             />
           ) : (
             <>
-              {/* 1-Tap Category Grid */}
+              {/* 1-Tap Category Grid (Filtered by type) */}
               <ManualCategoryGrid
                 categories={state.categoriesList}
                 error={state.errors.category}
@@ -162,11 +194,12 @@ export function ManualTransactionScreen({
                 onSelectPaymentMethod={actions.handleSelectPaymentMethod}
                 paymentMethods={state.paymentMethodsList}
                 selectedPaymentMethodId={state.form.paymentMethod?.id}
+                transactionType={state.form.type}
               />
             </>
           )}
 
-          {/* Compact Merchant, Receipt & Expandable Advanced Options */}
+          {/* Quick Merchant / Store Name Note */}
           <ManualDetailsSection
             claimMembership={state.claimMembership}
             counterparty={state.form.counterparty}
@@ -178,123 +211,88 @@ export function ManualTransactionScreen({
               actions.setForm((c) => ({ ...c, counterparty }))
             }
             onChangeDate={(date) => actions.setForm((c) => ({ ...c, date }))}
-            onChangeNote={(note) => actions.setForm((c) => ({ ...c, note }))}
+            onChangeNote={(note) => {
+              actions.setForm((c) => ({ ...c, note }));
+              actions.setErrors((c) => ({ ...c, note: undefined }));
+            }}
             onChangeReimbursable={(isReimbursable) =>
               actions.setForm((c) => ({ ...c, isReimbursable }))
             }
             onChangeTime={(time) => actions.setForm((c) => ({ ...c, time }))}
             onOpenReceiptMenu={() => actions.setReceiptMenuVisible(true)}
-            onToggleShowDetails={() =>
-              actions.setShowDetailSection((prev) => !prev)
-            }
+            onToggleShowDetails={() => actions.setShowDetailSection((v) => !v)}
             receipt={state.form.receipt}
             showDetailSection={state.showDetailSection}
             time={state.form.time}
           />
 
+          {/* Global Submit/Validation Errors */}
           {state.errors.submit ? (
             <Text style={styles.errorBanner}>{state.errors.submit}</Text>
           ) : null}
 
-          {/* Big Save Button */}
+          {/* Big Action Save Button */}
           <View style={styles.actionBtnContainer}>
             <Pressable
+              accessibilityLabel={
+                state.isEditMode
+                  ? state.language === 'id'
+                    ? 'Perbarui Transaksi'
+                    : 'Update Transaction'
+                  : isTransfer
+                  ? state.language === 'id'
+                    ? `Transfer (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                    : `Transfer (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                  : state.form.type === 'income'
+                  ? state.language === 'id'
+                    ? `Simpan Pemasukan (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                    : `Save Income (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                  : state.language === 'id'
+                  ? `Simpan Pengeluaran (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                  : `Save Expense (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+              }
               accessibilityRole="button"
               disabled={state.saving}
               onPress={() => void actions.handleSave()}
-              style={[
+              style={({ pressed }) => [
                 styles.saveBigButton,
                 isTransfer
                   ? styles.saveBigButtonTransfer
-                  : state.isExpense
-                  ? styles.saveBigButtonExpense
-                  : styles.saveBigButtonIncome,
+                  : state.form.type === 'income'
+                  ? styles.saveBigButtonIncome
+                  : styles.saveBigButtonExpense,
                 state.saving ? styles.saveBigButtonDisabled : null,
+                pressed ? { opacity: 0.85, transform: [{ scale: 0.98 }] } : null,
               ]}
               testID="save-transaction"
             >
               {state.saving ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
-                <Text
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.8}
-                  numberOfLines={1}
-                  style={styles.saveBigButtonText}
-                >
+                <Text style={styles.saveBigButtonText}>
                   {state.isEditMode
                     ? state.language === 'id'
-                      ? 'Update Transaksi' +
-                        (state.parsedAmountMinor > 0
-                          ? ' (' +
-                            formatMoney(state.parsedAmountMinor, state.currencyCode) +
-                            ')'
-                          : '')
-                      : 'Update Transaction' +
-                        (state.parsedAmountMinor > 0
-                          ? ' (' +
-                            formatMoney(state.parsedAmountMinor, state.currencyCode) +
-                            ')'
-                          : '')
+                      ? '✓ Perbarui Transaksi'
+                      : '✓ Update Transaction'
                     : isTransfer
                     ? state.language === 'id'
-                      ? '✓ Simpan Transfer' +
-                        (state.parsedAmountMinor > 0
-                          ? ' (' +
-                            formatMoney(state.parsedAmountMinor, state.currencyCode) +
-                            ')'
-                          : '')
-                      : '✓ Save Transfer' +
-                        (state.parsedAmountMinor > 0
-                          ? ' (' +
-                            formatMoney(state.parsedAmountMinor, state.currencyCode) +
-                            ')'
-                          : '')
-                    : state.isExpense
+                      ? `⇄ Transfer (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                      : `⇄ Transfer (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                    : state.form.type === 'income'
                     ? state.language === 'id'
-                      ? '✓ Simpan Pengeluaran' +
-                        (state.parsedAmountMinor > 0
-                          ? ' (' +
-                            formatMoney(state.parsedAmountMinor, state.currencyCode) +
-                            ')'
-                          : '')
-                      : '✓ Save Expense' +
-                        (state.parsedAmountMinor > 0
-                          ? ' (' +
-                            formatMoney(state.parsedAmountMinor, state.currencyCode) +
-                            ')'
-                          : '')
+                      ? `✓ Simpan Pemasukan (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                      : `✓ Save Income (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
                     : state.language === 'id'
-                      ? '✓ Simpan Pemasukan' +
-                        (state.parsedAmountMinor > 0
-                          ? ' (' +
-                            formatMoney(state.parsedAmountMinor, state.currencyCode) +
-                            ')'
-                          : '')
-                      : '✓ Save Income' +
-                        (state.parsedAmountMinor > 0
-                          ? ' (' +
-                            formatMoney(state.parsedAmountMinor, state.currencyCode) +
-                            ')'
-                          : '')}
+                    ? `✓ Simpan Pengeluaran (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                    : `✓ Save Expense (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`}
                 </Text>
               )}
             </Pressable>
-
-            {state.isEditMode ? (
-              <AppButton
-                disabled={state.deleting || state.saving}
-                label={state.t.common.delete}
-                loading={state.deleting}
-                onPress={actions.handleDelete}
-                variant="destructive"
-              />
-            ) : null}
           </View>
         </ScrollView>
       </Animated.View>
 
-      {/* Category Picker Modal */}
+      {/* Category Picker Modal (for standard Expense/Income) */}
       <Modal
         animationType="slide"
         onRequestClose={() => actions.setPicker(null)}
@@ -532,7 +530,7 @@ export function ManualTransactionScreen({
         onSelectSource={(source) => void actions.handleSelectReceiptSource(source)}
         visible={state.receiptMenuVisible}
       />
-    </Screen>
+    </View>
   );
 }
 
@@ -546,11 +544,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
   },
+  backdrop: {
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+  },
   closeIconButton: {
     padding: spacing.xs,
   },
-  container: {
-    flex: 1,
+  dragHandle: {
+    borderRadius: radius.pill,
+    height: 4,
+    width: 40,
+  },
+  dragHandleContainer: {
+    alignItems: 'center',
+    paddingBottom: spacing.xs,
+    paddingTop: spacing.xs + 2,
+    width: '100%',
   },
   errorBanner: {
     ...typography.metadata,
@@ -567,6 +576,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
+  },
+  modalOverlay: {
+    backgroundColor: 'transparent',
+    flex: 1,
+    justifyContent: 'flex-end',
   },
   modalScreenHeader: {
     alignItems: 'center',
@@ -610,8 +624,20 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     gap: spacing.md,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.xxl + 24,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.xs,
+  },
+  sheetContainer: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderTopWidth: 1,
+    elevation: 24,
+    maxHeight: '92%',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    width: '100%',
   },
 });

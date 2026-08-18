@@ -89,12 +89,42 @@ export type PickerState =
   | 'transferFeeCategory'
   | null;
 
+const INITIAL_CATEGORIES: Category[] = defaultCategories.map(
+  (c, index) => ({
+    createdAt: 0,
+    iconKey: null,
+    id: index + 1,
+    isDefault: true,
+    isFallback: !!c.isFallback,
+    name: c.name,
+    sortOrder: index,
+    systemKey: c.systemKey,
+    type: c.type,
+    updatedAt: 0,
+  }),
+);
+
+const INITIAL_PAYMENT_METHODS: PaymentMethod[] = defaultPaymentMethods.map(
+  (pm, index) => ({
+    createdAt: 0,
+    id: index + 1,
+    isDefault: true,
+    isFallback: false,
+    name: pm.name,
+    sortOrder: index,
+    systemKey: pm.systemKey,
+    updatedAt: 0,
+  }),
+);
+
 function createDefaultForm(
   initialCategory?: SelectedReference | null,
   initialType?: TransactionType,
+  initialPaymentMethod?: SelectedReference | null,
 ): FormState {
   const now = Date.now();
   const dateTime = toLocalDateTimeInput(now, getTimezoneOffsetMinutes(now));
+  const defaultMethod = INITIAL_PAYMENT_METHODS[0];
   return {
     amount: '',
     category: initialCategory ?? null,
@@ -103,7 +133,9 @@ function createDefaultForm(
     hasTransferFee: false,
     isReimbursable: false,
     note: '',
-    paymentMethod: null,
+    paymentMethod:
+      initialPaymentMethod ??
+      (defaultMethod ? { id: defaultMethod.id, name: defaultMethod.name } : null),
     receipt: null,
     time: dateTime.time,
     transferFeeAmount: '',
@@ -183,6 +215,7 @@ function buildSaveInput(
   form: FormState,
   currencyCode = 'IDR',
   fallbackCategoryId = 1,
+  language: 'id' | 'en' = 'id',
 ) {
   const errors: FormErrors = {};
   let amountMinor: number | null = null;
@@ -191,19 +224,29 @@ function buildSaveInput(
   try {
     amountMinor = parseMoneyInput(form.amount, currencyCode);
   } catch {
-    errors.amount = 'Enter an amount.';
+    errors.amount =
+      language === 'id' ? 'Masukkan nominal transaksi.' : 'Enter an amount.';
   }
 
   if (form.type !== 'transfer') {
     if (!form.category) {
-      errors.category = 'Choose a category.';
+      errors.category =
+        language === 'id'
+          ? form.type === 'income'
+            ? 'Pilih kategori pemasukan.'
+            : 'Pilih kategori pengeluaran.'
+          : 'Choose a category.';
     }
   } else {
     if (!form.paymentMethod) {
-      errors.paymentMethod = 'Pilih dompet asal.';
+      errors.paymentMethod =
+        language === 'id' ? 'Pilih dompet asal.' : 'Choose a source wallet.';
     }
     if (!form.transferToPaymentMethod) {
-      errors.transferToPaymentMethod = 'Pilih dompet tujuan.';
+      errors.transferToPaymentMethod =
+        language === 'id'
+          ? 'Pilih dompet tujuan.'
+          : 'Choose a destination wallet.';
     }
     if (
       form.paymentMethod &&
@@ -211,19 +254,27 @@ function buildSaveInput(
       form.paymentMethod.id === form.transferToPaymentMethod.id
     ) {
       errors.transferToPaymentMethod =
-        'Dompet asal dan tujuan tidak boleh sama.';
+        language === 'id'
+          ? 'Dompet asal dan tujuan tidak boleh sama.'
+          : 'Source and destination wallet cannot be the same.';
     }
   }
 
   let feeMinor = 0;
   if (form.type === 'transfer' && form.hasTransferFee) {
     if (!form.transferFeeAmount.trim()) {
-      errors.transferFeeAmount = 'Masukkan nominal biaya transfer.';
+      errors.transferFeeAmount =
+        language === 'id'
+          ? 'Masukkan nominal biaya transfer.'
+          : 'Enter a transfer fee amount.';
     } else {
       try {
         feeMinor = parseMoneyInput(form.transferFeeAmount, currencyCode);
       } catch {
-        errors.transferFeeAmount = 'Nominal biaya transfer tidak valid.';
+        errors.transferFeeAmount =
+          language === 'id'
+            ? 'Nominal biaya transfer tidak valid.'
+            : 'Invalid transfer fee amount.';
       }
     }
   }
@@ -231,13 +282,22 @@ function buildSaveInput(
   try {
     dateTime = parseLocalDateTimeInput(form.date, form.time);
     if (dateTime.occurredAt > Date.now()) {
-      errors.dateTime = 'Transaction date cannot be in the future.';
+      errors.dateTime =
+        language === 'id'
+          ? 'Tanggal transaksi tidak boleh di masa depan.'
+          : 'Transaction date cannot be in the future.';
     }
   } catch {
-    errors.dateTime = 'Enter a valid transaction date and time.';
+    errors.dateTime =
+      language === 'id'
+        ? 'Format tanggal atau waktu tidak valid.'
+        : 'Enter a valid transaction date and time.';
   }
   if (Array.from(form.note.normalize('NFC').trim()).length > 500) {
-    errors.note = 'Note must be 500 characters or fewer.';
+    errors.note =
+      language === 'id'
+        ? 'Catatan maksimal 500 karakter.'
+        : 'Note must be 500 characters or fewer.';
   }
 
   if (
@@ -285,34 +345,6 @@ function buildSaveInput(
   return { errors, input };
 }
 
-const INITIAL_EXPENSE_CATEGORIES: Category[] = defaultCategories
-  .filter((c) => c.type === 'expense')
-  .map((c, index) => ({
-    createdAt: 0,
-    iconKey: null,
-    id: index + 1,
-    isDefault: true,
-    isFallback: !!c.isFallback,
-    name: c.name,
-    sortOrder: index,
-    systemKey: c.systemKey,
-    type: 'expense' as const,
-    updatedAt: 0,
-  }));
-
-const INITIAL_PAYMENT_METHODS: PaymentMethod[] = defaultPaymentMethods.map(
-  (pm, index) => ({
-    createdAt: 0,
-    id: index + 1,
-    isDefault: true,
-    isFallback: false,
-    name: pm.name,
-    sortOrder: index,
-    systemKey: pm.systemKey,
-    updatedAt: 0,
-  }),
-);
-
 export type ManualTransactionScreenProps = {
   transactionId?: number;
 };
@@ -358,11 +390,16 @@ export function useManualTransactionViewModel({
     createDefaultForm(initialCategoryParam, params.type),
   );
   const [categoriesList, setCategoriesList] = useState<Category[]>(
-    INITIAL_EXPENSE_CATEGORIES,
+    INITIAL_CATEGORIES,
   );
   const [paymentMethodsList, setPaymentMethodsList] = useState<PaymentMethod[]>(
     INITIAL_PAYMENT_METHODS,
   );
+
+  const displayedCategories = useMemo(() => {
+    const targetType = form.type === 'income' ? 'income' : 'expense';
+    return categoriesList.filter((cat) => cat.type === targetType);
+  }, [categoriesList, form.type]);
   const [quickShortcuts, setQuickShortcuts] = useState<number[]>([
     ...DEFAULT_QUICK_SHORTCUTS,
   ]);
@@ -412,6 +449,18 @@ export function useManualTransactionViewModel({
           setPaymentMethodsList(pms);
           if (shortcuts && shortcuts.length > 0) {
             setQuickShortcuts(shortcuts);
+          }
+          if (!isEditMode) {
+            setForm((current) => {
+              if (!current.paymentMethod && pms.length > 0) {
+                const defaultMethod = pms.find((p) => p.isDefault) ?? pms[0];
+                return {
+                  ...current,
+                  paymentMethod: { id: defaultMethod.id, name: defaultMethod.name },
+                };
+              }
+              return current;
+            });
           }
         }
       } catch (err) {
@@ -559,11 +608,12 @@ export function useManualTransactionViewModel({
 
   const handleSave = useCallback(async () => {
     if (savingRef.current || deletingRef.current) return;
-    const fallbackCategory = categoriesList[0]?.id ?? 1;
+    const fallbackCategory = displayedCategories[0]?.id ?? 1;
     const { errors: validationErrors, input } = buildSaveInput(
       form,
       currencyCode,
       fallbackCategory,
+      language,
     );
     if (!input) {
       setErrors(validationErrors);
@@ -604,7 +654,7 @@ export function useManualTransactionViewModel({
       savingRef.current = false;
       setSaving(false);
     }
-  }, [categoriesList, currencyCode, database, form, isEditMode, language, router, transactionId]);
+  }, [displayedCategories, currencyCode, database, form, isEditMode, language, router, transactionId]);
 
   const handleDelete = useCallback(async () => {
     if (savingRef.current || deletingRef.current || !transactionId) return;
@@ -673,7 +723,7 @@ export function useManualTransactionViewModel({
       slideAnim,
     },
     state: {
-      categoriesList,
+      categoriesList: displayedCategories,
       claimMembership,
       currencyCode,
       currencySymbol,

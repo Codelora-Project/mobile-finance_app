@@ -81,6 +81,18 @@ jest.mock('@/features/categories/category-repository', () => ({
       type: 'expense',
       updatedAt: 0,
     },
+    {
+      createdAt: 0,
+      iconKey: null,
+      id: 3,
+      isDefault: true,
+      isFallback: false,
+      name: 'Salary',
+      sortOrder: 3,
+      systemKey: 'income_salary',
+      type: 'income',
+      updatedAt: 0,
+    },
   ]),
 }));
 
@@ -421,6 +433,47 @@ describe('manual transaction form', () => {
           transferFeeMinor: 2500,
           transferToPaymentMethodId: 2,
           type: 'transfer',
+        }),
+      ),
+    );
+  });
+
+  it('filters category grid by income type when Income tab is selected', async () => {
+    mockCreateTransaction.mockResolvedValueOnce({ id: 100, type: 'income' });
+
+    await render(
+      <LanguageProvider initialLanguage="id">
+        <ManualTransactionScreen />
+      </LanguageProvider>,
+    );
+
+    // Initial Expense tab shows Food & Drink
+    expect(screen.getByText('Food & Drink')).toBeOnTheScreen();
+    expect(screen.queryByText('Salary')).not.toBeOnTheScreen();
+
+    // Switch to Income tab
+    await fireEvent.press(screen.getByRole('tab', { name: 'Pemasukan' }));
+
+    // Now Salary should be displayed, and Food & Drink should be hidden
+    await waitFor(() => {
+      expect(screen.getByText('Salary')).toBeOnTheScreen();
+      expect(screen.queryByText('Food & Drink')).not.toBeOnTheScreen();
+    });
+
+    // Enter amount and select Salary category
+    await fireEvent.changeText(screen.getByLabelText('Amount *'), '10000000');
+    await fireEvent.press(screen.getByText('Salary'));
+
+    // Save income transaction
+    await fireEvent.press(screen.getByTestId('save-transaction'));
+
+    await waitFor(() =>
+      expect(mockCreateTransaction).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          amountMinor: 10000000,
+          categoryId: 3,
+          type: 'income',
         }),
       ),
     );
