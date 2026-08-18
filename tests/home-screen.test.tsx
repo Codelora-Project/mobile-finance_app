@@ -78,6 +78,55 @@ jest.mock('@/features/habits/habit-repository', () => ({
   })),
 }));
 
+jest.mock('@/features/accounts/account-repository', () => ({
+  getWalletSummary: jest.fn().mockImplementation(() =>
+    Promise.resolve({
+      operationalCashMinor: 10500000,
+      totalNetWorthMinor: 35500000,
+      trackingAssetsMinor: 25000000,
+      wallets: [
+        {
+          accountNumber: null,
+          accountType: 'bank',
+          color: '#2563EB',
+          createdAt: 0,
+          currentBalanceMinor: 10000000,
+          iconKey: 'bank',
+          id: 1,
+          includeInCashflow: true,
+          initialBalanceMinor: 10000000,
+          isArchived: false,
+          isDefault: true,
+          isFallback: false,
+          name: 'Bank BCA',
+          sortOrder: 1,
+          systemKey: 'bank_transfer',
+          updatedAt: 0,
+        },
+        {
+          accountNumber: null,
+          accountType: 'cash',
+          color: '#10B981',
+          createdAt: 0,
+          currentBalanceMinor: 500000,
+          iconKey: 'cash',
+          id: 2,
+          includeInCashflow: true,
+          initialBalanceMinor: 500000,
+          isArchived: false,
+          isDefault: false,
+          isFallback: false,
+          name: 'Dompet Tunai',
+          sortOrder: 2,
+          systemKey: 'cash',
+          updatedAt: 0,
+        },
+      ],
+    }),
+  ),
+  getWallets: jest.fn().mockImplementation(() => Promise.resolve([])),
+}));
+
 jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
   const ReactNative = require('react-native');
   return (props: { name: string }) => (
@@ -159,6 +208,7 @@ describe('home screen', () => {
       'daily',
       expect.any(Date),
       'en',
+      null,
     );
 
     await fireEvent.press(screen.getByRole('button', { name: 'Settings' }));
@@ -225,5 +275,32 @@ describe('home screen', () => {
     expect(screen.getByText('Total')).toBeOnTheScreen();
     expect(screen.getByText('Catat Cepat')).toBeOnTheScreen();
     expect(screen.getByText('Transaksi Terakhir')).toBeOnTheScreen();
+  });
+
+  it('renders wallet carousel with Net Worth and individual wallet cards and filters by wallet', async () => {
+    mockGetHomeSummary.mockResolvedValue(summary);
+
+    await render(
+      <LanguageProvider initialLanguage='id'>
+        <HomeScreen />
+      </LanguageProvider>,
+    );
+
+    expect(await screen.findByText('Dompet & Saldo')).toBeOnTheScreen();
+    expect(screen.getByText('Total Kekayaan')).toBeOnTheScreen();
+    expect(screen.getByText('Bank BCA')).toBeOnTheScreen();
+    expect(screen.getByText('Dompet Tunai')).toBeOnTheScreen();
+
+    // Tap on Bank BCA card to filter
+    const bcaCard = screen.getByLabelText(/Bank BCA/);
+    await fireEvent.press(bcaCard);
+
+    expect(mockGetHomeSummary).toHaveBeenCalledWith(
+      expect.anything(),
+      'monthly',
+      expect.anything(),
+      'id',
+      1,
+    );
   });
 });

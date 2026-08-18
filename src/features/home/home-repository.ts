@@ -206,6 +206,7 @@ export async function getHomeSummary(
   period: HomePeriod = 'monthly',
   referenceDate: Date = new Date(),
   language: Language = 'id',
+  walletId?: number | null,
 ): Promise<HomeSummary> {
   const { startDate, endDateExclusive } = getPeriodRange(period, referenceDate);
   const periodLabel = formatPeriodLabel(referenceDate, period, language);
@@ -216,21 +217,43 @@ export async function getHomeSummary(
   );
   const currencyCode = normalizeCurrencyCode(currencySetting);
 
-  const [totalsRow, categoryRows, recentPage] = await Promise.all([
-    database.getFirstAsync<AggregateTotalsRow>(
-      `SELECT
+  const totalsSql = walletId
+    ? `SELECT
          COALESCE(SUM(CASE WHEN type = 'expense' THEN amount_minor ELSE 0 END), 0)
            AS expense_minor,
          COALESCE(SUM(CASE WHEN type = 'income' THEN amount_minor ELSE 0 END), 0)
            AS income_minor
        FROM transactions
-       WHERE local_date >= ? AND local_date < ? AND currency_code = ?`,
-      startDate,
-      endDateExclusive,
-      currencyCode,
-    ),
-    database.getAllAsync<CategoryTotalRow>(
-      `SELECT
+       WHERE local_date >= ? AND local_date < ? AND currency_code = ?
+         AND (payment_method_id = ? OR transfer_to_payment_method_id = ?)`
+    : `SELECT
+         COALESCE(SUM(CASE WHEN type = 'expense' THEN amount_minor ELSE 0 END), 0)
+           AS expense_minor,
+         COALESCE(SUM(CASE WHEN type = 'income' THEN amount_minor ELSE 0 END), 0)
+           AS income_minor
+       FROM transactions
+       WHERE local_date >= ? AND local_date < ? AND currency_code = ?`;
+
+  const totalsParams = walletId
+    ? [startDate, endDateExclusive, currencyCode, walletId, walletId]
+    : [startDate, endDateExclusive, currencyCode];
+
+  const categorySql = walletId
+    ? `SELECT
+         c.id AS category_id,
+         c.name AS category_name,
+         SUM(t.amount_minor) AS amount_minor
+       FROM transactions t
+       JOIN categories c ON c.id = t.category_id
+       WHERE t.type = 'expense'
+         AND t.local_date >= ?
+         AND t.local_date < ?
+         AND t.currency_code = ?
+         AND (t.payment_method_id = ? OR t.transfer_to_payment_method_id = ?)
+       GROUP BY c.id, c.name
+       ORDER BY amount_minor DESC, c.name COLLATE NOCASE ASC, c.id ASC
+       LIMIT ?`
+    : `SELECT
          c.id AS category_id,
          c.name AS category_name,
          SUM(t.amount_minor) AS amount_minor
@@ -242,13 +265,19 @@ export async function getHomeSummary(
          AND t.currency_code = ?
        GROUP BY c.id, c.name
        ORDER BY amount_minor DESC, c.name COLLATE NOCASE ASC, c.id ASC
-       LIMIT ?`,
-      startDate,
-      endDateExclusive,
-      currencyCode,
-      HOME_CATEGORY_LIMIT,
-    ),
-    listTransactions(database, { limit: HOME_RECENT_TRANSACTION_LIMIT }),
+       LIMIT ?`;
+
+  const categoryParams = walletId
+    ? [startDate, endDateExclusive, currencyCode, walletId, walletId, HOME_CATEGORY_LIMIT]
+    : [startDate, endDateExclusive, currencyCode, HOME_CATEGORY_LIMIT];
+
+  const [totalsRow, categoryRows, recentPage] = await Promise.all([
+    database.getFirstAsync<AggregateTotalsRow>(totalsSql, ...totalsParams),
+    database.getAllAsync<CategoryTotalRow>(categorySql, ...categoryParams),
+    listTransactions(database, {
+      filters: walletId ? { paymentMethodId: walletId } : undefined,
+      limit: HOME_RECENT_TRANSACTION_LIMIT,
+    }),
   ]);
 
   const expenseMinor = assertAggregateAmount(

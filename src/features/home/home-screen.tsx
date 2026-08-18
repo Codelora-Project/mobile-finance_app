@@ -15,6 +15,10 @@ import { Screen } from '@/components/ui/screen';
 import { UndoToastBanner } from '@/components/ui/undo-toast-banner';
 import { useBottomSheetGesture } from '@/components/ui/use-bottom-sheet-gesture';
 import {
+  getWalletSummary,
+} from '@/features/accounts/account-repository';
+import type { WalletSummary } from '@/features/accounts/account-types';
+import {
   listCategories,
   type Category,
 } from '@/features/categories/category-repository';
@@ -25,6 +29,7 @@ import { HomeQuickCategoryLog } from '@/features/home/components/home-quick-cate
 import { HomeQuickLogModal } from '@/features/home/components/home-quick-log-modal';
 import { HomeRecentTransactions } from '@/features/home/components/home-recent-transactions';
 import { HomeSummaryCard } from '@/features/home/components/home-summary-card';
+import { HomeWalletCarousel } from '@/features/home/components/home-wallet-carousel';
 import {
   getHomeSummary,
   type HomePeriod,
@@ -36,9 +41,9 @@ import {
 } from '@/features/settings/settings-repository';
 import { useUndoTransaction } from '@/features/transactions/hooks/use-undo-transaction';
 import type { TransactionListItem } from '@/features/transactions/transaction-repository';
+import { formatGroupDate } from '@/lib/dates';
 import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
-import { formatGroupDate } from '@/lib/dates';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -54,6 +59,8 @@ export function HomeScreen() {
 
   const [period, setPeriod] = useState<HomePeriod>('monthly');
   const [referenceDate] = useState<Date>(() => new Date());
+  const [selectedWalletId, setSelectedWalletId] = useState<number | null>(null);
+  const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(null);
   const [summary, setSummary] = useState<HomeSummary | null>(null);
   const [habitStats, setHabitStats] = useState<HabitStats | null>(null);
   const [allCategories, setAllCategories] = useState<Category[]>([]);
@@ -72,6 +79,7 @@ export function HomeScreen() {
       activePeriod = period,
       activeDate = referenceDate,
       mode: 'focus' | 'refresh' = 'focus',
+      activeWalletId = selectedWalletId,
     ) => {
       const currentRequest = ++requestId.current;
       if (mode === 'refresh') {
@@ -80,19 +88,32 @@ export function HomeScreen() {
       setError(null);
 
       try {
-        const [nextSummary, nextHabitStats, nextCategories, nextQuickLogIds] =
-          await Promise.all([
-            getHomeSummary(database, activePeriod, activeDate, language),
-            getHabitStats(database),
-            listCategories(database),
-            getQuickLogCategoryIds(database),
-          ]);
+        const [
+          nextSummary,
+          nextWalletSummary,
+          nextHabitStats,
+          nextCategories,
+          nextQuickLogIds,
+        ] = await Promise.all([
+          getHomeSummary(
+            database,
+            activePeriod,
+            activeDate,
+            language,
+            activeWalletId,
+          ),
+          getWalletSummary(database),
+          getHabitStats(database),
+          listCategories(database),
+          getQuickLogCategoryIds(database),
+        ]);
 
         if (requestId.current !== currentRequest) {
           return;
         }
 
         setSummary(nextSummary);
+        setWalletSummary(nextWalletSummary);
         setHabitStats(nextHabitStats);
         setAllCategories(nextCategories);
         if (nextQuickLogIds && nextQuickLogIds.length > 0) {
@@ -112,7 +133,7 @@ export function HomeScreen() {
         }
       }
     },
-    [database, language, period, referenceDate, t.home.loadFailed],
+    [database, language, period, referenceDate, selectedWalletId, t.home.loadFailed],
   );
 
   const {
@@ -124,22 +145,30 @@ export function HomeScreen() {
     toastVisible,
   } = useUndoTransaction({
     onSuccess: () => {
-      void loadSummary(period, referenceDate, 'refresh');
+      void loadSummary(period, referenceDate, 'refresh', selectedWalletId);
     },
   });
 
   useFocusEffect(
     useCallback(() => {
-      void loadSummary(period, referenceDate, 'focus');
-    }, [loadSummary, period, referenceDate]),
+      void loadSummary(period, referenceDate, 'focus', selectedWalletId);
+    }, [loadSummary, period, referenceDate, selectedWalletId]),
   );
 
   const handlePeriodChange = useCallback(
     (newPeriod: HomePeriod) => {
       setPeriod(newPeriod);
-      void loadSummary(newPeriod, referenceDate, 'focus');
+      void loadSummary(newPeriod, referenceDate, 'focus', selectedWalletId);
     },
-    [loadSummary, referenceDate],
+    [loadSummary, referenceDate, selectedWalletId],
+  );
+
+  const handleSelectWallet = useCallback(
+    (walletId: number | null) => {
+      setSelectedWalletId(walletId);
+      void loadSummary(period, referenceDate, 'focus', walletId);
+    },
+    [loadSummary, period, referenceDate],
   );
 
   const {
@@ -162,6 +191,7 @@ export function HomeScreen() {
         if (prev.length <= 1) return prev;
         return prev.filter((item) => item !== id);
       }
+      if (prev.length >= 8) return prev;
       return [...prev, id];
     });
   }, []);
@@ -172,7 +202,7 @@ export function HomeScreen() {
       setPinnedCategoryIds(selectedIdsInModal);
       handleCloseCustomizeModal();
     } catch (err) {
-      if (__DEV__) console.warn('Could not save quick log categories', err);
+      if (__DEV__) console.warn('Could not save quick log settings', err);
     }
   }, [database, handleCloseCustomizeModal, selectedIdsInModal]);
 
@@ -181,14 +211,14 @@ export function HomeScreen() {
   }, []);
 
   const handleSelectQuickLogCategory = useCallback(
-    (cat: Category) => {
+    (category: Category) => {
       router.push({
         params: {
-          categoryId: String(cat.id),
-          categoryName: cat.name,
-          type: 'expense',
+          categoryId: String(category.id),
+          categoryName: category.name,
+          type: category.type,
         },
-        pathname: '/transactions/new',
+        pathname: '/add',
       });
     },
     [router],
@@ -277,7 +307,9 @@ export function HomeScreen() {
         refreshControl={
           <RefreshControl
             colors={[colors.primary]}
-            onRefresh={() => void loadSummary(period, referenceDate, 'refresh')}
+            onRefresh={() =>
+              void loadSummary(period, referenceDate, 'refresh', selectedWalletId)
+            }
             refreshing={refreshing}
             tintColor={colors.primary}
           />
@@ -305,13 +337,24 @@ export function HomeScreen() {
             </Text>
             <AppButton
               label={t.home.tryAgain}
-              onPress={() => void loadSummary(period, referenceDate, 'focus')}
+              onPress={() =>
+                void loadSummary(period, referenceDate, 'focus', selectedWalletId)
+              }
               variant="secondary"
             />
           </View>
         ) : null}
 
-        {/* 2.1 Hero Summary & Balance Card */}
+        {/* 2.1 Multi-Wallet Carousel Slider */}
+        <HomeWalletCarousel
+          currencyCode={summary?.currencyCode ?? 'IDR'}
+          language={language}
+          onSelectWallet={handleSelectWallet}
+          selectedWalletId={selectedWalletId}
+          walletSummary={walletSummary}
+        />
+
+        {/* 2.2 Hero Summary & Balance Card */}
         {summary ? (
           <HomeSummaryCard
             onPeriodChange={handlePeriodChange}
@@ -321,7 +364,7 @@ export function HomeScreen() {
           />
         ) : null}
 
-        {/* 2.2 Fast-Track Quick Category Log */}
+        {/* 2.3 Fast-Track Quick Category Log */}
         <HomeQuickCategoryLog
           categories={displayedQuickLogCategories}
           onOpenCustomize={handleOpenCustomizeModal}
@@ -329,7 +372,7 @@ export function HomeScreen() {
           t={t}
         />
 
-        {/* 2.3 Recent Transactions Timeline */}
+        {/* 2.4 Recent Transactions Timeline */}
         <HomeRecentTransactions
           currencyCode={summary?.currencyCode ?? 'IDR'}
           groupedTimeline={groupedTimeline}

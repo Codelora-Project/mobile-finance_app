@@ -106,6 +106,10 @@ class HomeDatabase {
       return (this.currencyCode ? { value: this.currencyCode } : null) as T;
     }
 
+    if (sql.includes('COUNT(*)')) {
+      return { total: this.transactions.length } as T;
+    }
+
     if (sql.includes('AS expense_minor') && sql.includes('FROM transactions')) {
       const [monthStart, nextMonthStart, currencyCode] = params.map(String);
       const inScope = this.transactions.filter(
@@ -133,7 +137,7 @@ class HomeDatabase {
 
     if (sql.includes('GROUP BY c.id, c.name')) {
       const [monthStart, nextMonthStart, currencyCode] = params.map(String);
-      const limit = Number(params[3]);
+      const limit = Number(params.at(-1));
       const totals = new Map<
         number,
         { categoryName: string; amountMinor: number }

@@ -366,8 +366,10 @@ function buildTransactionListQuery(input: ListTransactionsInput) {
     parameters.push(filters.dateTo);
   }
   if (filters.paymentMethodId !== undefined) {
-    where.push('t.payment_method_id = ?');
-    parameters.push(filters.paymentMethodId);
+    where.push(
+      '(t.payment_method_id = ? OR t.transfer_to_payment_method_id = ?)',
+    );
+    parameters.push(filters.paymentMethodId, filters.paymentMethodId);
   }
   if (filters.isReimbursable !== undefined) {
     where.push('t.is_reimbursable = ?');

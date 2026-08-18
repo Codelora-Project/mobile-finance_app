@@ -15,7 +15,8 @@ const mockRouter = {
   back: jest.fn(),
   dismissTo: jest.fn(),
 };
-const mockCreateTransaction = jest.fn();
+const mockCreateTransaction =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockPickManualReceipt =
   jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
