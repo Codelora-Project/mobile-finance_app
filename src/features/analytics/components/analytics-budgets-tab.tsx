@@ -1,8 +1,10 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { memo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { CategoryBudget } from '@/features/budgets/budget-repository';
 import { BudgetProgressCard } from '@/features/budgets/components/budget-progress-card';
+import { getCategoryMeta } from '@/features/categories/category-meta';
 import type { TranslationSchema } from '@/lib/i18n/translations';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
@@ -26,6 +28,8 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
   const { colors, isDark } = useTheme();
 
   const budgetedCategories = budgets.filter((b) => b.hasBudget);
+  const unbudgetedCategories = budgets.filter((b) => !b.hasBudget);
+
   const totalBudgeted = budgetedCategories.reduce(
     (acc, b) => acc + (b.monthlyLimitMinor ?? 0),
     0,
@@ -41,7 +45,7 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
 
   return (
     <View style={styles.tabContent}>
-      {/* Overall Budget Progress Header */}
+      {/* 1. Overall Budget Progress Header Card */}
       {budgetedCategories.length > 0 ? (
         <View
           style={[
@@ -53,8 +57,9 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
           ]}
         >
           <View style={styles.overallHeader}>
-            <View>
+            <View style={styles.overallTitleWrap}>
               <Text
+                numberOfLines={1}
                 style={[
                   styles.overallTitle,
                   { color: colors.textSecondary },
@@ -63,6 +68,7 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
                 {t.budgets.overallProgress}
               </Text>
               <Text
+                numberOfLines={1}
                 style={[
                   styles.overallSpentText,
                   { color: colors.textPrimary },
@@ -72,7 +78,7 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
                 <Text
                   style={{
                     color: colors.textSecondary,
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: '600',
                   }}
                 >
@@ -139,17 +145,198 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
         </View>
       ) : null}
 
-      {/* Category Budget Cards List */}
-      <View style={styles.budgetList}>
-        {budgets.map((budget) => (
-          <BudgetProgressCard
-            budget={budget}
-            currencyCode={currencyCode}
-            key={budget.categoryId}
-            onPressSetBudget={onOpenSetBudget}
-          />
-        ))}
-      </View>
+      {/* 2. Section: Active Budgets List or Empty State */}
+      {budgetedCategories.length > 0 ? (
+        <View style={styles.sectionContainer}>
+          <Text
+            style={[
+              styles.sectionHeaderTitle,
+              { color: colors.textSecondary },
+            ]}
+          >
+            ANGGARAN AKTIF ({budgetedCategories.length})
+          </Text>
+          <View style={styles.budgetList}>
+            {budgetedCategories.map((budget) => (
+              <BudgetProgressCard
+                budget={budget}
+                currencyCode={currencyCode}
+                key={budget.categoryId}
+                onPressSetBudget={onOpenSetBudget}
+              />
+            ))}
+          </View>
+        </View>
+      ) : (
+        <View
+          style={[
+            styles.emptyHeroCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.emptyHeroIconBadge,
+              {
+                backgroundColor: isDark ? colors.surfaceSecondary : '#EFF6FF',
+              },
+            ]}
+          >
+            <MaterialCommunityIcons
+              color={colors.primary}
+              name="chart-arc"
+              size={28}
+            />
+          </View>
+          <Text
+            style={[styles.emptyHeroTitle, { color: colors.textPrimary }]}
+          >
+            Atur Batas Anggaran Bulanan
+          </Text>
+          <Text
+            style={[
+              styles.emptyHeroSubtitle,
+              { color: colors.textSecondary },
+            ]}
+          >
+            Pasang batas pengeluaran pada kategori di bawah ini untuk mengontrol arus kas dan mencegah pengeluaran berlebih.
+          </Text>
+        </View>
+      )}
+
+      {/* 3. Section: Unbudgeted Categories in a Grouped List Card */}
+      {unbudgetedCategories.length > 0 ? (
+        <View style={styles.sectionContainer}>
+          <Text
+            style={[
+              styles.sectionHeaderTitle,
+              { color: colors.textSecondary },
+            ]}
+          >
+            KATEGORI LAINNYA ({unbudgetedCategories.length})
+          </Text>
+
+          <View
+            style={[
+              styles.groupedContainerCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            {unbudgetedCategories.map((budget, index) => {
+              const meta = getCategoryMeta(
+                budget.categoryName,
+                'expense',
+                isDark,
+              );
+              const isLast = index === unbudgetedCategories.length - 1;
+
+              return (
+                <Pressable
+                  accessibilityLabel={`Pasang Anggaran ${budget.categoryName}`}
+                  accessibilityRole="button"
+                  hitSlop={4}
+                  key={budget.categoryId}
+                  onPress={() => onOpenSetBudget(budget)}
+                  style={({ pressed }) => [
+                    styles.unbudgetedRow,
+                    !isLast && [
+                      styles.unbudgetedRowDivider,
+                      { borderColor: colors.border },
+                    ],
+                    pressed && styles.rowPressed,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.unbudgetedIconCircle,
+                      {
+                        backgroundColor: isDark
+                          ? colors.surfaceSecondary
+                          : '#F1F5F9',
+                      },
+                    ]}
+                  >
+                    <MaterialCommunityIcons
+                      color={isDark ? '#94A3B8' : '#475569'}
+                      name={meta.icon}
+                      size={18}
+                    />
+                  </View>
+
+                  <View style={styles.unbudgetedInfoWrap}>
+                    <Text
+                      ellipsizeMode="tail"
+                      numberOfLines={1}
+                      style={[
+                        styles.unbudgetedName,
+                        { color: colors.textPrimary },
+                      ]}
+                    >
+                      {budget.categoryName}
+                    </Text>
+                    <Text
+                      ellipsizeMode="tail"
+                      numberOfLines={1}
+                      style={[
+                        styles.unbudgetedSpent,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {budget.spentMinor > 0 ? (
+                        <>
+                          {t.budgets.spentPrefix}{' '}
+                          <Text
+                            style={{
+                              color: colors.textPrimary,
+                              fontWeight: '700',
+                            }}
+                          >
+                            {formatMoney(budget.spentMinor, currencyCode)}
+                          </Text>
+                        </>
+                      ) : (
+                        'Belum ada transaksi'
+                      )}
+                    </Text>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.unbudgetedActionBtn,
+                      {
+                        backgroundColor: isDark
+                          ? colors.surfaceSecondary
+                          : '#EFF6FF',
+                        borderColor: isDark ? colors.border : '#DBEAFE',
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.unbudgetedActionText,
+                        { color: colors.primary },
+                      ]}
+                    >
+                      {t.budgets.setBudget}
+                    </Text>
+                    <MaterialCommunityIcons
+                      color={colors.primary}
+                      name="chevron-right"
+                      size={14}
+                    />
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 });
@@ -157,6 +344,44 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
 const styles = StyleSheet.create({
   budgetList: {
     gap: spacing.sm,
+  },
+  emptyHeroCard: {
+    alignItems: 'center',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.xs + 2,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    textAlign: 'center',
+  },
+  emptyHeroIconBadge: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 52,
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+    width: 52,
+  },
+  emptyHeroSubtitle: {
+    ...typography.secondary,
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+  emptyHeroTitle: {
+    ...typography.body,
+    fontSize: 16,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  groupedContainerCard: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    elevation: 1,
+    overflow: 'hidden',
+    shadowOffset: { height: 1, width: 0 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
   },
   overallBarFill: {
     borderRadius: radius.pill,
@@ -190,7 +415,7 @@ const styles = StyleSheet.create({
   },
   overallSpentText: {
     ...typography.displayAmount,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '900',
     letterSpacing: -0.3,
   },
@@ -201,7 +426,73 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     textTransform: 'uppercase',
   },
+  overallTitleWrap: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  rowPressed: {
+    opacity: 0.7,
+  },
+  sectionContainer: {
+    gap: spacing.xs + 2,
+  },
+  sectionHeaderTitle: {
+    ...typography.metadata,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    marginLeft: 2,
+    textTransform: 'uppercase',
+  },
   tabContent: {
-    gap: spacing.md,
+    gap: spacing.md + 2,
+  },
+  unbudgetedActionBtn: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    flexDirection: 'row',
+    flexShrink: 0,
+    gap: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  unbudgetedActionText: {
+    ...typography.metadata,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  unbudgetedIconCircle: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  unbudgetedInfoWrap: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  unbudgetedName: {
+    ...typography.body,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  unbudgetedRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: 52,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  unbudgetedRowDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  unbudgetedSpent: {
+    ...typography.secondary,
+    fontSize: 12,
   },
 });

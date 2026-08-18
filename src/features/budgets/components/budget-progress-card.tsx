@@ -1,4 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { CategoryBudget } from '@/features/budgets/budget-repository';
@@ -8,6 +9,7 @@ import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
+import { typography } from '@/theme/typography';
 
 type BudgetProgressCardProps = {
   budget: CategoryBudget;
@@ -15,7 +17,7 @@ type BudgetProgressCardProps = {
   onPressSetBudget: (budget: CategoryBudget) => void;
 };
 
-export function BudgetProgressCard({
+export const BudgetProgressCard = memo(function BudgetProgressCard({
   budget,
   currencyCode,
   onPressSetBudget,
@@ -29,8 +31,8 @@ export function BudgetProgressCard({
       case 'overbudget':
       case 'danger':
         return {
-          badgeBg: colors.expenseBackground,
-          badgeText: colors.destructive,
+          badgeBg: isDark ? '#7F1D1D' : '#FEE2E2',
+          badgeText: isDark ? '#FCA5A5' : '#DC2626',
           barColor: colors.destructive,
           label:
             budget.status === 'overbudget'
@@ -39,15 +41,15 @@ export function BudgetProgressCard({
         };
       case 'warning':
         return {
-          badgeBg: colors.warningBackground,
-          badgeText: colors.warning,
-          barColor: colors.warning,
+          badgeBg: isDark ? '#78350F' : '#FEF3C7',
+          badgeText: isDark ? '#FCD34D' : '#D97706',
+          barColor: '#F59E0B',
           label: t.budgets.statusWarning,
         };
       default:
         return {
-          badgeBg: colors.incomeBackground,
-          badgeText: colors.positive,
+          badgeBg: isDark ? '#064E3B' : '#DCFCE7',
+          badgeText: isDark ? '#6EE7B7' : '#16A34A',
           barColor: colors.positive,
           label: t.budgets.statusSafe,
         };
@@ -59,8 +61,10 @@ export function BudgetProgressCard({
   const clampedPercent = Math.min(100, Math.max(percent, 3));
 
   return (
-    <View
-      style={[
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => onPressSetBudget(budget)}
+      style={({ pressed }) => [
         styles.card,
         {
           backgroundColor: colors.surface,
@@ -68,6 +72,7 @@ export function BudgetProgressCard({
             budget.status === 'overbudget' ? colors.destructive : colors.border,
           shadowColor: colors.textPrimary,
         },
+        pressed ? styles.pressed : null,
       ]}
     >
       {/* Top Header */}
@@ -76,199 +81,180 @@ export function BudgetProgressCard({
           <View
             style={[
               styles.iconCircle,
-              { backgroundColor: meta.backgroundColor },
+              {
+                backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+              },
             ]}
           >
             <MaterialCommunityIcons
-              color={meta.color}
+              color={isDark ? '#94A3B8' : '#475569'}
               name={meta.icon}
-              size={22}
+              size={20}
             />
           </View>
           <View style={styles.categoryTitleWrap}>
             <Text
+              ellipsizeMode="tail"
               numberOfLines={1}
               style={[styles.categoryName, { color: colors.textPrimary }]}
             >
               {budget.categoryName}
             </Text>
             <Text
+              ellipsizeMode="tail"
+              numberOfLines={1}
               style={[styles.spentSubtitle, { color: colors.textSecondary }]}
             >
               {t.budgets.spentPrefix}{' '}
-              {formatMoney(budget.spentMinor, currencyCode)}
+              <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>
+                {formatMoney(budget.spentMinor, currencyCode)}
+              </Text>
             </Text>
           </View>
         </View>
 
-        {budget.hasBudget ? (
+        <View
+          style={[
+            styles.statusBadge,
+            { backgroundColor: statusTheme.badgeBg },
+          ]}
+        >
+          <Text
+            style={[styles.statusBadgeText, { color: statusTheme.badgeText }]}
+          >
+            {statusTheme.label} · {percent}%
+          </Text>
+        </View>
+      </View>
+
+      {/* Progress Bar & Allowance */}
+      <View style={styles.budgetBody}>
+        {/* Progress Bar Track */}
+        <View
+          style={[
+            styles.barTrack,
+            {
+              backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+            },
+          ]}
+        >
           <View
             style={[
-              styles.statusBadge,
-              { backgroundColor: statusTheme.badgeBg },
+              styles.barFill,
+              {
+                backgroundColor: statusTheme.barColor,
+                width: `${clampedPercent}%`,
+              },
+            ]}
+          />
+        </View>
+
+        {/* Details Row: Limit & Remaining */}
+        <View style={styles.detailsRow}>
+          <Text
+            ellipsizeMode="tail"
+            numberOfLines={1}
+            style={[styles.detailText, { color: colors.textSecondary }]}
+          >
+            {t.budgets.limitPrefix}{' '}
+            {formatMoney(budget.monthlyLimitMinor ?? 0, currencyCode)}
+          </Text>
+
+          <Text
+            ellipsizeMode="tail"
+            numberOfLines={1}
+            style={[
+              styles.remainingText,
+              {
+                color:
+                  budget.status === 'overbudget'
+                    ? colors.destructive
+                    : colors.textPrimary,
+              },
             ]}
           >
-            <Text
-              style={[styles.statusBadgeText, { color: statusTheme.badgeText }]}
-            >
-              {statusTheme.label} · {percent}%
-            </Text>
-          </View>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => onPressSetBudget(budget)}
-            style={({ pressed }) => [
-              styles.setBudgetBtn,
+            {budget.remainingMinor !== null && budget.remainingMinor >= 0
+              ? `${t.budgets.remainingPrefix} ${formatMoney(budget.remainingMinor, currencyCode)}`
+              : `${t.budgets.overbudgetPrefix} ${formatMoney(
+                  Math.abs(budget.remainingMinor ?? 0),
+                  currencyCode,
+                )}`}
+          </Text>
+        </View>
+
+        {/* Daily Allowance Banner */}
+        {budget.status !== 'overbudget' &&
+        budget.dailyAllowanceMinor !== null ? (
+          <View
+            style={[
+              styles.allowanceBanner,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#EFF6FF',
-                borderColor: isDark ? colors.border : '#DBEAFE',
+                backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
               },
-              pressed ? styles.pressed : null,
             ]}
           >
             <MaterialCommunityIcons
               color={colors.primary}
-              name="plus-circle-outline"
-              size={14}
+              name="calendar-clock"
+              size={15}
             />
-            <Text style={[styles.setBudgetBtnText, { color: colors.primary }]}>
-              {t.budgets.setBudget}
+            <Text
+              ellipsizeMode="tail"
+              numberOfLines={1}
+              style={[styles.allowanceText, { color: colors.textSecondary }]}
+            >
+              {t.budgets.dailyAllowancePill}{' '}
+              <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>
+                {formatMoney(budget.dailyAllowanceMinor, currencyCode)}/hari
+              </Text>{' '}
+              {t.budgets.perDayThisMonth}
             </Text>
-          </Pressable>
-        )}
-      </View>
-
-      {/* If has budget: Progress Bar & Allowance */}
-      {budget.hasBudget ? (
-        <View style={styles.budgetBody}>
-          {/* Progress Bar */}
+          </View>
+        ) : (
           <View
             style={[
-              styles.barTrack,
+              styles.allowanceBannerOver,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+                backgroundColor: isDark ? '#450A0A' : '#FEF2F2',
               },
             ]}
           >
-            <View
-              style={[
-                styles.barFill,
-                {
-                  backgroundColor: statusTheme.barColor,
-                  width: `${clampedPercent}%`,
-                },
-              ]}
+            <MaterialCommunityIcons
+              color="#EF4444"
+              name="alert-circle-outline"
+              size={15}
             />
-          </View>
-
-          {/* Details Row */}
-          <View style={styles.detailsRow}>
-            <Text style={[styles.detailText, { color: colors.textSecondary }]}>
-              {t.budgets.limitPrefix}{' '}
-              {formatMoney(budget.monthlyLimitMinor ?? 0, currencyCode)}
-            </Text>
-
             <Text
-              style={[
-                styles.remainingText,
-                {
-                  color:
-                    budget.status === 'overbudget'
-                      ? colors.destructive
-                      : colors.textPrimary,
-                },
-              ]}
-            >
-              {budget.remainingMinor !== null && budget.remainingMinor >= 0
-                ? `${t.budgets.remainingPrefix} ${formatMoney(budget.remainingMinor, currencyCode)}`
-                : `${t.budgets.overbudgetPrefix} ${formatMoney(
-                    Math.abs(budget.remainingMinor ?? 0),
-                    currencyCode,
-                  )}`}
+              ellipsizeMode="tail"
+              numberOfLines={1}
+              style={[styles.allowanceTextOver, { color: '#EF4444' }]}>
+              {t.budgets.overbudgetNotice}
             </Text>
           </View>
-
-          {/* Daily Allowance Banner */}
-          {budget.status !== 'overbudget' &&
-          budget.dailyAllowanceMinor !== null ? (
-            <View
-              style={[
-                styles.allowanceBanner,
-                {
-                  backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
-                },
-              ]}
-            >
-              <MaterialCommunityIcons
-                color={colors.primary}
-                name="calendar-clock"
-                size={16}
-              />
-              <Text
-                style={[styles.allowanceText, { color: colors.textSecondary }]}
-              >
-                {t.budgets.dailyAllowancePill}{' '}
-                <Text style={{ color: colors.textPrimary, fontWeight: '800' }}>
-                  {formatMoney(budget.dailyAllowanceMinor, currencyCode)}/hari
-                </Text>{' '}
-                {t.budgets.perDayThisMonth}
-              </Text>
-            </View>
-          ) : (
-            <View
-              style={[
-                styles.allowanceBannerOver,
-                {
-                  backgroundColor: isDark ? '#450A0A' : '#FEF2F2',
-                },
-              ]}
-            >
-              <MaterialCommunityIcons
-                color="#EF4444"
-                name="alert-circle-outline"
-                size={16}
-              />
-              <Text style={[styles.allowanceTextOver, { color: '#EF4444' }]}>
-                {t.budgets.overbudgetNotice}
-              </Text>
-            </View>
-          )}
-
-          {/* Edit Budget Action */}
-          <Pressable
-            hitSlop={8}
-            onPress={() => onPressSetBudget(budget)}
-            style={styles.editAction}
-          >
-            <Text style={[styles.editText, { color: colors.primary }]}>
-              {t.budgets.changeBudgetLimit}
-            </Text>
-          </Pressable>
-        </View>
-      ) : null}
-    </View>
+        )}
+      </View>
+    </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   allowanceBanner: {
     alignItems: 'center',
     borderRadius: radius.md,
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
     marginTop: spacing.xs,
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs + 2,
+    paddingVertical: 6,
   },
   allowanceBannerOver: {
     alignItems: 'center',
     borderRadius: radius.md,
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
     marginTop: spacing.xs,
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs + 2,
+    paddingVertical: 6,
   },
   allowanceText: {
     flex: 1,
@@ -285,7 +271,7 @@ const styles = StyleSheet.create({
   },
   barTrack: {
     borderRadius: radius.pill,
-    height: 8,
+    height: 7,
     overflow: 'hidden',
     width: '100%',
   },
@@ -294,10 +280,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   card: {
-    borderRadius: 20,
-    borderWidth: 1.5,
+    borderRadius: radius.lg,
+    borderWidth: 1,
     elevation: 2,
-    marginHorizontal: spacing.lg,
     padding: spacing.md,
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.04,
@@ -307,19 +292,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     minWidth: 0,
   },
   categoryName: {
-    fontSize: 15,
+    ...typography.body,
+    fontSize: 14,
     fontWeight: '800',
   },
   categoryTitleWrap: {
     flex: 1,
     gap: 2,
+    minWidth: 0,
   },
   detailText: {
-    fontSize: 12,
+    ...typography.metadata,
+    flexShrink: 1,
+    fontSize: 11,
     fontWeight: '600',
   },
   detailsRow: {
@@ -328,56 +317,41 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 2,
   },
-  editAction: {
-    alignSelf: 'flex-end',
-    marginTop: spacing.xs,
-  },
-  editText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
   headerRow: {
     alignItems: 'center',
     flexDirection: 'row',
+    gap: spacing.sm,
     justifyContent: 'space-between',
   },
   iconCircle: {
     alignItems: 'center',
     borderRadius: radius.pill,
-    height: 42,
+    height: 38,
     justifyContent: 'center',
-    width: 42,
+    width: 38,
   },
   pressed: {
-    opacity: 0.75,
+    opacity: 0.85,
   },
   remainingText: {
+    ...typography.metadata,
+    flexShrink: 1,
     fontSize: 12,
     fontWeight: '800',
   },
-  setBudgetBtn: {
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  setBudgetBtnText: {
-    fontSize: 11,
-    fontWeight: '800',
-  },
   spentSubtitle: {
+    ...typography.secondary,
     fontSize: 12,
     fontWeight: '500',
   },
   statusBadge: {
     borderRadius: radius.pill,
+    flexShrink: 0,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
   statusBadgeText: {
+    ...typography.metadata,
     fontSize: 11,
     fontWeight: '800',
   },
