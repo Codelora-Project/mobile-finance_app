@@ -2,6 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { SavingsGoal } from '@/features/goals/goals-repository';
+import { useCurrency } from '@/lib/currency/currency-context';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
@@ -37,6 +38,7 @@ export function GoalCard({
 }: GoalCardProps) {
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();
+  const { currencyCode } = useCurrency();
   const iconName = GOAL_ICONS[goal.iconKey] ?? 'target';
 
   const clampedPercent = Math.min(100, Math.max(0, goal.progressPercent));
@@ -53,7 +55,7 @@ export function GoalCard({
 
   return (
     <Pressable
-      accessibilityLabel={`${goal.name}, ${goal.isCompleted ? t.goals.completed : `${clampedPercent}%`}, ${formatMoney(goal.currentAmountMinor, 'IDR')} ${t.goals.saved.toLowerCase()}`}
+      accessibilityLabel={`${goal.name}, ${goal.isCompleted ? t.goals.completed : `${clampedPercent}%`}, ${formatMoney(goal.currentAmountMinor, currencyCode)} ${t.goals.saved.toLowerCase()}`}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [
@@ -86,7 +88,7 @@ export function GoalCard({
             <Text
               style={[styles.targetAmountText, { color: colors.textSecondary }]}
             >
-              {t.goals.target}: {formatMoney(goal.targetAmountMinor, 'IDR')}
+              {t.goals.target}: {formatMoney(goal.targetAmountMinor, currencyCode)}
             </Text>
           </View>
         </View>
@@ -158,11 +160,11 @@ export function GoalCard({
               },
             ]}
           >
-            {formatMoney(goal.currentAmountMinor, 'IDR')}
+            {formatMoney(goal.currentAmountMinor, currencyCode)}
           </Text>
         </View>
 
-        {/* Remaining � hidden in compact/completed mode */}
+        {/* Remaining – hidden in compact/completed mode */}
         {!compact && !goal.isCompleted && (
           <>
             <View
@@ -177,7 +179,7 @@ export function GoalCard({
               <Text
                 style={[styles.footerAmount, { color: colors.textSecondary }]}
               >
-                {formatMoney(remainingMinor, 'IDR')}
+                {formatMoney(remainingMinor, currencyCode)}
               </Text>
             </View>
           </>

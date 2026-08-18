@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { useCurrency } from '@/lib/currency/currency-context';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -18,11 +19,12 @@ export const TransactionDateGroupHeader = memo(
     totalNetMinor,
   }: TransactionDateGroupHeaderProps) {
     const { colors, isDark } = useTheme();
+    const { currencyCode } = useCurrency();
 
     const formattedDaily =
       totalNetMinor >= 0
-        ? `+${formatMoney(totalNetMinor, 'IDR')}`
-        : `−${formatMoney(Math.abs(totalNetMinor), 'IDR')}`;
+        ? `+${formatMoney(totalNetMinor, currencyCode)}`
+        : `−${formatMoney(Math.abs(totalNetMinor), currencyCode)}`;
 
     return (
       <View

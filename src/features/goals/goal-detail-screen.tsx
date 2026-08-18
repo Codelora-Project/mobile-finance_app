@@ -24,6 +24,7 @@ import {
   type GoalTransaction,
   type SavingsGoal,
 } from '@/features/goals/goals-repository';
+import { useCurrency } from '@/lib/currency/currency-context';
 import { isCodedError, mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
@@ -52,6 +53,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
   const router = useRouter();
   const { language, t } = useLanguage();
   const { colors, isDark } = useTheme();
+  const { currencyCode } = useCurrency();
 
   const [loading, setLoading] = useState(true);
   const [goal, setGoal] = useState<SavingsGoal | null>(null);
@@ -249,7 +251,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
                       ]}
                     >
                       {t.goals.target}:{' '}
-                      {formatMoney(goal.targetAmountMinor, 'IDR')}
+                      {formatMoney(goal.targetAmountMinor, currencyCode)}
                     </Text>
                   </View>
                   <View
@@ -325,7 +327,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
                         },
                       ]}
                     >
-                      {formatMoney(goal.currentAmountMinor, 'IDR')}
+                      {formatMoney(goal.currentAmountMinor, currencyCode)}
                     </Text>
                   </View>
                   <View>
@@ -349,7 +351,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
                         ? t.goals.completed
                         : formatMoney(
                             goal.targetAmountMinor - goal.currentAmountMinor,
-                            'IDR',
+                            currencyCode,
                           )}
                     </Text>
                   </View>
@@ -487,7 +489,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
                 ]}
               >
                 {tx.type === 'deposit' ? '+' : '−'}
-                {formatMoney(tx.amountMinor, 'IDR')}
+                {formatMoney(tx.amountMinor, currencyCode)}
               </Text>
             </View>
           )}
@@ -523,7 +525,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
               style={[styles.modalSubtitle, { color: colors.textSecondary }]}
             >
               {goal?.name} · Saldo:{' '}
-              {formatMoney(goal?.currentAmountMinor ?? 0, 'IDR')}
+              {formatMoney(goal?.currentAmountMinor ?? 0, currencyCode)}
             </Text>
 
             {modalError ? (

@@ -430,10 +430,11 @@ function normalizeInput(input: SaveTransactionInput, now: number) {
   if (input.localDate !== localDate) {
     throw createCodedError('VALIDATION_FAILED', 'Enter a valid date.');
   }
-  if (input.currencyCode !== 'IDR') {
+  const currencyCode = input.currencyCode.trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(currencyCode)) {
     throw createCodedError(
       'VALIDATION_FAILED',
-      'Only Indonesian Rupiah (IDR) is supported.',
+      'Currency code must be a three-letter ISO 4217 code.',
     );
   }
   const counterparty = normalizeOptionalText(input.counterparty ?? '');
@@ -467,7 +468,7 @@ function normalizeInput(input: SaveTransactionInput, now: number) {
     amountMinor: input.amountMinor,
     categoryId: input.categoryId,
     counterparty,
-    currencyCode: 'IDR',
+    currencyCode,
     isReimbursable: input.type === 'expense' && input.isReimbursable,
     localDate,
     note,

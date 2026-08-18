@@ -16,6 +16,7 @@ import { typography } from '@/theme/typography';
 export type ManualAmountInputProps = {
   amount: string;
   amountInputRef?: React.RefObject<TextInput | null>;
+  currencySymbol?: string;
   error?: string;
   onAddIncrement: (amount: number) => void;
   onChangeAmount: (text: string) => void;
@@ -27,6 +28,7 @@ export type ManualAmountInputProps = {
 export const ManualAmountInput = memo(function ManualAmountInput({
   amount,
   amountInputRef,
+  currencySymbol = 'Rp',
   error,
   onAddIncrement,
   onChangeAmount,
@@ -50,7 +52,7 @@ export const ManualAmountInput = memo(function ManualAmountInput({
         ]}
       >
         <Text style={[styles.currencyPrefix, { color: colors.textSecondary }]}>
-          Rp
+          {currencySymbol}
         </Text>
         <TextInput
           accessibilityLabel="Amount *"

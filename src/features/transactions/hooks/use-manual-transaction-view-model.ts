@@ -32,6 +32,7 @@ import {
   type TransactionType,
   updateTransaction,
 } from '@/features/transactions/transaction-repository';
+import { useCurrency } from '@/lib/currency/currency-context';
 import {
   getTimezoneOffsetMinutes,
   parseLocalDateTimeInput,
@@ -143,13 +144,13 @@ function getOperationMessage(error: unknown) {
     : 'An unexpected error occurred.';
 }
 
-function buildSaveInput(form: FormState) {
+function buildSaveInput(form: FormState, currencyCode = 'IDR') {
   const errors: FormErrors = {};
   let amountMinor: number | null = null;
   let dateTime: ReturnType<typeof parseLocalDateTimeInput> | null = null;
 
   try {
-    amountMinor = parseMoneyInput(form.amount, 'IDR');
+    amountMinor = parseMoneyInput(form.amount, currencyCode);
   } catch {
     errors.amount = 'Enter an amount.';
   }
@@ -181,7 +182,7 @@ function buildSaveInput(form: FormState) {
     amountMinor,
     categoryId: form.category.id,
     counterparty: form.counterparty,
-    currencyCode: 'IDR',
+    currencyCode,
     isReimbursable: form.type === 'expense' && form.isReimbursable,
     localDate: dateTime.localDate,
     note: form.note,
@@ -242,6 +243,7 @@ export function useManualTransactionViewModel({
   const database = useSQLiteContext();
   const router = useRouter();
   const { language, t } = useLanguage();
+  const { currencyCode, currencySymbol } = useCurrency();
 
   const params = useLocalSearchParams<{
     categoryId?: string;
@@ -429,7 +431,7 @@ export function useManualTransactionViewModel({
 
   const handleSave = useCallback(async () => {
     if (savingRef.current || deletingRef.current) return;
-    const { errors: validationErrors, input } = buildSaveInput(form);
+    const { errors: validationErrors, input } = buildSaveInput(form, currencyCode);
     if (!input) {
       setErrors(validationErrors);
       return;
@@ -469,7 +471,7 @@ export function useManualTransactionViewModel({
       savingRef.current = false;
       setSaving(false);
     }
-  }, [database, form, isEditMode, language, router, transactionId]);
+  }, [currencyCode, database, form, isEditMode, language, router, transactionId]);
 
   const handleDelete = useCallback(async () => {
     if (savingRef.current || deletingRef.current || !transactionId) return;
@@ -497,11 +499,11 @@ export function useManualTransactionViewModel({
   const isExpense = form.type === 'expense';
   const parsedAmountMinor = useMemo(() => {
     try {
-      return parseMoneyInput(form.amount, 'IDR');
+      return parseMoneyInput(form.amount, currencyCode);
     } catch {
       return 0;
     }
-  }, [form.amount]);
+  }, [currencyCode, form.amount]);
 
   const screenTitle = isEditMode
     ? language === 'id'
@@ -536,6 +538,8 @@ export function useManualTransactionViewModel({
     state: {
       categoriesList,
       claimMembership,
+      currencyCode,
+      currencySymbol,
       deleting,
       errors,
       form,

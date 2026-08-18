@@ -35,8 +35,13 @@ jest.mock('expo-sqlite', () => ({
 }));
 jest.mock('@/features/settings/settings-repository', () => ({
   DEFAULT_QUICK_SHORTCUTS: [2000, 5000, 10000, 20000, 50000, 100000],
+  SUPPORTED_CURRENCIES: [
+    { code: 'IDR', country: 'Indonesia', name: 'Indonesian Rupiah', symbol: 'Rp' },
+    { code: 'USD', country: 'United States', name: 'US Dollar', symbol: '$' },
+  ],
   getSettingsOverview: () => mockGetSettingsOverview(),
   resetApplicationData: () => mockResetApplicationData(),
+  setCurrencySetting: jest.fn<(...args: unknown[]) => Promise<void>>().mockResolvedValue(undefined),
   setQuickShortcutsSetting: (database: unknown, shortcuts: number[]) =>
     mockSetQuickShortcutsSetting(database, shortcuts),
   setThemeSetting: jest

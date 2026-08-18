@@ -2,6 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import type { SupportedCurrencyCode } from '@/features/settings/settings-repository';
 import type { Language, TranslationSchema } from '@/lib/i18n/translations';
 import { formatShortcutLabel } from '@/lib/money';
 import type { ThemeSetting } from '@/lib/theme/theme-context';
@@ -11,8 +12,11 @@ import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
 export type SettingsAppearanceCardProps = {
+  currencyCode: SupportedCurrencyCode;
+  currencySymbol: string;
   language: Language;
   onOpenAddShortcut: () => void;
+  onOpenCurrencyPicker: () => void;
   onRemoveShortcut: (amount: number) => void;
   onResetShortcuts: () => void;
   onSelectLanguage: (lang: Language) => void;
@@ -23,8 +27,11 @@ export type SettingsAppearanceCardProps = {
 };
 
 export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
+  currencyCode,
+  currencySymbol,
   language,
   onOpenAddShortcut,
+  onOpenCurrencyPicker,
   onRemoveShortcut,
   onResetShortcuts,
   onSelectLanguage,
@@ -416,6 +423,85 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
             </Pressable>
           </View>
         </View>
+
+        <View
+          style={[
+            styles.cardInnerDivider,
+            { backgroundColor: colors.border },
+          ]}
+        />
+
+        {/* 4. Base Currency Selection */}
+        <View style={styles.cardItemPadding}>
+          <Pressable
+            accessibilityLabel="Pilih Mata Uang Utama"
+            accessibilityRole="button"
+            onPress={onOpenCurrencyPicker}
+            style={styles.currencyRowButton}
+          >
+            <View style={styles.iconTitleRow}>
+              <View
+                style={[
+                  styles.itemIconBadge,
+                  {
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : '#ECFDF5',
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  color="#059669"
+                  name="cash-multiple"
+                  size={18}
+                />
+              </View>
+              <View style={styles.currencyTextContainer}>
+                <Text
+                  accessibilityRole="header"
+                  style={[styles.itemTitle, { color: colors.textPrimary }]}
+                >
+                  {language === 'id' ? 'Mata Uang Utama' : 'Base Currency'}
+                </Text>
+                <Text
+                  style={[styles.itemSubtitle, { color: colors.textSecondary }]}
+                >
+                  {language === 'id'
+                    ? 'Simbol & format tampilan transaksi'
+                    : 'Transaction symbol & display formatting'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.currencyBadgeWrap}>
+              <View
+                style={[
+                  styles.currencyPillBadge,
+                  {
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : '#F1F5F9',
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.currencyBadgeText,
+                    { color: colors.primary },
+                  ]}
+                >
+                  {currencyCode} ({currencySymbol})
+                </Text>
+                <MaterialCommunityIcons
+                  color={colors.textSecondary}
+                  name="chevron-right"
+                  size={18}
+                />
+              </View>
+            </View>
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -444,6 +530,32 @@ const styles = StyleSheet.create({
   cardItemPadding: {
     gap: spacing.sm,
     padding: spacing.md,
+  },
+  currencyBadgeText: {
+    ...typography.metadata,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  currencyBadgeWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  currencyPillBadge: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 4,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 5,
+  },
+  currencyRowButton: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  currencyTextContainer: {
+    flex: 1,
   },
   groupedCard: {
     borderRadius: radius.lg,

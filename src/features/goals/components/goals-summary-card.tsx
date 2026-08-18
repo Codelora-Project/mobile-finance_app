@@ -3,6 +3,7 @@ import React, { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { GoalsSummary } from '@/features/goals/goals-repository';
+import { useCurrency } from '@/lib/currency/currency-context';
 import type { TranslationSchema } from '@/lib/i18n/translations';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
@@ -20,6 +21,7 @@ export const GoalsSummaryCard = memo(function GoalsSummaryCard({
   t,
 }: GoalsSummaryCardProps) {
   const { colors, isDark } = useTheme();
+  const { currencyCode } = useCurrency();
 
   const progressPercent =
     summary.totalTargetMinor > 0
@@ -56,7 +58,7 @@ export const GoalsSummaryCard = memo(function GoalsSummaryCard({
             {t.goals.totalSavingsCollected}
           </Text>
           <Text style={[styles.savedAmountHero, { color: colors.textPrimary }]}>
-            {formatMoney(summary.totalSavedMinor, 'IDR')}
+            {formatMoney(summary.totalSavedMinor, currencyCode)}
           </Text>
         </View>
         <View
@@ -96,7 +98,7 @@ export const GoalsSummaryCard = memo(function GoalsSummaryCard({
         <Text style={[styles.footerText, { color: colors.textSecondary }]}>
           {t.goals.target}:{' '}
           <Text style={[styles.footerHighlight, { color: colors.textPrimary }]}>
-            {formatMoney(summary.totalTargetMinor, 'IDR')}
+            {formatMoney(summary.totalTargetMinor, currencyCode)}
           </Text>
         </Text>
         <Text style={[styles.footerText, { color: colors.textSecondary }]}>

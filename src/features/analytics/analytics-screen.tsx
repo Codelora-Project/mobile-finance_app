@@ -30,18 +30,18 @@ import {
   type CategoryBudget,
 } from '@/features/budgets/budget-repository';
 import { SetBudgetModal } from '@/features/budgets/components/set-budget-modal';
+import { useCurrency } from '@/lib/currency/currency-context';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
-
-const CURRENCY_CODE = 'IDR';
 
 export function AnalyticsScreen() {
   const database = useSQLiteContext();
   const router = useRouter();
   const { t } = useLanguage();
   const { colors } = useTheme();
+  const { currencyCode } = useCurrency();
 
   const [activeTab, setActiveTab] = useState<AnalyticsTabMode>('overview');
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
@@ -166,7 +166,7 @@ export function AnalyticsScreen() {
         {activeTab === 'overview' && analytics ? (
           <AnalyticsOverviewTab
             analytics={analytics}
-            currencyCode={CURRENCY_CODE}
+            currencyCode={currencyCode}
             t={t}
           />
         ) : null}
@@ -175,7 +175,7 @@ export function AnalyticsScreen() {
         {activeTab === 'budgets' ? (
           <AnalyticsBudgetsTab
             budgets={budgets}
-            currencyCode={CURRENCY_CODE}
+            currencyCode={currencyCode}
             onOpenSetBudget={handleOpenSetBudget}
             t={t}
           />
@@ -184,7 +184,7 @@ export function AnalyticsScreen() {
         {/* Tab 3: Monthly Cash Flow Trends */}
         {activeTab === 'trends' && analytics ? (
           <AnalyticsTrendsTab
-            currencyCode={CURRENCY_CODE}
+            currencyCode={currencyCode}
             monthlyCashFlow={analytics.monthlyCashFlow}
             t={t}
           />
@@ -194,7 +194,7 @@ export function AnalyticsScreen() {
       {/* Set Category Budget Modal */}
       <SetBudgetModal
         budget={selectedBudgetForEdit}
-        currencyCode={CURRENCY_CODE}
+        currencyCode={currencyCode}
         onClose={() => setEditModalVisible(false)}
         onDelete={handleDeleteBudget}
         onSave={handleSaveBudget}

@@ -98,6 +98,7 @@ export function ManualTransactionScreen({
           <ManualAmountInput
             amount={state.form.amount}
             amountInputRef={refs.amountInputRef}
+            currencySymbol={state.currencySymbol}
             error={state.errors.amount}
             onAddIncrement={actions.handleAddIncrement}
             onChangeAmount={(amount) => {
@@ -185,13 +186,13 @@ export function ManualTransactionScreen({
                       ? 'Update Transaksi' +
                         (state.parsedAmountMinor > 0
                           ? ' (' +
-                            formatMoney(state.parsedAmountMinor, 'IDR') +
+                            formatMoney(state.parsedAmountMinor, state.currencyCode) +
                             ')'
                           : '')
                       : 'Update Transaction' +
                         (state.parsedAmountMinor > 0
                           ? ' (' +
-                            formatMoney(state.parsedAmountMinor, 'IDR') +
+                            formatMoney(state.parsedAmountMinor, state.currencyCode) +
                             ')'
                           : '')
                     : state.isExpense
@@ -199,26 +200,26 @@ export function ManualTransactionScreen({
                         ? '✓ Simpan Pengeluaran' +
                           (state.parsedAmountMinor > 0
                             ? ' (' +
-                              formatMoney(state.parsedAmountMinor, 'IDR') +
+                              formatMoney(state.parsedAmountMinor, state.currencyCode) +
                               ')'
                             : '')
                         : '✓ Save Expense' +
                           (state.parsedAmountMinor > 0
                             ? ' (' +
-                              formatMoney(state.parsedAmountMinor, 'IDR') +
+                              formatMoney(state.parsedAmountMinor, state.currencyCode) +
                               ')'
                             : '')
                       : state.language === 'id'
                         ? '✓ Simpan Pemasukan' +
                           (state.parsedAmountMinor > 0
                             ? ' (' +
-                              formatMoney(state.parsedAmountMinor, 'IDR') +
+                              formatMoney(state.parsedAmountMinor, state.currencyCode) +
                               ')'
                             : '')
                         : '✓ Save Income' +
                           (state.parsedAmountMinor > 0
                             ? ' (' +
-                              formatMoney(state.parsedAmountMinor, 'IDR') +
+                              formatMoney(state.parsedAmountMinor, state.currencyCode) +
                               ')'
                             : '')}
                 </Text>

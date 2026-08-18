@@ -10,13 +10,27 @@ export const DEFAULT_QUICK_SHORTCUTS = [
   2_000, 5_000, 10_000, 20_000, 50_000, 100_000,
 ] as const;
 
+export const SUPPORTED_CURRENCIES = [
+  { code: 'IDR', country: 'Indonesia', name: 'Indonesian Rupiah', symbol: 'Rp' },
+  { code: 'USD', country: 'United States', name: 'US Dollar', symbol: '$' },
+  { code: 'EUR', country: 'European Union', name: 'Euro', symbol: '€' },
+  { code: 'SGD', country: 'Singapore', name: 'Singapore Dollar', symbol: 'S$' },
+  { code: 'MYR', country: 'Malaysia', name: 'Malaysian Ringgit', symbol: 'RM' },
+  { code: 'JPY', country: 'Japan', name: 'Japanese Yen', symbol: '¥' },
+  { code: 'GBP', country: 'United Kingdom', name: 'British Pound', symbol: '£' },
+  { code: 'AUD', country: 'Australia', name: 'Australian Dollar', symbol: 'A$' },
+] as const;
+
+export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
+export type SupportedCurrencyCode = SupportedCurrency['code'];
+
 type SettingRow = {
   value: string;
 };
 
 export type SettingsOverview = Readonly<{
-  currencyCode: 'IDR';
-  currencyName: 'Indonesian Rupiah';
+  currencyCode: SupportedCurrencyCode;
+  currencyName: string;
   language: 'id' | 'en';
   quickShortcuts: number[];
   theme: ThemeSetting;
@@ -31,12 +45,10 @@ export async function getSettingsOverview(
      WHERE key = 'default_currency_code'`,
   );
 
-  if (currency?.value !== 'IDR') {
-    throw createCodedError(
-      'VALIDATION_FAILED',
-      'The default currency setting is invalid.',
-    );
-  }
+  const rawCurrency = currency?.value ?? 'IDR';
+  const matchedCurrency = SUPPORTED_CURRENCIES.find((c) => c.code === rawCurrency);
+  const currencyCode: SupportedCurrencyCode = matchedCurrency?.code ?? 'IDR';
+  const currencyName = matchedCurrency?.name ?? 'Indonesian Rupiah';
 
   const [langRow, themeRow, shortcutsRow] = await Promise.all([
     database.getFirstAsync<SettingRow>(
@@ -71,12 +83,36 @@ export async function getSettingsOverview(
       : 'system';
 
   return {
-    currencyCode: 'IDR',
-    currencyName: 'Indonesian Rupiah',
+    currencyCode,
+    currencyName,
     language: langRow?.value === 'en' ? 'en' : 'id',
     quickShortcuts,
     theme,
   };
+}
+
+export async function setCurrencySetting(
+  database: SQLiteDatabase,
+  currencyCode: SupportedCurrencyCode,
+) {
+  const timestamp = Date.now();
+  await database.runAsync(
+    `INSERT INTO app_settings (key, value, updated_at)
+     VALUES ('default_currency_code', ?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+    currencyCode,
+    timestamp,
+  );
+  await database.runAsync(
+    `UPDATE transactions SET currency_code = ? WHERE currency_code != ?`,
+    currencyCode,
+    currencyCode,
+  );
+  await database.runAsync(
+    `UPDATE claims SET currency_code = ? WHERE currency_code != ?`,
+    currencyCode,
+    currencyCode,
+  );
 }
 
 export async function setLanguageSetting(

@@ -88,7 +88,7 @@ describe('settings repository', () => {
     jest.clearAllMocks();
   });
 
-  it('reads the fixed IDR currency setting', async () => {
+  it('reads the currency setting with multi-currency support', async () => {
     const database = new ResetDatabase();
 
     await expect(
@@ -104,7 +104,13 @@ describe('settings repository', () => {
     database.currency = 'USD';
     await expect(
       getSettingsOverview(database.asSQLiteDatabase()),
-    ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+    ).resolves.toEqual({
+      currencyCode: 'USD',
+      currencyName: 'US Dollar',
+      language: 'id',
+      quickShortcuts: [2000, 5000, 10000, 20000, 50000, 100000],
+      theme: 'system',
+    });
   });
 
   it('removes user data, re-seeds defaults, and clears managed files', async () => {

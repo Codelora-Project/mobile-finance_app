@@ -14,6 +14,7 @@ import {
 import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
 import { AddShortcutModal } from '@/features/settings/components/add-shortcut-modal';
+import { CurrencyPickerModal } from '@/features/settings/components/currency-picker-modal';
 import { SettingsAboutFooter } from '@/features/settings/components/settings-about-footer';
 import { SettingsAppearanceCard } from '@/features/settings/components/settings-appearance-card';
 import { SettingsDangerZoneCard } from '@/features/settings/components/settings-danger-zone-card';
@@ -23,9 +24,12 @@ import {
   DEFAULT_QUICK_SHORTCUTS,
   getSettingsOverview,
   resetApplicationData,
+  setCurrencySetting,
   setQuickShortcutsSetting,
   type SettingsOverview,
+  type SupportedCurrencyCode,
 } from '@/features/settings/settings-repository';
+import { useCurrency } from '@/lib/currency/currency-context';
 import { isCodedError, mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
@@ -37,6 +41,7 @@ export function SettingsScreen() {
   const router = useRouter();
   const { language, setLanguage, t } = useLanguage();
   const { colors, setThemeSetting, themeSetting } = useTheme();
+  const { currencyCode, currencySymbol, setCurrency } = useCurrency();
 
   const [overview, setOverview] = useState<SettingsOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,6 +49,7 @@ export function SettingsScreen() {
   const [resetting, setResetting] = useState(false);
   const [shortcuts, setShortcuts] = useState<number[]>([]);
   const [addShortcutModalVisible, setAddShortcutModalVisible] = useState(false);
+  const [currencyPickerVisible, setCurrencyPickerVisible] = useState(false);
   const [newShortcutInput, setNewShortcutInput] = useState('');
   const [shortcutError, setShortcutError] = useState<string | null>(null);
 
@@ -228,11 +234,14 @@ export function SettingsScreen() {
 
             {/* SECTION 1: TAMPILAN & PREFERENSI (Appearance & Preferences) */}
             <SettingsAppearanceCard
+              currencyCode={overview.currencyCode}
+              currencySymbol={currencySymbol}
               language={language}
               onOpenAddShortcut={() => {
                 setShortcutError(null);
                 setAddShortcutModalVisible(true);
               }}
+              onOpenCurrencyPicker={() => setCurrencyPickerVisible(true)}
               onRemoveShortcut={(amount) => void handleRemoveShortcut(amount)}
               onResetShortcuts={() => void handleResetShortcuts()}
               onSelectLanguage={(lang) => void setLanguage(lang)}
@@ -283,6 +292,17 @@ export function SettingsScreen() {
         onSave={() => void handleAddShortcut()}
         t={t}
         visible={addShortcutModalVisible}
+      />
+
+      {/* Base Currency Picker Modal */}
+      <CurrencyPickerModal
+        onClose={() => setCurrencyPickerVisible(false)}
+        onSelectCurrency={(selected) => {
+          setCurrency(selected);
+          void loadSettings();
+        }}
+        selectedCode={overview?.currencyCode ?? currencyCode}
+        visible={currencyPickerVisible}
       />
     </Screen>
   );

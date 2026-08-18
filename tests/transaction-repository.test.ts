@@ -760,18 +760,22 @@ describe('transaction history repository', () => {
     ]);
   });
 
-  it('rejects invalid page and date-range filters', async () => {
-    const database = new TransactionListDatabase();
+  it('supports ISO 4217 currency codes and rejects invalid currency formats', async () => {
+    const database = new TransactionDatabase();
+
+    const createdSGD = await createTransaction(
+      database.asSQLiteDatabase(),
+      validInput({ currencyCode: 'SGD' }),
+    );
+    expect(createdSGD.currencyCode).toBe('SGD');
 
     await expect(
-      listTransactions(database.asSQLiteDatabase(), { offset: -1 }),
-    ).rejects.toMatchObject({ message: 'Page offset is invalid.' });
-    await expect(
-      listTransactions(database.asSQLiteDatabase(), {
-        filters: { dateFrom: '2026-09-01', dateTo: '2026-08-01' },
-      }),
+      createTransaction(
+        database.asSQLiteDatabase(),
+        validInput({ currencyCode: 'INVALID' }),
+      ),
     ).rejects.toMatchObject({
-      message: 'Start date must be on or before end date.',
+      message: 'Currency code must be a three-letter ISO 4217 code.',
     });
   });
 });

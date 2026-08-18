@@ -10,6 +10,7 @@ import {
 
 import { AppButton } from '@/components/ui/app-button';
 import type { SavingsGoal } from '@/features/goals/goals-repository';
+import { useCurrency } from '@/lib/currency/currency-context';
 import type { TranslationSchema } from '@/lib/i18n/translations';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
@@ -43,6 +44,7 @@ export const DepositGoalModal = memo(function DepositGoalModal({
   t,
 }: DepositGoalModalProps) {
   const { colors, isDark } = useTheme();
+  const { currencyCode } = useCurrency();
 
   if (!depositGoal) return null;
 
@@ -74,8 +76,8 @@ export const DepositGoalModal = memo(function DepositGoalModal({
               { color: colors.textSecondary },
             ]}
           >
-            Target: {formatMoney(depositGoal.targetAmountMinor, 'IDR')} ·
-            Terkumpul: {formatMoney(depositGoal.currentAmountMinor, 'IDR')}
+            Target: {formatMoney(depositGoal.targetAmountMinor, currencyCode)} ·
+            Terkumpul: {formatMoney(depositGoal.currentAmountMinor, currencyCode)}
           </Text>
 
           {depositError ? (

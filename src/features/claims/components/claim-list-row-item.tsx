@@ -50,7 +50,7 @@ export const ClaimListRowItem = memo(function ClaimListRowItem({
         </Text>
       </View>
       <Text style={[styles.amount, { color: colors.textPrimary }]}>
-        {formatMoney(claim.totalMinor, 'IDR')}
+        {formatMoney(claim.totalMinor, claim.currencyCode ?? 'IDR')}
       </Text>
     </Pressable>
   );

@@ -8,9 +8,12 @@ import { AppErrorBoundary } from '@/components/ui/app-error-boundary';
 import { DatabaseProvider } from '@/db/database-provider';
 import {
   getSettingsOverview,
+  setCurrencySetting,
   setLanguageSetting,
   setThemeSetting,
+  type SupportedCurrencyCode,
 } from '@/features/settings/settings-repository';
+import { CurrencyProvider } from '@/lib/currency/currency-context';
 import { LanguageProvider } from '@/lib/i18n/language-context';
 import type { Language } from '@/lib/i18n/translations';
 import {
@@ -59,6 +62,7 @@ function AppNavigation() {
 
 function AppWithProviders() {
   const database = useSQLiteContext();
+  const [currency, setCurrency] = useState<SupportedCurrencyCode>('IDR');
   const [language, setLanguage] = useState<Language>('id');
   const [theme, setTheme] = useState<ThemeSetting>('system');
 
@@ -68,6 +72,19 @@ function AppWithProviders() {
       try {
         const settings = await getSettingsOverview(database);
         if (mounted) {
+          if (settings.currencyCode) {
+            setCurrency(settings.currencyCode);
+            await database.runAsync(
+              `UPDATE transactions SET currency_code = ? WHERE currency_code != ?`,
+              settings.currencyCode,
+              settings.currencyCode,
+            );
+            await database.runAsync(
+              `UPDATE claims SET currency_code = ? WHERE currency_code != ?`,
+              settings.currencyCode,
+              settings.currencyCode,
+            );
+          }
           if (settings.language) setLanguage(settings.language);
           if (settings.theme) setTheme(settings.theme);
         }
@@ -104,9 +121,21 @@ function AppWithProviders() {
           }
         }}
       >
-        <AppErrorBoundary>
-          <AppNavigation />
-        </AppErrorBoundary>
+        <CurrencyProvider
+          initialCurrency={currency}
+          onCurrencyChange={async (nextCurrency) => {
+            setCurrency(nextCurrency);
+            try {
+              await setCurrencySetting(database, nextCurrency);
+            } catch (err) {
+              if (__DEV__) console.warn('Could not persist currency', err);
+            }
+          }}
+        >
+          <AppErrorBoundary>
+            <AppNavigation />
+          </AppErrorBoundary>
+        </CurrencyProvider>
       </LanguageProvider>
     </ThemeProvider>
   );
