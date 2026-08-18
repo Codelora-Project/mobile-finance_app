@@ -761,7 +761,7 @@ export const translations: Record<Language, TranslationSchema> = {
       differenceLabel: 'Selisih Penyesuaian',
       reconcileNoteLabel: 'Catatan Penyesuaian (opsional)',
       reconcileNotePlaceholder: 'contoh: Bunga bank, selisih uang kembalian',
-      saveReconciliation: '✓ Simpan Penyesuaian Saldo',
+      saveReconciliation: 'Simpan Penyesuaian Saldo',
       archiveWallet: 'Arsipkan Dompet',
       archiveWalletConfirm:
         'Apakah Anda yakin ingin mengarsipkan dompet ini? Dompet yang diarsipkan tidak akan muncul di form pencatatan.',
@@ -1165,7 +1165,7 @@ export const translations: Record<Language, TranslationSchema> = {
       differenceLabel: 'Adjustment Difference',
       reconcileNoteLabel: 'Adjustment Note (optional)',
       reconcileNotePlaceholder: 'e.g. Bank interest, cash rounding discrepancy',
-      saveReconciliation: '✓ Save Balance Adjustment',
+      saveReconciliation: 'Save Balance Adjustment',
       archiveWallet: 'Archive Wallet',
       archiveWalletConfirm:
         'Are you sure you want to archive this wallet? Archived wallets will not appear in the transaction form.',

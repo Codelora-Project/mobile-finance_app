@@ -219,7 +219,7 @@ describe('Wallet & Account Management Screen', () => {
     await fireEvent.changeText(actualInput, '10500000');
 
     // Save Reconciliation
-    const saveReconcileBtn = screen.getByText('✓ Simpan Penyesuaian Saldo');
+    const saveReconcileBtn = screen.getByText('Simpan Penyesuaian Saldo');
     await fireEvent.press(saveReconcileBtn);
 
     await waitFor(() =>
