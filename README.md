@@ -109,15 +109,32 @@ Buka aplikasi **Personal Finance** di perangkat, dan perubahan kode akan otomati
 
 ## 📦 Panduan Build Menjadi APK (_Production / Standalone_)
 
-Ada dua cara mudah untuk menghasilkan file instalasi APK:
+Ada beberapa cara untuk menghasilkan file instalasi APK:
 
-### Opsi A: Build APK Standalone Langsung (Gradle Lokal) — _Direkomendasikan_
+### Opsi A: Build APK Standalone Lokal (Gradle) — _Direkomendasikan_
 
-Anda dapat mem-build APK Release langsung tanpa koneksi cloud Expo:
+Secara bawaan (*default*), React Native New Architecture mengompilasi binary C++ untuk 4 arsitektur prosesor (`arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86`) yang menghasilkan file Universal Fat APK sebesar **~100 - 120 MB**.
 
-#### 1. Masuk ke folder `android` dan jalankan Gradle:
+Untuk menghasilkan APK yang jauh lebih **ringan (~25 - 30 MB)** khusus untuk HP Android fisik modern:
 
-- **Windows (PowerShell / Command Prompt)**:
+#### 1. Build APK Optimal Khusus HP Fisik (~25 - 30 MB) ⭐ _(Paling Disarankan)_
+
+- **Windows (PowerShell)**:
+  ```powershell
+  cd android
+  .\gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
+  cd ..
+  ```
+- **macOS / Linux**:
+  ```bash
+  cd android
+  ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
+  cd ..
+  ```
+
+#### 2. Build APK Universal (Semua HP + Semua Emulator ~100 MB)
+
+- **Windows (PowerShell)**:
   ```powershell
   cd android
   .\gradlew assembleRelease
@@ -130,23 +147,43 @@ Anda dapat mem-build APK Release langsung tanpa koneksi cloud Expo:
   cd ..
   ```
 
-#### 2. Lokasi Output File APK:
+#### 3. Build AAB untuk Google Play Store (~15 - 20 MB download size)
 
-Setelah build sukses, file APK siap instal berada di:
+```powershell
+cd android
+.\gradlew bundleRelease
+```
+
+---
+
+#### 📁 Lokasi Output File APK:
+
+Setelah proses build selesai, file APK siap instal berada di:
 
 ```text
 android/app/build/outputs/apk/release/app-release.apk
 ```
 
-_(Atau untuk debug build: `android/app/build/outputs/apk/debug/app-debug.apk` via `.\gradlew assembleDebug`)_
+> [!TIP]
+> **Cara Cepat Membuka Folder APK di Windows Explorer**:
+> ```powershell
+> explorer.exe android\app\build\outputs\apk\release
+> ```
 
-#### 3. Instal APK ke Emulator / HP:
+#### 📲 Instal APK ke HP:
 
-```bash
-adb install android/app/build/outputs/apk/release/app-release.apk
-```
+- **Via ADB**:
+  ```bash
+  adb install android/app/build/outputs/apk/release/app-release.apk
+  ```
+- **Via Manual**: Kirim/copy file `app-release.apk` tersebut ke smartphone Android Anda (via USB, WhatsApp, Google Drive, dsb) lalu buka file untuk meng-install (*Sideload*).
 
-Atau langsung copy file `.apk` tersebut ke smartphone Android Anda dan install manual (_Sideload_).
+> [!NOTE]
+> **Troubleshooting Cache Build (Windows)**:
+> Jika build gagal karena file terkunci atau error CMake clean, jalankan perintah berikut di PowerShell (folder `android`):
+> ```powershell
+> Remove-Item -Recurse -Force app\.cxx, app\build, build -ErrorAction SilentlyContinue
+> ```
 
 ---
 
