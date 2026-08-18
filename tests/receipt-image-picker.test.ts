@@ -55,7 +55,7 @@ describe('receipt gallery image picker', () => {
     expect(mockLaunchImageLibraryAsync).toHaveBeenCalledWith({
       allowsMultipleSelection: false,
       mediaTypes: ['images'],
-      quality: 1,
+      quality: 0.8,
       selectionLimit: 1,
     });
   });
@@ -92,7 +92,7 @@ describe('receipt gallery image picker', () => {
     });
     expect(mockLaunchCameraAsync).toHaveBeenCalledWith({
       mediaTypes: ['images'],
-      quality: 1,
+      quality: 0.8,
     });
   });
 

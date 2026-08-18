@@ -114,7 +114,7 @@ export async function pickReceiptImageFromGallery(): Promise<ReceiptImageSelecti
     const result = await ImagePicker.launchImageLibraryAsync({
       allowsMultipleSelection: false,
       mediaTypes: ['images'],
-      quality: 1,
+      quality: 0.8,
       selectionLimit: 1,
     });
     if (result.canceled) {
@@ -152,7 +152,7 @@ export async function pickReceiptImageFromCamera(): Promise<ReceiptImageSelectio
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
-      quality: 1,
+      quality: 0.8,
     });
     if (result.canceled) {
       return null;

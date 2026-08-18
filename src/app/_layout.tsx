@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AppErrorBoundary } from '@/components/ui/app-error-boundary';
 import { DatabaseProvider } from '@/db/database-provider';
 import {
   getSettingsOverview,
@@ -103,7 +104,9 @@ function AppWithProviders() {
           }
         }}
       >
-        <AppNavigation />
+        <AppErrorBoundary>
+          <AppNavigation />
+        </AppErrorBoundary>
       </LanguageProvider>
     </ThemeProvider>
   );
