@@ -109,11 +109,16 @@ export const HomeQuickCategoryLog = memo(function HomeQuickCategoryLog({
               <View
                 style={[
                   styles.quickLogIconCircle,
-                  { backgroundColor: meta.backgroundColor },
+                  {
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : '#F1F5F9',
+                    borderColor: isDark ? colors.border : '#E2E8F0',
+                  },
                 ]}
               >
                 <MaterialCommunityIcons
-                  color={meta.color}
+                  color={isDark ? '#94A3B8' : '#475569'}
                   name={meta.icon}
                   size={22}
                 />
@@ -213,6 +218,7 @@ const styles = StyleSheet.create({
   quickLogIconCircle: {
     alignItems: 'center',
     borderRadius: radius.pill,
+    borderWidth: 1,
     height: 48,
     justifyContent: 'center',
     width: 48,

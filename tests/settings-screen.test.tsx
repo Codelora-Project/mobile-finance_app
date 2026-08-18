@@ -79,6 +79,7 @@ describe('settings screen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockGetSettingsOverview.mockResolvedValue({
+      brandTheme: 'blue',
       currencyCode: 'IDR',
       currencyName: 'Indonesian Rupiah',
       language: 'en',

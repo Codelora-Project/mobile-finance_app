@@ -10,16 +10,19 @@ import type { Language, TranslationSchema } from '@/lib/i18n/translations';
 import { formatShortcutLabel } from '@/lib/money';
 import type { ThemeSetting } from '@/lib/theme/theme-context';
 import { useTheme } from '@/lib/theme/theme-context';
+import type { BrandTheme } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
 export type SettingsAppearanceCardProps = {
+  brandTheme?: BrandTheme;
   currencyCode: SupportedCurrencyCode;
   currencySymbol: string;
   language: Language;
   onOpenCurrencyPicker: () => void;
   onOpenShortcutsModal: () => void;
+  onSelectBrandTheme?: (brandTheme: BrandTheme) => void;
   onSelectLanguage: (lang: Language) => void;
   onSelectTheme: (theme: ThemeSetting) => void;
   shortcuts: readonly number[];
@@ -28,11 +31,13 @@ export type SettingsAppearanceCardProps = {
 };
 
 export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
+  brandTheme = 'blue',
   currencyCode,
   currencySymbol,
   language,
   onOpenCurrencyPicker,
   onOpenShortcutsModal,
+  onSelectBrandTheme,
   onSelectLanguage,
   onSelectTheme,
   shortcuts,
@@ -189,7 +194,120 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
           ]}
         />
 
-        {/* 2. Language Selection */}
+        {/* 2. Brand Accent Theme Color */}
+        <View style={styles.cardItemPadding}>
+          <View style={styles.iconTitleRow}>
+            <View
+              style={[
+                styles.itemIconBadge,
+                {
+                  backgroundColor: isDark
+                    ? colors.surfaceSecondary
+                    : '#EEF2FF',
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                color={colors.primary}
+                name="palette-outline"
+                size={18}
+              />
+            </View>
+            <View style={styles.headerTextWrap}>
+              <Text
+                accessibilityRole="header"
+                style={[styles.itemTitle, { color: colors.textPrimary }]}
+              >
+                {language === 'id' ? 'Warna Aksen Tema' : 'Brand Accent Color'}
+              </Text>
+              <Text
+                style={[styles.itemSubtitle, { color: colors.textSecondary }]}
+              >
+                {language === 'id'
+                  ? 'Pilih warna identitas utama aplikasi'
+                  : 'Select your signature brand accent color'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Color Swatches Grid */}
+          <View style={styles.colorSwatchesGrid}>
+            {(
+              [
+                { id: 'blue', name: 'Biru Modern', color: '#2563EB' },
+                { id: 'emerald', name: 'Emerald', color: '#059669' },
+                { id: 'indigo', name: 'Indigo', color: '#4F46E5' },
+                { id: 'violet', name: 'Violet', color: '#7C3AED' },
+                { id: 'amber', name: 'Amber', color: '#D97706' },
+                { id: 'slate', name: 'Slate', color: '#0F172A' },
+              ] as const
+            ).map((swatch) => {
+              const isSelected = brandTheme === swatch.id;
+              return (
+                <Pressable
+                  accessibilityLabel={`Pilih Warna ${swatch.name}`}
+                  accessibilityRole="button"
+                  key={swatch.id}
+                  onPress={() => onSelectBrandTheme?.(swatch.id)}
+                  style={[
+                    styles.colorSwatchBtn,
+                    {
+                      backgroundColor: isSelected
+                        ? isDark
+                          ? colors.surfaceSecondary
+                          : '#F8FAFC'
+                        : 'transparent',
+                      borderColor: isSelected
+                        ? swatch.color
+                        : isDark
+                        ? colors.border
+                        : '#E2E8F0',
+                    },
+                    isSelected ? styles.colorSwatchBtnActive : null,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.colorSwatchCircle,
+                      { backgroundColor: swatch.color },
+                    ]}
+                  >
+                    {isSelected ? (
+                      <MaterialCommunityIcons
+                        color="#FFFFFF"
+                        name="check"
+                        size={12}
+                      />
+                    ) : null}
+                  </View>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.colorSwatchName,
+                      {
+                        color: isSelected
+                          ? colors.textPrimary
+                          : colors.textSecondary,
+                        fontWeight: isSelected ? '700' : '500',
+                      },
+                    ]}
+                  >
+                    {swatch.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        <View
+          style={[
+            styles.cardInnerDivider,
+            { backgroundColor: colors.border },
+          ]}
+        />
+
+        {/* 3. Language Selection */}
         <View style={styles.cardItemPadding}>
           <View style={styles.iconTitleRow}>
             <View
@@ -492,6 +610,37 @@ const styles = StyleSheet.create({
   cardItemPadding: {
     gap: spacing.sm,
     padding: spacing.md,
+  },
+  colorSwatchBtn: {
+    alignItems: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs + 2,
+    width: '48%',
+  },
+  colorSwatchBtnActive: {
+    borderWidth: 2,
+  },
+  colorSwatchCircle: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 20,
+    justifyContent: 'center',
+    width: 20,
+  },
+  colorSwatchesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs + 2,
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  colorSwatchName: {
+    ...typography.metadata,
+    fontSize: 12,
   },
   currencyBadgeText: {
     ...typography.metadata,

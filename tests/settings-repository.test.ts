@@ -100,6 +100,7 @@ describe('settings repository', () => {
     await expect(
       getSettingsOverview(database.asSQLiteDatabase()),
     ).resolves.toEqual({
+      brandTheme: 'blue',
       currencyCode: 'IDR',
       currencyName: 'Indonesian Rupiah',
       language: 'id',
@@ -111,6 +112,7 @@ describe('settings repository', () => {
     await expect(
       getSettingsOverview(database.asSQLiteDatabase()),
     ).resolves.toEqual({
+      brandTheme: 'blue',
       currencyCode: 'USD',
       currencyName: 'US Dollar',
       language: 'id',

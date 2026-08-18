@@ -57,6 +57,29 @@ export const ManualCategoryGrid = memo(function ManualCategoryGrid({
         {categories.slice(0, 10).map((cat) => {
           const meta = getCategoryMeta(cat.name, transactionType, isDark);
           const isSelected = selectedCategoryId === cat.id;
+
+          const badgeBg = isSelected
+            ? isDark
+              ? colors.primaryLight
+              : colors.primaryLight
+            : isDark
+            ? colors.surfaceSecondary
+            : '#F1F5F9';
+
+          const badgeBorder = isSelected
+            ? colors.primary
+            : isDark
+            ? colors.border
+            : '#E2E8F0';
+
+          const iconColor = isSelected
+            ? colors.primary
+            : isDark
+            ? '#94A3B8'
+            : '#475569';
+
+          const textColor = isSelected ? colors.primary : colors.textPrimary;
+
           return (
             <Pressable
               accessibilityLabel={cat.name}
@@ -65,37 +88,30 @@ export const ManualCategoryGrid = memo(function ManualCategoryGrid({
               onPress={() => onSelectCategory(cat)}
               style={[
                 styles.categoryCard,
-                isSelected
-                  ? [
-                      styles.categoryCardSelected,
-                      { borderColor: colors.primary },
-                    ]
-                  : null,
+                isSelected ? styles.categoryCardSelected : null,
               ]}
             >
               <View
                 style={[
                   styles.categoryIconBadge,
-                  { backgroundColor: meta.backgroundColor },
-                  isSelected
-                    ? [
-                        styles.categoryIconBadgeSelected,
-                        { borderColor: colors.primary },
-                      ]
-                    : null,
+                  {
+                    backgroundColor: badgeBg,
+                    borderColor: badgeBorder,
+                  },
+                  isSelected ? styles.categoryIconBadgeSelected : null,
                 ]}
               >
                 <MaterialCommunityIcons
-                  color={meta.color}
+                  color={iconColor}
                   name={meta.icon}
-                  size={26}
+                  size={24}
                 />
               </View>
               <Text
                 numberOfLines={1}
                 style={[
                   styles.categoryNameText,
-                  { color: isSelected ? colors.primary : colors.textPrimary },
+                  { color: textColor },
                   isSelected ? styles.categoryNameTextSelected : null,
                 ]}
               >
@@ -128,6 +144,7 @@ const styles = StyleSheet.create({
   categoryIconBadge: {
     alignItems: 'center',
     borderRadius: radius.lg,
+    borderWidth: 1,
     height: 52,
     justifyContent: 'center',
     width: 52,

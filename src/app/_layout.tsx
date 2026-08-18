@@ -8,6 +8,7 @@ import { AppErrorBoundary } from '@/components/ui/app-error-boundary';
 import { DatabaseProvider } from '@/db/database-provider';
 import {
   getSettingsOverview,
+  setBrandThemeSetting,
   setCurrencySetting,
   setLanguageSetting,
   setThemeSetting,
@@ -21,6 +22,7 @@ import {
   useTheme,
   type ThemeSetting,
 } from '@/lib/theme/theme-context';
+import type { BrandTheme } from '@/theme/colors';
 
 export const unstable_settings = {
   initialRouteName: '(tabs)',
@@ -65,26 +67,39 @@ function AppWithProviders() {
   const [currency, setCurrency] = useState<SupportedCurrencyCode>('IDR');
   const [language, setLanguage] = useState<Language>('id');
   const [theme, setTheme] = useState<ThemeSetting>('system');
+  const [brandTheme, setBrandTheme] = useState<BrandTheme>('blue');
 
   useEffect(() => {
     let mounted = true;
     async function loadSettings() {
       try {
         const settings = await getSettingsOverview(database);
-        if (mounted) {
-          if (settings.currencyCode) {
-            setCurrency(settings.currencyCode);
+        if (!mounted) return;
+        if (settings.currencyCode) {
+          setCurrency(settings.currencyCode);
+          try {
             await database.runAsync(
               `UPDATE transactions SET currency_code = ? WHERE currency_code != ?`,
               settings.currencyCode,
               settings.currencyCode,
             );
+          } catch {
+            // Ignore transaction currency update if database is closing/closed
           }
-          if (settings.language) setLanguage(settings.language);
-          if (settings.theme) setTheme(settings.theme);
         }
-      } catch (err) {
-        if (__DEV__) console.warn('Could not load settings', err);
+        if (!mounted) return;
+        if (settings.language) setLanguage(settings.language);
+        if (settings.theme) setTheme(settings.theme);
+        if (settings.brandTheme) setBrandTheme(settings.brandTheme);
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        const isClosedResource =
+          errorMsg.includes('closed resource') ||
+          errorMsg.includes('closed database') ||
+          errorMsg.includes('NativeDatabase');
+        if (__DEV__ && !isClosedResource) {
+          console.warn('Could not load settings', err);
+        }
       }
     }
     void loadSettings();
@@ -95,7 +110,16 @@ function AppWithProviders() {
 
   return (
     <ThemeProvider
+      initialBrandTheme={brandTheme}
       initialTheme={theme}
+      onBrandThemeChange={async (nextBrand) => {
+        setBrandTheme(nextBrand);
+        try {
+          await setBrandThemeSetting(database, nextBrand);
+        } catch (err) {
+          if (__DEV__) console.warn('Could not persist brand theme', err);
+        }
+      }}
       onThemeChange={async (nextTheme) => {
         setTheme(nextTheme);
         try {

@@ -42,14 +42,17 @@ export const QuickShortcutsBar = memo(function QuickShortcutsBar({
                 {
                   backgroundColor: isDark
                     ? colors.surfaceSecondary
-                    : '#EFF6FF',
-                  borderColor: isDark ? colors.border : '#BFDBFE',
+                    : '#F8FAFC',
+                  borderColor: isDark ? colors.border : '#E2E8F0',
                 },
                 pressed && styles.shortcutChipPressed,
               ]}
             >
               <Text
-                style={[styles.shortcutChipText, { color: colors.primary }]}
+                style={[
+                  styles.shortcutChipText,
+                  { color: isDark ? colors.textPrimary : '#334155' },
+                ]}
               >
                 {label}
               </Text>

@@ -50,7 +50,8 @@ export function SettingsScreen() {
   const database = useSQLiteContext();
   const router = useRouter();
   const { language, setLanguage, t } = useLanguage();
-  const { colors, setThemeSetting, themeSetting } = useTheme();
+  const { brandTheme, colors, setBrandTheme, setThemeSetting, themeSetting } =
+    useTheme();
   const { currencyCode, currencySymbol, setCurrency } = useCurrency();
 
   const [overview, setOverview] = useState<SettingsOverview | null>(null);
@@ -336,11 +337,13 @@ export function SettingsScreen() {
 
             {/* SECTION 1: TAMPILAN & PREFERENSI (Appearance & Preferences) */}
             <SettingsAppearanceCard
+              brandTheme={brandTheme}
               currencyCode={overview.currencyCode}
               currencySymbol={currencySymbol}
               language={language}
               onOpenCurrencyPicker={() => setCurrencyPickerVisible(true)}
               onOpenShortcutsModal={() => setShortcutsModalVisible(true)}
+              onSelectBrandTheme={setBrandTheme}
               onSelectLanguage={(lang) => void setLanguage(lang)}
               onSelectTheme={setThemeSetting}
               shortcuts={shortcuts}

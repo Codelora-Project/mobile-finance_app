@@ -136,10 +136,18 @@ export function HomeScreen() {
       } catch (loadError) {
         if (requestId.current === currentRequest) {
           const mappedError = mapError(loadError, 'DATABASE_WRITE_FAILED');
-          if (__DEV__) {
+          const errorMsg =
+            loadError instanceof Error ? loadError.message : String(loadError);
+          const isClosed =
+            errorMsg.includes('closed resource') ||
+            errorMsg.includes('closed database') ||
+            errorMsg.includes('NativeDatabase');
+          if (__DEV__ && !isClosed) {
             console.warn('Home summary load failed.', mappedError.code);
           }
-          setError(t.home.loadFailed);
+          if (!isClosed) {
+            setError(t.home.loadFailed);
+          }
         }
       } finally {
         if (requestId.current === currentRequest) {

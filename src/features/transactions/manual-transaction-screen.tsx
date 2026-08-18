@@ -256,11 +256,10 @@ export function ManualTransactionScreen({
               onPress={() => void actions.handleSave()}
               style={({ pressed }) => [
                 styles.saveBigButton,
-                isTransfer
-                  ? styles.saveBigButtonTransfer
-                  : state.form.type === 'income'
-                  ? styles.saveBigButtonIncome
-                  : styles.saveBigButtonExpense,
+                {
+                  backgroundColor: colors.primary,
+                  shadowColor: colors.primary,
+                },
                 state.saving ? styles.saveBigButtonDisabled : null,
                 pressed ? { opacity: 0.85, transform: [{ scale: 0.98 }] } : null,
               ]}
@@ -602,18 +601,6 @@ const styles = StyleSheet.create({
   },
   saveBigButtonDisabled: {
     opacity: 0.7,
-  },
-  saveBigButtonExpense: {
-    backgroundColor: '#EF4444',
-    shadowColor: '#EF4444',
-  },
-  saveBigButtonIncome: {
-    backgroundColor: '#10B981',
-    shadowColor: '#10B981',
-  },
-  saveBigButtonTransfer: {
-    backgroundColor: '#2563EB',
-    shadowColor: '#2563EB',
   },
   saveBigButtonText: {
     ...typography.body,

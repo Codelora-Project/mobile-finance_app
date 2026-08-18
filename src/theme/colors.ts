@@ -1,3 +1,71 @@
+export type BrandTheme =
+  | 'blue'
+  | 'emerald'
+  | 'indigo'
+  | 'violet'
+  | 'amber'
+  | 'slate';
+
+export type BrandPreset = {
+  id: BrandTheme;
+  name: string;
+  primary: string;
+  primaryDark: string;
+  primaryLight: string;
+  primaryLightDark: string;
+};
+
+export const BRAND_PRESETS: Record<BrandTheme, BrandPreset> = {
+  blue: {
+    id: 'blue',
+    name: 'Modern Blue',
+    primary: '#2563EB',
+    primaryDark: '#3B82F6',
+    primaryLight: '#EFF6FF',
+    primaryLightDark: '#1E3A8A',
+  },
+  emerald: {
+    id: 'emerald',
+    name: 'Emerald Green',
+    primary: '#059669',
+    primaryDark: '#10B981',
+    primaryLight: '#ECFDF5',
+    primaryLightDark: '#064E3B',
+  },
+  indigo: {
+    id: 'indigo',
+    name: 'Midnight Indigo',
+    primary: '#4F46E5',
+    primaryDark: '#6366F1',
+    primaryLight: '#EEF2FF',
+    primaryLightDark: '#312E81',
+  },
+  violet: {
+    id: 'violet',
+    name: 'Royal Violet',
+    primary: '#7C3AED',
+    primaryDark: '#8B5CF6',
+    primaryLight: '#F5F3FF',
+    primaryLightDark: '#4C1D95',
+  },
+  amber: {
+    id: 'amber',
+    name: 'Sunset Amber',
+    primary: '#D97706',
+    primaryDark: '#F59E0B',
+    primaryLight: '#FFFBEB',
+    primaryLightDark: '#78350F',
+  },
+  slate: {
+    id: 'slate',
+    name: 'Monochrome Slate',
+    primary: '#0F172A',
+    primaryDark: '#94A3B8',
+    primaryLight: '#F1F5F9',
+    primaryLightDark: '#334155',
+  },
+};
+
 export type ColorPalette = {
   readonly background: string;
   readonly surface: string;
@@ -22,44 +90,52 @@ export type ColorPalette = {
   readonly warningBackground: string;
 };
 
-export const lightColors: ColorPalette = {
-  background: '#F8FAFC',
-  surface: '#FFFFFF',
-  surfaceSecondary: '#F1F5F9',
-  textPrimary: '#0F172A',
-  textSecondary: '#64748B',
-  textMuted: '#94A3B8',
-  border: '#E2E8F0',
-  primary: '#2563EB',
-  primaryLight: '#EFF6FF',
-  positive: '#15803D',
-  destructive: '#B42318',
-  warning: '#B54708',
-  card: '#FFFFFF',
-  divider: '#E2E8F0',
-  incomeBackground: '#DCFCE7',
-  expenseBackground: '#FEE2E2',
-  warningBackground: '#FEF3C7',
-};
+export function getLightPalette(brandTheme: BrandTheme = 'blue'): ColorPalette {
+  const brand = BRAND_PRESETS[brandTheme] ?? BRAND_PRESETS.blue;
+  return {
+    background: '#F8FAFC',
+    card: '#FFFFFF',
+    border: '#E2E8F0',
+    destructive: '#B42318',
+    divider: '#E2E8F0',
+    expenseBackground: '#FEE2E2',
+    incomeBackground: '#DCFCE7',
+    positive: '#15803D',
+    primary: brand.primary,
+    primaryLight: brand.primaryLight,
+    surface: '#FFFFFF',
+    surfaceSecondary: '#F1F5F9',
+    textMuted: '#94A3B8',
+    textPrimary: '#0F172A',
+    textSecondary: '#64748B',
+    warning: '#B54708',
+    warningBackground: '#FEF3C7',
+  };
+}
 
-export const darkColors: ColorPalette = {
-  background: '#0B0F19',
-  surface: '#1E293B',
-  surfaceSecondary: '#334155',
-  textPrimary: '#F8FAFC',
-  textSecondary: '#94A3B8',
-  textMuted: '#64748B',
-  border: '#334155',
-  primary: '#3B82F6',
-  primaryLight: '#1E3A8A',
-  positive: '#22C55E',
-  destructive: '#EF4444',
-  warning: '#F59E0B',
-  card: '#1E293B',
-  divider: '#334155',
-  incomeBackground: '#14532D',
-  expenseBackground: '#7F1D1D',
-  warningBackground: '#78350F',
-};
+export function getDarkPalette(brandTheme: BrandTheme = 'blue'): ColorPalette {
+  const brand = BRAND_PRESETS[brandTheme] ?? BRAND_PRESETS.blue;
+  return {
+    background: '#0B0F19',
+    card: '#1E293B',
+    border: '#334155',
+    destructive: '#EF4444',
+    divider: '#334155',
+    expenseBackground: '#7F1D1D',
+    incomeBackground: '#14532D',
+    positive: '#22C55E',
+    primary: brand.primaryDark,
+    primaryLight: brand.primaryLightDark,
+    surface: '#1E293B',
+    surfaceSecondary: '#334155',
+    textMuted: '#64748B',
+    textPrimary: '#F8FAFC',
+    textSecondary: '#94A3B8',
+    warning: '#F59E0B',
+    warningBackground: '#78350F',
+  };
+}
 
+export const lightColors: ColorPalette = getLightPalette('blue');
+export const darkColors: ColorPalette = getDarkPalette('blue');
 export const colors: ColorPalette = lightColors;

@@ -6,6 +6,7 @@ import { removeCachedClaimPdfs } from '@/features/claims/claim-pdf';
 import { removeAllReceiptFiles } from '@/features/receipts/receipt-storage';
 import { createCodedError } from '@/lib/errors';
 import type { ThemeSetting } from '@/lib/theme/theme-context';
+import type { BrandTheme } from '@/theme/colors';
 
 export const DEFAULT_QUICK_SHORTCUTS = [
   2_000, 5_000, 10_000, 20_000, 50_000, 100_000,
@@ -53,6 +54,7 @@ type SettingRow = {
 };
 
 export type SettingsOverview = Readonly<{
+  brandTheme: BrandTheme;
   currencyCode: SupportedCurrencyCode;
   currencyName: string;
   language: 'id' | 'en';
@@ -74,7 +76,7 @@ export async function getSettingsOverview(
   const currencyCode: SupportedCurrencyCode = matchedCurrency?.code ?? 'IDR';
   const currencyName = matchedCurrency?.name ?? 'Indonesian Rupiah';
 
-  const [langRow, themeRow, shortcutsRow] = await Promise.all([
+  const [langRow, themeRow, shortcutsRow, brandRow] = await Promise.all([
     database.getFirstAsync<SettingRow>(
       `SELECT value FROM app_settings WHERE key = 'language'`,
     ),
@@ -84,7 +86,19 @@ export async function getSettingsOverview(
     database.getFirstAsync<SettingRow>(
       `SELECT value FROM app_settings WHERE key = 'quick_shortcuts'`,
     ),
+    database.getFirstAsync<SettingRow>(
+      `SELECT value FROM app_settings WHERE key = 'brand_theme'`,
+    ),
   ]);
+
+  const brandTheme: BrandTheme =
+    brandRow?.value === 'emerald' ||
+    brandRow?.value === 'indigo' ||
+    brandRow?.value === 'violet' ||
+    brandRow?.value === 'amber' ||
+    brandRow?.value === 'slate'
+      ? brandRow.value
+      : 'blue';
 
   let quickShortcuts: number[] = [...DEFAULT_QUICK_SHORTCUTS];
   if (shortcutsRow?.value) {
@@ -107,12 +121,27 @@ export async function getSettingsOverview(
       : 'system';
 
   return {
+    brandTheme,
     currencyCode,
     currencyName,
     language: langRow?.value === 'en' ? 'en' : 'id',
     quickShortcuts,
     theme,
   };
+}
+
+export async function setBrandThemeSetting(
+  database: SQLiteDatabase,
+  brandTheme: BrandTheme,
+) {
+  const timestamp = Date.now();
+  await database.runAsync(
+    `INSERT INTO app_settings (key, value, updated_at)
+     VALUES ('brand_theme', ?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+    brandTheme,
+    timestamp,
+  );
 }
 
 export async function setCurrencySetting(
