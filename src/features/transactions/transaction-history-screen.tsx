@@ -21,6 +21,7 @@ import { formatGroupDate } from '@/lib/dates';
 import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
 import type { Language, TranslationSchema } from '@/lib/i18n/translations';
+import { useTabBarVisibility } from '@/lib/navigation/tab-bar-visibility-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -73,6 +74,7 @@ export function TransactionHistoryScreen() {
   const router = useRouter();
   const { language, t } = useLanguage();
   const { colors } = useTheme();
+  const { handleScroll } = useTabBarVisibility();
 
   const [transactions, setTransactions] = useState<TransactionListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -290,6 +292,8 @@ export function TransactionHistoryScreen() {
           data={dateGroups}
           initialNumToRender={15}
           keyExtractor={keyExtractor}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
           ListEmptyComponent={
             <TransactionHistoryEmptyState
               hasFilters={hasAnyFilterOrSearch}

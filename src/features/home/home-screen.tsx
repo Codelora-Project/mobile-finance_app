@@ -47,6 +47,7 @@ import type { TransactionListItem } from '@/features/transactions/transaction-re
 import { formatGroupDate } from '@/lib/dates';
 import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
+import { useTabBarVisibility } from '@/lib/navigation/tab-bar-visibility-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -59,6 +60,7 @@ export function HomeScreen() {
   const router = useRouter();
   const { language, t } = useLanguage();
   const { colors, isDark } = useTheme();
+  const { handleScroll } = useTabBarVisibility();
 
   const [period, setPeriod] = useState<HomePeriod>('monthly');
   const [referenceDate] = useState<Date>(() => new Date());
@@ -283,7 +285,7 @@ export function HomeScreen() {
           categoryName: category.name,
           type: category.type,
         },
-        pathname: '/add',
+        pathname: '/transactions/new',
       });
     },
     [router],
@@ -371,6 +373,7 @@ export function HomeScreen() {
       {/* 2. Scrollable Dashboard Body */}
       <ScrollView
         contentContainerStyle={styles.content}
+        onScroll={handleScroll}
         refreshControl={
           <RefreshControl
             colors={[colors.primary]}
@@ -381,6 +384,7 @@ export function HomeScreen() {
             tintColor={colors.primary}
           />
         }
+        scrollEventThrottle={16}
       >
         {error ? (
           <View
@@ -504,7 +508,7 @@ export function HomeScreen() {
 const styles = StyleSheet.create({
   content: {
     gap: spacing.md,
-    paddingBottom: spacing.xxl + 24,
+    paddingBottom: spacing.xxl + 84,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
   },

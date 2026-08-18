@@ -311,4 +311,26 @@ describe('home screen', () => {
       1,
     );
   });
+
+  it('navigates to /transactions/new when a quick log category is tapped', async () => {
+    mockGetHomeSummary.mockResolvedValue(summary);
+
+    await render(
+      <LanguageProvider initialLanguage="id">
+        <HomeScreen />
+      </LanguageProvider>,
+    );
+
+    const foodCategoryBtn = await screen.findByLabelText('Catat Food & Drink');
+    fireEvent.press(foodCategoryBtn);
+
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/transactions/new',
+      params: {
+        categoryId: '1',
+        categoryName: 'Food & Drink',
+        type: 'expense',
+      },
+    });
+  });
 });

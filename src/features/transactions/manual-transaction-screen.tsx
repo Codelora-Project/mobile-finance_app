@@ -271,19 +271,19 @@ export function ManualTransactionScreen({
                 <Text style={styles.saveBigButtonText}>
                   {state.isEditMode
                     ? state.language === 'id'
-                      ? '✓ Perbarui Transaksi'
-                      : '✓ Update Transaction'
+                      ? 'Perbarui Transaksi'
+                      : 'Update Transaction'
                     : isTransfer
                     ? state.language === 'id'
-                      ? `⇄ Transfer (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                      : `⇄ Transfer (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                      ? `Transfer (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                      : `Transfer (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
                     : state.form.type === 'income'
                     ? state.language === 'id'
-                      ? `✓ Simpan Pemasukan (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                      : `✓ Save Income (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                      ? `Simpan Pemasukan (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                      : `Save Income (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
                     : state.language === 'id'
-                    ? `✓ Simpan Pengeluaran (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                    : `✓ Save Expense (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`}
+                    ? `Simpan Pengeluaran (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                    : `Save Expense (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`}
                 </Text>
               )}
             </Pressable>

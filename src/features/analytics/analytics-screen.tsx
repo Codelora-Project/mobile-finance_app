@@ -32,6 +32,7 @@ import {
 import { SetBudgetModal } from '@/features/budgets/components/set-budget-modal';
 import { useCurrency } from '@/lib/currency/currency-context';
 import { useLanguage } from '@/lib/i18n/language-context';
+import { useTabBarVisibility } from '@/lib/navigation/tab-bar-visibility-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -42,6 +43,7 @@ export function AnalyticsScreen() {
   const { t } = useLanguage();
   const { colors } = useTheme();
   const { currencyCode } = useCurrency();
+  const { handleScroll } = useTabBarVisibility();
 
   const [activeTab, setActiveTab] = useState<AnalyticsTabMode>('overview');
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
@@ -153,6 +155,7 @@ export function AnalyticsScreen() {
       {/* 3. Tab Body Container */}
       <ScrollView
         contentContainerStyle={styles.content}
+        onScroll={handleScroll}
         refreshControl={
           <RefreshControl
             colors={[colors.primary]}
@@ -161,6 +164,7 @@ export function AnalyticsScreen() {
             tintColor={colors.primary}
           />
         }
+        scrollEventThrottle={16}
       >
         {/* Tab 1: Overview, Donut & Weekly Comparison */}
         {activeTab === 'overview' && analytics ? (
@@ -171,7 +175,7 @@ export function AnalyticsScreen() {
           />
         ) : null}
 
-        {/* Tab 2: Category Budgets */}
+        {/* Tab 2: Category Budgets Management */}
         {activeTab === 'budgets' ? (
           <AnalyticsBudgetsTab
             budgets={budgets}
@@ -214,7 +218,7 @@ const styles = StyleSheet.create({
   },
   content: {
     gap: spacing.md,
-    paddingBottom: spacing.xxl + 24,
+    paddingBottom: spacing.xxl + 84,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
   },

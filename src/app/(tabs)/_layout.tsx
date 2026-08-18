@@ -8,6 +8,10 @@ type BottomTabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs
 
 
 import { useLanguage } from '@/lib/i18n/language-context';
+import {
+  TabBarVisibilityProvider,
+  useTabBarVisibility,
+} from '@/lib/navigation/tab-bar-visibility-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -22,10 +26,10 @@ function getTabIcon(routeName: string, focused: boolean): TabIconName {
       return focused ? 'wallet' : 'wallet-outline';
     case 'transactions':
       return focused ? 'format-list-bulleted-square' : 'format-list-bulleted';
-    case 'goals':
-      return focused ? 'bullseye-arrow' : 'bullseye';
     case 'analytics':
       return focused ? 'chart-box' : 'chart-box-outline';
+    case 'goals':
+      return focused ? 'bullseye-arrow' : 'bullseye';
     case 'claims':
       return focused ? 'file-document' : 'file-document-outline';
     default:
@@ -115,6 +119,7 @@ function FloatingActionButton({ label }: { label: string }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { tabBarAnim } = useTabBarVisibility();
   const fabScale = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = useCallback(() => {
@@ -138,37 +143,51 @@ function FloatingActionButton({ label }: { label: string }) {
   const bottomMargin = insets.bottom > 0 ? insets.bottom + 10 : 20;
   const fabBottom = bottomMargin + 72;
 
+  const translateY = tabBarAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 160],
+  });
+  const opacity = tabBarAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0],
+  });
+
   return (
-    <View
+    <Animated.View
       pointerEvents="box-none"
-      style={[styles.fabContainer, { bottom: fabBottom }]}
+      style={[
+        styles.fabContainer,
+        {
+          bottom: fabBottom,
+          opacity,
+          transform: [{ translateY }, { scale: fabScale }],
+        },
+      ]}
     >
-      <Animated.View style={{ transform: [{ scale: fabScale }] }}>
-        <Pressable
-          accessibilityLabel={label}
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={() => router.push('/transactions/new')}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          style={[
-            styles.fabButton,
-            {
-              backgroundColor: colors.primary,
-              shadowColor: colors.primary,
-            },
-          ]}
-        >
-          <MaterialCommunityIcons
-            accessibilityElementsHidden
-            color="#FFFFFF"
-            importantForAccessibility="no-hide-descendants"
-            name="plus"
-            size={28}
-          />
-        </Pressable>
-      </Animated.View>
-    </View>
+      <Pressable
+        accessibilityLabel={label}
+        accessibilityRole="button"
+        hitSlop={8}
+        onPress={() => router.push('/transactions/new')}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={[
+          styles.fabButton,
+          {
+            backgroundColor: colors.primary,
+            shadowColor: colors.primary,
+          },
+        ]}
+      >
+        <MaterialCommunityIcons
+          accessibilityElementsHidden
+          color="#FFFFFF"
+          importantForAccessibility="no-hide-descendants"
+          name="plus"
+          size={28}
+        />
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -179,6 +198,7 @@ function CustomFloatingTabBar({
 }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
+  const { tabBarAnim } = useTabBarVisibility();
 
   const bottomMargin = insets.bottom > 0 ? insets.bottom + 10 : 20;
 
@@ -192,10 +212,26 @@ function CustomFloatingTabBar({
     return href !== null;
   });
 
+  const translateY = tabBarAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 160],
+  });
+  const opacity = tabBarAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0],
+  });
+
   return (
-    <View
+    <Animated.View
       pointerEvents="box-none"
-      style={[styles.barWrapper, { bottom: bottomMargin }]}
+      style={[
+        styles.barWrapper,
+        {
+          bottom: bottomMargin,
+          opacity,
+          transform: [{ translateY }],
+        },
+      ]}
     >
       <View
         style={[
@@ -236,11 +272,11 @@ function CustomFloatingTabBar({
           );
         })}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
-export default function MainTabLayout() {
+function MainTabLayoutContent() {
   const { t } = useLanguage();
 
   return (
@@ -308,6 +344,14 @@ export default function MainTabLayout() {
       {/* Floating Action Button (FAB) aligned right with card */}
       <FloatingActionButton label={t.tabs.add} />
     </View>
+  );
+}
+
+export default function MainTabLayout() {
+  return (
+    <TabBarVisibilityProvider>
+      <MainTabLayoutContent />
+    </TabBarVisibilityProvider>
   );
 }
 
