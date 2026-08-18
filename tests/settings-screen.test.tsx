@@ -126,11 +126,14 @@ describe('settings screen', () => {
       </ThemeProvider>,
     );
 
-    expect(
-      await screen.findByRole('header', { name: 'Quick Amount Shortcuts' }),
-    ).toBeOnTheScreen();
+    // Look for Quick Amount Shortcuts row button
+    const shortcutsBtn = await screen.findByLabelText('Quick Amount Shortcuts');
+    expect(shortcutsBtn).toBeOnTheScreen();
 
-    // Verify Live Preview is displayed
+    // Open Shortcuts Modal
+    await fireEvent.press(shortcutsBtn);
+
+    // Verify Live Preview is displayed inside modal
     expect(screen.getByText('Transaction Screen Live Preview')).toBeOnTheScreen();
     expect(screen.getByText('Reset to IDR Recommended')).toBeOnTheScreen();
 

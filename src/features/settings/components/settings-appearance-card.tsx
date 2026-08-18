@@ -1,14 +1,13 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import React, { memo, useCallback, useState } from 'react';
+import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   SUPPORTED_CURRENCIES,
   type SupportedCurrencyCode,
 } from '@/features/settings/settings-repository';
-import { QuickShortcutsBar } from '@/features/transactions/components/quick-shortcuts-bar';
 import type { Language, TranslationSchema } from '@/lib/i18n/translations';
-import { formatMoney, formatShortcutLabel } from '@/lib/money';
+import { formatShortcutLabel } from '@/lib/money';
 import type { ThemeSetting } from '@/lib/theme/theme-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -19,10 +18,8 @@ export type SettingsAppearanceCardProps = {
   currencyCode: SupportedCurrencyCode;
   currencySymbol: string;
   language: Language;
-  onOpenAddShortcut: () => void;
   onOpenCurrencyPicker: () => void;
-  onRemoveShortcut: (amount: number) => void;
-  onResetShortcuts: () => void;
+  onOpenShortcutsModal: () => void;
   onSelectLanguage: (lang: Language) => void;
   onSelectTheme: (theme: ThemeSetting) => void;
   shortcuts: readonly number[];
@@ -34,10 +31,8 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
   currencyCode,
   currencySymbol,
   language,
-  onOpenAddShortcut,
   onOpenCurrencyPicker,
-  onRemoveShortcut,
-  onResetShortcuts,
+  onOpenShortcutsModal,
   onSelectLanguage,
   onSelectTheme,
   shortcuts,
@@ -46,15 +41,14 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
 }: SettingsAppearanceCardProps) {
   const { colors, isDark } = useTheme();
 
-  const [previewAmount, setPreviewAmount] = useState(0);
+  const activeCurrency = SUPPORTED_CURRENCIES.find(
+    (c) => c.code === currencyCode,
+  );
 
-  const handlePreviewAdd = useCallback((amount: number) => {
-    setPreviewAmount((prev) => prev + amount);
-  }, []);
-
-  const handlePreviewReset = useCallback(() => {
-    setPreviewAmount(0);
-  }, []);
+  const shortcutPreviewSummary = shortcuts
+    .slice(0, 3)
+    .map((amt) => formatShortcutLabel(amt, currencySymbol))
+    .join(', ');
 
   return (
     <View style={styles.sectionGroup}>
@@ -65,8 +59,8 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
         ]}
       >
         {language === 'id'
-          ? 'TAMPILAN & SHORTCUT'
-          : 'APPEARANCE & SHORTCUTS'}
+          ? 'TAMPILAN & PREFERENSI'
+          : 'APPEARANCE & PREFERENCES'}
       </Text>
 
       <View
@@ -80,32 +74,34 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
       >
         {/* 1. Theme Mode */}
         <View style={styles.cardItemPadding}>
-          <View style={styles.itemHeaderBetween}>
-            <View style={styles.iconTitleRow}>
-              <View
-                style={[
-                  styles.itemIconBadge,
-                  {
-                    backgroundColor: isDark
-                      ? colors.surfaceSecondary
-                      : '#EEF2FF',
-                  },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  color={colors.primary}
-                  name="theme-light-dark"
-                  size={18}
-                />
-              </View>
+          <View style={styles.iconTitleRow}>
+            <View
+              style={[
+                styles.itemIconBadge,
+                {
+                  backgroundColor: isDark
+                    ? colors.surfaceSecondary
+                    : '#EEF2FF',
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                color={colors.primary}
+                name="theme-light-dark"
+                size={18}
+              />
+            </View>
+            <View style={styles.headerTextWrap}>
               <Text
                 accessibilityRole="header"
-                style={[
-                  styles.itemTitle,
-                  { color: colors.textPrimary },
-                ]}
+                style={[styles.itemTitle, { color: colors.textPrimary }]}
               >
                 {t.settings.themeSection}
+              </Text>
+              <Text
+                style={[styles.itemSubtitle, { color: colors.textSecondary }]}
+              >
+                {t.settings.themeDesc}
               </Text>
             </View>
           </View>
@@ -152,7 +148,10 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                     isSelected
                       ? [
                           styles.themeSegmentTabActive,
-                          { backgroundColor: colors.surface },
+                          {
+                            backgroundColor: colors.surface,
+                            shadowColor: '#000',
+                          },
                         ]
                       : null,
                   ]}
@@ -162,19 +161,16 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                       isSelected ? colors.primary : colors.textSecondary
                     }
                     name={item.icon}
-                    size={16}
+                    size={15}
                   />
                   <Text
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.8}
-                    numberOfLines={1}
                     style={[
                       styles.themeSegmentTabText,
                       {
                         color: isSelected
                           ? colors.primary
                           : colors.textSecondary,
-                        fontWeight: isSelected ? '800' : '600',
+                        fontWeight: isSelected ? '700' : '500',
                       },
                     ]}
                   >
@@ -193,218 +189,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
           ]}
         />
 
-        {/* 2. Quick Amount Shortcuts */}
-        <View style={styles.cardItemPadding}>
-          <View style={styles.itemHeaderBetween}>
-            <View style={styles.iconTitleRow}>
-              <View
-                style={[
-                  styles.itemIconBadge,
-                  {
-                    backgroundColor: isDark
-                      ? colors.surfaceSecondary
-                      : '#FEF3C7',
-                  },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  color="#D97706"
-                  name="lightning-bolt"
-                  size={18}
-                />
-              </View>
-              <Text
-                accessibilityRole="header"
-                style={[
-                  styles.itemTitle,
-                  { color: colors.textPrimary },
-                ]}
-              >
-                {t.settings.shortcutsSection}
-              </Text>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              hitSlop={8}
-              onPress={onResetShortcuts}
-            >
-              <Text
-                style={[
-                  styles.resetActionLink,
-                  { color: colors.primary },
-                ]}
-              >
-                {t.settings.resetShortcuts}
-              </Text>
-            </Pressable>
-          </View>
-
-          <Text
-            style={[
-              styles.itemSubtitle,
-              { color: colors.textSecondary },
-            ]}
-          >
-            {t.settings.shortcutsDesc}
-          </Text>
-
-          {/* Live Preview Box */}
-          <View
-            style={[
-              styles.previewContainer,
-              {
-                backgroundColor: isDark
-                  ? colors.surfaceSecondary
-                  : '#F8FAFC',
-                borderColor: isDark ? colors.border : '#E2E8F0',
-              },
-            ]}
-          >
-            <View style={styles.previewHeaderRow}>
-              <View style={styles.previewTag}>
-                <MaterialCommunityIcons
-                  color="#059669"
-                  name="eye-outline"
-                  size={14}
-                />
-                <Text style={styles.previewTagText}>
-                  {t.settings.shortcutLivePreview}
-                </Text>
-              </View>
-              <Text
-                style={[
-                  styles.previewAmountDisplay,
-                  { color: colors.textPrimary },
-                ]}
-              >
-                {previewAmount > 0
-                  ? formatMoney(previewAmount, currencyCode)
-                  : `${currencySymbol} 0`}
-              </Text>
-            </View>
-
-            <QuickShortcutsBar
-              currencySymbol={currencySymbol}
-              onAddIncrement={handlePreviewAdd}
-              onReset={handlePreviewReset}
-              quickShortcuts={shortcuts}
-            />
-          </View>
-
-          {/* Shortcut Chips Grid */}
-          <View style={styles.shortcutChipsWrap}>
-            {shortcuts.map((amount) => (
-              <View
-                key={amount}
-                style={[
-                  styles.shortcutPillBadge,
-                  {
-                    backgroundColor: isDark
-                      ? colors.surfaceSecondary
-                      : '#EFF6FF',
-                    borderColor: isDark ? colors.border : '#BFDBFE',
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.shortcutPillText,
-                    { color: colors.primary },
-                  ]}
-                >
-                  {formatShortcutLabel(amount, currencySymbol)}
-                </Text>
-                <Pressable
-                  accessibilityLabel={`Hapus shortcut ${amount}`}
-                  accessibilityRole="button"
-                  hitSlop={6}
-                  onPress={() => onRemoveShortcut(amount)}
-                  style={styles.shortcutRemoveIcon}
-                >
-                  <MaterialCommunityIcons
-                    color="#EF4444"
-                    name="close-circle"
-                    size={16}
-                  />
-                </Pressable>
-              </View>
-            ))}
-          </View>
-
-          {/* Action Buttons: Add & Reset to Recommended */}
-          <View style={styles.shortcutActionsRow}>
-            {shortcuts.length < 8 ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={onOpenAddShortcut}
-                style={[
-                  styles.addShortcutCardBtn,
-                  {
-                    backgroundColor: isDark
-                      ? colors.surfaceSecondary
-                      : '#F8FAFC',
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  color={colors.primary}
-                  name="plus"
-                  size={18}
-                />
-                <Text
-                  style={[
-                    styles.addShortcutCardText,
-                    { color: colors.primary },
-                  ]}
-                >
-                  {t.settings.addShortcut}
-                </Text>
-              </Pressable>
-            ) : null}
-
-            <Pressable
-              accessibilityRole="button"
-              hitSlop={8}
-              onPress={onResetShortcuts}
-              style={[
-                styles.resetRecommendedBtn,
-                {
-                  backgroundColor: isDark
-                    ? colors.surfaceSecondary
-                    : '#EEF2FF',
-                  borderColor: isDark ? colors.border : '#C7D2FE',
-                },
-              ]}
-            >
-              <MaterialCommunityIcons
-                color={colors.primary}
-                name="refresh"
-                size={15}
-              />
-              <Text
-                style={[
-                  styles.resetRecommendedText,
-                  { color: colors.primary },
-                ]}
-              >
-                {t.settings.resetToRecommended.replace(
-                  '{currency}',
-                  currencyCode,
-                )}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-
-        <View
-          style={[
-            styles.cardInnerDivider,
-            { backgroundColor: colors.border },
-          ]}
-        />
-
-        {/* 3. Language Selection */}
+        {/* 2. Language Selection */}
         <View style={styles.cardItemPadding}>
           <View style={styles.iconTitleRow}>
             <View
@@ -413,24 +198,32 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                 {
                   backgroundColor: isDark
                     ? colors.surfaceSecondary
-                    : '#E0F2FE',
+                    : '#EFF6FF',
                 },
               ]}
             >
               <MaterialCommunityIcons
-                color="#0284C7"
+                color="#2563EB"
                 name="translate"
                 size={18}
               />
             </View>
-            <Text
-              accessibilityRole="header"
-              style={[styles.itemTitle, { color: colors.textPrimary }]}
-            >
-              {t.settings.languageSection}
-            </Text>
+            <View style={styles.headerTextWrap}>
+              <Text
+                accessibilityRole="header"
+                style={[styles.itemTitle, { color: colors.textPrimary }]}
+              >
+                {t.settings.languageSection}
+              </Text>
+              <Text
+                style={[styles.itemSubtitle, { color: colors.textSecondary }]}
+              >
+                {t.settings.languageDesc}
+              </Text>
+            </View>
           </View>
 
+          {/* 2 Pill Options */}
           <View style={styles.languagePillsRow}>
             {/* Indonesian */}
             <Pressable
@@ -523,13 +316,13 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
           ]}
         />
 
-        {/* 4. Base Currency Selection */}
+        {/* 3. Base Currency Selection Row */}
         <View style={styles.cardItemPadding}>
           <Pressable
             accessibilityLabel="Pilih Mata Uang Utama"
             accessibilityRole="button"
             onPress={onOpenCurrencyPicker}
-            style={styles.currencyRowButton}
+            style={styles.menuRowButton}
           >
             <View style={styles.iconTitleRow}>
               <View
@@ -548,7 +341,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                   size={18}
                 />
               </View>
-              <View style={styles.currencyTextContainer}>
+              <View style={styles.headerTextWrap}>
                 <Text
                   accessibilityRole="header"
                   style={[styles.itemTitle, { color: colors.textPrimary }]}
@@ -560,12 +353,12 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                 >
                   {language === 'id'
                     ? 'Simbol & format tampilan transaksi'
-                    : 'Transaction symbol & display formatting'}
+                    : 'Transaction symbol & formatting'}
                 </Text>
               </View>
             </View>
 
-            <View style={styles.currencyBadgeWrap}>
+            <View style={styles.rowRightBadgeWrap}>
               <View
                 style={[
                   styles.currencyPillBadge,
@@ -578,8 +371,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                 ]}
               >
                 <Text style={styles.currencyFlagEmoji}>
-                  {SUPPORTED_CURRENCIES.find((c) => c.code === currencyCode)
-                    ?.flag ?? '🌐'}
+                  {activeCurrency?.flag ?? '🌐'}
                 </Text>
                 <Text
                   style={[
@@ -601,77 +393,97 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
             </View>
           </Pressable>
         </View>
+
+        <View
+          style={[
+            styles.cardInnerDivider,
+            { backgroundColor: colors.border },
+          ]}
+        />
+
+        {/* 4. Quick Amount Shortcuts Row */}
+        <View style={styles.cardItemPadding}>
+          <Pressable
+            accessibilityLabel={t.settings.shortcutsSection}
+            accessibilityRole="button"
+            onPress={onOpenShortcutsModal}
+            style={styles.menuRowButton}
+          >
+            <View style={styles.iconTitleRow}>
+              <View
+                style={[
+                  styles.itemIconBadge,
+                  {
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : '#FEF3C7',
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  color="#D97706"
+                  name="flash"
+                  size={18}
+                />
+              </View>
+              <View style={styles.headerTextWrap}>
+                <Text
+                  accessibilityRole="header"
+                  style={[styles.itemTitle, { color: colors.textPrimary }]}
+                >
+                  {t.settings.shortcutsSection}
+                </Text>
+                <Text
+                  style={[styles.itemSubtitle, { color: colors.textSecondary }]}
+                >
+                  {shortcutPreviewSummary}... ({shortcuts.length} {language === 'id' ? 'tombol' : 'chips'})
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.rowRightBadgeWrap}>
+              <View
+                style={[
+                  styles.actionPillBadge,
+                  {
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : '#FFFBEB',
+                    borderColor: isDark ? colors.border : '#FDE68A',
+                  },
+                ]}
+              >
+                <Text style={[styles.actionPillText, { color: '#B45309' }]}>
+                  {language === 'id' ? 'Sesuaikan' : 'Customize'}
+                </Text>
+                <MaterialCommunityIcons
+                  color="#B45309"
+                  name="chevron-right"
+                  size={16}
+                />
+              </View>
+            </View>
+          </Pressable>
+        </View>
       </View>
     </View>
   );
 });
 
 const styles = StyleSheet.create({
-  addShortcutCardBtn: {
+  actionPillBadge: {
     alignItems: 'center',
-    borderRadius: radius.md,
-    borderStyle: 'dashed',
-    borderWidth: 1.5,
-    flex: 1,
-    flexDirection: 'row',
-    gap: 6,
-    justifyContent: 'center',
-    paddingVertical: spacing.sm,
-  },
-  addShortcutCardText: {
-    ...typography.metadata,
-    fontWeight: '700',
-  },
-  previewAmountDisplay: {
-    ...typography.body,
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  previewContainer: {
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     borderWidth: 1,
-    marginTop: spacing.xs,
-    overflow: 'hidden',
-    paddingBottom: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    paddingTop: spacing.xs,
-  },
-  previewHeaderRow: {
-    alignItems: 'center',
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 2,
+    gap: 3,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 5,
   },
-  previewTag: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 4,
-  },
-  previewTagText: {
+  actionPillText: {
     ...typography.metadata,
-    color: '#059669',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
-  },
-  resetRecommendedBtn: {
-    alignItems: 'center',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flex: 1,
-    flexDirection: 'row',
-    gap: 5,
-    justifyContent: 'center',
-    paddingVertical: spacing.sm,
-  },
-  resetRecommendedText: {
-    ...typography.metadata,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  shortcutActionsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.xs,
   },
   cardInnerDivider: {
     height: 1,
@@ -686,10 +498,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
   },
-  currencyBadgeWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   currencyFlagEmoji: {
     fontSize: 15,
   },
@@ -702,35 +510,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: 5,
   },
-  currencyRowButton: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  currencyTextContainer: {
-    flex: 1,
-  },
   groupedCard: {
     borderRadius: radius.lg,
     borderWidth: 1,
     overflow: 'hidden',
   },
+  headerTextWrap: {
+    flex: 1,
+  },
   iconTitleRow: {
     alignItems: 'center',
+    flex: 1,
     flexDirection: 'row',
     gap: spacing.sm,
-  },
-  itemHeaderBetween: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
   },
   itemIconBadge: {
     alignItems: 'center',
     borderRadius: radius.pill,
-    height: 32,
+    height: 34,
     justifyContent: 'center',
-    width: 32,
+    width: 34,
   },
   itemSubtitle: {
     ...typography.metadata,
@@ -770,9 +569,14 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginTop: 2,
   },
-  resetActionLink: {
-    ...typography.metadata,
-    fontWeight: '700',
+  menuRowButton: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  rowRightBadgeWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sectionGroup: {
     gap: spacing.xs,
@@ -783,28 +587,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.5,
     paddingHorizontal: spacing.xs,
-  },
-  shortcutChipsWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    marginTop: 2,
-  },
-  shortcutPillBadge: {
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 6,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 5,
-  },
-  shortcutPillText: {
-    ...typography.metadata,
-    fontWeight: '700',
-  },
-  shortcutRemoveIcon: {
-    padding: 1,
   },
   themeSegmentTab: {
     alignItems: 'center',

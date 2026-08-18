@@ -15,6 +15,7 @@ import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
 import { AddShortcutModal } from '@/features/settings/components/add-shortcut-modal';
 import { CurrencyPickerModal } from '@/features/settings/components/currency-picker-modal';
+import { ShortcutsModal } from '@/features/settings/components/shortcuts-modal';
 import {
   exportTransactionsCsvFile,
   shareFile,
@@ -60,6 +61,7 @@ export function SettingsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
   const [shortcuts, setShortcuts] = useState<number[]>([]);
+  const [shortcutsModalVisible, setShortcutsModalVisible] = useState(false);
   const [addShortcutModalVisible, setAddShortcutModalVisible] = useState(false);
   const [currencyPickerVisible, setCurrencyPickerVisible] = useState(false);
   const [newShortcutInput, setNewShortcutInput] = useState('');
@@ -337,13 +339,8 @@ export function SettingsScreen() {
               currencyCode={overview.currencyCode}
               currencySymbol={currencySymbol}
               language={language}
-              onOpenAddShortcut={() => {
-                setShortcutError(null);
-                setAddShortcutModalVisible(true);
-              }}
               onOpenCurrencyPicker={() => setCurrencyPickerVisible(true)}
-              onRemoveShortcut={(amount) => void handleRemoveShortcut(amount)}
-              onResetShortcuts={() => void handleResetShortcuts()}
+              onOpenShortcutsModal={() => setShortcutsModalVisible(true)}
               onSelectLanguage={(lang) => void setLanguage(lang)}
               onSelectTheme={setThemeSetting}
               shortcuts={shortcuts}
@@ -384,6 +381,24 @@ export function SettingsScreen() {
           </>
         ) : null}
       </ScrollView>
+
+      {/* Shortcuts Manager & Live Preview Modal */}
+      {overview ? (
+        <ShortcutsModal
+          currencyCode={overview.currencyCode}
+          currencySymbol={currencySymbol}
+          onClose={() => setShortcutsModalVisible(false)}
+          onOpenAddShortcut={() => {
+            setShortcutError(null);
+            setAddShortcutModalVisible(true);
+          }}
+          onRemoveShortcut={(amount) => void handleRemoveShortcut(amount)}
+          onResetShortcuts={() => void handleResetShortcuts()}
+          shortcuts={shortcuts}
+          t={t}
+          visible={shortcutsModalVisible}
+        />
+      ) : null}
 
       {/* Add Shortcut Modal */}
       <AddShortcutModal
