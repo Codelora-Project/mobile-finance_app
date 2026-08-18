@@ -24,19 +24,22 @@ import {
 } from '@/features/categories/category-repository';
 import type { HabitStats } from '@/features/habits/habit-repository';
 import { getHabitStats } from '@/features/habits/habit-repository';
+import { HomeDisplaySettingsModal } from '@/features/home/components/home-display-settings-modal';
 import { HomeHeader } from '@/features/home/components/home-header';
 import { HomeQuickCategoryLog } from '@/features/home/components/home-quick-category-log';
 import { HomeQuickLogModal } from '@/features/home/components/home-quick-log-modal';
 import { HomeRecentTransactions } from '@/features/home/components/home-recent-transactions';
 import { HomeSummaryCard } from '@/features/home/components/home-summary-card';
-import { HomeWalletCarousel } from '@/features/home/components/home-wallet-carousel';
+import { HomeWalletChipsBar } from '@/features/home/components/home-wallet-chips-bar';
 import {
   getHomeSummary,
   type HomePeriod,
   type HomeSummary,
 } from '@/features/home/home-repository';
 import {
+  getHomeDisplayPreferences,
   getQuickLogCategoryIds,
+  setHomeDisplayPreferences,
   setQuickLogCategoryIds,
 } from '@/features/settings/settings-repository';
 import { useUndoTransaction } from '@/features/transactions/hooks/use-undo-transaction';
@@ -70,6 +73,12 @@ export function HomeScreen() {
   const [selectedIdsInModal, setSelectedIdsInModal] = useState<number[]>(
     DEFAULT_QUICK_LOG_IDS,
   );
+
+  // Home Display Preferences
+  const [showWalletChips, setShowWalletChips] = useState(true);
+  const [showQuickLog, setShowQuickLog] = useState(true);
+  const [hideBalance, setHideBalance] = useState(false);
+
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestId = useRef(0);
@@ -94,6 +103,7 @@ export function HomeScreen() {
           nextHabitStats,
           nextCategories,
           nextQuickLogIds,
+          nextDisplayPrefs,
         ] = await Promise.all([
           getHomeSummary(
             database,
@@ -106,6 +116,7 @@ export function HomeScreen() {
           getHabitStats(database),
           listCategories(database),
           getQuickLogCategoryIds(database),
+          getHomeDisplayPreferences(database),
         ]);
 
         if (requestId.current !== currentRequest) {
@@ -119,6 +130,9 @@ export function HomeScreen() {
         if (nextQuickLogIds && nextQuickLogIds.length > 0) {
           setPinnedCategoryIds(nextQuickLogIds);
         }
+        setShowWalletChips(nextDisplayPrefs.showWalletChips);
+        setShowQuickLog(nextDisplayPrefs.showQuickLog);
+        setHideBalance(nextDisplayPrefs.hideBalance);
       } catch (loadError) {
         if (requestId.current === currentRequest) {
           const mappedError = mapError(loadError, 'DATABASE_WRITE_FAILED');
@@ -171,13 +185,24 @@ export function HomeScreen() {
     [loadSummary, period, referenceDate],
   );
 
+  // Quick Log Customizer Gesture Modal
   const {
-    backdropOpacity,
+    backdropOpacity: quickLogBackdropOpacity,
     close: handleCloseCustomizeModal,
     open: handleOpenCustomizeModalInternal,
-    panResponder,
-    panY,
+    panResponder: quickLogPanResponder,
+    panY: quickLogPanY,
     visible: customizeModalVisible,
+  } = useBottomSheetGesture();
+
+  // Display Settings Gesture Modal
+  const {
+    backdropOpacity: displaySettingsBackdropOpacity,
+    close: handleCloseDisplaySettingsModal,
+    open: handleOpenDisplaySettingsModal,
+    panResponder: displaySettingsPanResponder,
+    panY: displaySettingsPanY,
+    visible: displaySettingsModalVisible,
   } = useBottomSheetGesture();
 
   const handleOpenCustomizeModal = useCallback(() => {
@@ -209,6 +234,38 @@ export function HomeScreen() {
   const handleResetQuickLogCategories = useCallback(() => {
     setSelectedIdsInModal(DEFAULT_QUICK_LOG_IDS);
   }, []);
+
+  const handleToggleShowWalletChips = useCallback(
+    (val: boolean) => {
+      setShowWalletChips(val);
+      void setHomeDisplayPreferences(database, { showWalletChips: val });
+    },
+    [database],
+  );
+
+  const handleToggleShowQuickLog = useCallback(
+    (val: boolean) => {
+      setShowQuickLog(val);
+      void setHomeDisplayPreferences(database, { showQuickLog: val });
+    },
+    [database],
+  );
+
+  const handleToggleHideBalance = useCallback(() => {
+    setHideBalance((prev) => {
+      const next = !prev;
+      void setHomeDisplayPreferences(database, { hideBalance: next });
+      return next;
+    });
+  }, [database]);
+
+  const handleSetHideBalance = useCallback(
+    (val: boolean) => {
+      setHideBalance(val);
+      void setHomeDisplayPreferences(database, { hideBalance: val });
+    },
+    [database],
+  );
 
   const handleSelectQuickLogCategory = useCallback(
     (category: Category) => {
@@ -289,6 +346,8 @@ export function HomeScreen() {
     return groups;
   }, [language, summary, t]);
 
+  const activeWallets = walletSummary?.wallets ?? [];
+
   return (
     <Screen>
       {/* 1. Header with Greeting, Streak Badge & Settings Button */}
@@ -345,33 +404,39 @@ export function HomeScreen() {
           </View>
         ) : null}
 
-        {/* 2.1 Multi-Wallet Interactive Carousel & Balance Slider */}
-        <HomeWalletCarousel
-          currencyCode={summary?.currencyCode ?? 'IDR'}
-          language={language}
-          onAddWalletPress={() => router.push('/wallets')}
-          onSelectWallet={handleSelectWallet}
-          selectedWalletId={selectedWalletId}
-          walletSummary={walletSummary}
-        />
-
-        {/* 2.2 Hero Summary & Balance Card */}
+        {/* 2.1 Unified Hero Cashflow Card (Catatku Style) */}
         {summary ? (
           <HomeSummaryCard
+            hideBalance={hideBalance}
+            onOpenDisplaySettings={handleOpenDisplaySettingsModal}
             onPeriodChange={handlePeriodChange}
+            onToggleHideBalance={handleToggleHideBalance}
             period={period}
             summary={summary}
             t={t}
           />
         ) : null}
 
-        {/* 2.3 Fast-Track Quick Category Log */}
-        <HomeQuickCategoryLog
-          categories={displayedQuickLogCategories}
-          onOpenCustomize={handleOpenCustomizeModal}
-          onSelectCategory={handleSelectQuickLogCategory}
-          t={t}
-        />
+        {/* 2.2 Optional Sleek Horizontal Wallet Filter Chips */}
+        {showWalletChips ? (
+          <HomeWalletChipsBar
+            language={language}
+            onAddWalletPress={() => router.push('/wallets')}
+            onSelectWallet={handleSelectWallet}
+            selectedWalletId={selectedWalletId}
+            wallets={activeWallets}
+          />
+        ) : null}
+
+        {/* 2.3 Fast-Track Quick Category Log (Toggleable) */}
+        {showQuickLog ? (
+          <HomeQuickCategoryLog
+            categories={displayedQuickLogCategories}
+            onOpenCustomize={handleOpenCustomizeModal}
+            onSelectCategory={handleSelectQuickLogCategory}
+            t={t}
+          />
+        ) : null}
 
         {/* 2.4 Recent Transactions Timeline */}
         <HomeRecentTransactions
@@ -383,16 +448,33 @@ export function HomeScreen() {
         />
       </ScrollView>
 
+      {/* Home Display Settings Bottom Sheet Modal 🎚️ */}
+      <HomeDisplaySettingsModal
+        backdropOpacity={displaySettingsBackdropOpacity}
+        hideBalance={hideBalance}
+        onClose={handleCloseDisplaySettingsModal}
+        onCustomizeQuickLog={handleOpenCustomizeModal}
+        onHideBalanceChange={handleSetHideBalance}
+        onShowQuickLogChange={handleToggleShowQuickLog}
+        onShowWalletChipsChange={handleToggleShowWalletChips}
+        panResponder={displaySettingsPanResponder}
+        panY={displaySettingsPanY}
+        showQuickLog={showQuickLog}
+        showWalletChips={showWalletChips}
+        t={t}
+        visible={displaySettingsModalVisible}
+      />
+
       {/* Quick Log Customization Bottom Sheet Modal */}
       <HomeQuickLogModal
         allCategories={allCategories}
-        backdropOpacity={backdropOpacity}
+        backdropOpacity={quickLogBackdropOpacity}
         onClose={handleCloseCustomizeModal}
         onReset={handleResetQuickLogCategories}
         onSave={() => void handleSaveQuickLogCategories()}
         onToggleCategory={handleToggleModalCategory}
-        panResponder={panResponder}
-        panY={panY}
+        panResponder={quickLogPanResponder}
+        panY={quickLogPanY}
         selectedIds={selectedIdsInModal}
         t={t}
         visible={customizeModalVisible}

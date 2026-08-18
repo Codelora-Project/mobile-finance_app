@@ -45,7 +45,15 @@ jest.mock('@/features/home/home-repository', () => {
 });
 
 jest.mock('@/features/settings/settings-repository', () => ({
+  getHomeDisplayPreferences: jest.fn().mockImplementation(() =>
+    Promise.resolve({
+      hideBalance: false,
+      showQuickLog: true,
+      showWalletChips: true,
+    }),
+  ),
   getQuickLogCategoryIds: jest.fn().mockImplementation(() => Promise.resolve([1, 2, 3, 4, 5])),
+  setHomeDisplayPreferences: jest.fn().mockImplementation(() => Promise.resolve(undefined)),
   setQuickLogCategoryIds: jest.fn().mockImplementation(() => Promise.resolve(undefined)),
 }));
 
@@ -202,7 +210,8 @@ describe('home screen', () => {
     expect(screen.getByText('Coffee Shop')).toBeOnTheScreen();
     expect(screen.getByText('Taxi')).toBeOnTheScreen();
 
-    await fireEvent.press(screen.getByRole('tab', { name: 'Daily' }));
+    const periodDropdown = screen.getByRole('button', { name: /Monthly/i });
+    await fireEvent.press(periodDropdown);
     expect(mockGetHomeSummary).toHaveBeenLastCalledWith(
       expect.anything(),
       'daily',
@@ -277,7 +286,7 @@ describe('home screen', () => {
     expect(screen.getByText('Transaksi Terakhir')).toBeOnTheScreen();
   });
 
-  it('renders wallet carousel with Net Worth and individual wallet cards and filters by wallet', async () => {
+  it('renders wallet chips and filters by wallet', async () => {
     mockGetHomeSummary.mockResolvedValue(summary);
 
     await render(
@@ -286,14 +295,13 @@ describe('home screen', () => {
       </LanguageProvider>,
     );
 
-    expect(await screen.findByText('Dompet & Saldo')).toBeOnTheScreen();
-    expect(screen.getByText('Semua Akun')).toBeOnTheScreen();
+    expect(await screen.findByText('Semua')).toBeOnTheScreen();
     expect(screen.getByText('Bank BCA')).toBeOnTheScreen();
     expect(screen.getByText('Dompet Tunai')).toBeOnTheScreen();
 
-    // Tap on Bank BCA card to filter
-    const bcaCard = screen.getByLabelText(/Bank BCA/);
-    await fireEvent.press(bcaCard);
+    // Tap on Bank BCA chip to filter
+    const bcaChip = screen.getByLabelText(/Bank BCA/);
+    await fireEvent.press(bcaChip);
 
     expect(mockGetHomeSummary).toHaveBeenCalledWith(
       expect.anything(),

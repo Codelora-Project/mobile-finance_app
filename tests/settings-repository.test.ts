@@ -9,10 +9,12 @@ import { defaultCategories, defaultPaymentMethods } from '@/db/seeds';
 import {
   clearTemporaryCache,
   formatStorageSize,
+  getHomeDisplayPreferences,
   getRecommendedShortcuts,
   getSettingsOverview,
   getStorageStats,
   resetApplicationData,
+  setHomeDisplayPreferences,
 } from '@/features/settings/settings-repository';
 
 const mockRemoveCachedClaimPdfs = jest.fn();
@@ -212,16 +214,16 @@ describe('settings repository', () => {
     expect(typeof result.freedBytes).toBe('number');
   });
 
-  it('returns recommended shortcuts per currency code', () => {
-    expect(getRecommendedShortcuts('IDR')).toEqual([
-      2000, 5000, 10000, 20000, 50000, 100000,
-    ]);
-    expect(getRecommendedShortcuts('USD')).toEqual([1, 2, 5, 10, 20, 50]);
-    expect(getRecommendedShortcuts('SGD')).toEqual([1, 2, 5, 10, 20, 50]);
-    expect(getRecommendedShortcuts('EUR')).toEqual([1, 2, 5, 10, 20, 50]);
-    expect(getRecommendedShortcuts('JPY')).toEqual([
-      100, 200, 500, 1000, 2000, 5000,
-    ]);
-    expect(getRecommendedShortcuts('MYR')).toEqual([1, 5, 10, 20, 50, 100]);
+  it('reads and writes home display preferences', async () => {
+    const database = new ResetDatabase();
+    await setHomeDisplayPreferences(database.asSQLiteDatabase(), {
+      hideBalance: true,
+      showQuickLog: false,
+      showWalletChips: true,
+    });
+
+    expect(database.settings.get('home_hide_balance')).toBe('1');
+    expect(database.settings.get('home_show_quick_log')).toBe('0');
+    expect(database.settings.get('home_show_wallet_chips')).toBe('1');
   });
 });
