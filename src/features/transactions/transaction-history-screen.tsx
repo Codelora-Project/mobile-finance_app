@@ -241,6 +241,44 @@ export function TransactionHistoryScreen() {
     }
   }, [database, debouncedSearch, effectiveFilters, exporting, language, transactions.length]);
 
+  const handleEditTransaction = useCallback(
+    (tx: TransactionListItem) => {
+      router.push(`/transactions/${tx.id}/edit`);
+    },
+    [router],
+  );
+
+  const handleDeleteTransaction = useCallback(
+    (tx: TransactionListItem) => {
+      Alert.alert(
+        language === 'id' ? 'Hapus Transaksi' : 'Delete Transaction',
+        language === 'id'
+          ? `Hapus transaksi "${tx.counterparty || tx.categoryName}"? Saldo dompet akan disesuaikan kembali.`
+          : `Delete transaction "${tx.counterparty || tx.categoryName}"? Wallet balance will be adjusted.`,
+        [
+          {
+            text: language === 'id' ? 'Batal' : 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: language === 'id' ? 'Hapus' : 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await deleteTransaction(database, tx.id);
+                await loadTransactions(effectiveFilters, debouncedSearch, 0, false);
+              } catch (delErr) {
+                const mapped = mapError(delErr, 'DATABASE_WRITE_FAILED');
+                Alert.alert('Error', mapped.message);
+              }
+            },
+          },
+        ],
+      );
+    },
+    [database, debouncedSearch, effectiveFilters, language, loadTransactions],
+  );
+
   const handleLongPressTransaction = useCallback(
     (tx: TransactionListItem) => {
       Alert.alert(
@@ -260,38 +298,12 @@ export function TransactionHistoryScreen() {
           {
             text: language === 'id' ? 'Hapus' : 'Delete',
             style: 'destructive',
-            onPress: () => {
-              Alert.alert(
-                language === 'id' ? 'Hapus Transaksi' : 'Delete Transaction',
-                language === 'id'
-                  ? 'Apakah Anda yakin ingin menghapus transaksi ini?'
-                  : 'Are you sure you want to delete this transaction?',
-                [
-                  {
-                    text: language === 'id' ? 'Batal' : 'Cancel',
-                    style: 'cancel',
-                  },
-                  {
-                    text: language === 'id' ? 'Hapus' : 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
-                      try {
-                        await deleteTransaction(database, tx.id);
-                        await loadTransactions(effectiveFilters, debouncedSearch, 0, false);
-                      } catch (delErr) {
-                        const mapped = mapError(delErr, 'DATABASE_WRITE_FAILED');
-                        Alert.alert('Error', mapped.message);
-                      }
-                    },
-                  },
-                ],
-              );
-            },
+            onPress: () => handleDeleteTransaction(tx),
           },
         ],
       );
     },
-    [database, debouncedSearch, effectiveFilters, language, loadTransactions, router],
+    [handleDeleteTransaction, language, router],
   );
 
   const handleOpenDetail = useCallback(
@@ -349,14 +361,11 @@ export function TransactionHistoryScreen() {
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (filters.type) count++;
-    if (filters.categoryId) count++;
     if (filters.paymentMethodId) count++;
+    if (filters.categoryId) count++;
     if (filters.hasReceipt !== undefined) count++;
     if (filters.isReimbursable !== undefined) count++;
-    if (filters.minAmountMinor !== undefined) count++;
-    if (filters.maxAmountMinor !== undefined) count++;
-    if (filters.dateFrom) count++;
-    if (filters.dateTo) count++;
+    if (filters.minAmountMinor !== undefined || filters.maxAmountMinor !== undefined) count++;
     return count;
   }, [filters]);
 
@@ -398,6 +407,8 @@ export function TransactionHistoryScreen() {
             <TransactionRowItem
               isLast={idx === item.transactions.length - 1}
               key={tx.id}
+              onDelete={handleDeleteTransaction}
+              onEdit={handleEditTransaction}
               onLongPress={handleLongPressTransaction}
               onPress={handleOpenDetail}
               receiptBadgeText={t.home.receiptBadge}
@@ -410,7 +421,16 @@ export function TransactionHistoryScreen() {
         </View>
       </View>
     ),
-    [colors.border, colors.surface, colors.textPrimary, handleLongPressTransaction, handleOpenDetail, t],
+    [
+      colors.border,
+      colors.surface,
+      colors.textPrimary,
+      handleDeleteTransaction,
+      handleEditTransaction,
+      handleLongPressTransaction,
+      handleOpenDetail,
+      t,
+    ],
   );
 
   const keyExtractor = useCallback((item: DateGroup) => item.key, []);

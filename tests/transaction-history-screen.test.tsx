@@ -238,4 +238,32 @@ describe('transaction history screen', () => {
       );
     });
   });
-});
+
+  it('triggers edit and delete actions via swipe action buttons', async () => {
+    const { Alert } = require('react-native');
+    const alertSpy = jest.spyOn(Alert, 'alert');
+
+    mockListTransactions.mockResolvedValue({
+      hasMore: false,
+      items: [transaction],
+      nextOffset: 1,
+    });
+
+    await render(<TransactionHistoryScreen />);
+    await screen.findByRole('button', { name: /Coffee Shop/ });
+
+    // 1. Test Swipe Edit button
+    const editBtn = screen.getByRole('button', { name: 'Ubah' });
+    await fireEvent.press(editBtn);
+    expect(mockRouter.push).toHaveBeenCalledWith('/transactions/42/edit');
+
+    // 2. Test Swipe Delete button
+    const deleteBtn = screen.getByRole('button', { name: 'Hapus' });
+    await fireEvent.press(deleteBtn);
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Hapus Transaksi',
+      expect.stringContaining('Hapus transaksi'),
+      expect.any(Array),
+    );
+  });
+});

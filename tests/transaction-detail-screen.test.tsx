@@ -20,6 +20,8 @@ const mockDeleteTransaction = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockGetTransaction = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockGetTransactionClaimMembership =
   jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockShareAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockIsSharingAvailable = jest.fn<() => Promise<boolean>>();
 
 jest.mock('expo-router', () => {
   const React = require('react');
@@ -40,6 +42,16 @@ jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
     <ReactNative.Text>{name}</ReactNative.Text>
   );
 });
+
+jest.mock('expo-sharing', () => ({
+  isAvailableAsync: () => mockIsSharingAvailable(),
+  shareAsync: (...args: unknown[]) => mockShareAsync(...args),
+}));
+
+jest.mock('@/features/receipts/receipt-storage', () => ({
+  getReceiptFileUri: (key: string) => `file:///mock-docs/${key}`,
+  receiptFileExists: (key: string) => Boolean(key),
+}));
 
 jest.mock('@/features/transactions/transaction-repository', () => ({
   deleteTransaction: (...args: unknown[]) => mockDeleteTransaction(...args),
@@ -78,6 +90,8 @@ describe('transaction detail screen', () => {
     mockGetTransaction.mockResolvedValue(savedTransaction);
     mockGetTransactionClaimMembership.mockResolvedValue(null);
     mockDeleteTransaction.mockResolvedValue(undefined);
+    mockIsSharingAvailable.mockResolvedValue(true);
+    mockShareAsync.mockResolvedValue(undefined);
   });
 
   it('shows all detail fields and opens Edit', async () => {
@@ -90,7 +104,7 @@ describe('transaction detail screen', () => {
     expect(screen.getByText('Food & Drink')).toBeOnTheScreen();
     expect(screen.getByText('Cash')).toBeOnTheScreen();
     expect(screen.getByText('Client meeting')).toBeOnTheScreen();
-    expect(screen.getByText('receipt.jpg')).toBeOnTheScreen();
+    expect(screen.getAllByText('receipt.jpg').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Dapat Diklaim').length).toBeGreaterThanOrEqual(
       1,
     );
@@ -123,7 +137,10 @@ describe('transaction detail screen', () => {
       expect.any(Array),
     );
 
-    const buttons = alertSpy.mock.calls[0]![2] as Array<{ text: string; onPress?: () => void }>;
+    const buttons = alertSpy.mock.calls[0]![2] as Array<{
+      text: string;
+      onPress?: () => void;
+    }>;
     const confirmBtn = buttons.find((b) => b.text === 'Hapus');
     await act(async () => {
       confirmBtn?.onPress?.();
@@ -132,9 +149,7 @@ describe('transaction detail screen', () => {
     await waitFor(() =>
       expect(mockDeleteTransaction).toHaveBeenCalledWith(expect.anything(), 42),
     );
-    await waitFor(() =>
-      expect(mockRouter.back).toHaveBeenCalled(),
-    );
+    await waitFor(() => expect(mockRouter.back).toHaveBeenCalled());
   });
 
   it('locks edit and delete while the transaction is in a submitted claim', async () => {
@@ -155,5 +170,49 @@ describe('transaction detail screen', () => {
     expect(
       screen.queryByRole('button', { name: 'Hapus Transaksi' }),
     ).not.toBeOnTheScreen();
+  });
+
+  it('shares receipt image file when receipt is attached and share button is pressed', async () => {
+    await render(<TransactionDetailScreen transactionId={42} />);
+    await screen.findAllByText('Coffee Shop');
+
+    const shareBtn = screen.getByRole('button', {
+      name: 'Bagikan Struk',
+    });
+    await fireEvent.press(shareBtn);
+
+    expect(mockShareAsync).toHaveBeenCalledWith(
+      'file:///mock-docs/receipts/receipt.jpg',
+      expect.objectContaining({
+        dialogTitle: 'Bagikan Foto Struk',
+        mimeType: 'image/jpeg',
+      }),
+    );
+  });
+
+  it('shares formatted text slip when no receipt is attached', async () => {
+    const { Share } = require('react-native');
+    const shareSpy = jest
+      .spyOn(Share, 'share')
+      .mockResolvedValue({ action: 'sharedAction' });
+
+    mockGetTransaction.mockResolvedValue({
+      ...savedTransaction,
+      receipt: null,
+    });
+
+    await render(<TransactionDetailScreen transactionId={42} />);
+    await screen.findAllByText('Coffee Shop');
+
+    const shareBtn = screen.getByRole('button', {
+      name: 'Bagikan Slip',
+    });
+    await fireEvent.press(shareBtn);
+
+    expect(shareSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('BUKTI TRANSAKSI'),
+      }),
+    );
   });
 });
