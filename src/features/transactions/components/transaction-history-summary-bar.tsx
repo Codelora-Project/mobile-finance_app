@@ -40,7 +40,7 @@ export const TransactionHistorySummaryBar = memo(
         style={[
           styles.summaryBarRoot,
           {
-            backgroundColor: isDark ? colors.surface : '#FFFFFF',
+            backgroundColor: colors.surface,
             borderColor: colors.border,
           },
         ]}
@@ -57,17 +57,19 @@ export const TransactionHistorySummaryBar = memo(
           style={({ pressed }) => [
             styles.statCol,
             activeTypeFilter === 'income' && {
-              backgroundColor: isDark ? '#14532D' : '#DCFCE7',
-              borderRadius: radius.sm,
+              backgroundColor: isDark
+                ? 'rgba(34, 197, 94, 0.18)'
+                : '#DCFCE7',
+              borderRadius: radius.md,
             },
-            pressed ? { opacity: 0.7 } : null,
+            pressed ? { opacity: 0.75 } : null,
           ]}
         >
           <View style={styles.statLabelRow}>
             <MaterialCommunityIcons
               color={colors.positive}
               name="arrow-down-left"
-              size={13}
+              size={15}
             />
             <Text
               numberOfLines={1}
@@ -77,6 +79,8 @@ export const TransactionHistorySummaryBar = memo(
             </Text>
           </View>
           <Text
+            adjustsFontSizeToFit
+            minimumFontScale={0.75}
             numberOfLines={1}
             style={[styles.statAmountText, { color: colors.positive }]}
           >
@@ -85,7 +89,14 @@ export const TransactionHistorySummaryBar = memo(
         </Pressable>
 
         <View
-          style={[styles.verticalDivider, { backgroundColor: colors.border }]}
+          style={[
+            styles.verticalDivider,
+            {
+              backgroundColor: isDark
+                ? 'rgba(255, 255, 255, 0.08)'
+                : 'rgba(0, 0, 0, 0.06)',
+            },
+          ]}
         />
 
         {/* 2. Expense Stat */}
@@ -100,17 +111,19 @@ export const TransactionHistorySummaryBar = memo(
           style={({ pressed }) => [
             styles.statCol,
             activeTypeFilter === 'expense' && {
-              backgroundColor: isDark ? '#7F1D1D' : '#FEE2E2',
-              borderRadius: radius.sm,
+              backgroundColor: isDark
+                ? 'rgba(239, 68, 68, 0.18)'
+                : '#FEE2E2',
+              borderRadius: radius.md,
             },
-            pressed ? { opacity: 0.7 } : null,
+            pressed ? { opacity: 0.75 } : null,
           ]}
         >
           <View style={styles.statLabelRow}>
             <MaterialCommunityIcons
               color={colors.destructive}
               name="arrow-up-right"
-              size={13}
+              size={15}
             />
             <Text
               numberOfLines={1}
@@ -120,6 +133,8 @@ export const TransactionHistorySummaryBar = memo(
             </Text>
           </View>
           <Text
+            adjustsFontSizeToFit
+            minimumFontScale={0.75}
             numberOfLines={1}
             style={[styles.statAmountText, { color: colors.destructive }]}
           >
@@ -128,7 +143,14 @@ export const TransactionHistorySummaryBar = memo(
         </Pressable>
 
         <View
-          style={[styles.verticalDivider, { backgroundColor: colors.border }]}
+          style={[
+            styles.verticalDivider,
+            {
+              backgroundColor: isDark
+                ? 'rgba(255, 255, 255, 0.08)'
+                : 'rgba(0, 0, 0, 0.06)',
+            },
+          ]}
         />
 
         {/* 3. Net Cashflow Stat */}
@@ -137,7 +159,7 @@ export const TransactionHistorySummaryBar = memo(
             <MaterialCommunityIcons
               color={isNetPositive ? colors.positive : colors.destructive}
               name="scale-balance"
-              size={13}
+              size={15}
             />
             <Text
               numberOfLines={1}
@@ -147,6 +169,8 @@ export const TransactionHistorySummaryBar = memo(
             </Text>
           </View>
           <Text
+            adjustsFontSizeToFit
+            minimumFontScale={0.75}
             numberOfLines={1}
             style={[
               styles.statAmountText,
@@ -166,40 +190,44 @@ export const TransactionHistorySummaryBar = memo(
 
 const styles = StyleSheet.create({
   statAmountText: {
-    ...typography.metadata,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+    ...typography.body,
+    fontSize: 14.5,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    marginTop: 2,
   },
   statCol: {
+    alignItems: 'flex-start',
     flex: 1,
     gap: 2,
     justifyContent: 'center',
-    paddingHorizontal: 4,
-    paddingVertical: 2,
+    paddingHorizontal: spacing.xs + 3,
+    paddingVertical: 5,
   },
   statLabel: {
     ...typography.metadata,
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '600',
   },
   statLabelRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 3,
+    gap: 4,
   },
   summaryBarRoot: {
+    alignItems: 'center',
     borderRadius: radius.lg,
     borderWidth: 1,
     flexDirection: 'row',
     marginHorizontal: spacing.md,
-    marginTop: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs + 2,
+    marginTop: spacing.xs + 1,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 10,
   },
   verticalDivider: {
-    height: '100%',
-    marginHorizontal: spacing.xs,
+    alignSelf: 'center',
+    height: 30,
+    marginHorizontal: 2,
     width: 1,
   },
 });
