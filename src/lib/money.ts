@@ -60,10 +60,10 @@ function localizeDigits(value: string, locale: string) {
   return value.replace(/\d/g, (digit) => digits[Number(digit)] ?? digit);
 }
 
-function assertNonNegativeSafeInteger(amountMinor: number) {
-  if (!Number.isSafeInteger(amountMinor) || amountMinor < 0) {
+function assertSafeInteger(amountMinor: number) {
+  if (!Number.isSafeInteger(amountMinor)) {
     throw new RangeError(
-      'Money must use a non-negative safe integer minor-unit amount.',
+      'Money must use a safe integer minor-unit amount.',
     );
   }
 }
@@ -210,11 +210,14 @@ export function formatMoney(
   currencyCode: string,
   locale = DEFAULT_LOCALE,
 ) {
-  assertNonNegativeSafeInteger(amountMinor);
+  const safeMinor = Number.isFinite(amountMinor) ? Math.round(amountMinor) : 0;
+  assertSafeInteger(safeMinor);
+  const isNegative = safeMinor < 0;
+  const absAmount = Math.abs(safeMinor);
   const normalizedCurrencyCode = normalizeCurrencyCode(currencyCode);
   const fractionDigits = getCurrencyFractionDigits(normalizedCurrencyCode);
   const scale = 10n ** BigInt(fractionDigits);
-  const amount = BigInt(amountMinor);
+  const amount = BigInt(absAmount);
   const major = amount / scale;
   const fraction = (amount % scale).toString().padStart(fractionDigits, '0');
   const formatter = getCurrencyFormatter(
@@ -223,27 +226,35 @@ export function formatMoney(
     fractionDigits,
   );
 
-  return formatter
+  const formatted = formatter
     .formatToParts(Number(major))
     .map((part) =>
       part.type === 'fraction' ? localizeDigits(fraction, locale) : part.value,
     )
     .join('');
+
+  return isNegative ? `-${formatted}` : formatted;
 }
 
 export function formatMoneyInput(amountMinor: number, currencyCode: string) {
-  assertNonNegativeSafeInteger(amountMinor);
+  const safeMinor = Number.isFinite(amountMinor) ? Math.round(amountMinor) : 0;
+  assertSafeInteger(safeMinor);
+  const isNegative = safeMinor < 0;
+  const absAmount = Math.abs(safeMinor);
   const fractionDigits = getCurrencyFractionDigits(currencyCode);
   const scale = 10n ** BigInt(fractionDigits);
-  const amount = BigInt(amountMinor);
+  const amount = BigInt(absAmount);
   const major = amount / scale;
 
+  let result: string;
   if (fractionDigits === 0) {
-    return major.toString();
+    result = major.toString();
+  } else {
+    const fraction = (amount % scale).toString().padStart(fractionDigits, '0');
+    result = `${major}.${fraction}`;
   }
 
-  const fraction = (amount % scale).toString().padStart(fractionDigits, '0');
-  return `${major}.${fraction}`;
+  return isNegative ? `-${result}` : result;
 }
 
 export function sumMoney(amountsMinor: readonly number[]) {
@@ -252,7 +263,7 @@ export function sumMoney(amountsMinor: readonly number[]) {
   for (const amountMinor of amountsMinor) {
     assertMoney(amountMinor);
     totalMinor += amountMinor;
-    assertNonNegativeSafeInteger(totalMinor);
+    assertSafeInteger(totalMinor);
   }
 
   return totalMinor;

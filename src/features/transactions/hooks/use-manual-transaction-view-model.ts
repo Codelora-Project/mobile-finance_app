@@ -411,7 +411,7 @@ export function useManualTransactionViewModel({
   const [errors, setErrors] = useState<FormErrors>({});
   const [picker, setPicker] = useState<PickerState>(null);
   const [receiptMenuVisible, setReceiptMenuVisible] = useState(false);
-  const [showDetailSection, setShowDetailSection] = useState(isEditMode);
+  const [showDetailSection, setShowDetailSection] = useState(false);
 
   const savingRef = useRef(false);
   const deletingRef = useRef(false);

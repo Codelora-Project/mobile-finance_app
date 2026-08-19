@@ -38,6 +38,8 @@ describe('money utilities', () => {
     expect(formatMoney(1_250, 'USD', 'en-US')).toBe('$12.50');
     expect(formatMoney(1_250, 'JPY', 'ja-JP')).toBe('￥1,250');
     expect(formatMoney(0, 'USD', 'en-US')).toBe('$0.00');
+    expect(formatMoney(-35_000, 'IDR', 'id-ID')).toBe('-Rp\u00a035.000');
+    expect(formatMoney(-1_250, 'USD', 'en-US')).toBe('-$12.50');
   });
 
   it('formats every safe minor-unit digit without floating-point loss', () => {
@@ -48,6 +50,7 @@ describe('money utilities', () => {
 
   it('formats editable amounts without changing their minor-unit value', () => {
     expect(formatMoneyInput(1_250, 'USD')).toBe('12.50');
+    expect(formatMoneyInput(-1_250, 'USD')).toBe('-12.50');
     expect(parseMoneyInput(formatMoneyInput(1_250, 'USD'), 'USD')).toBe(1_250);
     expect(
       parseMoneyInput(formatMoneyInput(Number.MAX_SAFE_INTEGER, 'USD'), 'USD'),

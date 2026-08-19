@@ -249,4 +249,58 @@ describe('Wallet & Account Management Screen', () => {
       expect(mockUnarchiveWallet).toHaveBeenCalledWith(expect.anything(), 3),
     );
   });
+
+  it('renders correctly without crashing when wallets have negative balances', async () => {
+    mockGetWalletSummary.mockResolvedValue({
+      operationalCashMinor: -250000,
+      totalNetWorthMinor: -250000,
+      trackingAssetsMinor: 0,
+      wallets: [
+        {
+          accountNumber: null,
+          accountType: 'cash',
+          color: '#10B981',
+          createdAt: 0,
+          currentBalanceMinor: -250000,
+          iconKey: 'cash',
+          id: 10,
+          includeInCashflow: true,
+          initialBalanceMinor: 0,
+          isArchived: false,
+          isDefault: true,
+          isFallback: false,
+          name: 'Dompet Minus',
+          sortOrder: 1,
+          systemKey: 'cash',
+          updatedAt: 0,
+        },
+      ],
+    });
+    mockGetWallets.mockResolvedValue([
+      {
+        accountNumber: null,
+        accountType: 'cash',
+        color: '#10B981',
+        createdAt: 0,
+        currentBalanceMinor: -250000,
+        iconKey: 'cash',
+        id: 10,
+        includeInCashflow: true,
+        initialBalanceMinor: 0,
+        isArchived: false,
+        isDefault: true,
+        isFallback: false,
+        name: 'Dompet Minus',
+        sortOrder: 1,
+        systemKey: 'cash',
+        updatedAt: 0,
+      },
+    ]);
+
+    await renderScreen('id');
+
+    await waitFor(() => {
+      expect(screen.getByText('Dompet Minus')).toBeOnTheScreen();
+    });
+  });
 });

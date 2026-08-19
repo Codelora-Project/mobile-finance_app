@@ -270,7 +270,6 @@ const styles = StyleSheet.create({
   timelineMetaRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: spacing.xs,
   },
   timelineRow: {

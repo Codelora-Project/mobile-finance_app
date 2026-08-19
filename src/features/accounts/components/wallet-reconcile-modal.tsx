@@ -59,7 +59,9 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
   if (!wallet) return null;
 
   const currentBalance = wallet.currentBalanceMinor;
-  const parsedActual = Number(actualBalanceInput.replace(/[^0-9]/g, '')) || 0;
+  const isNegativeInput = actualBalanceInput.trim().startsWith('-');
+  const digitsOnly = actualBalanceInput.replace(/[^0-9]/g, '');
+  const parsedActual = (isNegativeInput ? -1 : 1) * (Number(digitsOnly) || 0);
   const difference = parsedActual - currentBalance;
 
   async function handleSave() {
