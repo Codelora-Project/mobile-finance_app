@@ -4,7 +4,6 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useCurrency } from '@/lib/currency/currency-context';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
-import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
@@ -27,24 +26,22 @@ export const TransactionDateGroupHeader = memo(
         : `−${formatMoney(Math.abs(totalNetMinor), currencyCode)}`;
 
     return (
-      <View style={[styles.dateHeaderRow, { borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)' }]}>
-        <View
-          style={[
-            styles.dateHeaderPill,
-            {
-              backgroundColor: isDark ? 'rgba(37, 99, 235, 0.2)' : '#EFF6FF',
-            },
-          ]}
+      <View
+        style={[
+          styles.dateHeaderRow,
+          {
+            borderBottomColor: isDark
+              ? 'rgba(255, 255, 255, 0.06)'
+              : 'rgba(0, 0, 0, 0.05)',
+          },
+        ]}
+      >
+        <Text
+          numberOfLines={1}
+          style={[styles.dateHeaderTitle, { color: colors.textPrimary }]}
         >
-          <Text
-            style={[
-              styles.dateHeaderTitle,
-              { color: isDark ? '#93C5FD' : '#1D4ED8' },
-            ]}
-          >
-            {formattedDate.toUpperCase()}
-          </Text>
-        </View>
+          {formattedDate}
+        </Text>
         <Text
           style={[
             styles.dateHeaderNet,
@@ -65,12 +62,7 @@ const styles = StyleSheet.create({
   dateHeaderNet: {
     ...typography.metadata,
     fontSize: 12,
-    fontWeight: '700',
-  },
-  dateHeaderPill: {
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 3,
+    fontWeight: '600',
   },
   dateHeaderRow: {
     alignItems: 'center',
@@ -81,8 +73,9 @@ const styles = StyleSheet.create({
   },
   dateHeaderTitle: {
     ...typography.metadata,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.1,
   },
 });

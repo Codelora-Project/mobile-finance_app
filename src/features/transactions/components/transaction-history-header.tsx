@@ -11,6 +11,7 @@ import { typography } from '@/theme/typography';
 export type TransactionHistoryHeaderProps = {
   activeFiltersCount: number;
   onClearSearch: () => void;
+  onExport?: () => void;
   onOpenFilter: () => void;
   onSearchChange: (query: string) => void;
   searchQuery: string;
@@ -21,6 +22,7 @@ export const TransactionHistoryHeader = memo(
   function TransactionHistoryHeader({
     activeFiltersCount,
     onClearSearch,
+    onExport,
     onOpenFilter,
     onSearchChange,
     searchQuery,
@@ -134,6 +136,30 @@ export const TransactionHistoryHeader = memo(
               </View>
             ) : null}
           </Pressable>
+
+          {onExport ? (
+            <Pressable
+              accessibilityLabel="Ekspor CSV"
+              accessibilityRole="button"
+              onPress={onExport}
+              style={({ pressed }) => [
+                styles.iconActionBtn,
+                {
+                  backgroundColor: isDark
+                    ? colors.surfaceSecondary
+                    : '#F1F5F9',
+                  borderColor: colors.border,
+                },
+                pressed && styles.pressed,
+              ]}
+            >
+              <MaterialCommunityIcons
+                color={isDark ? colors.textSecondary : '#64748B'}
+                name="export-variant"
+                size={18}
+              />
+            </Pressable>
+          ) : null}
         </View>
       </View>
     );
@@ -180,6 +206,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  iconActionBtn: {
+    alignItems: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
   },
   pressed: {
     opacity: 0.75,

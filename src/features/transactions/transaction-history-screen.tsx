@@ -1,20 +1,35 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  View,
+} from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
 import { TransactionDateGroupHeader } from '@/features/transactions/components/transaction-date-group-header';
 import { TransactionHistoryEmptyState } from '@/features/transactions/components/transaction-history-empty-state';
 import { TransactionHistoryHeader } from '@/features/transactions/components/transaction-history-header';
 import { TransactionHistorySummaryBar } from '@/features/transactions/components/transaction-history-summary-bar';
+import { TransactionMonthSelector } from '@/features/transactions/components/transaction-month-selector';
+import { TransactionQuickFilterChips } from '@/features/transactions/components/transaction-quick-filter-chips';
 import { TransactionRowItem } from '@/features/transactions/components/transaction-row-item';
+import {
+  exportTransactionsToCsv,
+  shareTransactionCsv,
+} from '@/features/transactions/transaction-export-service';
 import { TransactionFilterModal } from '@/features/transactions/transaction-filter-modal';
 import {
+  deleteTransaction,
   listTransactions,
   type TransactionFilters,
   type TransactionListItem,
 } from '@/features/transactions/transaction-repository';
+import { useCurrency } from '@/lib/currency/currency-context';
 import { formatGroupDate } from '@/lib/dates';
 import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
@@ -72,6 +87,7 @@ export function TransactionHistoryScreen() {
   const router = useRouter();
   const { language, t } = useLanguage();
   const { colors } = useTheme();
+  const { currencyCode } = useCurrency();
   const { handleScroll } = useTabBarVisibility();
 
   const [transactions, setTransactions] = useState<TransactionListItem[]>([]);
@@ -84,8 +100,30 @@ export function TransactionHistoryScreen() {
   const [filters, setFilters] = useState<TransactionFilters>({});
   const [filterModalVisible, setFilterModalVisible] = useState(false);
 
+  // Month navigation state
+  const now = new Date();
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
+  const [isAllTime, setIsAllTime] = useState(false);
+
   const fetchIdRef = useRef(0);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Calculate effective filters combining month range and specific user filters
+  const effectiveFilters = useMemo<TransactionFilters>(() => {
+    if (isAllTime) {
+      return filters;
+    }
+    const lastDay = new Date(selectedYear, selectedMonth, 0).getDate();
+    const startDay = '01';
+    const endDay = String(lastDay).padStart(2, '0');
+    const monthStr = String(selectedMonth).padStart(2, '0');
+    return {
+      ...filters,
+      dateFrom: filters.dateFrom ?? `${selectedYear}-${monthStr}-${startDay}`,
+      dateTo: filters.dateTo ?? `${selectedYear}-${monthStr}-${endDay}`,
+    };
+  }, [filters, isAllTime, selectedMonth, selectedYear]);
 
   // Debounce search input
   useEffect(() => {
@@ -148,8 +186,112 @@ export function TransactionHistoryScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      void loadTransactions(filters, debouncedSearch, 0, false);
-    }, [debouncedSearch, filters, loadTransactions]),
+      void loadTransactions(effectiveFilters, debouncedSearch, 0, false);
+    }, [debouncedSearch, effectiveFilters, loadTransactions]),
+  );
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadTransactions(effectiveFilters, debouncedSearch, 0, false);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [debouncedSearch, effectiveFilters, loadTransactions]);
+
+  const handleExport = useCallback(async () => {
+    if (exporting) return;
+    if (transactions.length === 0) {
+      Alert.alert(
+        language === 'id' ? 'Ekspor Transaksi' : 'Export Transactions',
+        language === 'id'
+          ? 'Tidak ada transaksi yang cocok untuk diekspor.'
+          : 'No matching transactions to export.',
+      );
+      return;
+    }
+
+    setExporting(true);
+    try {
+      const allMatching = await listTransactions(database, {
+        filters: effectiveFilters,
+        limit: 10000,
+        search: debouncedSearch.trim() || undefined,
+      });
+
+      const { uri } = await exportTransactionsToCsv(
+        allMatching.items,
+        language,
+      );
+      await shareTransactionCsv(
+        uri,
+        language === 'id' ? 'Ekspor Riwayat Transaksi' : 'Export Transaction History',
+      );
+    } catch (err) {
+      const mapped = mapError(err, 'FILE_OPERATION_FAILED');
+      Alert.alert(
+        language === 'id' ? 'Gagal Mengekspor' : 'Export Failed',
+        mapped.message,
+      );
+    } finally {
+      setExporting(false);
+    }
+  }, [database, debouncedSearch, effectiveFilters, exporting, language, transactions.length]);
+
+  const handleLongPressTransaction = useCallback(
+    (tx: TransactionListItem) => {
+      Alert.alert(
+        tx.counterparty || tx.categoryName,
+        language === 'id'
+          ? 'Pilih aksi untuk transaksi ini:'
+          : 'Choose an action for this transaction:',
+        [
+          {
+            text: language === 'id' ? 'Batal' : 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: language === 'id' ? 'Edit Transaksi' : 'Edit Transaction',
+            onPress: () => router.push(`/transactions/${tx.id}/edit`),
+          },
+          {
+            text: language === 'id' ? 'Hapus' : 'Delete',
+            style: 'destructive',
+            onPress: () => {
+              Alert.alert(
+                language === 'id' ? 'Hapus Transaksi' : 'Delete Transaction',
+                language === 'id'
+                  ? 'Apakah Anda yakin ingin menghapus transaksi ini?'
+                  : 'Are you sure you want to delete this transaction?',
+                [
+                  {
+                    text: language === 'id' ? 'Batal' : 'Cancel',
+                    style: 'cancel',
+                  },
+                  {
+                    text: language === 'id' ? 'Hapus' : 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                      try {
+                        await deleteTransaction(database, tx.id);
+                        await loadTransactions(effectiveFilters, debouncedSearch, 0, false);
+                      } catch (delErr) {
+                        const mapped = mapError(delErr, 'DATABASE_WRITE_FAILED');
+                        Alert.alert('Error', mapped.message);
+                      }
+                    },
+                  },
+                ],
+              );
+            },
+          },
+        ],
+      );
+    },
+    [database, debouncedSearch, effectiveFilters, language, loadTransactions, router],
   );
 
   const handleOpenDetail = useCallback(
@@ -165,15 +307,44 @@ export function TransactionHistoryScreen() {
 
   const handleResetFilters = useCallback(() => {
     setFilters({});
+    setIsAllTime(false);
     setSearchQuery('');
     setDebouncedSearch('');
   }, []);
 
+  const handleChangeMonth = useCallback((year: number, month: number) => {
+    setSelectedYear(year);
+    setSelectedMonth(month);
+    setIsAllTime(false);
+    setFilters((prev) => {
+      const next = { ...prev };
+      delete next.dateFrom;
+      delete next.dateTo;
+      return next;
+    });
+  }, []);
+
+  const handleToggleAllTime = useCallback(() => {
+    setIsAllTime((prev) => !prev);
+  }, []);
+
+  const handleSelectTypeFilter = useCallback((type?: 'expense' | 'income') => {
+    setFilters((prev) => {
+      const next = { ...prev };
+      if (!type || prev.type === type) {
+        delete next.type;
+      } else {
+        next.type = type;
+      }
+      return next;
+    });
+  }, []);
+
   const handleEndReached = useCallback(() => {
     if (hasMore && !loading && !loadingMore && nextOffset !== null) {
-      void loadTransactions(filters, debouncedSearch, nextOffset, true);
+      void loadTransactions(effectiveFilters, debouncedSearch, nextOffset, true);
     }
-  }, [debouncedSearch, filters, hasMore, loadTransactions, loading, loadingMore, nextOffset]);
+  }, [debouncedSearch, effectiveFilters, hasMore, loadTransactions, loading, loadingMore, nextOffset]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -227,6 +398,7 @@ export function TransactionHistoryScreen() {
             <TransactionRowItem
               isLast={idx === item.transactions.length - 1}
               key={tx.id}
+              onLongPress={handleLongPressTransaction}
               onPress={handleOpenDetail}
               receiptBadgeText={t.home.receiptBadge}
               reimbursableBadgeText={
@@ -238,7 +410,7 @@ export function TransactionHistoryScreen() {
         </View>
       </View>
     ),
-    [colors.border, colors.surface, colors.textPrimary, handleOpenDetail, t],
+    [colors.border, colors.surface, colors.textPrimary, handleLongPressTransaction, handleOpenDetail, t],
   );
 
   const keyExtractor = useCallback((item: DateGroup) => item.key, []);
@@ -249,24 +421,45 @@ export function TransactionHistoryScreen() {
       <TransactionHistoryHeader
         activeFiltersCount={activeFiltersCount}
         onClearSearch={() => setSearchQuery('')}
+        onExport={handleExport}
         onOpenFilter={() => setFilterModalVisible(true)}
         onSearchChange={setSearchQuery}
         searchQuery={searchQuery}
         t={t}
       />
 
-      {/* 2. Top Summary Bar (if transactions exist) */}
+      {/* 2. Month Selector Carousel */}
+      <TransactionMonthSelector
+        isAllTime={isAllTime}
+        language={language}
+        month={selectedMonth}
+        onChangeMonth={handleChangeMonth}
+        onToggleAllTime={handleToggleAllTime}
+        year={selectedYear}
+      />
+
+      {/* 3. Quick Filter Chips Bar */}
+      <TransactionQuickFilterChips
+        filters={filters}
+        onFilterChange={setFilters}
+        t={t}
+      />
+
+      {/* 4. Top Summary Bar (if transactions exist) */}
       {transactions.length > 0 ? (
         <TransactionHistorySummaryBar
-          currencyCode="IDR"
+          activeTypeFilter={filters.type}
+          currencyCode={currencyCode}
           expenseLabel={t.transactions.expense}
           incomeLabel={t.transactions.income}
+          netLabel={language === 'id' ? 'Arus Kas' : 'Net Cashflow'}
+          onSelectTypeFilter={handleSelectTypeFilter}
           totalExpenseMinor={totalExpenseMinor}
           totalIncomeMinor={totalIncomeMinor}
         />
       ) : null}
 
-      {/* 3. Virtualized Transaction List */}
+      {/* 5. Virtualized Transaction List */}
       {loading ? (
         <View style={styles.centerLoading}>
           <ActivityIndicator color={colors.primary} size="large" />
@@ -278,6 +471,15 @@ export function TransactionHistoryScreen() {
           initialNumToRender={15}
           keyExtractor={keyExtractor}
           onScroll={handleScroll}
+          refreshControl={
+            <RefreshControl
+              colors={[colors.primary]}
+              onRefresh={handleRefresh}
+              progressBackgroundColor={colors.surface}
+              refreshing={refreshing}
+              tintColor={colors.primary}
+            />
+          }
           scrollEventThrottle={16}
           ListEmptyComponent={
             <TransactionHistoryEmptyState

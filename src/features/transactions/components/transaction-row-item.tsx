@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { getCategoryMeta } from '@/features/categories/category-meta';
 import type { TransactionListItem } from '@/features/transactions/transaction-repository';
+import { toLocalDateTimeInput } from '@/lib/dates';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -12,6 +13,7 @@ import { typography } from '@/theme/typography';
 
 export type TransactionRowItemProps = {
   isLast?: boolean;
+  onLongPress?: (transaction: TransactionListItem) => void;
   onPress: (id: number) => void;
   receiptBadgeText?: string;
   reimbursableBadgeText?: string;
@@ -20,6 +22,7 @@ export type TransactionRowItemProps = {
 
 export const TransactionRowItem = memo(function TransactionRowItem({
   isLast = false,
+  onLongPress,
   onPress,
   receiptBadgeText = 'Struk',
   reimbursableBadgeText = 'Reimburse',
@@ -45,7 +48,7 @@ export const TransactionRowItem = memo(function TransactionRowItem({
       ? transaction.counterparty?.trim()
       : transaction.categoryName;
 
-  // 2. Determine Subtitle (avoid duplicate category name when no counterparty)
+  // 2. Determine Subtitle
   const metaSubtitle = isTransfer
     ? 'Transfer Antar Dompet'
     : hasCounterparty
@@ -54,6 +57,20 @@ export const TransactionRowItem = memo(function TransactionRowItem({
       }`
     : transaction.paymentMethodName || '';
 
+  // 3. Format Time
+  let timeStr = '';
+  try {
+    if (transaction.occurredAt) {
+      const { time } = toLocalDateTimeInput(
+        transaction.occurredAt,
+        transaction.timezoneOffsetMinutes ?? 0,
+      );
+      timeStr = time;
+    }
+  } catch {
+    // Fallback if timestamp issue
+  }
+
   return (
     <Pressable
       accessibilityLabel={`${title}, ${formatMoney(
@@ -61,50 +78,49 @@ export const TransactionRowItem = memo(function TransactionRowItem({
         transaction.currencyCode,
       )}`}
       accessibilityRole="button"
+      onLongPress={onLongPress ? () => onLongPress(transaction) : undefined}
       onPress={() => onPress(transaction.id)}
       style={({ pressed }) => [
-        styles.timelineRow,
+        styles.rowContainer,
         pressed ? { opacity: 0.7 } : null,
       ]}
     >
-      {/* Timeline Dot & Connecting Line */}
-      <View style={styles.timelineTrackCol}>
-        <View
-          style={[
-            styles.timelineDot,
-            { backgroundColor: isTransfer ? '#2563EB' : meta.color },
-          ]}
+      {/* Category Icon Badge (Unified Monochromatic) */}
+      <View
+        style={[
+          styles.iconBadge,
+          {
+            backgroundColor: meta.backgroundColor,
+          },
+        ]}
+      >
+        <MaterialCommunityIcons
+          color={meta.color}
+          name={meta.icon}
+          size={19}
         />
-        {!isLast ? (
-          <View
-            style={[
-              styles.timelineLine,
-              { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)' },
-            ]}
-          />
-        ) : null}
       </View>
 
       {/* Content Column */}
-      <View style={styles.timelineContentCol}>
+      <View style={styles.contentCol}>
         {/* Row 1: Title & Amount */}
-        <View style={styles.timelineMainRow}>
+        <View style={styles.mainRow}>
           <Text
             numberOfLines={1}
-            style={[styles.timelineItemTitle, { color: colors.textPrimary }]}
+            style={[styles.itemTitle, { color: colors.textPrimary }]}
           >
             {title}
           </Text>
           <Text
             style={[
-              styles.timelineAmount,
+              styles.itemAmount,
               {
                 color:
                   transaction.type === 'expense'
                     ? colors.destructive
                     : transaction.type === 'income'
                     ? colors.positive
-                    : '#2563EB',
+                    : colors.textPrimary,
               },
             ]}
           >
@@ -117,82 +133,80 @@ export const TransactionRowItem = memo(function TransactionRowItem({
           </Text>
         </View>
 
-        {/* Row 2: Subtitle & Badges */}
-        <View style={styles.timelineMetaRow}>
-          {metaSubtitle ? (
-            <Text
-              numberOfLines={1}
-              style={[
-                styles.timelineCategoryName,
-                { color: colors.textSecondary },
-              ]}
-            >
-              {metaSubtitle}
-            </Text>
-          ) : null}
-
-          {isTransfer ? (
-            <View
-              style={[
-                styles.receiptPill,
-                {
-                  backgroundColor: isDark ? '#1E3A8A' : '#EFF6FF',
-                  borderColor: isDark ? '#2563EB' : '#BFDBFE',
-                },
-              ]}
-            >
-              <MaterialCommunityIcons
-                color="#2563EB"
-                name="swap-horizontal"
-                size={10}
-              />
-              <Text style={[styles.receiptPillText, { color: '#2563EB' }]}>
-                Transfer
+        {/* Row 2: Subtitle, Time & Badges */}
+        <View style={styles.metaRow}>
+          <View style={styles.metaLeft}>
+            {metaSubtitle ? (
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.categorySubtitle,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {metaSubtitle}
               </Text>
-            </View>
-          ) : null}
-
-          {transaction.hasReceipt ? (
-            <View
-              style={[
-                styles.receiptPill,
-                {
-                  backgroundColor: isDark ? '#312E81' : '#EDE9FE',
-                  borderColor: isDark ? '#4338CA' : '#DDD6FE',
-                },
-              ]}
-            >
-              <MaterialCommunityIcons
-                color="#7C3AED"
-                name="receipt-outline"
-                size={10}
-              />
-              <Text style={styles.receiptPillText}>
-                {receiptBadgeText}
+            ) : null}
+            {timeStr ? (
+              <Text style={[styles.timeText, { color: colors.textMuted }]}>
+                {metaSubtitle ? ` · ${timeStr}` : timeStr}
               </Text>
-            </View>
-          ) : null}
+            ) : null}
+          </View>
 
-          {transaction.isReimbursable ? (
-            <View
-              style={[
-                styles.reimbursablePill,
-                {
-                  backgroundColor: isDark ? '#451A03' : '#FEF3C7',
-                  borderColor: isDark ? '#D97706' : '#FDE68A',
-                },
-              ]}
-            >
-              <MaterialCommunityIcons
-                color="#D97706"
-                name="briefcase-outline"
-                size={10}
-              />
-              <Text style={styles.reimbursablePillText}>
-                {reimbursableBadgeText}
-              </Text>
-            </View>
-          ) : null}
+          {/* Badges */}
+          <View style={styles.badgesWrap}>
+            {transaction.hasReceipt ? (
+              <View
+                style={[
+                  styles.pillBadge,
+                  {
+                    backgroundColor: isDark
+                      ? 'rgba(255,255,255,0.06)'
+                      : 'rgba(0,0,0,0.04)',
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  color={colors.textSecondary}
+                  name="receipt-outline"
+                  size={10}
+                />
+                <Text
+                  style={[styles.pillBadgeText, { color: colors.textSecondary }]}
+                >
+                  {receiptBadgeText}
+                </Text>
+              </View>
+            ) : null}
+
+            {transaction.isReimbursable ? (
+              <View
+                style={[
+                  styles.pillBadge,
+                  {
+                    backgroundColor: isDark
+                      ? 'rgba(255,255,255,0.06)'
+                      : 'rgba(0,0,0,0.04)',
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  color={colors.textSecondary}
+                  name="briefcase-outline"
+                  size={10}
+                />
+                <Text
+                  style={[
+                    styles.pillBadgeText,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  {reimbursableBadgeText}
+                </Text>
+              </View>
+            ) : null}
+          </View>
         </View>
       </View>
     </Pressable>
@@ -200,85 +214,77 @@ export const TransactionRowItem = memo(function TransactionRowItem({
 });
 
 const styles = StyleSheet.create({
-  receiptPill: {
+  badgesWrap: {
     alignItems: 'center',
-    borderRadius: radius.pill,
-    borderWidth: 1,
     flexDirection: 'row',
-    gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
+    gap: 4,
   },
-  receiptPillText: {
-    ...typography.metadata,
-    color: '#7C3AED',
-    fontSize: 10,
-    fontWeight: '600',
-    lineHeight: 12,
-  },
-  reimbursablePill: {
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-  },
-  reimbursablePillText: {
-    ...typography.metadata,
-    color: '#D97706',
-    fontSize: 10,
-    fontWeight: '600',
-    lineHeight: 12,
-  },
-  timelineAmount: {
-    ...typography.body,
-    fontWeight: '700',
-  },
-  timelineCategoryName: {
+  categorySubtitle: {
     ...typography.metadata,
     flexShrink: 1,
+    fontSize: 12,
   },
-  timelineContentCol: {
+  contentCol: {
     flex: 1,
-    gap: 2,
+    gap: 3,
+    justifyContent: 'center',
   },
-  timelineDot: {
-    borderRadius: radius.pill,
-    height: 10,
-    marginTop: 5,
-    width: 10,
+  iconBadge: {
+    alignItems: 'center',
+    borderRadius: radius.md,
+    height: 38,
+    justifyContent: 'center',
+    width: 38,
   },
-  timelineItemTitle: {
+  itemAmount: {
+    ...typography.body,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  itemTitle: {
     ...typography.body,
     flex: 1,
+    fontSize: 14,
     fontWeight: '600',
     marginRight: spacing.sm,
   },
-  timelineLine: {
-    bottom: -8,
-    position: 'absolute',
-    top: 18,
-    width: 2,
-  },
-  timelineMainRow: {
+  mainRow: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  timelineMetaRow: {
+  metaLeft: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+  },
+  metaRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: spacing.xs,
+    justifyContent: 'space-between',
   },
-  timelineRow: {
-    flexDirection: 'row',
-    paddingVertical: spacing.xs + 2,
-  },
-  timelineTrackCol: {
+  pillBadge: {
     alignItems: 'center',
-    marginRight: spacing.sm,
-    width: 16,
+    borderRadius: radius.pill,
+    flexDirection: 'row',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+  },
+  pillBadgeText: {
+    ...typography.metadata,
+    fontSize: 10,
+    fontWeight: '600',
+    lineHeight: 12,
+  },
+  rowContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm + 2,
+    paddingVertical: spacing.xs + 3,
+  },
+  timeText: {
+    ...typography.metadata,
+    fontSize: 12,
   },
 });

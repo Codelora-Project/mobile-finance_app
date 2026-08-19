@@ -44,10 +44,19 @@ jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
 });
 
 const mockCreateTransaction = jest.fn();
+const mockDeleteTransaction = jest.fn();
+const mockExportTransactionsToCsv = jest.fn().mockResolvedValue({ fileName: 'test.csv', uri: 'file:///test.csv' });
+const mockShareTransactionCsv = jest.fn().mockResolvedValue(undefined);
 
 jest.mock('@/features/transactions/transaction-repository', () => ({
   createTransaction: (...args: unknown[]) => mockCreateTransaction(...args),
+  deleteTransaction: (...args: unknown[]) => mockDeleteTransaction(...args),
   listTransactions: (...args: unknown[]) => mockListTransactions(...args),
+}));
+
+jest.mock('@/features/transactions/transaction-export-service', () => ({
+  exportTransactionsToCsv: (...args: unknown[]) => mockExportTransactionsToCsv(...args),
+  shareTransactionCsv: (...args: unknown[]) => mockShareTransactionCsv(...args),
 }));
 
 jest.mock('@/features/transactions/transaction-filter-modal', () => {
@@ -152,5 +161,81 @@ describe('transaction history screen', () => {
     expect(
       await screen.findByText('Tidak Ada Transaksi yang Cocok'),
     ).toBeOnTheScreen();
+  });
+
+  it('filters transactions when quick filter chips are pressed', async () => {
+    mockListTransactions.mockResolvedValue({
+      hasMore: false,
+      items: [transaction],
+      nextOffset: 1,
+    });
+
+    await render(<TransactionHistoryScreen />);
+    await screen.findByRole('button', { name: /Coffee Shop/ });
+
+    // Press 'Pengeluaran' chip
+    const expenseChip = screen.getByRole('tab', { name: 'Pengeluaran' });
+    await fireEvent.press(expenseChip);
+
+    await waitFor(() => {
+      expect(mockListTransactions).toHaveBeenCalledWith(
+        mockDatabase,
+        expect.objectContaining({
+          filters: expect.objectContaining({ type: 'expense' }),
+        }),
+      );
+    });
+  });
+
+  it('navigates months and toggles all time with Month Selector', async () => {
+    mockListTransactions.mockResolvedValue({
+      hasMore: false,
+      items: [transaction],
+      nextOffset: 1,
+    });
+
+    await render(<TransactionHistoryScreen />);
+    await screen.findByRole('button', { name: /Coffee Shop/ });
+
+    // Press Previous Month button
+    const prevBtn = screen.getByRole('button', { name: 'Bulan Sebelumnya' });
+    await fireEvent.press(prevBtn);
+
+    await waitFor(() => {
+      expect(mockListTransactions).toHaveBeenCalledTimes(2);
+    });
+
+    // Press Toggle All Time
+    const toggleAllTimeBtn = screen.getByText('Semua waktu');
+    await fireEvent.press(toggleAllTimeBtn);
+
+    await waitFor(() => {
+      expect(mockListTransactions).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  it('triggers CSV export when export button is pressed', async () => {
+    mockListTransactions.mockResolvedValue({
+      hasMore: false,
+      items: [transaction],
+      nextOffset: 1,
+    });
+
+    await render(<TransactionHistoryScreen />);
+    await screen.findByRole('button', { name: /Coffee Shop/ });
+
+    const exportBtn = screen.getByRole('button', { name: 'Ekspor CSV' });
+    await fireEvent.press(exportBtn);
+
+    await waitFor(() => {
+      expect(mockExportTransactionsToCsv).toHaveBeenCalledWith(
+        [transaction],
+        'id',
+      );
+      expect(mockShareTransactionCsv).toHaveBeenCalledWith(
+        'file:///test.csv',
+        'Ekspor Riwayat Transaksi',
+      );
+    });
   });
 });
