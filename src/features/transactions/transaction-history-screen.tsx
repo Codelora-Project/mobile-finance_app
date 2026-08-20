@@ -171,10 +171,10 @@ export function TransactionHistoryScreen() {
         dateFrom: startStr,
         dateTo: endStr,
         primaryLabel: `${startMonth} – ${endMonth}`,
-        secondaryLabel: new Intl.DateTimeFormat(locale, {
-          month: 'long',
-          year: 'numeric',
-        }).format(monday),
+        secondaryLabel:
+          language === 'id'
+            ? 'Ketuk untuk Semua Waktu'
+            : 'Tap for All Time',
       };
     }
 
@@ -197,7 +197,8 @@ export function TransactionHistoryScreen() {
       dateFrom: startStr,
       dateTo: endStr,
       primaryLabel: monthYear,
-      secondaryLabel: language === 'id' ? 'Semua waktu' : 'All time',
+      secondaryLabel:
+        language === 'id' ? 'Ketuk untuk Semua Waktu' : 'Tap for All Time',
     };
   }, [language, period, selectedDate]);
 

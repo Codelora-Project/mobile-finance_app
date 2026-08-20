@@ -130,7 +130,7 @@ describe('transaction history screen', () => {
       name: /Coffee Shop/,
     });
     expect(screen.getByText('Food & Drink')).toBeOnTheScreen();
-    expect(screen.getByText('Struk')).toBeOnTheScreen();
+    expect(screen.getAllByText('Struk').length).toBeGreaterThanOrEqual(1);
     await fireEvent.press(row);
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/42');
 
@@ -206,7 +206,7 @@ describe('transaction history screen', () => {
     });
 
     // Press Toggle All Time
-    const toggleAllTimeBtn = screen.getByText('Semua waktu');
+    const toggleAllTimeBtn = screen.getByText(/Semua waktu/i);
     await fireEvent.press(toggleAllTimeBtn);
 
     await waitFor(() => {

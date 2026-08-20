@@ -58,32 +58,32 @@ export const TransactionQuickFilterChips = memo(
       {
         icon: 'format-list-bulleted',
         key: 'all',
-        label: t.transactions.all,
+        label: t.transactions.all || 'Semua',
       },
       {
         icon: 'arrow-up-right',
         key: 'expense',
-        label: t.transactions.expense,
+        label: t.transactions.expense || 'Pengeluaran',
       },
       {
         icon: 'arrow-down-left',
         key: 'income',
-        label: t.transactions.income,
+        label: t.transactions.income || 'Pemasukan',
       },
       {
         icon: 'swap-horizontal',
         key: 'transfer',
-        label: t.transactions.transfer,
+        label: t.transactions.transfer || 'Transfer',
       },
       {
-        icon: 'receipt-outline',
+        icon: 'receipt-text-outline',
         key: 'withReceipt',
-        label: t.transactions.withReceipt,
+        label: t.transactions.withReceipt || 'Struk',
       },
       {
         icon: 'briefcase-outline',
         key: 'reimbursable',
-        label: t.transactions.reimbursable,
+        label: t.transactions.reimbursable || 'Klaim Kantor',
       },
     ];
 
@@ -182,9 +182,10 @@ export const TransactionQuickFilterChips = memo(
                       : colors.textSecondary
                   }
                   name={chip.icon}
-                  size={14}
+                  size={15}
                 />
                 <Text
+                  numberOfLines={1}
                   style={[
                     styles.chipText,
                     {
@@ -214,13 +215,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 5,
+    flexShrink: 0,
+    gap: 6,
     paddingHorizontal: spacing.sm + 4,
     paddingVertical: 7,
   },
   chipText: {
     ...typography.metadata,
-    fontSize: 12,
+    fontSize: 12.5,
   },
   container: {
     paddingVertical: spacing.xs,
