@@ -27,6 +27,7 @@ import { HomeDisplaySettingsModal } from '@/features/home/components/home-displa
 import { HomeHeader } from '@/features/home/components/home-header';
 import { HomeQuickCategoryLog } from '@/features/home/components/home-quick-category-log';
 import { HomeQuickLogModal } from '@/features/home/components/home-quick-log-modal';
+import { HomeQuickShortcuts } from '@/features/home/components/home-quick-shortcuts';
 import { HomeRecentTransactions } from '@/features/home/components/home-recent-transactions';
 import { HomeSummaryCard } from '@/features/home/components/home-summary-card';
 import { HomeWalletChipsBar } from '@/features/home/components/home-wallet-chips-bar';
@@ -425,7 +426,10 @@ export function HomeScreen() {
           />
         ) : null}
 
-        {/* 2.3 Fast-Track Quick Category Log (Toggleable) */}
+        {/* 2.3 Quick Features Grid (Klaim, Target, Kategori, Data) */}
+        <HomeQuickShortcuts language={language} t={t} />
+
+        {/* 2.4 Fast-Track Quick Category Log (Toggleable) */}
         {showQuickLog ? (
           <HomeQuickCategoryLog
             categories={displayedQuickLogCategories}

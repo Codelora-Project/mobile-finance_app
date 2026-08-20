@@ -27,10 +27,10 @@ function getTabIcon(routeName: string, focused: boolean): TabIconName {
       return focused ? 'format-list-bulleted-square' : 'format-list-bulleted';
     case 'analytics':
       return focused ? 'chart-box' : 'chart-box-outline';
+    case 'claims':
+      return focused ? 'briefcase' : 'briefcase-outline';
     case 'goals':
       return focused ? 'bullseye-arrow' : 'bullseye';
-    case 'claims':
-      return focused ? 'file-document' : 'file-document-outline';
     default:
       return 'circle';
   }
