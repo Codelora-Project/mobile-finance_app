@@ -14,8 +14,10 @@ import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
 import { useBottomSheetGesture } from '@/components/ui/use-bottom-sheet-gesture';
 import {
-  getWalletSummary,
-} from '@/features/wallets/wallet-repository';
+  listCategoryBudgets,
+  type CategoryBudget,
+} from '@/features/budgets/budget-repository';
+import { getWalletSummary } from '@/features/wallets/wallet-repository';
 import type { WalletSummary } from '@/features/wallets/wallet-types';
 import {
   listCategories,
@@ -24,10 +26,10 @@ import {
 import type { HabitStats } from '@/features/habits/habit-repository';
 import { getHabitStats } from '@/features/habits/habit-repository';
 import { HomeDisplaySettingsModal } from '@/features/home/components/home-display-settings-modal';
+import { HomeFinancialInsight } from '@/features/home/components/home-financial-insight';
 import { HomeHeader } from '@/features/home/components/home-header';
 import { HomeQuickCategoryLog } from '@/features/home/components/home-quick-category-log';
 import { HomeQuickLogModal } from '@/features/home/components/home-quick-log-modal';
-import { HomeQuickShortcuts } from '@/features/home/components/home-quick-shortcuts';
 import { HomeRecentTransactions } from '@/features/home/components/home-recent-transactions';
 import { HomeSummaryCard } from '@/features/home/components/home-summary-card';
 import { HomeWalletChipsBar } from '@/features/home/components/home-wallet-chips-bar';
@@ -64,10 +66,13 @@ export function HomeScreen() {
   const [period, setPeriod] = useState<HomePeriod>('monthly');
   const [referenceDate] = useState<Date>(() => new Date());
   const [selectedWalletId, setSelectedWalletId] = useState<number | null>(null);
-  const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(null);
+  const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(
+    null,
+  );
   const [summary, setSummary] = useState<HomeSummary | null>(null);
   const [habitStats, setHabitStats] = useState<HabitStats | null>(null);
   const [allCategories, setAllCategories] = useState<Category[]>([]);
+  const [budgets, setBudgets] = useState<readonly CategoryBudget[]>([]);
   const [pinnedCategoryIds, setPinnedCategoryIds] = useState<number[]>(
     DEFAULT_QUICK_LOG_IDS,
   );
@@ -105,6 +110,7 @@ export function HomeScreen() {
           nextCategories,
           nextQuickLogIds,
           nextDisplayPrefs,
+          nextBudgets,
         ] = await Promise.all([
           getHomeSummary(
             database,
@@ -118,6 +124,7 @@ export function HomeScreen() {
           listCategories(database),
           getQuickLogCategoryIds(database),
           getHomeDisplayPreferences(database),
+          listCategoryBudgets(database),
         ]);
 
         if (requestId.current !== currentRequest) {
@@ -134,6 +141,7 @@ export function HomeScreen() {
         setShowWalletChips(nextDisplayPrefs.showWalletChips);
         setShowQuickLog(nextDisplayPrefs.showQuickLog);
         setHideBalance(nextDisplayPrefs.hideBalance);
+        setBudgets(nextBudgets);
       } catch (loadError) {
         if (requestId.current === currentRequest) {
           const mappedError = mapError(loadError, 'DATABASE_WRITE_FAILED');
@@ -156,7 +164,14 @@ export function HomeScreen() {
         }
       }
     },
-    [database, language, period, referenceDate, selectedWalletId, t.home.loadFailed],
+    [
+      database,
+      language,
+      period,
+      referenceDate,
+      selectedWalletId,
+      t.home.loadFailed,
+    ],
   );
 
   useFocusEffect(
@@ -323,21 +338,18 @@ export function HomeScreen() {
     }[] = [];
 
     for (const [date, items] of map.entries()) {
-      const netMinor = items.reduce(
-        (sum, item) => {
-          if (item.type === 'income') return sum + item.amountMinor;
-          if (item.type === 'expense') return sum - item.amountMinor;
-          if (selectedWalletId === null) return sum;
-          if (item.transferToPaymentMethodId === selectedWalletId) {
-            return sum + item.amountMinor;
-          }
-          if (item.paymentMethodId === selectedWalletId) {
-            return sum - item.amountMinor - (item.transferFeeMinor ?? 0);
-          }
-          return sum;
-        },
-        0,
-      );
+      const netMinor = items.reduce((sum, item) => {
+        if (item.type === 'income') return sum + item.amountMinor;
+        if (item.type === 'expense') return sum - item.amountMinor;
+        if (selectedWalletId === null) return sum;
+        if (item.transferToPaymentMethodId === selectedWalletId) {
+          return sum + item.amountMinor;
+        }
+        if (item.paymentMethodId === selectedWalletId) {
+          return sum - item.amountMinor - (item.transferFeeMinor ?? 0);
+        }
+        return sum;
+      }, 0);
 
       groups.push({
         date,
@@ -372,7 +384,12 @@ export function HomeScreen() {
           <RefreshControl
             colors={[colors.primary]}
             onRefresh={() =>
-              void loadSummary(period, referenceDate, 'refresh', selectedWalletId)
+              void loadSummary(
+                period,
+                referenceDate,
+                'refresh',
+                selectedWalletId,
+              )
             }
             refreshing={refreshing}
             tintColor={colors.primary}
@@ -395,15 +412,18 @@ export function HomeScreen() {
               name="alert-circle-outline"
               size={24}
             />
-            <Text
-              style={[styles.errorCardText, { color: colors.destructive }]}
-            >
+            <Text style={[styles.errorCardText, { color: colors.destructive }]}>
               {error}
             </Text>
             <AppButton
               label={t.home.tryAgain}
               onPress={() =>
-                void loadSummary(period, referenceDate, 'focus', selectedWalletId)
+                void loadSummary(
+                  period,
+                  referenceDate,
+                  'focus',
+                  selectedWalletId,
+                )
               }
               variant="secondary"
             />
@@ -434,20 +454,16 @@ export function HomeScreen() {
           />
         ) : null}
 
-        {/* 2.3 Quick Features Grid (Klaim, Target, Kategori, Data) */}
-        <HomeQuickShortcuts language={language} t={t} />
-
-        {/* 2.4 Fast-Track Quick Category Log (Toggleable) */}
-        {showQuickLog ? (
-          <HomeQuickCategoryLog
-            categories={displayedQuickLogCategories}
-            onOpenCustomize={handleOpenCustomizeModal}
-            onSelectCategory={handleSelectQuickLogCategory}
+        {summary ? (
+          <HomeFinancialInsight
+            budgets={budgets}
+            hideBalance={hideBalance}
+            summary={summary}
             t={t}
           />
         ) : null}
 
-        {/* 2.4 Recent Transactions Timeline */}
+        {/* Recent activity stays above secondary shortcuts. */}
         <HomeRecentTransactions
           currencyCode={summary?.currencyCode ?? 'IDR'}
           groupedTimeline={groupedTimeline}
@@ -456,6 +472,16 @@ export function HomeScreen() {
           selectedWalletId={selectedWalletId}
           t={t}
         />
+
+        {/* Fast-Track Quick Category Log (Toggleable) */}
+        {showQuickLog ? (
+          <HomeQuickCategoryLog
+            categories={displayedQuickLogCategories}
+            onOpenCustomize={handleOpenCustomizeModal}
+            onSelectCategory={handleSelectQuickLogCategory}
+            t={t}
+          />
+        ) : null}
       </ScrollView>
 
       {/* Home Display Settings Bottom Sheet Modal 🎚️ */}

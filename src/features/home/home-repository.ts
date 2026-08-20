@@ -44,6 +44,7 @@ export type HomeSummary = Readonly<{
   expenseMinor: number;
   incomeMinor: number;
   netMinor: number;
+  previousNetMinor: number;
   categoryTotals: readonly HomeCategoryTotal[];
   recentTransactions: readonly TransactionListItem[];
 }>;
@@ -144,12 +145,22 @@ export function formatPeriodLabel(
   }
 
   if (period === 'weekly') {
-    const { startDate, endDateExclusive } = getPeriodRange('weekly', referenceDate);
+    const { startDate, endDateExclusive } = getPeriodRange(
+      'weekly',
+      referenceDate,
+    );
     const startObj = new Date(startDate);
     const endObj = new Date(endDateExclusive);
     endObj.setDate(endObj.getDate() - 1);
-    const sFmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(startObj);
-    const eFmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' }).format(endObj);
+    const sFmt = new Intl.DateTimeFormat(locale, {
+      day: 'numeric',
+      month: 'short',
+    }).format(startObj);
+    const eFmt = new Intl.DateTimeFormat(locale, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }).format(endObj);
     return `${sFmt} - ${eFmt}`;
   }
 
@@ -209,6 +220,10 @@ export async function getHomeSummary(
   walletId?: number | null,
 ): Promise<HomeSummary> {
   const { startDate, endDateExclusive } = getPeriodRange(period, referenceDate);
+  const previousRange = getPeriodRange(
+    period,
+    shiftPeriodDate(referenceDate, period, -1),
+  );
   const periodLabel = formatPeriodLabel(referenceDate, period, language);
 
   const currencySetting = await database.getFirstAsync<CurrencySettingRow>(
@@ -237,6 +252,15 @@ export async function getHomeSummary(
   const totalsParams = walletId
     ? [startDate, endDateExclusive, currencyCode, walletId, walletId]
     : [startDate, endDateExclusive, currencyCode];
+  const previousTotalsParams = walletId
+    ? [
+        previousRange.startDate,
+        previousRange.endDateExclusive,
+        currencyCode,
+        walletId,
+        walletId,
+      ]
+    : [previousRange.startDate, previousRange.endDateExclusive, currencyCode];
 
   const categorySql = walletId
     ? `SELECT
@@ -268,17 +292,29 @@ export async function getHomeSummary(
        LIMIT ?`;
 
   const categoryParams = walletId
-    ? [startDate, endDateExclusive, currencyCode, walletId, walletId, HOME_CATEGORY_LIMIT]
+    ? [
+        startDate,
+        endDateExclusive,
+        currencyCode,
+        walletId,
+        walletId,
+        HOME_CATEGORY_LIMIT,
+      ]
     : [startDate, endDateExclusive, currencyCode, HOME_CATEGORY_LIMIT];
 
-  const [totalsRow, categoryRows, recentPage] = await Promise.all([
-    database.getFirstAsync<AggregateTotalsRow>(totalsSql, ...totalsParams),
-    database.getAllAsync<CategoryTotalRow>(categorySql, ...categoryParams),
-    listTransactions(database, {
-      filters: walletId ? { paymentMethodId: walletId } : undefined,
-      limit: HOME_RECENT_TRANSACTION_LIMIT,
-    }),
-  ]);
+  const [totalsRow, previousTotalsRow, categoryRows, recentPage] =
+    await Promise.all([
+      database.getFirstAsync<AggregateTotalsRow>(totalsSql, ...totalsParams),
+      database.getFirstAsync<AggregateTotalsRow>(
+        totalsSql,
+        ...previousTotalsParams,
+      ),
+      database.getAllAsync<CategoryTotalRow>(categorySql, ...categoryParams),
+      listTransactions(database, {
+        filters: walletId ? { paymentMethodId: walletId } : undefined,
+        limit: HOME_RECENT_TRANSACTION_LIMIT,
+      }),
+    ]);
 
   const expenseMinor = assertAggregateAmount(
     totalsRow?.expense_minor ?? 0,
@@ -289,6 +325,14 @@ export async function getHomeSummary(
     `${period} income`,
   );
   const netMinor = incomeMinor - expenseMinor;
+  const previousExpenseMinor = assertAggregateAmount(
+    previousTotalsRow?.expense_minor ?? 0,
+    `previous ${period} expense`,
+  );
+  const previousIncomeMinor = assertAggregateAmount(
+    previousTotalsRow?.income_minor ?? 0,
+    `previous ${period} income`,
+  );
 
   return {
     categoryTotals: categoryRows.map((row) => ({
@@ -303,6 +347,7 @@ export async function getHomeSummary(
     netMinor,
     period,
     periodLabel,
+    previousNetMinor: previousIncomeMinor - previousExpenseMinor,
     recentTransactions: recentPage.items,
     startDate,
   };

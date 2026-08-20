@@ -35,9 +35,12 @@ jest.mock('expo-sqlite', () => ({
 }));
 
 const mockGetHomeSummary = jest.fn<(...args: any[]) => Promise<any>>();
+const mockListCategoryBudgets = jest.fn<(...args: any[]) => Promise<any>>();
 
 jest.mock('@/features/home/home-repository', () => {
-  const actual = jest.requireActual('@/features/home/home-repository') as object;
+  const actual = jest.requireActual(
+    '@/features/home/home-repository',
+  ) as object;
   return {
     ...actual,
     getHomeSummary: (...args: unknown[]) => mockGetHomeSummary(...args),
@@ -52,23 +55,31 @@ jest.mock('@/features/settings/settings-repository', () => ({
       showWalletChips: true,
     }),
   ),
-  getQuickLogCategoryIds: jest.fn().mockImplementation(() => Promise.resolve([1, 2, 3, 4, 5])),
-  setHomeDisplayPreferences: jest.fn().mockImplementation(() => Promise.resolve(undefined)),
-  setQuickLogCategoryIds: jest.fn().mockImplementation(() => Promise.resolve(undefined)),
+  getQuickLogCategoryIds: jest
+    .fn()
+    .mockImplementation(() => Promise.resolve([1, 2, 3, 4, 5])),
+  setHomeDisplayPreferences: jest
+    .fn()
+    .mockImplementation(() => Promise.resolve(undefined)),
+  setQuickLogCategoryIds: jest
+    .fn()
+    .mockImplementation(() => Promise.resolve(undefined)),
 }));
 
 jest.mock('@/features/categories/category-repository', () => ({
-  listCategories: jest.fn().mockImplementation(() => Promise.resolve([
-    { id: 1, name: 'Food & Drink', type: 'expense' },
-    { id: 2, name: 'Transportation', type: 'expense' },
-    { id: 3, name: 'Shopping', type: 'expense' },
-    { id: 4, name: 'Bills', type: 'expense' },
-    { id: 5, name: 'Entertainment', type: 'expense' },
-  ])),
+  listCategories: jest.fn().mockImplementation(() =>
+    Promise.resolve([
+      { id: 1, name: 'Food & Drink', type: 'expense' },
+      { id: 2, name: 'Transportation', type: 'expense' },
+      { id: 3, name: 'Shopping', type: 'expense' },
+      { id: 4, name: 'Bills', type: 'expense' },
+      { id: 5, name: 'Entertainment', type: 'expense' },
+    ]),
+  ),
 }));
 
 jest.mock('@/features/budgets/budget-repository', () => ({
-  listCategoryBudgets: jest.fn().mockImplementation(() => Promise.resolve([])),
+  listCategoryBudgets: (...args: unknown[]) => mockListCategoryBudgets(...args),
 }));
 
 jest.mock('@/features/goals/goals-repository', () => ({
@@ -76,14 +87,16 @@ jest.mock('@/features/goals/goals-repository', () => ({
 }));
 
 jest.mock('@/features/habits/habit-repository', () => ({
-  getHabitStats: jest.fn().mockImplementation(() => Promise.resolve({
-    activeLoggingDaysThisMonth: 1,
-    bestStreak: 1,
-    currentBadge: { emoji: 'fire', key: 'starter', minDays: 1 },
-    currentStreak: 1,
-    nextBadge: null,
-    noSpendDaysThisMonth: 1,
-  })),
+  getHabitStats: jest.fn().mockImplementation(() =>
+    Promise.resolve({
+      activeLoggingDaysThisMonth: 1,
+      bestStreak: 1,
+      currentBadge: { emoji: 'fire', key: 'starter', minDays: 1 },
+      currentStreak: 1,
+      nextBadge: null,
+      noSpendDaysThisMonth: 1,
+    }),
+  ),
 }));
 
 jest.mock('@/features/wallets/wallet-repository', () => ({
@@ -152,6 +165,7 @@ const summary: HomeSummary = {
   expenseMinor: 100_000,
   incomeMinor: 250_000,
   netMinor: 150_000,
+  previousNetMinor: 100_000,
   period: 'monthly',
   periodLabel: 'Aug 2026',
   recentTransactions: [
@@ -188,13 +202,45 @@ const summary: HomeSummary = {
 describe('home screen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockListCategoryBudgets.mockResolvedValue([]);
+  });
+
+  it('prioritizes remaining budget in the financial insight', async () => {
+    mockGetHomeSummary.mockResolvedValue(summary);
+    mockListCategoryBudgets.mockResolvedValue([
+      {
+        categoryId: 1,
+        categoryName: 'Food & Drink',
+        dailyAllowanceMinor: 20_000,
+        daysRemainingInMonth: 5,
+        hasBudget: true,
+        id: 1,
+        monthlyLimitMinor: 500_000,
+        remainingMinor: 125_000,
+        spentMinor: 375_000,
+        spentPercent: 75,
+        status: 'warning',
+      },
+    ]);
+
+    await render(
+      <LanguageProvider initialLanguage="id">
+        <HomeScreen />
+      </LanguageProvider>,
+    );
+
+    expect(
+      await screen.findByText(
+        `Sisa anggaran bulan ini: ${formatMoney(125_000, 'IDR')}.`,
+      ),
+    ).toBeOnTheScreen();
   });
 
   it('renders monthly totals, period selector, and recent transactions in English', async () => {
     mockGetHomeSummary.mockResolvedValue(summary);
 
     await render(
-      <LanguageProvider initialLanguage='en'>
+      <LanguageProvider initialLanguage="en">
         <HomeScreen />
       </LanguageProvider>,
     );
@@ -204,8 +250,10 @@ describe('home screen', () => {
     expect(screen.getByText(formatMoney(100_000, 'IDR'))).toBeOnTheScreen();
     expect(screen.getByText('Income')).toBeOnTheScreen();
     expect(screen.getByText(formatMoney(250_000, 'IDR'))).toBeOnTheScreen();
-    expect(screen.getByText(/Total/i)).toBeOnTheScreen();
+    expect(screen.getByText(/Net flow/i)).toBeOnTheScreen();
     expect(screen.getByText(formatMoney(150_000, 'IDR'))).toBeOnTheScreen();
+    expect(screen.getByText(/higher compared with/i)).toBeOnTheScreen();
+    expect(screen.getByText('This period insight')).toBeOnTheScreen();
 
     expect(screen.getByText('Coffee Shop')).toBeOnTheScreen();
     expect(screen.getByText('Taxi')).toBeOnTheScreen();
@@ -235,7 +283,7 @@ describe('home screen', () => {
     });
 
     await render(
-      <LanguageProvider initialLanguage='en'>
+      <LanguageProvider initialLanguage="en">
         <HomeScreen />
       </LanguageProvider>,
     );
@@ -290,7 +338,7 @@ describe('home screen', () => {
       .mockResolvedValue(summary);
 
     await render(
-      <LanguageProvider initialLanguage='en'>
+      <LanguageProvider initialLanguage="en">
         <HomeScreen />
       </LanguageProvider>,
     );
@@ -313,7 +361,7 @@ describe('home screen', () => {
     });
 
     await render(
-      <LanguageProvider initialLanguage='id'>
+      <LanguageProvider initialLanguage="id">
         <HomeScreen />
       </LanguageProvider>,
     );
@@ -321,7 +369,7 @@ describe('home screen', () => {
     expect(await screen.findByText('RINGKASAN KEUANGAN')).toBeOnTheScreen();
     expect(screen.getByText('Pengeluaran')).toBeOnTheScreen();
     expect(screen.getByText('Uang Masuk')).toBeOnTheScreen();
-    expect(screen.getByText(/Total/i)).toBeOnTheScreen();
+    expect(screen.getByText(/Arus Bersih/i)).toBeOnTheScreen();
     expect(screen.getByText('Catat Cepat')).toBeOnTheScreen();
     expect(screen.getByText('Transaksi Terakhir')).toBeOnTheScreen();
   });
@@ -330,12 +378,12 @@ describe('home screen', () => {
     mockGetHomeSummary.mockResolvedValue(summary);
 
     await render(
-      <LanguageProvider initialLanguage='id'>
+      <LanguageProvider initialLanguage="id">
         <HomeScreen />
       </LanguageProvider>,
     );
 
-    expect(await screen.findByText('Semua')).toBeOnTheScreen();
+    expect(await screen.findByText('Semua Dompet')).toBeOnTheScreen();
     expect(screen.getByText('Bank BCA')).toBeOnTheScreen();
     expect(screen.getByText('Dompet Tunai')).toBeOnTheScreen();
 

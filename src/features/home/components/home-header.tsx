@@ -59,7 +59,7 @@ export const HomeHeader = memo(function HomeHeader({
             },
           ]}
         >
-          <MaterialCommunityIcons color="#F59E0B" name="fire" size={18} />
+          <MaterialCommunityIcons color="#F59E0B" name="fire" size={15} />
           <Text
             style={[
               styles.streakBadgeText,
@@ -146,11 +146,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 3,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
+    paddingVertical: 4,
   },
   streakBadgeText: {
     ...typography.metadata,
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

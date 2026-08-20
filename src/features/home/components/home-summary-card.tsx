@@ -2,10 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type {
-  HomePeriod,
-  HomeSummary,
-} from '@/features/home/home-repository';
+import type { HomePeriod, HomeSummary } from '@/features/home/home-repository';
 import type { TranslationSchema } from '@/lib/i18n/translations';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
@@ -57,12 +54,13 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
 
   const isNegative = summary.netMinor < 0;
   const isPositive = summary.netMinor > 0;
+  const netDeltaMinor = summary.netMinor - summary.previousNetMinor;
 
   const formattedNet = hideBalance
     ? '••••••'
     : isNegative
-    ? `\u2212${formatMoney(Math.abs(summary.netMinor), summary.currencyCode)}`
-    : formatMoney(summary.netMinor, summary.currencyCode);
+      ? `\u2212${formatMoney(Math.abs(summary.netMinor), summary.currencyCode)}`
+      : formatMoney(summary.netMinor, summary.currencyCode);
 
   const formattedIncome = hideBalance
     ? '••••••'
@@ -71,6 +69,14 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
   const formattedExpense = hideBalance
     ? '••••••'
     : formatMoney(summary.expenseMinor, summary.currencyCode);
+  const comparisonLabel =
+    netDeltaMinor === 0
+      ? t.home.sameAsPrevious
+      : `${formatMoney(Math.abs(netDeltaMinor), summary.currencyCode)} ${
+          netDeltaMinor > 0
+            ? t.home.higherThanPrevious
+            : t.home.lowerThanPrevious
+        } ${t.home.comparedToPrevious}`;
 
   return (
     <View
@@ -83,42 +89,21 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
         },
       ]}
     >
-      {/* 1. Header: Total · Period Label + Privacy Eye + Dropdown + Settings Button */}
+      {/* 1. Header: net-flow label, period, and display controls. */}
       <View style={styles.topRow}>
         <View style={styles.topLeftGroup}>
           <Text
             numberOfLines={1}
             style={[styles.cardTitleLabel, { color: colors.textSecondary }]}
           >
-            {t.home.totalBalance.toUpperCase()} · {summary.periodLabel.toUpperCase()}
+            {t.home.net.toUpperCase()} · {summary.periodLabel.toUpperCase()}
           </Text>
-
-          {onToggleHideBalance ? (
-            <Pressable
-              accessibilityLabel={
-                hideBalance ? 'Tampilkan Saldo' : 'Sembunyikan Saldo'
-              }
-              accessibilityRole="button"
-              hitSlop={8}
-              onPress={onToggleHideBalance}
-              style={({ pressed }) => [
-                styles.eyeBtn,
-                pressed ? { opacity: 0.6 } : null,
-              ]}
-            >
-              <MaterialCommunityIcons
-                color={hideBalance ? colors.primary : colors.textMuted}
-                name={hideBalance ? 'eye-off-outline' : 'eye-outline'}
-                size={16}
-              />
-            </Pressable>
-          ) : null}
         </View>
 
         <View style={styles.topRightGroup}>
           {/* Period Dropdown Pill */}
           <Pressable
-            accessibilityLabel={`Ubah Periode: ${getPeriodLabel(period)}`}
+            accessibilityLabel={`${t.home.changePeriod}: ${getPeriodLabel(period)}`}
             accessibilityRole="button"
             onPress={handleCyclePeriod}
             style={({ pressed }) => [
@@ -148,16 +133,14 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
           {/* Display Settings Button 🎚️ */}
           {onOpenDisplaySettings ? (
             <Pressable
-              accessibilityLabel="Pengaturan Tampilan Beranda"
+              accessibilityLabel={t.home.displaySettings}
               accessibilityRole="button"
               hitSlop={8}
               onPress={onOpenDisplaySettings}
               style={({ pressed }) => [
                 styles.settingsBtn,
                 {
-                  backgroundColor: isDark
-                    ? colors.surfaceSecondary
-                    : '#F1F5F9',
+                  backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
                   borderColor: colors.border,
                 },
                 pressed ? { opacity: 0.75 } : null,
@@ -168,6 +151,11 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
                 name="tune-variant"
                 size={16}
               />
+              <Text
+                style={[styles.settingsText, { color: colors.textPrimary }]}
+              >
+                {t.home.displaySettings}
+              </Text>
             </Pressable>
           ) : null}
         </View>
@@ -175,23 +163,74 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
 
       {/* 2. Main Net Amount */}
       <View style={styles.mainAmountSection}>
-        <Text
-          adjustsFontSizeToFit
-          minimumFontScale={0.75}
-          numberOfLines={1}
-          style={[
-            styles.mainAmountValue,
-            {
-              color: isNegative
-                ? colors.destructive
-                : isPositive
-                ? colors.positive
-                : colors.textPrimary,
-            },
-          ]}
-        >
-          {formattedNet}
-        </Text>
+        <View style={styles.amountRow}>
+          <Text
+            adjustsFontSizeToFit
+            minimumFontScale={0.75}
+            numberOfLines={1}
+            style={[
+              styles.mainAmountValue,
+              {
+                color: isNegative
+                  ? colors.destructive
+                  : isPositive
+                    ? colors.positive
+                    : colors.textPrimary,
+              },
+            ]}
+          >
+            {formattedNet}
+          </Text>
+          {onToggleHideBalance ? (
+            <Pressable
+              accessibilityLabel={
+                hideBalance ? t.home.showBalance : t.home.hideBalance
+              }
+              accessibilityRole="button"
+              onPress={onToggleHideBalance}
+              style={({ pressed }) => [
+                styles.eyeBtn,
+                {
+                  backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+                },
+                pressed ? { opacity: 0.6 } : null,
+              ]}
+            >
+              <MaterialCommunityIcons
+                color={hideBalance ? colors.primary : colors.textSecondary}
+                name={hideBalance ? 'eye-off-outline' : 'eye-outline'}
+                size={18}
+              />
+            </Pressable>
+          ) : null}
+        </View>
+        {!hideBalance ? (
+          <View style={styles.comparisonRow}>
+            <MaterialCommunityIcons
+              color={
+                netDeltaMinor > 0
+                  ? colors.positive
+                  : netDeltaMinor < 0
+                    ? colors.destructive
+                    : colors.textMuted
+              }
+              name={
+                netDeltaMinor > 0
+                  ? 'trending-up'
+                  : netDeltaMinor < 0
+                    ? 'trending-down'
+                    : 'minus'
+              }
+              size={15}
+            />
+            <Text
+              numberOfLines={2}
+              style={[styles.comparisonText, { color: colors.textSecondary }]}
+            >
+              {comparisonLabel}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       {/* 3. Symmetrical 50/50 Sub-Cards for Income & Expense */}
@@ -201,12 +240,8 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
           style={[
             styles.subCard,
             {
-              backgroundColor: isDark
-                ? '#14532D1F'
-                : '#F0FDF4',
-              borderColor: isDark
-                ? '#166534'
-                : '#DCFCE7',
+              backgroundColor: isDark ? '#14532D1F' : '#F0FDF4',
+              borderColor: isDark ? '#166534' : '#DCFCE7',
             },
           ]}
         >
@@ -247,12 +282,8 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
           style={[
             styles.subCard,
             {
-              backgroundColor: isDark
-                ? '#7F1D1D1F'
-                : '#FEF2F2',
-              borderColor: isDark
-                ? '#991B1B'
-                : '#FEE2E2',
+              backgroundColor: isDark ? '#7F1D1D1F' : '#FEF2F2',
+              borderColor: isDark ? '#991B1B' : '#FEE2E2',
             },
           ]}
         >
@@ -293,6 +324,12 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
 });
 
 const styles = StyleSheet.create({
+  amountRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    maxWidth: '100%',
+  },
   cardTitleLabel: {
     ...typography.metadata,
     flexShrink: 1,
@@ -301,7 +338,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   eyeBtn: {
-    padding: 2,
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
   },
   iconCircle: {
     alignItems: 'center',
@@ -320,6 +361,7 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: '800',
     letterSpacing: 0.2,
+    maxWidth: '86%',
   },
   periodDropdownPill: {
     alignItems: 'center',
@@ -327,6 +369,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: 'row',
     gap: 3,
+    minHeight: 40,
     paddingHorizontal: spacing.sm + 4,
     paddingVertical: 5,
   },
@@ -339,9 +382,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: radius.pill,
     borderWidth: 1,
-    height: 30,
+    flexDirection: 'row',
+    gap: 4,
+    minHeight: 40,
     justifyContent: 'center',
-    width: 30,
+    paddingHorizontal: spacing.sm,
+  },
+  settingsText: {
+    ...typography.metadata,
+    fontSize: 11,
+    fontWeight: '700',
   },
   subCard: {
     borderRadius: radius.md + 2,
@@ -357,7 +407,7 @@ const styles = StyleSheet.create({
   },
   subCardLabel: {
     ...typography.metadata,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
   subCardValue: {
@@ -397,5 +447,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: spacing.xs,
+  },
+  comparisonRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  comparisonText: {
+    ...typography.metadata,
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
   },
 });

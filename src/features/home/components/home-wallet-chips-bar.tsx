@@ -1,12 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { memo } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { Wallet } from '@/features/wallets';
 import type { Language } from '@/lib/i18n/translations';
@@ -59,8 +53,8 @@ export const HomeWalletChipsBar = memo(function HomeWalletChipsBar({
                   ? '#1E3A8A'
                   : '#EFF6FF'
                 : isDark
-                ? colors.surface
-                : '#FFFFFF',
+                  ? colors.surface
+                  : '#FFFFFF',
               borderColor: isAllSelected ? colors.primary : colors.border,
             },
             pressed ? { opacity: 0.75 } : null,
@@ -75,7 +69,7 @@ export const HomeWalletChipsBar = memo(function HomeWalletChipsBar({
               },
             ]}
           >
-            {language === 'id' ? 'Semua' : 'All'}
+            {language === 'id' ? 'Semua Dompet' : 'All Wallets'}
           </Text>
         </Pressable>
 
@@ -90,9 +84,7 @@ export const HomeWalletChipsBar = memo(function HomeWalletChipsBar({
               accessibilityRole="tab"
               accessibilityState={{ selected: isSelected }}
               key={wallet.id}
-              onPress={() =>
-                onSelectWallet(isSelected ? null : wallet.id)
-              }
+              onPress={() => onSelectWallet(isSelected ? null : wallet.id)}
               style={({ pressed }) => [
                 styles.chip,
                 {
@@ -101,19 +93,14 @@ export const HomeWalletChipsBar = memo(function HomeWalletChipsBar({
                       ? `${walletColor}25`
                       : `${walletColor}12`
                     : isDark
-                    ? colors.surface
-                    : '#FFFFFF',
+                      ? colors.surface
+                      : '#FFFFFF',
                   borderColor: isSelected ? walletColor : colors.border,
                 },
                 pressed ? { opacity: 0.75 } : null,
               ]}
             >
-              <View
-                style={[
-                  styles.dot,
-                  { backgroundColor: walletColor },
-                ]}
-              />
+              <View style={[styles.dot, { backgroundColor: walletColor }]} />
               <Text
                 numberOfLines={1}
                 style={[
@@ -172,6 +159,7 @@ const styles = StyleSheet.create({
     elevation: 1,
     flexDirection: 'row',
     gap: 6,
+    minHeight: 44,
     paddingHorizontal: spacing.md,
     paddingVertical: 7,
     shadowColor: '#000000',

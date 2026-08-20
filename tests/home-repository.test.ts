@@ -208,7 +208,12 @@ describe('home repository', () => {
     const database = new HomeDatabase();
     const now = Date.UTC(2026, 7, 15, 5, 0, 0);
 
-    const summary = await getHomeSummary(database.asSQLiteDatabase(), 'monthly', new Date(2026, 7, 15), 'id');
+    const summary = await getHomeSummary(
+      database.asSQLiteDatabase(),
+      'monthly',
+      new Date(2026, 7, 15),
+      'id',
+    );
 
     expect(summary).toMatchObject({
       categoryTotals: [
@@ -230,18 +235,24 @@ describe('home repository', () => {
       endDateExclusive: '2026-09-01',
       period: 'monthly',
       netMinor: 50_000,
-      
+      previousNetMinor: -95_000,
     });
     expect(summary.recentTransactions).toHaveLength(6);
     expect(summary.recentTransactions.map(({ id }) => id)).toEqual([
       1, 2, 3, 4, 5, 6,
     ]);
 
-    const totalsCall = database.calls.find((call) =>
+    const totalsCalls = database.calls.filter((call) =>
       call.sql.includes('AS expense_minor'),
     );
+    const totalsCall = totalsCalls[0];
     expect(totalsCall?.sql).toContain('COALESCE(SUM');
     expect(totalsCall?.parameters).toEqual(['2026-08-01', '2026-09-01', 'IDR']);
+    expect(totalsCalls[1]?.parameters).toEqual([
+      '2026-07-01',
+      '2026-08-01',
+      'IDR',
+    ]);
 
     const categoryCall = database.calls.find((call) =>
       call.sql.includes('GROUP BY c.id, c.name'),
@@ -269,7 +280,12 @@ describe('home repository', () => {
     const database = new HomeDatabase();
     database.currencyCode = null;
     await expect(
-      getHomeSummary(database.asSQLiteDatabase(), 'monthly', new Date(2026, 7, 15), 'id'),
+      getHomeSummary(
+        database.asSQLiteDatabase(),
+        'monthly',
+        new Date(2026, 7, 15),
+        'id',
+      ),
     ).rejects.toMatchObject({
       code: 'DATABASE_WRITE_FAILED',
       message: 'The default currency setting is invalid.',
