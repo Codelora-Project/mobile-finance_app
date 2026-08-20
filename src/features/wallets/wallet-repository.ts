@@ -1,5 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { withIntegrityCheckedTransaction } from '@/db/transactions';
 import type {
   AccountType,
   CreateWalletInput,
@@ -132,7 +133,10 @@ export async function createWallet(
 ): Promise<Wallet> {
   const trimmedName = input.name.trim();
   if (!trimmedName) {
-    throw createCodedError('VALIDATION_FAILED', 'Nama dompet tidak boleh kosong.');
+    throw createCodedError(
+      'VALIDATION_FAILED',
+      'Nama dompet tidak boleh kosong.',
+    );
   }
 
   const existing = await database.getFirstAsync<{ id: number }>(
@@ -185,7 +189,10 @@ export async function createWallet(
 
   const created = await getWalletById(database, result.lastInsertRowId);
   if (!created) {
-    throw createCodedError('DATABASE_WRITE_FAILED', 'Gagal membuat dompet baru.');
+    throw createCodedError(
+      'DATABASE_WRITE_FAILED',
+      'Gagal membuat dompet baru.',
+    );
   }
   return created;
 }
@@ -202,7 +209,10 @@ export async function updateWallet(
 
   const name = input.name !== undefined ? input.name.trim() : existing.name;
   if (!name) {
-    throw createCodedError('VALIDATION_FAILED', 'Nama dompet tidak boleh kosong.');
+    throw createCodedError(
+      'VALIDATION_FAILED',
+      'Nama dompet tidak boleh kosong.',
+    );
   }
 
   if (name.toLowerCase() !== existing.name.toLowerCase()) {
@@ -243,14 +253,26 @@ export async function updateWallet(
       input.iconKey ?? existing.iconKey,
       input.initialBalanceMinor ?? existing.initialBalanceMinor,
       input.includeInCashflow !== undefined
-        ? input.includeInCashflow ? 1 : 0
-        : existing.includeInCashflow ? 1 : 0,
+        ? input.includeInCashflow
+          ? 1
+          : 0
+        : existing.includeInCashflow
+          ? 1
+          : 0,
       input.isDefault !== undefined
-        ? input.isDefault ? 1 : 0
-        : existing.isDefault ? 1 : 0,
+        ? input.isDefault
+          ? 1
+          : 0
+        : existing.isDefault
+          ? 1
+          : 0,
       input.isArchived !== undefined
-        ? input.isArchived ? 1 : 0
-        : existing.isArchived ? 1 : 0,
+        ? input.isArchived
+          ? 1
+          : 0
+        : existing.isArchived
+          ? 1
+          : 0,
       input.sortOrder ?? existing.sortOrder,
       now,
       id,
@@ -259,7 +281,10 @@ export async function updateWallet(
 
   const updated = await getWalletById(database, id);
   if (!updated) {
-    throw createCodedError('DATABASE_WRITE_FAILED', 'Gagal memperbarui dompet.');
+    throw createCodedError(
+      'DATABASE_WRITE_FAILED',
+      'Gagal memperbarui dompet.',
+    );
   }
   return updated;
 }
@@ -302,54 +327,65 @@ export async function reconcileWalletBalance(
   currencyCode = 'IDR',
   note?: string,
 ): Promise<{ id: number; type: 'income' | 'expense' } | null> {
-  const wallet = await getWalletById(database, walletId);
-  if (!wallet) {
-    throw createCodedError('VALIDATION_FAILED', 'Dompet tidak ditemukan.');
+  if (!Number.isSafeInteger(actualBalanceMinor)) {
+    throw createCodedError('VALIDATION_FAILED', 'Saldo aktual tidak valid.');
+  }
+  const normalizedCurrency = currencyCode.trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(normalizedCurrency)) {
+    throw createCodedError('VALIDATION_FAILED', 'Kode mata uang tidak valid.');
   }
 
-  const diffMinor = actualBalanceMinor - wallet.currentBalanceMinor;
-  if (diffMinor === 0) return null;
+  return withIntegrityCheckedTransaction(database, async (transaction) => {
+    const wallet = await getWalletById(transaction, walletId);
+    if (!wallet) {
+      throw createCodedError('VALIDATION_FAILED', 'Dompet tidak ditemukan.');
+    }
 
-  const now = Date.now();
-  const localDate = toLocalDate(now, 0);
-  const type = diffMinor > 0 ? 'income' : 'expense';
-  const amountMinor = Math.abs(diffMinor);
+    const diffMinor = actualBalanceMinor - wallet.currentBalanceMinor;
+    if (diffMinor === 0) return null;
 
-  // Find or create Reconciliation system category
-  let category = await database.getFirstAsync<{ id: number }>(
-    "SELECT id FROM categories WHERE name = 'Penyesuaian Saldo' LIMIT 1;",
-  );
-  if (!category) {
-    const catResult = await database.runAsync(
-      `INSERT INTO categories (name, type, icon, color, is_default, sort_order, created_at, updated_at)
-       VALUES ('Penyesuaian Saldo', 'expense', 'tune-vertical', '#64748B', 1, 999, ?, ?);`,
-      [now, now],
+    const now = Date.now();
+    const localDate = toLocalDate(now, 0);
+    const type = diffMinor > 0 ? 'income' : 'expense';
+    const amountMinor = Math.abs(diffMinor);
+    let category = await transaction.getFirstAsync<{ id: number }>(
+      "SELECT id FROM categories WHERE system_key = 'balance_reconciliation' OR name = 'Penyesuaian Saldo' LIMIT 1;",
     );
-    category = { id: catResult.lastInsertRowId };
-  }
+    if (!category) {
+      const catResult = await transaction.runAsync(
+        `INSERT INTO categories (
+          name, type, icon_key, system_key, is_default, is_fallback,
+          sort_order, created_at, updated_at
+        ) VALUES ('Penyesuaian Saldo', 'expense', 'tune-vertical',
+          'balance_reconciliation', 1, 0, 999, ?, ?);`,
+        [now, now],
+      );
+      category = { id: catResult.lastInsertRowId };
+    }
 
-  const result = await database.runAsync(
-    `INSERT INTO transactions (
-      type, amount_minor, currency_code, category_id, payment_method_id,
-      counterparty, note, occurred_at, timezone_offset_minutes, local_date,
-      is_reimbursable, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?);`,
-    [
-      type,
-      amountMinor,
-      currencyCode,
-      category.id,
-      walletId,
-      'Penyesuaian Saldo',
-      note ?? 'Penyesuaian Saldo Riil (Rekonsiliasi)',
-      now,
-      localDate,
-      now,
-      now,
-    ],
-  );
+    const result = await transaction.runAsync(
+      `INSERT INTO transactions (
+        type, amount_minor, currency_code, category_id, payment_method_id,
+        counterparty, note, occurred_at, timezone_offset_minutes, local_date,
+        is_reimbursable, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?);`,
+      [
+        type,
+        amountMinor,
+        normalizedCurrency,
+        category.id,
+        walletId,
+        'Penyesuaian Saldo',
+        note ?? 'Penyesuaian Saldo Riil (Rekonsiliasi)',
+        now,
+        localDate,
+        now,
+        now,
+      ],
+    );
 
-  return { id: result.lastInsertRowId, type };
+    return { id: result.lastInsertRowId, type };
+  });
 }
 
 export async function transferBetweenWallets(
@@ -375,69 +411,85 @@ export async function transferBetweenWallets(
     );
   }
 
-  if (amountMinor <= 0) {
+  if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) {
     throw createCodedError(
       'VALIDATION_FAILED',
       'Nominal transfer harus lebih besar dari 0.',
     );
   }
-
-  const [fromWallet, toWallet] = await Promise.all([
-    getWalletById(database, fromWalletId),
-    getWalletById(database, toWalletId),
-  ]);
-
-  if (!fromWallet || !toWallet) {
+  if (!Number.isSafeInteger(transferFeeMinor) || transferFeeMinor < 0) {
+    throw createCodedError('VALIDATION_FAILED', 'Biaya transfer tidak valid.');
+  }
+  const normalizedCurrency = currencyCode.trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(normalizedCurrency)) {
+    throw createCodedError('VALIDATION_FAILED', 'Kode mata uang tidak valid.');
+  }
+  if (!Number.isSafeInteger(occurredAt)) {
     throw createCodedError(
       'VALIDATION_FAILED',
-      'Dompet asal atau tujuan tidak ditemukan.',
+      'Tanggal transfer tidak valid.',
     );
-  }
-
-  // Find or create Transfer system category
-  let category = await database.getFirstAsync<{ id: number }>(
-    "SELECT id FROM categories WHERE name = 'Transfer Antar Dompet' LIMIT 1;",
-  );
-  if (!category) {
-    const catResult = await database.runAsync(
-      `INSERT INTO categories (name, type, icon, color, is_default, sort_order, created_at, updated_at)
-       VALUES ('Transfer Antar Dompet', 'transfer', 'swap-horizontal', '#2563EB', 1, 998, ?, ?);`,
-      [occurredAt, occurredAt],
-    );
-    category = { id: catResult.lastInsertRowId };
   }
 
   const now = Date.now();
   const localDate = toLocalDate(occurredAt, 0);
 
-  const result = await database.runAsync(
-    `INSERT INTO transactions (
-      type, amount_minor, currency_code, category_id, payment_method_id,
-      transfer_to_payment_method_id, transfer_fee_minor, transfer_fee_category_id,
-      transfer_fee_note, counterparty, note, occurred_at, timezone_offset_minutes,
-      local_date, is_reimbursable, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?);`,
-    [
-      'transfer',
-      amountMinor,
-      currencyCode,
-      category.id,
-      fromWalletId,
-      toWalletId,
-      transferFeeMinor,
-      transferFeeCategoryId ?? null,
-      transferFeeNote ? transferFeeNote.trim() : null,
-      toWallet.name,
-      note ? note.trim() : `Transfer ke ${toWallet.name}`,
-      occurredAt,
-      0,
-      localDate,
-      now,
-      now,
-    ],
-  );
+  return withIntegrityCheckedTransaction(database, async (transaction) => {
+    const [fromWallet, toWallet] = await Promise.all([
+      getWalletById(transaction, fromWalletId),
+      getWalletById(transaction, toWalletId),
+    ]);
+    if (!fromWallet || !toWallet) {
+      throw createCodedError(
+        'VALIDATION_FAILED',
+        'Dompet asal atau tujuan tidak ditemukan.',
+      );
+    }
 
-  return result.lastInsertRowId;
+    let category = await transaction.getFirstAsync<{ id: number }>(
+      "SELECT id FROM categories WHERE system_key = 'wallet_transfer' OR name = 'Transfer Antar Dompet' LIMIT 1;",
+    );
+    if (!category) {
+      const catResult = await transaction.runAsync(
+        `INSERT INTO categories (
+          name, type, icon_key, system_key, is_default, is_fallback,
+          sort_order, created_at, updated_at
+        ) VALUES ('Transfer Antar Dompet', 'expense', 'swap-horizontal',
+          'wallet_transfer', 1, 0, 998, ?, ?);`,
+        [occurredAt, occurredAt],
+      );
+      category = { id: catResult.lastInsertRowId };
+    }
+
+    const result = await transaction.runAsync(
+      `INSERT INTO transactions (
+        type, amount_minor, currency_code, category_id, payment_method_id,
+        transfer_to_payment_method_id, transfer_fee_minor, transfer_fee_category_id,
+        transfer_fee_note, counterparty, note, occurred_at, timezone_offset_minutes,
+        local_date, is_reimbursable, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?);`,
+      [
+        'transfer',
+        amountMinor,
+        normalizedCurrency,
+        category.id,
+        fromWalletId,
+        toWalletId,
+        transferFeeMinor,
+        transferFeeCategoryId ?? null,
+        transferFeeNote ? transferFeeNote.trim() : null,
+        toWallet.name,
+        note ? note.trim() : `Transfer ke ${toWallet.name}`,
+        occurredAt,
+        0,
+        localDate,
+        now,
+        now,
+      ],
+    );
+
+    return result.lastInsertRowId;
+  });
 }
 
 /** Compatibility helper for payment method picker components */

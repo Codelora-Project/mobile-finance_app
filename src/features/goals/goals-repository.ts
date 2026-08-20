@@ -1,5 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { withIntegrityCheckedTransaction } from '@/db/transactions';
 import { createCodedError } from '@/lib/errors';
 import { normalizeOptionalText } from '@/lib/strings';
 
@@ -157,7 +158,10 @@ export async function createSavingsGoal(
       'Nama target tidak boleh kosong.',
     );
   }
-  if (input.targetAmountMinor <= 0) {
+  if (
+    !Number.isSafeInteger(input.targetAmountMinor) ||
+    input.targetAmountMinor <= 0
+  ) {
     throw createCodedError(
       'VALIDATION_FAILED',
       'Target nominal harus lebih besar dari 0.',
@@ -165,7 +169,7 @@ export async function createSavingsGoal(
   }
 
   const initialDeposit = input.initialDepositMinor ?? 0;
-  if (initialDeposit < 0) {
+  if (!Number.isSafeInteger(initialDeposit) || initialDeposit < 0) {
     throw createCodedError(
       'VALIDATION_FAILED',
       'Setoran awal tidak boleh bernilai negatif.',
@@ -177,33 +181,39 @@ export async function createSavingsGoal(
   const colorKey = input.colorKey || '#3B82F6';
   const isCompleted = initialDeposit >= input.targetAmountMinor ? 1 : 0;
 
-  const result = await database.runAsync(
-    `INSERT INTO savings_goals (
-      name, target_amount_minor, current_amount_minor, icon_key, color_key, target_date, is_completed, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      name,
-      input.targetAmountMinor,
-      initialDeposit,
-      iconKey,
-      colorKey,
-      input.targetDate ?? null,
-      isCompleted,
-      now,
-      now,
-    ],
-  );
+  const goalId = await withIntegrityCheckedTransaction(
+    database,
+    async (transaction) => {
+      const result = await transaction.runAsync(
+        `INSERT INTO savings_goals (
+          name, target_amount_minor, current_amount_minor, icon_key, color_key,
+          target_date, is_completed, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          name,
+          input.targetAmountMinor,
+          initialDeposit,
+          iconKey,
+          colorKey,
+          input.targetDate ?? null,
+          isCompleted,
+          now,
+          now,
+        ],
+      );
 
-  const goalId = result.lastInsertRowId;
-
-  if (initialDeposit > 0) {
-    await database.runAsync(
-      `INSERT INTO goal_transactions (
+      if (initialDeposit > 0) {
+        await transaction.runAsync(
+          `INSERT INTO goal_transactions (
         goal_id, type, amount_minor, note, occurred_at, created_at
       ) VALUES (?, 'deposit', ?, ?, ?, ?)`,
-      [goalId, initialDeposit, 'Setoran Awal', now, now],
-    );
-  }
+          [result.lastInsertRowId, initialDeposit, 'Setoran Awal', now, now],
+        );
+      }
+
+      return result.lastInsertRowId;
+    },
+  );
 
   const created = await getSavingsGoal(database, goalId);
   if (!created) {
@@ -302,58 +312,61 @@ export async function addGoalTransaction(
   database: SQLiteDatabase,
   input: AddGoalTransactionInput,
 ): Promise<SavingsGoal> {
-  const existing = await database.getFirstAsync<GoalRow>(
-    `SELECT * FROM savings_goals WHERE id = ?`,
-    [input.goalId],
-  );
-  if (!existing) {
-    throw createCodedError(
-      'VALIDATION_FAILED',
-      'Target tabungan tidak ditemukan.',
-    );
-  }
-
-  if (input.amountMinor <= 0) {
+  if (!Number.isSafeInteger(input.amountMinor) || input.amountMinor <= 0) {
     throw createCodedError(
       'VALIDATION_FAILED',
       'Nominal transaksi harus lebih besar dari 0.',
     );
   }
 
-  let nextAmount = existing.current_amount_minor;
-  if (input.type === 'deposit') {
-    nextAmount += input.amountMinor;
-  } else {
-    if (input.amountMinor > existing.current_amount_minor) {
+  const now = Date.now();
+  const occurredAt = input.occurredAt ?? now;
+  const note = normalizeOptionalText(input.note ?? '');
+
+  await withIntegrityCheckedTransaction(database, async (transaction) => {
+    const existing = await transaction.getFirstAsync<GoalRow>(
+      `SELECT * FROM savings_goals WHERE id = ?`,
+      [input.goalId],
+    );
+    if (!existing) {
+      throw createCodedError(
+        'VALIDATION_FAILED',
+        'Target tabungan tidak ditemukan.',
+      );
+    }
+
+    const delta =
+      input.type === 'deposit' ? input.amountMinor : -input.amountMinor;
+    const nextAmount = existing.current_amount_minor + delta;
+    if (nextAmount < 0) {
       throw createCodedError(
         'VALIDATION_FAILED',
         'Nominal penarikan melebihi saldo tabungan saat ini.',
       );
     }
-    nextAmount -= input.amountMinor;
-  }
+    const isCompleted = nextAmount >= existing.target_amount_minor ? 1 : 0;
 
-  const now = Date.now();
-  const occurredAt = input.occurredAt ?? now;
-  const isCompleted = nextAmount >= existing.target_amount_minor ? 1 : 0;
-  const note = normalizeOptionalText(input.note ?? '');
-
-  await database.withExclusiveTransactionAsync(async (tx) => {
-    await tx.runAsync(
+    await transaction.runAsync(
       `INSERT INTO goal_transactions (
         goal_id, type, amount_minor, note, occurred_at, created_at
       ) VALUES (?, ?, ?, ?, ?, ?)`,
       [input.goalId, input.type, input.amountMinor, note, occurredAt, now],
     );
 
-    await tx.runAsync(
+    const updateResult = await transaction.runAsync(
       `UPDATE savings_goals SET
-        current_amount_minor = ?,
+        current_amount_minor = current_amount_minor + ?,
         is_completed = ?,
         updated_at = ?
-      WHERE id = ?`,
-      [nextAmount, isCompleted, now, input.goalId],
+       WHERE id = ? AND current_amount_minor = ?`,
+      [delta, isCompleted, now, input.goalId, existing.current_amount_minor],
     );
+    if (updateResult.changes !== 1) {
+      throw createCodedError(
+        'DATABASE_WRITE_FAILED',
+        'Saldo target berubah. Silakan coba lagi.',
+      );
+    }
   });
 
   const updated = await getSavingsGoal(database, input.goalId);

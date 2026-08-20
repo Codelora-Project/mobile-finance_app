@@ -678,6 +678,17 @@ describe('manual transaction repository', () => {
 });
 
 describe('transaction history repository', () => {
+  it('accepts transfer as a transaction history filter', async () => {
+    const database = new TransactionListDatabase();
+
+    await listTransactions(database.asSQLiteDatabase(), {
+      filters: { type: 'transfer' },
+    });
+
+    expect(database.calls[0]?.sql).toContain('t.type = ?');
+    expect(database.calls[0]?.parameters).toEqual(['transfer', 51, 0]);
+  });
+
   it('uses a single newest-first JOIN query and paginates 100+ rows', async () => {
     const database = new TransactionListDatabase();
 

@@ -38,6 +38,38 @@ function createStorageKey(mimeType: ReceiptMimeType) {
   return `${RECEIPT_DIRECTORY}/${uniquePart}.${extensionByMimeType[mimeType]}`;
 }
 
+export async function writeReceiptBase64ToStorage(
+  base64: string,
+  mimeType: ReceiptMimeType,
+) {
+  if (!base64.trim()) {
+    throw createCodedError(
+      'VALIDATION_FAILED',
+      'The receipt backup does not contain image data.',
+    );
+  }
+
+  const directory = receiptDirectory();
+  directory.create({ idempotent: true, intermediates: true });
+  const storageKey = createStorageKey(mimeType);
+  const destination = receiptFile(storageKey);
+  try {
+    await destination.write(base64, { encoding: 'base64' });
+    if (!destination.exists) {
+      throw createCodedError(
+        'FILE_OPERATION_FAILED',
+        'The restored receipt image could not be stored.',
+      );
+    }
+  } catch (error) {
+    if (destination.exists) {
+      destination.delete();
+    }
+    throw error;
+  }
+  return storageKey;
+}
+
 export function isReceiptStorageKey(value: string) {
   return STORAGE_KEY_PATTERN.test(value);
 }

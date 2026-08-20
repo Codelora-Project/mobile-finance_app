@@ -16,10 +16,29 @@ describe('Backup Service', () => {
           return [{ id: 1, name: 'Food', type: 'expense', sort_order: 1 }];
         }
         if (sql.includes('FROM payment_methods')) {
-          return [{ id: 1, name: 'Cash', sort_order: 1 }];
+          return [
+            {
+              id: 1,
+              name: 'Cash',
+              sort_order: 1,
+              initial_balance_minor: 500_000,
+              account_type: 'cash',
+              include_in_cashflow: 1,
+              is_archived: 0,
+            },
+          ];
         }
         if (sql.includes('FROM transactions')) {
-          return [{ id: 101, amount_minor: 50000, category_id: 1 }];
+          return [
+            {
+              id: 101,
+              type: 'transfer',
+              amount_minor: 50_000,
+              category_id: 1,
+              transfer_to_payment_method_id: 2,
+              transfer_fee_minor: 2_500,
+            },
+          ];
         }
         return [];
       }),
@@ -28,12 +47,21 @@ describe('Backup Service', () => {
     const payload = await createBackupPayload(mockDb);
 
     expect(payload.app_identifier).toBe('personal_finance_app');
-    expect(payload.version).toBe(1);
+    expect(payload.version).toBe(2);
     expect(payload.summary.categories_count).toBe(1);
     expect(payload.summary.payment_methods_count).toBe(1);
     expect(payload.summary.transactions_count).toBe(1);
     expect(payload.data.categories).toHaveLength(1);
     expect(payload.data.transactions).toHaveLength(1);
+    expect(payload.data.payment_methods[0]).toMatchObject({
+      account_type: 'cash',
+      initial_balance_minor: 500_000,
+    });
+    expect(payload.data.transactions[0]).toMatchObject({
+      transfer_fee_minor: 2_500,
+      transfer_to_payment_method_id: 2,
+      type: 'transfer',
+    });
   });
 
   it('restores backup data atomically inside SQLite transaction', async () => {
@@ -41,13 +69,14 @@ describe('Backup Service', () => {
     const runAsyncCalls: Array<{ sql: string; params?: unknown[] }> = [];
 
     const mockDb = {
+      getAllAsync: jest.fn(async () => []),
       execAsync: jest.fn(async (sql: string) => {
         executedSql.push(sql);
       }),
       runAsync: jest.fn(async (sql: string, params?: unknown[]) => {
         runAsyncCalls.push({ sql, params });
       }),
-      withTransactionAsync: jest.fn(
+      withExclusiveTransactionAsync: jest.fn(
         async (task: (database: SQLiteDatabase) => Promise<void>) => {
           await task(mockDb as unknown as SQLiteDatabase);
         },
@@ -130,8 +159,13 @@ describe('Backup Service', () => {
 
     // Verify deletion of tables occurred first
     expect(mockDb.execAsync).toHaveBeenCalled();
+    expect(mockDb.withExclusiveTransactionAsync).toHaveBeenCalledTimes(1);
     // Verify inserts occurred for categories, payment methods, and transactions
     expect(runAsyncCalls.length).toBe(3);
+    expect(runAsyncCalls[1].params).toEqual(
+      expect.arrayContaining(['cash', '#2563EB', 'wallet']),
+    );
+    expect(runAsyncCalls[2].params).toHaveLength(18);
   });
 
   it('generates CSV with proper UTF-8 BOM and headers', async () => {

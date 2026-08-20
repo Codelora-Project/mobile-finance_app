@@ -1,5 +1,6 @@
 import type { SQLiteBindValue, SQLiteDatabase } from 'expo-sqlite';
 
+import { withIntegrityCheckedTransaction } from '@/db/transactions';
 import {
   recalculateAutoClaimPeriod,
   type ClaimStatus,
@@ -314,7 +315,8 @@ function buildTransactionListQuery(input: ListTransactionsInput) {
   if (
     filters.type !== undefined &&
     filters.type !== 'expense' &&
-    filters.type !== 'income'
+    filters.type !== 'income' &&
+    filters.type !== 'transfer'
   ) {
     throw createCodedError('VALIDATION_FAILED', 'Transaction type is invalid.');
   }
@@ -379,14 +381,20 @@ function buildTransactionListQuery(input: ListTransactionsInput) {
     where.push(filters.hasReceipt ? 'r.id IS NOT NULL' : 'r.id IS NULL');
   }
   if (filters.minAmountMinor !== undefined) {
-    if (!Number.isSafeInteger(filters.minAmountMinor) || filters.minAmountMinor < 0) {
+    if (
+      !Number.isSafeInteger(filters.minAmountMinor) ||
+      filters.minAmountMinor < 0
+    ) {
       throw createCodedError('VALIDATION_FAILED', 'Minimum amount is invalid.');
     }
     where.push('t.amount_minor >= ?');
     parameters.push(filters.minAmountMinor);
   }
   if (filters.maxAmountMinor !== undefined) {
-    if (!Number.isSafeInteger(filters.maxAmountMinor) || filters.maxAmountMinor < 0) {
+    if (
+      !Number.isSafeInteger(filters.maxAmountMinor) ||
+      filters.maxAmountMinor < 0
+    ) {
       throw createCodedError('VALIDATION_FAILED', 'Maximum amount is invalid.');
     }
     where.push('t.amount_minor <= ?');
@@ -394,9 +402,13 @@ function buildTransactionListQuery(input: ListTransactionsInput) {
   }
   if (filters.isNonCash !== undefined) {
     if (filters.isNonCash) {
-      where.push("(pm.system_key != 'cash' AND pm.name != 'Cash' AND pm.name != 'Tunai' AND pm.id IS NOT NULL)");
+      where.push(
+        "(pm.system_key != 'cash' AND pm.name != 'Cash' AND pm.name != 'Tunai' AND pm.id IS NOT NULL)",
+      );
     } else {
-      where.push("(pm.system_key = 'cash' OR pm.name = 'Cash' OR pm.name = 'Tunai')");
+      where.push(
+        "(pm.system_key = 'cash' OR pm.name = 'Cash' OR pm.name = 'Tunai')",
+      );
     }
   }
 
@@ -546,7 +558,7 @@ function normalizeInput(input: SaveTransactionInput, now: number) {
     receipt: input.type === 'expense' ? receipt : null,
     timezoneOffsetMinutes: input.timezoneOffsetMinutes,
     transferFeeCategoryId:
-      input.type === 'transfer' ? input.transferFeeCategoryId ?? null : null,
+      input.type === 'transfer' ? (input.transferFeeCategoryId ?? null) : null,
     transferFeeMinor:
       input.type === 'transfer'
         ? Math.max(0, Math.round(input.transferFeeMinor ?? 0))
@@ -557,7 +569,7 @@ function normalizeInput(input: SaveTransactionInput, now: number) {
         : null,
     transferToPaymentMethodId:
       input.type === 'transfer'
-        ? input.transferToPaymentMethodId ?? null
+        ? (input.transferToPaymentMethodId ?? null)
         : null,
     type: input.type,
   };
@@ -774,7 +786,7 @@ export async function createTransaction(
   let createdId: number | null = null;
 
   try {
-    await database.withExclusiveTransactionAsync(async (transaction) => {
+    await withIntegrityCheckedTransaction(database, async (transaction) => {
       await validateReferences(transaction, normalized);
       const timestamp = Date.now();
       const result = await transaction.runAsync(
@@ -880,7 +892,7 @@ export async function updateTransaction(
   const prepared = await prepareReceipt(normalized.receipt);
 
   try {
-    await database.withExclusiveTransactionAsync(async (transaction) => {
+    await withIntegrityCheckedTransaction(database, async (transaction) => {
       const transactionStillExists = await transaction.getFirstAsync<{
         id: number;
       }>('SELECT id FROM transactions WHERE id = ?', id);
@@ -985,7 +997,7 @@ export async function deleteTransaction(database: SQLiteDatabase, id: number) {
     'SELECT storage_key FROM receipts WHERE transaction_id = ?',
     id,
   );
-  await database.withExclusiveTransactionAsync(async (transaction) => {
+  await withIntegrityCheckedTransaction(database, async (transaction) => {
     const existing = await transaction.getFirstAsync<{ id: number }>(
       'SELECT id FROM transactions WHERE id = ?',
       id,

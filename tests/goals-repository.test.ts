@@ -44,7 +44,7 @@ describe('goals repository', () => {
       updated_at: 1000,
     });
 
-    getAllAsync.mockResolvedValueOnce([
+    getAllAsync.mockResolvedValueOnce([]).mockResolvedValueOnce([
       {
         amount_minor: 2_000_000,
         created_at: 1000,
@@ -113,7 +113,7 @@ describe('goals repository', () => {
         updated_at: 1000,
       });
 
-    getAllAsync.mockResolvedValueOnce([]);
+    getAllAsync.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
     const updated = await addGoalTransaction(database, {
       amountMinor: 3_000_000,

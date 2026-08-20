@@ -4,6 +4,7 @@ import { Directory, File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { withIntegrityCheckedTransaction } from '@/db/transactions';
 import type {
   BackupAppSetting,
   BackupCategory,
@@ -18,6 +19,12 @@ import type {
   BackupStats,
   BackupTransaction,
 } from '@/features/backup/backup-types';
+import { supportedReceiptMimeTypes } from '@/features/receipts/receipt-types';
+import {
+  readReceiptBase64,
+  removeReceiptFile,
+  writeReceiptBase64ToStorage,
+} from '@/features/receipts/receipt-storage';
 import { createCodedError } from '@/lib/errors';
 
 const BACKUP_DIRECTORY = 'backups';
@@ -37,33 +44,27 @@ function formatTimestampForFilename(date = new Date()): string {
 export async function fetchBackupStats(
   database: SQLiteDatabase,
 ): Promise<BackupStats> {
-  const [
-    txRes,
-    catRes,
-    pmRes,
-    goalRes,
-    claimRes,
-    budgetRes,
-  ] = await Promise.all([
-    database.getFirstAsync<{ count: number }>(
-      'SELECT COUNT(*) as count FROM transactions;',
-    ),
-    database.getFirstAsync<{ count: number }>(
-      'SELECT COUNT(*) as count FROM categories;',
-    ),
-    database.getFirstAsync<{ count: number }>(
-      'SELECT COUNT(*) as count FROM payment_methods;',
-    ),
-    database.getFirstAsync<{ count: number }>(
-      'SELECT COUNT(*) as count FROM savings_goals;',
-    ),
-    database.getFirstAsync<{ count: number }>(
-      'SELECT COUNT(*) as count FROM claims;',
-    ),
-    database.getFirstAsync<{ count: number }>(
-      'SELECT COUNT(*) as count FROM category_budgets;',
-    ),
-  ]);
+  const [txRes, catRes, pmRes, goalRes, claimRes, budgetRes] =
+    await Promise.all([
+      database.getFirstAsync<{ count: number }>(
+        'SELECT COUNT(*) as count FROM transactions;',
+      ),
+      database.getFirstAsync<{ count: number }>(
+        'SELECT COUNT(*) as count FROM categories;',
+      ),
+      database.getFirstAsync<{ count: number }>(
+        'SELECT COUNT(*) as count FROM payment_methods;',
+      ),
+      database.getFirstAsync<{ count: number }>(
+        'SELECT COUNT(*) as count FROM savings_goals;',
+      ),
+      database.getFirstAsync<{ count: number }>(
+        'SELECT COUNT(*) as count FROM claims;',
+      ),
+      database.getFirstAsync<{ count: number }>(
+        'SELECT COUNT(*) as count FROM category_budgets;',
+      ),
+    ]);
 
   return {
     transactionsCount: txRes?.count ?? 0,
@@ -82,7 +83,7 @@ export async function createBackupPayload(
     categories,
     payment_methods,
     transactions,
-    receipts,
+    receiptRows,
     claims,
     claim_items,
     app_settings,
@@ -120,9 +121,16 @@ export async function createBackupPayload(
     ),
   ]);
 
+  const receipts = await Promise.all(
+    receiptRows.map(async (receipt) => ({
+      ...receipt,
+      file_base64: await readReceiptBase64(receipt.storage_key),
+    })),
+  );
+
   const payload: BackupPayload = {
     app_identifier: 'personal_finance_app',
-    version: 1,
+    version: 2,
     exported_at: new Date().toISOString(),
     app_version: Constants.expoConfig?.version ?? '1.0.0',
     summary: {
@@ -152,7 +160,12 @@ export async function createBackupPayload(
 
 export async function exportBackupToJsonFile(
   database: SQLiteDatabase,
-): Promise<{ fileName: string; sizeBytes: number; summary: BackupPayload['summary']; uri: string }> {
+): Promise<{
+  fileName: string;
+  sizeBytes: number;
+  summary: BackupPayload['summary'];
+  uri: string;
+}> {
   const payload = await createBackupPayload(database);
   const jsonContent = JSON.stringify(payload, null, 2);
 
@@ -252,10 +265,34 @@ export async function pickBackupFile(): Promise<{
   }
 
   const payload = parsed as BackupPayload;
+  if (payload.version !== 1 && payload.version !== 2) {
+    throw createCodedError(
+      'VALIDATION_FAILED',
+      'Versi file backup belum didukung oleh aplikasi ini.',
+    );
+  }
   if (!payload.data || typeof payload.data !== 'object') {
     throw createCodedError(
       'VALIDATION_FAILED',
       'Struktur data dalam file backup rusak atau tidak lengkap.',
+    );
+  }
+  const requiredCollections = [
+    'categories',
+    'payment_methods',
+    'transactions',
+    'receipts',
+    'claims',
+    'claim_items',
+    'app_settings',
+    'savings_goals',
+    'goal_transactions',
+    'category_budgets',
+  ] as const;
+  if (!requiredCollections.every((key) => Array.isArray(payload.data[key]))) {
+    throw createCodedError(
+      'VALIDATION_FAILED',
+      'Koleksi data dalam file backup rusak atau tidak lengkap.',
     );
   }
 
@@ -281,10 +318,38 @@ export async function restoreBackupData(
   payload: BackupPayload,
 ): Promise<{ stats: BackupStats }> {
   const { data } = payload;
+  const previousReceipts = await database.getAllAsync<{ storage_key: string }>(
+    'SELECT storage_key FROM receipts;',
+  );
+  const stagedReceiptStorageKeys: string[] = [];
+  const restoredReceipts: BackupReceipt[] = [];
 
-  await database.withTransactionAsync(async () => {
-    // 1. Delete all existing data in safe foreign key order
-    await database.execAsync(`
+  try {
+    for (const receipt of data.receipts ?? []) {
+      if (payload.version < 2 || !receipt.file_base64) {
+        restoredReceipts.push(receipt);
+        continue;
+      }
+      const mimeType = supportedReceiptMimeTypes.find(
+        (supported) => supported === receipt.mime_type,
+      );
+      if (!mimeType) {
+        throw createCodedError(
+          'VALIDATION_FAILED',
+          'File backup berisi format gambar struk yang tidak didukung.',
+        );
+      }
+      const storageKey = await writeReceiptBase64ToStorage(
+        receipt.file_base64,
+        mimeType,
+      );
+      stagedReceiptStorageKeys.push(storageKey);
+      restoredReceipts.push({ ...receipt, storage_key: storageKey });
+    }
+
+    await withIntegrityCheckedTransaction(database, async (transaction) => {
+      // 1. Delete all existing data in safe foreign key order
+      await transaction.execAsync(`
       DELETE FROM claim_items;
       DELETE FROM receipts;
       DELETE FROM claims;
@@ -297,199 +362,241 @@ export async function restoreBackupData(
       DELETE FROM app_settings;
     `);
 
-    // 2. Insert categories
-    if (data.categories?.length) {
-      for (const c of data.categories) {
-        await database.runAsync(
-          `INSERT INTO categories (id, name, type, icon_key, system_key, is_default, is_fallback, sort_order, created_at, updated_at)
+      // 2. Insert categories
+      if (data.categories?.length) {
+        for (const c of data.categories) {
+          await transaction.runAsync(
+            `INSERT INTO categories (id, name, type, icon_key, system_key, is_default, is_fallback, sort_order, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-          [
-            c.id,
-            c.name,
-            c.type,
-            c.icon_key,
-            c.system_key,
-            c.is_default,
-            c.is_fallback,
-            c.sort_order,
-            c.created_at,
-            c.updated_at,
-          ],
-        );
+            [
+              c.id,
+              c.name,
+              c.type,
+              c.icon_key,
+              c.system_key,
+              c.is_default,
+              c.is_fallback,
+              c.sort_order,
+              c.created_at,
+              c.updated_at,
+            ],
+          );
+        }
       }
-    }
 
-    // 3. Insert payment methods
-    if (data.payment_methods?.length) {
-      for (const pm of data.payment_methods) {
-        await database.runAsync(
-          `INSERT INTO payment_methods (id, name, system_key, is_default, is_fallback, sort_order, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
-          [
-            pm.id,
-            pm.name,
-            pm.system_key,
-            pm.is_default,
-            pm.is_fallback,
-            pm.sort_order,
-            pm.created_at,
-            pm.updated_at,
-          ],
-        );
+      // 3. Insert payment methods
+      if (data.payment_methods?.length) {
+        for (const pm of data.payment_methods) {
+          await transaction.runAsync(
+            `INSERT INTO payment_methods (
+             id, name, system_key, is_default, is_fallback, sort_order,
+             created_at, updated_at, initial_balance_minor, account_type,
+             account_number, color, icon_key, include_in_cashflow, is_archived
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+            [
+              pm.id,
+              pm.name,
+              pm.system_key,
+              pm.is_default,
+              pm.is_fallback,
+              pm.sort_order,
+              pm.created_at,
+              pm.updated_at,
+              pm.initial_balance_minor ?? 0,
+              pm.account_type ?? 'cash',
+              pm.account_number ?? null,
+              pm.color ?? '#2563EB',
+              pm.icon_key ?? 'wallet',
+              pm.include_in_cashflow ?? 1,
+              pm.is_archived ?? 0,
+            ],
+          );
+        }
       }
-    }
 
-    // 4. Insert app settings
-    if (data.app_settings?.length) {
-      for (const s of data.app_settings) {
-        await database.runAsync(
-          `INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, ?);`,
-          [s.key, s.value, s.updated_at],
-        );
+      // 4. Insert app settings
+      if (data.app_settings?.length) {
+        for (const s of data.app_settings) {
+          await transaction.runAsync(
+            `INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, ?);`,
+            [s.key, s.value, s.updated_at],
+          );
+        }
       }
-    }
 
-    // 5. Insert transactions
-    if (data.transactions?.length) {
-      for (const t of data.transactions) {
-        await database.runAsync(
-          `INSERT INTO transactions (id, type, amount_minor, currency_code, category_id, payment_method_id, counterparty, note, occurred_at, timezone_offset_minutes, local_date, is_reimbursable, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-          [
-            t.id,
-            t.type,
-            t.amount_minor,
-            t.currency_code,
-            t.category_id,
-            t.payment_method_id,
-            t.counterparty,
-            t.note,
-            t.occurred_at,
-            t.timezone_offset_minutes,
-            t.local_date,
-            t.is_reimbursable,
-            t.created_at,
-            t.updated_at,
-          ],
-        );
+      // 5. Insert transactions
+      if (data.transactions?.length) {
+        for (const t of data.transactions) {
+          await transaction.runAsync(
+            `INSERT INTO transactions (
+             id, type, amount_minor, currency_code, category_id,
+             payment_method_id, transfer_to_payment_method_id,
+             transfer_fee_minor, transfer_fee_category_id, transfer_fee_note,
+             counterparty, note, occurred_at, timezone_offset_minutes,
+             local_date, is_reimbursable, created_at, updated_at
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+            [
+              t.id,
+              t.type,
+              t.amount_minor,
+              t.currency_code,
+              t.category_id,
+              t.payment_method_id,
+              t.transfer_to_payment_method_id ?? null,
+              t.transfer_fee_minor ?? 0,
+              t.transfer_fee_category_id ?? null,
+              t.transfer_fee_note ?? null,
+              t.counterparty,
+              t.note,
+              t.occurred_at,
+              t.timezone_offset_minutes,
+              t.local_date,
+              t.is_reimbursable,
+              t.created_at,
+              t.updated_at,
+            ],
+          );
+        }
       }
-    }
 
-    // 6. Insert receipts
-    if (data.receipts?.length) {
-      for (const r of data.receipts) {
-        await database.runAsync(
-          `INSERT INTO receipts (id, transaction_id, storage_key, mime_type, ocr_status, ocr_raw_text, subtotal_minor, tax_minor, created_at, updated_at)
+      // 6. Insert receipts
+      if (restoredReceipts.length) {
+        for (const r of restoredReceipts) {
+          await transaction.runAsync(
+            `INSERT INTO receipts (id, transaction_id, storage_key, mime_type, ocr_status, ocr_raw_text, subtotal_minor, tax_minor, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-          [
-            r.id,
-            r.transaction_id,
-            r.storage_key,
-            r.mime_type,
-            r.ocr_status,
-            r.ocr_raw_text,
-            r.subtotal_minor,
-            r.tax_minor,
-            r.created_at,
-            r.updated_at,
-          ],
-        );
+            [
+              r.id,
+              r.transaction_id,
+              r.storage_key,
+              r.mime_type,
+              r.ocr_status,
+              r.ocr_raw_text,
+              r.subtotal_minor,
+              r.tax_minor,
+              r.created_at,
+              r.updated_at,
+            ],
+          );
+        }
       }
-    }
 
-    // 7. Insert claims
-    if (data.claims?.length) {
-      for (const cl of data.claims) {
-        await database.runAsync(
-          `INSERT INTO claims (id, title, description, status, period_mode, period_start, period_end, submitted_at, reimbursed_at, rejected_at, created_at, updated_at)
+      // 7. Insert claims
+      if (data.claims?.length) {
+        for (const cl of data.claims) {
+          await transaction.runAsync(
+            `INSERT INTO claims (id, title, description, status, period_mode, period_start, period_end, submitted_at, reimbursed_at, rejected_at, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-          [
-            cl.id,
-            cl.title,
-            cl.description,
-            cl.status,
-            cl.period_mode,
-            cl.period_start,
-            cl.period_end,
-            cl.submitted_at,
-            cl.reimbursed_at,
-            cl.rejected_at,
-            cl.created_at,
-            cl.updated_at,
-          ],
-        );
+            [
+              cl.id,
+              cl.title,
+              cl.description,
+              cl.status,
+              cl.period_mode,
+              cl.period_start,
+              cl.period_end,
+              cl.submitted_at,
+              cl.reimbursed_at,
+              cl.rejected_at,
+              cl.created_at,
+              cl.updated_at,
+            ],
+          );
+        }
       }
-    }
 
-    // 8. Insert claim items
-    if (data.claim_items?.length) {
-      for (const ci of data.claim_items) {
-        await database.runAsync(
-          `INSERT INTO claim_items (id, claim_id, transaction_id, created_at)
+      // 8. Insert claim items
+      if (data.claim_items?.length) {
+        for (const ci of data.claim_items) {
+          await transaction.runAsync(
+            `INSERT INTO claim_items (id, claim_id, transaction_id, created_at)
            VALUES (?, ?, ?, ?);`,
-          [ci.id, ci.claim_id, ci.transaction_id, ci.created_at],
-        );
+            [ci.id, ci.claim_id, ci.transaction_id, ci.created_at],
+          );
+        }
       }
-    }
 
-    // 9. Insert savings goals
-    if (data.savings_goals?.length) {
-      for (const g of data.savings_goals) {
-        await database.runAsync(
-          `INSERT INTO savings_goals (id, name, target_amount_minor, current_amount_minor, icon_key, color_key, target_date, is_completed, created_at, updated_at)
+      // 9. Insert savings goals
+      if (data.savings_goals?.length) {
+        for (const g of data.savings_goals) {
+          await transaction.runAsync(
+            `INSERT INTO savings_goals (id, name, target_amount_minor, current_amount_minor, icon_key, color_key, target_date, is_completed, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-          [
-            g.id,
-            g.name,
-            g.target_amount_minor,
-            g.current_amount_minor,
-            g.icon_key,
-            g.color_key,
-            g.target_date,
-            g.is_completed,
-            g.created_at,
-            g.updated_at,
-          ],
-        );
+            [
+              g.id,
+              g.name,
+              g.target_amount_minor,
+              g.current_amount_minor,
+              g.icon_key,
+              g.color_key,
+              g.target_date,
+              g.is_completed,
+              g.created_at,
+              g.updated_at,
+            ],
+          );
+        }
       }
-    }
 
-    // 10. Insert goal transactions
-    if (data.goal_transactions?.length) {
-      for (const gt of data.goal_transactions) {
-        await database.runAsync(
-          `INSERT INTO goal_transactions (id, goal_id, type, amount_minor, note, occurred_at, created_at)
+      // 10. Insert goal transactions
+      if (data.goal_transactions?.length) {
+        for (const gt of data.goal_transactions) {
+          await transaction.runAsync(
+            `INSERT INTO goal_transactions (id, goal_id, type, amount_minor, note, occurred_at, created_at)
            VALUES (?, ?, ?, ?, ?, ?, ?);`,
-          [
-            gt.id,
-            gt.goal_id,
-            gt.type,
-            gt.amount_minor,
-            gt.note,
-            gt.occurred_at,
-            gt.created_at,
-          ],
-        );
+            [
+              gt.id,
+              gt.goal_id,
+              gt.type,
+              gt.amount_minor,
+              gt.note,
+              gt.occurred_at,
+              gt.created_at,
+            ],
+          );
+        }
       }
-    }
 
-    // 11. Insert category budgets
-    if (data.category_budgets?.length) {
-      for (const cb of data.category_budgets) {
-        await database.runAsync(
-          `INSERT INTO category_budgets (id, category_id, monthly_limit_minor, created_at, updated_at)
+      // 11. Insert category budgets
+      if (data.category_budgets?.length) {
+        for (const cb of data.category_budgets) {
+          await transaction.runAsync(
+            `INSERT INTO category_budgets (id, category_id, monthly_limit_minor, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?);`,
-          [
-            cb.id,
-            cb.category_id,
-            cb.monthly_limit_minor,
-            cb.created_at,
-            cb.updated_at,
-          ],
-        );
+            [
+              cb.id,
+              cb.category_id,
+              cb.monthly_limit_minor,
+              cb.created_at,
+              cb.updated_at,
+            ],
+          );
+        }
+      }
+    });
+  } catch (error) {
+    for (const storageKey of stagedReceiptStorageKeys) {
+      try {
+        removeReceiptFile(storageKey);
+      } catch {
+        // Preserve the database error; orphaned staged files can be cleaned later.
       }
     }
-  });
+    throw error;
+  }
+
+  const activeReceiptKeys = new Set(
+    restoredReceipts.map((receipt) => receipt.storage_key),
+  );
+  for (const receipt of previousReceipts) {
+    if (!activeReceiptKeys.has(receipt.storage_key)) {
+      try {
+        removeReceiptFile(receipt.storage_key);
+      } catch (error) {
+        if (__DEV__) console.warn('Old receipt cleanup failed.', error);
+      }
+    }
+  }
 
   return {
     stats: {
@@ -591,7 +698,7 @@ export async function exportTransactionsCsvFile(
      LEFT JOIN claims cl ON ci.claim_id = cl.id
      ${whereClause}
      ORDER BY t.local_date DESC, t.id DESC;`,
-    ...queryParams as any,
+    ...(queryParams as any),
   );
 
   const isEn = language === 'en';
@@ -631,10 +738,14 @@ export async function exportTransactionsCsvFile(
     const typeLabel = isEn
       ? r.type === 'expense'
         ? 'Expense'
-        : 'Income'
+        : r.type === 'income'
+          ? 'Income'
+          : 'Transfer'
       : r.type === 'expense'
         ? 'Pengeluaran'
-        : 'Pemasukan';
+        : r.type === 'income'
+          ? 'Pemasukan'
+          : 'Transfer';
     const amountVal = r.amount_minor;
     const reimbursableLabel = isEn
       ? r.is_reimbursable

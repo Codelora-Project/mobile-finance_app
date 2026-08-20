@@ -20,15 +20,26 @@ export type BackupPaymentMethod = {
   sort_order: number;
   created_at: number;
   updated_at: number;
+  initial_balance_minor?: number;
+  account_type?: string;
+  account_number?: string | null;
+  color?: string | null;
+  icon_key?: string | null;
+  include_in_cashflow?: number;
+  is_archived?: number;
 };
 
 export type BackupTransaction = {
   id: number;
-  type: 'expense' | 'income';
+  type: 'expense' | 'income' | 'transfer';
   amount_minor: number;
   currency_code: string;
   category_id: number;
   payment_method_id: number | null;
+  transfer_to_payment_method_id?: number | null;
+  transfer_fee_minor?: number;
+  transfer_fee_category_id?: number | null;
+  transfer_fee_note?: string | null;
   counterparty: string | null;
   note: string | null;
   occurred_at: number;
@@ -50,6 +61,8 @@ export type BackupReceipt = {
   tax_minor: number | null;
   created_at: number;
   updated_at: number;
+  /** Added in backup format v2. V1 backups only contain storage_key. */
+  file_base64?: string | null;
 };
 
 export type BackupClaim = {
@@ -126,7 +139,7 @@ export type BackupData = {
 
 export type BackupPayload = {
   app_identifier: 'personal_finance_app';
-  version: 1;
+  version: 1 | 2;
   exported_at: string;
   app_version: string;
   summary: {

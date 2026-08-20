@@ -8,6 +8,7 @@ import {
   removeAllReceiptFiles,
   receiptFileExists,
   removeReceiptFile,
+  writeReceiptBase64ToStorage,
 } from '@/features/receipts/receipt-storage';
 
 const mockFiles = new Set<string>();
@@ -60,6 +61,10 @@ jest.mock('expo-file-system', () => {
     async base64() {
       if (!this.exists) throw new Error('source missing');
       return 'aW1hZ2U=';
+    }
+
+    async write(_content: string, _options?: { encoding?: string }) {
+      mockFiles.add(this.uri);
     }
 
     delete() {
@@ -118,6 +123,16 @@ describe('receipt storage', () => {
       'aW1hZ2U=',
     );
     await expect(readReceiptBase64('receipts/missing.jpg')).resolves.toBeNull();
+  });
+
+  it('restores base64 receipt data into a new managed file', async () => {
+    const storageKey = await writeReceiptBase64ToStorage(
+      'aW1hZ2U=',
+      'image/webp',
+    );
+
+    expect(storageKey).toMatch(/^receipts\/[a-z0-9-]+\.webp$/);
+    expect(receiptFileExists(storageKey)).toBe(true);
   });
 
   it('does not create a persistent record for a missing source file', async () => {
