@@ -213,6 +213,7 @@ describe('transaction detail screen', () => {
       expect.objectContaining({
         message: expect.stringContaining('BUKTI TRANSAKSI'),
       }),
+      expect.anything(),
     );
   });
 });

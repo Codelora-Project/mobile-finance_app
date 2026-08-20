@@ -1,5 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import type { TranslationSchema } from '@/lib/i18n/translations';
@@ -29,6 +29,16 @@ export const TransactionHistoryHeader = memo(
     t,
   }: TransactionHistoryHeaderProps) {
     const { colors, isDark } = useTheme();
+    const [isSearchExpanded, setIsSearchExpanded] = useState(
+      Boolean(searchQuery),
+    );
+
+    function toggleSearch() {
+      if (isSearchExpanded && searchQuery) {
+        onClearSearch();
+      }
+      setIsSearchExpanded((prev) => !prev);
+    }
 
     return (
       <View
@@ -40,133 +50,174 @@ export const TransactionHistoryHeader = memo(
           },
         ]}
       >
+        {/* Top Row: Title + Action Icons */}
         <View style={styles.topRow}>
-          <View style={styles.searchBarWrap}>
-            <MaterialCommunityIcons
-              color="#94A3B8"
-              name="magnify"
-              size={20}
-              style={styles.searchIcon}
-            />
-            <TextInput
-              accessibilityLabel="Search"
-              onChangeText={onSearchChange}
-              placeholder={t.transactions.searchPlaceholder}
-              placeholderTextColor="#94A3B8"
-              style={[
-                styles.searchInput,
-                {
-                  backgroundColor: isDark
-                    ? colors.surfaceSecondary
-                    : '#F1F5F9',
-                  color: colors.textPrimary,
-                },
-              ]}
-              value={searchQuery}
-            />
-            {searchQuery ? (
-              <Pressable
-                accessibilityLabel="Clear search"
-                accessibilityRole="button"
-                hitSlop={8}
-                onPress={onClearSearch}
-                style={styles.clearSearchBtn}
-              >
-                <MaterialCommunityIcons
-                  color="#94A3B8"
-                  name="close-circle"
-                  size={18}
-                />
-              </Pressable>
-            ) : null}
-          </View>
-
-          <Pressable
-            accessibilityLabel="Filter"
-            accessibilityRole="button"
-            onPress={onOpenFilter}
-            style={({ pressed }) => [
-              styles.filterBtn,
-              {
-                backgroundColor:
-                  activeFiltersCount > 0
-                    ? colors.primary
-                    : isDark
-                      ? colors.surfaceSecondary
-                      : '#F1F5F9',
-                borderColor:
-                  activeFiltersCount > 0
-                    ? colors.primary
-                    : colors.border,
-              },
-              pressed && styles.pressed,
-            ]}
+          <Text
+            numberOfLines={1}
+            style={[styles.screenTitle, { color: colors.textPrimary }]}
           >
-            <MaterialCommunityIcons
-              color={
-                activeFiltersCount > 0
-                  ? '#FFFFFF'
-                  : isDark
-                    ? colors.textSecondary
-                    : '#64748B'
-              }
-              name="tune-variant"
-              size={18}
-            />
-            <Text
-              style={[
-                styles.filterBtnText,
-                {
-                  color:
-                    activeFiltersCount > 0
-                      ? '#FFFFFF'
-                      : isDark
-                        ? colors.textSecondary
-                        : '#64748B',
-                },
-              ]}
-            >
-              {t.transactions.filters}
-            </Text>
-            {activeFiltersCount > 0 ? (
-              <View style={styles.filterBadge}>
-                <Text style={styles.filterBadgeText}>
-                  {activeFiltersCount}
-                </Text>
-              </View>
-            ) : null}
-          </Pressable>
+            {t.transactions.title || 'Riwayat'}
+          </Text>
 
-          {onExport ? (
+          <View style={styles.actionsRow}>
+            {/* Search Icon Toggle */}
             <Pressable
-              accessibilityLabel="Ekspor CSV"
+              accessibilityLabel="Search"
               accessibilityRole="button"
-              onPress={onExport}
+              hitSlop={6}
+              onPress={toggleSearch}
               style={({ pressed }) => [
                 styles.iconActionBtn,
                 {
-                  backgroundColor: isDark
-                    ? colors.surfaceSecondary
-                    : '#F1F5F9',
+                  backgroundColor:
+                    isSearchExpanded || searchQuery
+                      ? isDark
+                        ? colors.surfaceSecondary
+                        : '#E2E8F0'
+                      : isDark
+                        ? colors.surfaceSecondary
+                        : '#F1F5F9',
                   borderColor: colors.border,
                 },
                 pressed && styles.pressed,
               ]}
             >
               <MaterialCommunityIcons
-                color={isDark ? colors.textSecondary : '#64748B'}
-                name="export-variant"
-                size={18}
+                color={
+                  isSearchExpanded || searchQuery
+                    ? colors.primary
+                    : colors.textSecondary
+                }
+                name="magnify"
+                size={20}
               />
             </Pressable>
-          ) : null}
+
+            {/* Filter Icon Button with Badge */}
+            <Pressable
+              accessibilityLabel="Filter"
+              accessibilityRole="button"
+              hitSlop={6}
+              onPress={onOpenFilter}
+              style={({ pressed }) => [
+                styles.iconActionBtn,
+                {
+                  backgroundColor:
+                    activeFiltersCount > 0
+                      ? colors.primary
+                      : isDark
+                        ? colors.surfaceSecondary
+                        : '#F1F5F9',
+                  borderColor:
+                    activeFiltersCount > 0
+                      ? colors.primary
+                      : colors.border,
+                },
+                pressed && styles.pressed,
+              ]}
+            >
+              <MaterialCommunityIcons
+                color={
+                  activeFiltersCount > 0
+                    ? '#FFFFFF'
+                    : colors.textSecondary
+                }
+                name="tune-variant"
+                size={19}
+              />
+              {activeFiltersCount > 0 ? (
+                <View style={styles.filterBadge}>
+                  <Text style={styles.filterBadgeText}>
+                    {activeFiltersCount}
+                  </Text>
+                </View>
+              ) : null}
+            </Pressable>
+
+            {/* Export CSV Button */}
+            {onExport ? (
+              <Pressable
+                accessibilityLabel="Ekspor CSV"
+                accessibilityRole="button"
+                hitSlop={6}
+                onPress={onExport}
+                style={({ pressed }) => [
+                  styles.iconActionBtn,
+                  {
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : '#F1F5F9',
+                    borderColor: colors.border,
+                  },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <MaterialCommunityIcons
+                  color={colors.textSecondary}
+                  name="export-variant"
+                  size={19}
+                />
+              </Pressable>
+            ) : null}
+          </View>
         </View>
+
+        {/* Expandable Search Input Field */}
+        {isSearchExpanded || searchQuery ? (
+          <View style={styles.searchBarRow}>
+            <View style={styles.searchBarWrap}>
+              <MaterialCommunityIcons
+                color="#94A3B8"
+                name="magnify"
+                size={18}
+                style={styles.searchIcon}
+              />
+              <TextInput
+                accessibilityLabel="Search"
+                autoFocus={isSearchExpanded && !searchQuery}
+                onChangeText={onSearchChange}
+                placeholder={t.transactions.searchPlaceholder}
+                placeholderTextColor="#94A3B8"
+                style={[
+                  styles.searchInput,
+                  {
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : '#F1F5F9',
+                    color: colors.textPrimary,
+                  },
+                ]}
+                value={searchQuery}
+              />
+              {searchQuery ? (
+                <Pressable
+                  accessibilityLabel="Clear search"
+                  accessibilityRole="button"
+                  hitSlop={8}
+                  onPress={onClearSearch}
+                  style={styles.clearSearchBtn}
+                >
+                  <MaterialCommunityIcons
+                    color="#94A3B8"
+                    name="close-circle"
+                    size={16}
+                  />
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+        ) : null}
       </View>
     );
   },
 );
 
 const styles = StyleSheet.create({
+  actionsRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.xs + 2,
+  },
   clearSearchBtn: {
     padding: 6,
     position: 'absolute',
@@ -176,34 +227,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: radius.pill,
-    height: 18,
+    height: 16,
     justifyContent: 'center',
-    minWidth: 18,
-    paddingHorizontal: 4,
+    minWidth: 16,
+    paddingHorizontal: 3,
+    position: 'absolute',
+    right: -3,
+    top: -3,
   },
   filterBadgeText: {
     ...typography.metadata,
     color: '#2563EB',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
-  },
-  filterBtn: {
-    alignItems: 'center',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 6,
-    height: 44,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  filterBtnText: {
-    ...typography.metadata,
-    fontSize: 13,
-    fontWeight: '700',
   },
   headerRoot: {
     borderBottomWidth: 1,
+    gap: spacing.xs + 2,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
@@ -211,13 +251,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: radius.md,
     borderWidth: 1,
-    height: 44,
+    height: 38,
     justifyContent: 'center',
-    width: 44,
+    position: 'relative',
+    width: 38,
   },
   pressed: {
     opacity: 0.75,
     transform: [{ scale: 0.97 }],
+  },
+  screenTitle: {
+    ...typography.screenTitle,
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+  },
+  searchBarRow: {
+    flexDirection: 'row',
+    marginTop: 2,
   },
   searchBarWrap: {
     alignItems: 'center',
@@ -226,7 +277,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   searchIcon: {
-    left: 12,
+    left: 10,
     position: 'absolute',
     zIndex: 1,
   },
@@ -235,13 +286,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     flex: 1,
     fontSize: 13,
-    height: 44,
-    paddingLeft: 38,
-    paddingRight: 36,
+    height: 40,
+    paddingLeft: 34,
+    paddingRight: 34,
   },
   topRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: spacing.sm,
+    justifyContent: 'space-between',
   },
 });

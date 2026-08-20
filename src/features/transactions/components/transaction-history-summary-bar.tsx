@@ -25,7 +25,7 @@ export const TransactionHistorySummaryBar = memo(
     currencyCode,
     expenseLabel,
     incomeLabel,
-    netLabel = 'Arus Kas',
+    netLabel = 'Saldo',
     onSelectTypeFilter,
     totalExpenseMinor,
     totalIncomeMinor,
@@ -45,61 +45,7 @@ export const TransactionHistorySummaryBar = memo(
           },
         ]}
       >
-        {/* 1. Income Stat */}
-        <Pressable
-          accessibilityLabel={`${incomeLabel}: +${formatMoney(totalIncomeMinor, currencyCode)}`}
-          accessibilityRole="button"
-          onPress={() =>
-            onSelectTypeFilter?.(
-              activeTypeFilter === 'income' ? undefined : 'income',
-            )
-          }
-          style={({ pressed }) => [
-            styles.statCol,
-            activeTypeFilter === 'income' && {
-              backgroundColor: isDark
-                ? 'rgba(34, 197, 94, 0.18)'
-                : '#DCFCE7',
-              borderRadius: radius.md,
-            },
-            pressed ? { opacity: 0.75 } : null,
-          ]}
-        >
-          <View style={styles.statLabelRow}>
-            <MaterialCommunityIcons
-              color={colors.positive}
-              name="arrow-down-left"
-              size={15}
-            />
-            <Text
-              numberOfLines={1}
-              style={[styles.statLabel, { color: colors.textSecondary }]}
-            >
-              {incomeLabel}
-            </Text>
-          </View>
-          <Text
-            adjustsFontSizeToFit
-            minimumFontScale={0.75}
-            numberOfLines={1}
-            style={[styles.statAmountText, { color: colors.positive }]}
-          >
-            +{formatMoney(totalIncomeMinor, currencyCode)}
-          </Text>
-        </Pressable>
-
-        <View
-          style={[
-            styles.verticalDivider,
-            {
-              backgroundColor: isDark
-                ? 'rgba(255, 255, 255, 0.08)'
-                : 'rgba(0, 0, 0, 0.06)',
-            },
-          ]}
-        />
-
-        {/* 2. Expense Stat */}
+        {/* 1. Expense Stat (Keluar) */}
         <Pressable
           accessibilityLabel={`${expenseLabel}: -${formatMoney(totalExpenseMinor, currencyCode)}`}
           accessibilityRole="button"
@@ -112,34 +58,45 @@ export const TransactionHistorySummaryBar = memo(
             styles.statCol,
             activeTypeFilter === 'expense' && {
               backgroundColor: isDark
-                ? 'rgba(239, 68, 68, 0.18)'
+                ? 'rgba(239, 68, 68, 0.16)'
                 : '#FEE2E2',
               borderRadius: radius.md,
             },
             pressed ? { opacity: 0.75 } : null,
           ]}
         >
-          <View style={styles.statLabelRow}>
+          <View
+            style={[
+              styles.iconCircle,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(239, 68, 68, 0.15)'
+                  : '#FEE2E2',
+              },
+            ]}
+          >
             <MaterialCommunityIcons
               color={colors.destructive}
-              name="arrow-up-right"
+              name="arrow-up"
               size={15}
             />
+          </View>
+          <View style={styles.textWrap}>
             <Text
               numberOfLines={1}
               style={[styles.statLabel, { color: colors.textSecondary }]}
             >
               {expenseLabel}
             </Text>
+            <Text
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
+              numberOfLines={1}
+              style={[styles.statAmountText, { color: colors.destructive }]}
+            >
+              -{formatMoney(totalExpenseMinor, currencyCode)}
+            </Text>
           </View>
-          <Text
-            adjustsFontSizeToFit
-            minimumFontScale={0.75}
-            numberOfLines={1}
-            style={[styles.statAmountText, { color: colors.destructive }]}
-          >
-            -{formatMoney(totalExpenseMinor, currencyCode)}
-          </Text>
         </Pressable>
 
         <View
@@ -153,35 +110,115 @@ export const TransactionHistorySummaryBar = memo(
           ]}
         />
 
-        {/* 3. Net Cashflow Stat */}
-        <View style={styles.statCol}>
-          <View style={styles.statLabelRow}>
+        {/* 2. Income Stat (Masuk) */}
+        <Pressable
+          accessibilityLabel={`${incomeLabel}: +${formatMoney(totalIncomeMinor, currencyCode)}`}
+          accessibilityRole="button"
+          onPress={() =>
+            onSelectTypeFilter?.(
+              activeTypeFilter === 'income' ? undefined : 'income',
+            )
+          }
+          style={({ pressed }) => [
+            styles.statCol,
+            activeTypeFilter === 'income' && {
+              backgroundColor: isDark
+                ? 'rgba(34, 197, 94, 0.16)'
+                : '#DCFCE7',
+              borderRadius: radius.md,
+            },
+            pressed ? { opacity: 0.75 } : null,
+          ]}
+        >
+          <View
+            style={[
+              styles.iconCircle,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(34, 197, 94, 0.15)'
+                  : '#DCFCE7',
+              },
+            ]}
+          >
             <MaterialCommunityIcons
-              color={isNetPositive ? colors.positive : colors.destructive}
-              name="scale-balance"
+              color={colors.positive}
+              name="arrow-down"
               size={15}
             />
+          </View>
+          <View style={styles.textWrap}>
+            <Text
+              numberOfLines={1}
+              style={[styles.statLabel, { color: colors.textSecondary }]}
+            >
+              {incomeLabel}
+            </Text>
+            <Text
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
+              numberOfLines={1}
+              style={[styles.statAmountText, { color: colors.positive }]}
+            >
+              +{formatMoney(totalIncomeMinor, currencyCode)}
+            </Text>
+          </View>
+        </Pressable>
+
+        <View
+          style={[
+            styles.verticalDivider,
+            {
+              backgroundColor: isDark
+                ? 'rgba(255, 255, 255, 0.08)'
+                : 'rgba(0, 0, 0, 0.06)',
+            },
+          ]}
+        />
+
+        {/* 3. Saldo / Arus Kas Stat */}
+        <View style={styles.statCol}>
+          <View
+            style={[
+              styles.iconCircle,
+              {
+                backgroundColor: isDark
+                  ? isNetPositive
+                    ? 'rgba(34, 197, 94, 0.15)'
+                    : 'rgba(239, 68, 68, 0.15)'
+                  : isNetPositive
+                    ? '#DCFCE7'
+                    : '#FEE2E2',
+              },
+            ]}
+          >
+            <MaterialCommunityIcons
+              color={isNetPositive ? colors.positive : colors.destructive}
+              name={isNetPositive ? 'trending-up' : 'trending-down'}
+              size={15}
+            />
+          </View>
+          <View style={styles.textWrap}>
             <Text
               numberOfLines={1}
               style={[styles.statLabel, { color: colors.textSecondary }]}
             >
               {netLabel}
             </Text>
+            <Text
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
+              numberOfLines={1}
+              style={[
+                styles.statAmountText,
+                {
+                  color: isNetPositive ? colors.positive : colors.destructive,
+                },
+              ]}
+            >
+              {isNetPositive ? '+' : '−'}
+              {formatMoney(Math.abs(netMinor), currencyCode)}
+            </Text>
           </View>
-          <Text
-            adjustsFontSizeToFit
-            minimumFontScale={0.75}
-            numberOfLines={1}
-            style={[
-              styles.statAmountText,
-              {
-                color: isNetPositive ? colors.positive : colors.destructive,
-              },
-            ]}
-          >
-            {isNetPositive ? '+' : '−'}
-            {formatMoney(Math.abs(netMinor), currencyCode)}
-          </Text>
         </View>
       </View>
     );
@@ -189,30 +226,32 @@ export const TransactionHistorySummaryBar = memo(
 );
 
 const styles = StyleSheet.create({
+  iconCircle: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 28,
+    justifyContent: 'center',
+    width: 28,
+  },
   statAmountText: {
     ...typography.body,
-    fontSize: 14.5,
+    fontSize: 13.5,
     fontWeight: '800',
-    letterSpacing: -0.3,
-    marginTop: 2,
+    letterSpacing: -0.2,
   },
   statCol: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
     flex: 1,
-    gap: 2,
+    flexDirection: 'row',
+    gap: 6,
     justifyContent: 'center',
-    paddingHorizontal: spacing.xs + 3,
+    paddingHorizontal: 4,
     paddingVertical: 5,
   },
   statLabel: {
     ...typography.metadata,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-  },
-  statLabelRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 4,
   },
   summaryBarRoot: {
     alignItems: 'center',
@@ -220,14 +259,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: 'row',
     marginHorizontal: spacing.md,
-    marginTop: spacing.xs + 1,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 10,
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 9,
+  },
+  textWrap: {
+    flex: 1,
+    gap: 1,
+    justifyContent: 'center',
   },
   verticalDivider: {
     alignSelf: 'center',
-    height: 30,
-    marginHorizontal: 2,
+    height: 28,
+    marginHorizontal: 1,
     width: 1,
   },
 });

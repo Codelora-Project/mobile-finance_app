@@ -12,10 +12,14 @@ import {
 
 import { Screen } from '@/components/ui/screen';
 import { TransactionDateGroupHeader } from '@/features/transactions/components/transaction-date-group-header';
+import { TransactionDateNavigator } from '@/features/transactions/components/transaction-date-navigator';
 import { TransactionHistoryEmptyState } from '@/features/transactions/components/transaction-history-empty-state';
 import { TransactionHistoryHeader } from '@/features/transactions/components/transaction-history-header';
 import { TransactionHistorySummaryBar } from '@/features/transactions/components/transaction-history-summary-bar';
-import { TransactionMonthSelector } from '@/features/transactions/components/transaction-month-selector';
+import {
+  type HistoryPeriod,
+  TransactionPeriodSegmentedControl,
+} from '@/features/transactions/components/transaction-period-segmented-control';
 import { TransactionQuickFilterChips } from '@/features/transactions/components/transaction-quick-filter-chips';
 import { TransactionRowItem } from '@/features/transactions/components/transaction-row-item';
 import {
@@ -82,6 +86,13 @@ function buildDateGroups(
   });
 }
 
+function formatDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export function TransactionHistoryScreen() {
   const database = useSQLiteContext();
   const router = useRouter();
@@ -100,30 +111,153 @@ export function TransactionHistoryScreen() {
   const [filters, setFilters] = useState<TransactionFilters>({});
   const [filterModalVisible, setFilterModalVisible] = useState(false);
 
-  // Month navigation state
-  const now = new Date();
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
+  // Period & Navigation state
+  const [period, setPeriod] = useState<HistoryPeriod>('monthly');
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [isAllTime, setIsAllTime] = useState(false);
 
   const fetchIdRef = useRef(0);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Calculate effective filters combining month range and specific user filters
+  // Calculate start and end date of active period
+  const { dateFrom, dateTo, primaryLabel, secondaryLabel } = useMemo(() => {
+    const locale = language === 'id' ? 'id-ID' : 'en-US';
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth();
+
+    if (period === 'daily') {
+      const dateStr = formatDateStr(selectedDate);
+      const primary = new Intl.DateTimeFormat(locale, {
+        day: 'numeric',
+        month: 'long',
+      }).format(selectedDate);
+      const secondary = new Intl.DateTimeFormat(locale, {
+        weekday: 'long',
+        year: 'numeric',
+      }).format(selectedDate);
+
+      return {
+        dateFrom: dateStr,
+        dateTo: dateStr,
+        primaryLabel: primary,
+        secondaryLabel: secondary,
+      };
+    }
+
+    if (period === 'weekly') {
+      // Find Monday of current week
+      const dayOfWeek = selectedDate.getDay();
+      const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      const monday = new Date(selectedDate);
+      monday.setDate(selectedDate.getDate() + diffToMonday);
+
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+
+      const startStr = formatDateStr(monday);
+      const endStr = formatDateStr(sunday);
+
+      const startMonth = new Intl.DateTimeFormat(locale, {
+        day: 'numeric',
+        month: 'short',
+      }).format(monday);
+      const endMonth = new Intl.DateTimeFormat(locale, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      }).format(sunday);
+
+      return {
+        dateFrom: startStr,
+        dateTo: endStr,
+        primaryLabel: `${startMonth} – ${endMonth}`,
+        secondaryLabel: new Intl.DateTimeFormat(locale, {
+          month: 'long',
+          year: 'numeric',
+        }).format(monday),
+      };
+    }
+
+    // Monthly default
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    const startStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+    const endStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(
+      lastDay,
+    ).padStart(2, '0')}`;
+
+    const monthName = new Intl.DateTimeFormat(locale, {
+      month: 'long',
+    }).format(selectedDate);
+    const monthYear = new Intl.DateTimeFormat(locale, {
+      month: 'long',
+      year: 'numeric',
+    }).format(selectedDate);
+
+    return {
+      dateFrom: startStr,
+      dateTo: endStr,
+      primaryLabel: monthYear,
+      secondaryLabel: language === 'id' ? 'Semua waktu' : 'All time',
+    };
+  }, [language, period, selectedDate]);
+
+  // Calculate effective filters combining period range and custom filters
   const effectiveFilters = useMemo<TransactionFilters>(() => {
     if (isAllTime) {
       return filters;
     }
-    const lastDay = new Date(selectedYear, selectedMonth, 0).getDate();
-    const startDay = '01';
-    const endDay = String(lastDay).padStart(2, '0');
-    const monthStr = String(selectedMonth).padStart(2, '0');
     return {
       ...filters,
-      dateFrom: filters.dateFrom ?? `${selectedYear}-${monthStr}-${startDay}`,
-      dateTo: filters.dateTo ?? `${selectedYear}-${monthStr}-${endDay}`,
+      dateFrom: filters.dateFrom ?? dateFrom,
+      dateTo: filters.dateTo ?? dateTo,
     };
-  }, [filters, isAllTime, selectedMonth, selectedYear]);
+  }, [dateFrom, dateTo, filters, isAllTime]);
+
+  // Period navigation controls
+  const handlePrevPeriod = useCallback(() => {
+    if (isAllTime) {
+      setIsAllTime(false);
+      return;
+    }
+    setSelectedDate((prev) => {
+      const next = new Date(prev);
+      if (period === 'daily') {
+        next.setDate(prev.getDate() - 1);
+      } else if (period === 'weekly') {
+        next.setDate(prev.getDate() - 7);
+      } else {
+        next.setMonth(prev.getMonth() - 1);
+      }
+      return next;
+    });
+  }, [isAllTime, period]);
+
+  const handleNextPeriod = useCallback(() => {
+    if (isAllTime) {
+      setIsAllTime(false);
+      return;
+    }
+    setSelectedDate((prev) => {
+      const next = new Date(prev);
+      if (period === 'daily') {
+        next.setDate(prev.getDate() + 1);
+      } else if (period === 'weekly') {
+        next.setDate(prev.getDate() + 7);
+      } else {
+        next.setMonth(prev.getMonth() + 1);
+      }
+      return next;
+    });
+  }, [isAllTime, period]);
+
+  const handleToggleAllTime = useCallback(() => {
+    setIsAllTime((prev) => !prev);
+  }, []);
+
+  const handleChangePeriod = useCallback((newPeriod: HistoryPeriod) => {
+    setPeriod(newPeriod);
+    setIsAllTime(false);
+  }, []);
 
   // Debounce search input
   useEffect(() => {
@@ -172,7 +306,8 @@ export function TransactionHistoryScreen() {
       } catch (err) {
         if (currentFetchId === fetchIdRef.current) {
           const mapped = mapError(err, 'DATABASE_WRITE_FAILED');
-          if (__DEV__) console.warn('Could not load transactions', mapped.message);
+          if (__DEV__)
+            console.warn('Could not load transactions', mapped.message);
         }
       } finally {
         if (currentFetchId === fetchIdRef.current) {
@@ -228,7 +363,9 @@ export function TransactionHistoryScreen() {
       );
       await shareTransactionCsv(
         uri,
-        language === 'id' ? 'Ekspor Riwayat Transaksi' : 'Export Transaction History',
+        language === 'id'
+          ? 'Ekspor Riwayat Transaksi'
+          : 'Export Transaction History',
       );
     } catch (err) {
       const mapped = mapError(err, 'FILE_OPERATION_FAILED');
@@ -239,7 +376,14 @@ export function TransactionHistoryScreen() {
     } finally {
       setExporting(false);
     }
-  }, [database, debouncedSearch, effectiveFilters, exporting, language, transactions.length]);
+  }, [
+    database,
+    debouncedSearch,
+    effectiveFilters,
+    exporting,
+    language,
+    transactions.length,
+  ]);
 
   const handleEditTransaction = useCallback(
     (tx: TransactionListItem) => {
@@ -266,7 +410,12 @@ export function TransactionHistoryScreen() {
             onPress: async () => {
               try {
                 await deleteTransaction(database, tx.id);
-                await loadTransactions(effectiveFilters, debouncedSearch, 0, false);
+                await loadTransactions(
+                  effectiveFilters,
+                  debouncedSearch,
+                  0,
+                  false,
+                );
               } catch (delErr) {
                 const mapped = mapError(delErr, 'DATABASE_WRITE_FAILED');
                 Alert.alert('Error', mapped.message);
@@ -324,39 +473,39 @@ export function TransactionHistoryScreen() {
     setDebouncedSearch('');
   }, []);
 
-  const handleChangeMonth = useCallback((year: number, month: number) => {
-    setSelectedYear(year);
-    setSelectedMonth(month);
-    setIsAllTime(false);
-    setFilters((prev) => {
-      const next = { ...prev };
-      delete next.dateFrom;
-      delete next.dateTo;
-      return next;
-    });
-  }, []);
-
-  const handleToggleAllTime = useCallback(() => {
-    setIsAllTime((prev) => !prev);
-  }, []);
-
-  const handleSelectTypeFilter = useCallback((type?: 'expense' | 'income') => {
-    setFilters((prev) => {
-      const next = { ...prev };
-      if (!type || prev.type === type) {
-        delete next.type;
-      } else {
-        next.type = type;
-      }
-      return next;
-    });
-  }, []);
+  const handleSelectTypeFilter = useCallback(
+    (type?: 'expense' | 'income') => {
+      setFilters((prev) => {
+        const next = { ...prev };
+        if (!type || prev.type === type) {
+          delete next.type;
+        } else {
+          next.type = type;
+        }
+        return next;
+      });
+    },
+    [],
+  );
 
   const handleEndReached = useCallback(() => {
     if (hasMore && !loading && !loadingMore && nextOffset !== null) {
-      void loadTransactions(effectiveFilters, debouncedSearch, nextOffset, true);
+      void loadTransactions(
+        effectiveFilters,
+        debouncedSearch,
+        nextOffset,
+        true,
+      );
     }
-  }, [debouncedSearch, effectiveFilters, hasMore, loadTransactions, loading, loadingMore, nextOffset]);
+  }, [
+    debouncedSearch,
+    effectiveFilters,
+    hasMore,
+    loadTransactions,
+    loading,
+    loadingMore,
+    nextOffset,
+  ]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -365,11 +514,16 @@ export function TransactionHistoryScreen() {
     if (filters.categoryId) count++;
     if (filters.hasReceipt !== undefined) count++;
     if (filters.isReimbursable !== undefined) count++;
-    if (filters.minAmountMinor !== undefined || filters.maxAmountMinor !== undefined) count++;
+    if (
+      filters.minAmountMinor !== undefined ||
+      filters.maxAmountMinor !== undefined
+    )
+      count++;
     return count;
   }, [filters]);
 
-  const hasAnyFilterOrSearch = activeFiltersCount > 0 || debouncedSearch.trim().length > 0;
+  const hasAnyFilterOrSearch =
+    activeFiltersCount > 0 || debouncedSearch.trim().length > 0;
 
   const { totalExpenseMinor, totalIncomeMinor } = useMemo(() => {
     let inc = 0;
@@ -433,11 +587,75 @@ export function TransactionHistoryScreen() {
     ],
   );
 
+  const renderListHeader = useCallback(
+    () => (
+      <View style={styles.listHeaderWrap}>
+        {/* 2. Period Tabs: [ Harian | Mingguan | Bulanan ] */}
+        <TransactionPeriodSegmentedControl
+          activePeriod={period}
+          language={language}
+          onChangePeriod={handleChangePeriod}
+        />
+
+        {/* 3. Period Date Navigator: ‹  Agustus 2026  › */}
+        <TransactionDateNavigator
+          isAllTime={isAllTime}
+          language={language}
+          onNextPeriod={handleNextPeriod}
+          onPrevPeriod={handlePrevPeriod}
+          onToggleAllTime={handleToggleAllTime}
+          period={period}
+          primaryLabel={primaryLabel}
+          secondaryLabel={secondaryLabel}
+        />
+
+        {/* 4. Quick Filter Chips: [ Semua | Keluar | Masuk | Transfer | Ada Struk | Reimburse ] */}
+        <TransactionQuickFilterChips
+          filters={filters}
+          onFilterChange={setFilters}
+          t={t}
+        />
+
+        {/* 5. Summary Bar: [ Keluar | Masuk | Saldo ] */}
+        {transactions.length > 0 ? (
+          <TransactionHistorySummaryBar
+            activeTypeFilter={filters.type}
+            currencyCode={currencyCode}
+            expenseLabel={t.transactions.expense}
+            incomeLabel={t.transactions.income}
+            netLabel={language === 'id' ? 'Saldo' : 'Balance'}
+            onSelectTypeFilter={handleSelectTypeFilter}
+            totalExpenseMinor={totalExpenseMinor}
+            totalIncomeMinor={totalIncomeMinor}
+          />
+        ) : null}
+      </View>
+    ),
+    [
+      currencyCode,
+      filters,
+      handleChangePeriod,
+      handleNextPeriod,
+      handlePrevPeriod,
+      handleSelectTypeFilter,
+      handleToggleAllTime,
+      isAllTime,
+      language,
+      period,
+      primaryLabel,
+      secondaryLabel,
+      t,
+      totalExpenseMinor,
+      totalIncomeMinor,
+      transactions.length,
+    ],
+  );
+
   const keyExtractor = useCallback((item: DateGroup) => item.key, []);
 
   return (
     <Screen>
-      {/* 1. Search Bar & Filter Header */}
+      {/* 1. Header: Screen Title "Riwayat" + Action Icons (Search, Filter, Export) */}
       <TransactionHistoryHeader
         activeFiltersCount={activeFiltersCount}
         onClearSearch={() => setSearchQuery('')}
@@ -448,41 +666,13 @@ export function TransactionHistoryScreen() {
         t={t}
       />
 
-      {/* 2. Month Selector Carousel */}
-      <TransactionMonthSelector
-        isAllTime={isAllTime}
-        language={language}
-        month={selectedMonth}
-        onChangeMonth={handleChangeMonth}
-        onToggleAllTime={handleToggleAllTime}
-        year={selectedYear}
-      />
-
-      {/* 3. Quick Filter Chips Bar */}
-      <TransactionQuickFilterChips
-        filters={filters}
-        onFilterChange={setFilters}
-        t={t}
-      />
-
-      {/* 4. Top Summary Bar (if transactions exist) */}
-      {transactions.length > 0 ? (
-        <TransactionHistorySummaryBar
-          activeTypeFilter={filters.type}
-          currencyCode={currencyCode}
-          expenseLabel={t.transactions.expense}
-          incomeLabel={t.transactions.income}
-          netLabel={language === 'id' ? 'Arus Kas' : 'Net Cashflow'}
-          onSelectTypeFilter={handleSelectTypeFilter}
-          totalExpenseMinor={totalExpenseMinor}
-          totalIncomeMinor={totalIncomeMinor}
-        />
-      ) : null}
-
-      {/* 5. Virtualized Transaction List */}
+      {/* Virtualized Transaction List */}
       {loading ? (
-        <View style={styles.centerLoading}>
-          <ActivityIndicator color={colors.primary} size="large" />
+        <View style={styles.loadingContainer}>
+          {renderListHeader()}
+          <View style={styles.centerLoading}>
+            <ActivityIndicator color={colors.primary} size="large" />
+          </View>
         </View>
       ) : (
         <FlatList
@@ -490,6 +680,7 @@ export function TransactionHistoryScreen() {
           data={dateGroups}
           initialNumToRender={15}
           keyExtractor={keyExtractor}
+          ListHeaderComponent={renderListHeader}
           onScroll={handleScroll}
           refreshControl={
             <RefreshControl
@@ -545,6 +736,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
+    paddingVertical: spacing.xl,
   },
   dateGroupCard: {
     borderRadius: radius.lg,
@@ -564,7 +756,15 @@ const styles = StyleSheet.create({
     gap: spacing.sm + 2,
     paddingBottom: spacing.xxl + 84,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.xs,
+  },
+  listHeaderWrap: {
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+    marginHorizontal: -spacing.md,
+  },
+  loadingContainer: {
+    flex: 1,
   },
   timelineItemsWrap: {
     paddingTop: 2,
