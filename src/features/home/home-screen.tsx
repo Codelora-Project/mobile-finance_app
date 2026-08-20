@@ -15,8 +15,8 @@ import { Screen } from '@/components/ui/screen';
 import { useBottomSheetGesture } from '@/components/ui/use-bottom-sheet-gesture';
 import {
   getWalletSummary,
-} from '@/features/accounts/account-repository';
-import type { WalletSummary } from '@/features/accounts/account-types';
+} from '@/features/wallets/wallet-repository';
+import type { WalletSummary } from '@/features/wallets/wallet-types';
 import {
   listCategories,
   type Category,

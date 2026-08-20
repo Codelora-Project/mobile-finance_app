@@ -45,8 +45,8 @@ jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
 
 const mockCreateTransaction = jest.fn();
 const mockDeleteTransaction = jest.fn();
-const mockExportTransactionsToCsv = jest.fn().mockResolvedValue({ fileName: 'test.csv', uri: 'file:///test.csv' });
-const mockShareTransactionCsv = jest.fn().mockResolvedValue(undefined);
+const mockExportTransactionsToCsv = jest.fn().mockImplementation(() => Promise.resolve({ fileName: 'test.csv', uri: 'file:///test.csv' }));
+const mockShareTransactionCsv = jest.fn().mockImplementation(() => Promise.resolve(undefined));
 
 jest.mock('@/features/transactions/transaction-repository', () => ({
   createTransaction: (...args: unknown[]) => mockCreateTransaction(...args),

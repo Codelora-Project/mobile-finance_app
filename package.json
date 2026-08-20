@@ -6,6 +6,7 @@
   "scripts": {
     "start": "expo start --dev-client",
     "android": "expo run:android",
+    "check": "expo lint && tsc --noEmit && jest",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "jest",

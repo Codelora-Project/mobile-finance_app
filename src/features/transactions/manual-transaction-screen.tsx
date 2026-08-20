@@ -11,9 +11,9 @@ import {
 } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
-import { WalletPicker } from '@/features/accounts/components/wallet-picker';
 import { CategoryPicker } from '@/features/categories/category-picker';
 import { PaymentMethodPicker } from '@/features/payment-methods/payment-method-picker';
+import { WalletPicker } from '@/features/wallets';
 import { ManualAmountInput } from '@/features/transactions/components/manual-amount-input';
 import { ManualCategoryGrid } from '@/features/transactions/components/manual-category-grid';
 import { ManualDetailsSection } from '@/features/transactions/components/manual-details-section';

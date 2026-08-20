@@ -22,7 +22,7 @@ export const TransactionPeriodSegmentedControl = memo(
   }: TransactionPeriodSegmentedControlProps) {
     const { colors, isDark } = useTheme();
 
-    const options: Array<{ label: string; value: HistoryPeriod }> = [
+    const options: { label: string; value: HistoryPeriod }[] = [
       {
         label: language === 'id' ? 'Harian' : 'Daily',
         value: 'daily',

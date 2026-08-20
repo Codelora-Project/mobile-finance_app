@@ -1,7 +1,7 @@
 import React from 'react';
 
-import { PaymentMethodManagementScreen } from '@/features/payment-methods/payment-method-management-screen';
+import { WalletsScreen } from '@/features/wallets';
 
 export default function WalletsTabRoute() {
-  return <PaymentMethodManagementScreen hideBackButton />;
+  return <WalletsScreen hideBackButton />;
 }

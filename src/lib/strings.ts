@@ -2,7 +2,8 @@ export function normalizeText(value: string) {
   return value.normalize('NFC').trim().replace(/\s+/g, ' ');
 }
 
-export function normalizeOptionalText(value: string) {
+export function normalizeOptionalText(value?: string | null) {
+  if (value == null) return null;
   const normalized = normalizeText(value);
   return normalized.length > 0 ? normalized : null;
 }

@@ -38,7 +38,7 @@ const mockReconcileWalletBalance = jest.fn<(...args: any[]) => Promise<any>>();
 const mockGetWalletSummary = jest.fn<(...args: any[]) => Promise<any>>();
 const mockGetWallets = jest.fn<(...args: any[]) => Promise<any>>();
 
-jest.mock('@/features/accounts/account-repository', () => ({
+jest.mock('@/features/wallets/wallet-repository', () => ({
   archiveWallet: (...args: unknown[]) => mockArchiveWallet(...args),
   createWallet: (...args: unknown[]) => mockCreateWallet(...args),
   getWalletSummary: (...args: unknown[]) => mockGetWalletSummary(...args),

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, type TextInput } from 'react-native';
 
 import { defaultCategories, defaultPaymentMethods } from '@/db/seeds';
-import type { Wallet } from '@/features/accounts/account-types';
+import type { Wallet } from '@/features/wallets';
 import {
   listCategories,
   type Category,

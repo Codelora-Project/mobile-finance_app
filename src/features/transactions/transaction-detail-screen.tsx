@@ -1,15 +1,12 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import * as Sharing from 'expo-sharing';
 import { useSQLiteContext } from 'expo-sqlite';
 import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   View,
@@ -17,11 +14,14 @@ import {
 
 import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
-import { getCategoryMeta } from '@/features/categories/category-meta';
 import {
-  getReceiptFileUri,
-  receiptFileExists,
-} from '@/features/receipts/receipt-storage';
+  DetailActionBar,
+  DetailHeroCard,
+  DetailInfoRow,
+  DetailReceiptCard,
+  DetailTransferFlow,
+} from '@/features/transactions/components/detail';
+import { useTransactionShare } from '@/features/transactions/hooks/use-transaction-share';
 import {
   deleteTransaction,
   getTransaction,
@@ -32,101 +32,10 @@ import {
 import { getTimezoneOffsetMinutes, toLocalDateTimeInput } from '@/lib/dates';
 import { isCodedError, mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
-import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
-
-function DetailItemRow({
-  icon,
-  iconColor,
-  isLast = false,
-  label,
-  onPress,
-  rightActionIcon,
-  value,
-}: {
-  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
-  iconColor?: string;
-  isLast?: boolean;
-  label: string;
-  onPress?: () => void;
-  rightActionIcon?: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
-  value: string;
-}) {
-  const { colors, isDark } = useTheme();
-
-  const content = (
-    <View
-      style={[
-        styles.detailItemRow,
-        !isLast
-          ? [
-              styles.detailItemBorder,
-              {
-                borderBottomColor: isDark
-                  ? 'rgba(255, 255, 255, 0.06)'
-                  : 'rgba(0, 0, 0, 0.05)',
-              },
-            ]
-          : null,
-      ]}
-    >
-      <View style={styles.detailItemLeft}>
-        <View
-          style={[
-            styles.detailIconBox,
-            {
-              backgroundColor: isDark
-                ? 'rgba(255, 255, 255, 0.06)'
-                : 'rgba(0, 0, 0, 0.04)',
-            },
-          ]}
-        >
-          <MaterialCommunityIcons
-            color={iconColor || colors.textSecondary}
-            name={icon}
-            size={16}
-          />
-        </View>
-        <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-          {label}
-        </Text>
-      </View>
-      <View style={styles.detailItemRight}>
-        <Text
-          numberOfLines={2}
-          selectable
-          style={[styles.detailValue, { color: colors.textPrimary }]}
-        >
-          {value}
-        </Text>
-        {rightActionIcon ? (
-          <MaterialCommunityIcons
-            color={colors.textSecondary}
-            name={rightActionIcon}
-            size={16}
-          />
-        ) : null}
-      </View>
-    </View>
-  );
-
-  if (onPress) {
-    return (
-      <Pressable
-        accessibilityRole="button"
-        onPress={onPress}
-        style={({ pressed }) => [pressed ? { opacity: 0.7 } : null]}
-      >
-        {content}
-      </Pressable>
-    );
-  }
-
-  return content;
-}
 
 function receiptName(storageKey: string) {
   return storageKey.split(/[\\/]/).at(-1)?.split(/[?#]/, 1)[0] || 'Receipt';
@@ -140,7 +49,7 @@ export function TransactionDetailScreen({
   const database = useSQLiteContext();
   const router = useRouter();
   const { language, t } = useLanguage();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const deletingRef = useRef(false);
 
   const [transaction, setTransaction] = useState<Transaction | null>(null);
@@ -150,6 +59,11 @@ export function TransactionDetailScreen({
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedNotification, setCopiedNotification] = useState(false);
+
+  const { handleShareSlip } = useTransactionShare({
+    language,
+    transaction,
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -228,136 +142,7 @@ export function TransactionDetailScreen({
     }, 2000);
   }
 
-  async function handleShareSlip() {
-    if (!transaction) return;
-
-    try {
-      let hasImage = false;
-      let imageUri = '';
-      try {
-        if (
-          transaction.receipt &&
-          receiptFileExists(transaction.receipt.storageKey)
-        ) {
-          hasImage = true;
-          imageUri = getReceiptFileUri(transaction.receipt.storageKey);
-        }
-      } catch {
-        hasImage = false;
-      }
-
-      if (hasImage && imageUri) {
-        try {
-          if (await Sharing.isAvailableAsync()) {
-            await Sharing.shareAsync(imageUri, {
-              dialogTitle:
-                language === 'id'
-                  ? 'Bagikan Foto Struk'
-                  : 'Share Receipt Image',
-              mimeType: transaction.receipt?.mimeType || 'image/jpeg',
-            });
-            return;
-          }
-        } catch {
-          // Fallback to text share if native file sharing is cancelled or fails
-        }
-      }
-
-      // Text share fallback or if no image attached
-      let dateStr = transaction.localDate || '';
-      let timeStr = '';
-      try {
-        const offset = Number.isInteger(transaction.timezoneOffsetMinutes)
-          ? (transaction.timezoneOffsetMinutes as number)
-          : getTimezoneOffsetMinutes(transaction.occurredAt || Date.now());
-        const dt = toLocalDateTimeInput(
-          transaction.occurredAt || Date.now(),
-          offset,
-        );
-        dateStr = dt.date;
-        timeStr = dt.time;
-      } catch {
-        // Use default fallback
-      }
-
-      const isExpense = transaction.type === 'expense';
-      const isTransfer = transaction.type === 'transfer';
-      const typeLabel = isTransfer
-        ? 'TRANSFER'
-        : isExpense
-        ? language === 'id'
-          ? 'PENGELUARAN'
-          : 'EXPENSE'
-        : language === 'id'
-        ? 'PEMASUKAN'
-        : 'INCOME';
-
-      const amountFormatted = formatMoney(
-        transaction.amountMinor,
-        transaction.currencyCode,
-      );
-      const sign = isTransfer ? '' : isExpense ? '−' : '+';
-
-      let detailLines = '';
-      if (isTransfer) {
-        detailLines = `Dari: ${transaction.paymentMethodName || '-'}\nKe: ${
-          transaction.transferToPaymentMethodName || '-'
-        }`;
-        if (transaction.transferFeeMinor > 0) {
-          detailLines += `\nBiaya Admin: ${formatMoney(
-            transaction.transferFeeMinor,
-            transaction.currencyCode,
-          )}`;
-        }
-      } else {
-        detailLines = `Kategori: ${transaction.categoryName}\n${
-          isExpense ? 'Toko/Merchant' : 'Sumber'
-        }: ${transaction.counterparty || '-'}\nMetode: ${
-          transaction.paymentMethodName || '-'
-        }`;
-      }
-
-      const noteLine = transaction.note ? `\nCatatan: ${transaction.note}` : '';
-      const timeDisplay = timeStr ? ` ${timeStr}` : '';
-
-      const message =
-        `🧾 *BUKTI TRANSAKSI*\n` +
-        `─────────────────────────\n` +
-        `No. Ref : #${transaction.id}\n` +
-        `Waktu   : ${dateStr}${timeDisplay}\n` +
-        `Tipe    : ${typeLabel}\n` +
-        `Nominal : ${sign}${amountFormatted}\n` +
-        `─────────────────────────\n` +
-        `${detailLines}${noteLine}\n` +
-        `─────────────────────────\n` +
-        `Dicatat via FinanceApp`;
-
-      await Share.share(
-        {
-          message,
-          title: language === 'id' ? 'Bukti Transaksi' : 'Transaction Receipt',
-        },
-        {
-          dialogTitle:
-            language === 'id'
-              ? 'Bagikan Bukti Transaksi'
-              : 'Share Transaction Receipt',
-        },
-      );
-    } catch (shareErr) {
-      if (__DEV__) {
-        console.warn('Share failed:', shareErr);
-      }
-      Alert.alert(
-        language === 'id' ? 'Gagal Membagikan' : 'Share Failed',
-        language === 'id'
-          ? 'Tidak dapat membuka menu berbagi pada perangkat ini.'
-          : 'Could not open share menu on this device.',
-      );
-    }
-  }
-
-  if (loading && !transaction) {
+  if (loading) {
     return (
       <Screen>
         <View style={styles.centeredState}>
@@ -377,82 +162,46 @@ export function TransactionDetailScreen({
           <View
             style={[
               styles.emptyIconCircle,
-              {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
-              },
+              { backgroundColor: colors.surfaceSecondary },
             ]}
           >
             <MaterialCommunityIcons
-              color={colors.textSecondary}
-              name="alert-circle-outline"
-              size={44}
+              color={colors.textMuted}
+              name="receipt-text-remove-outline"
+              size={42}
             />
           </View>
-          <Text
-            accessibilityRole="header"
-            style={[styles.emptyTitle, { color: colors.textPrimary }]}
-          >
-            {t.transactions.notFound}
+          <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+            {language === 'id'
+              ? 'Transaksi Tidak Ditemukan'
+              : 'Transaction Not Found'}
           </Text>
           <Text style={[styles.stateText, { color: colors.textSecondary }]}>
-            {error ?? t.transactions.notFoundDesc}
+            {error || t.transactions.notFoundDesc}
           </Text>
           <View style={styles.stateActions}>
-            <AppButton
-              label={t.transactions.backToList}
-              onPress={() => router.replace('/transactions')}
-              variant="secondary"
-            />
+            <AppButton label={t.common.back} onPress={() => router.back()} />
           </View>
         </View>
       </Screen>
     );
   }
 
-  const dateTime = toLocalDateTimeInput(
-    transaction.occurredAt,
-    transaction.timezoneOffsetMinutes,
-  );
-  const meta = getCategoryMeta(
-    transaction.categoryName,
-    transaction.type,
-    isDark,
-  );
-  const counterpartyLabel =
-    transaction.type === 'expense'
-      ? t.transactions.merchant
-      : t.transactions.source;
-  const isExpense = transaction.type === 'expense';
-  const isTransfer = transaction.type === 'transfer';
-
-  const heroTitle =
-    isTransfer &&
-    transaction.paymentMethodName &&
-    transaction.transferToPaymentMethodName
-      ? `${transaction.paymentMethodName} ➔ ${transaction.transferToPaymentMethodName}`
-      : transaction.counterparty?.trim() || transaction.categoryName;
-
-  const typeLabel = isTransfer
-    ? 'Transfer'
-    : isExpense
-    ? t.transactions.expense
-    : t.transactions.income;
-
-  let receiptImageUri: string | null = null;
+  let dateTime = { date: transaction.localDate, time: '' };
   try {
-    if (
-      transaction.receipt &&
-      receiptFileExists(transaction.receipt.storageKey)
-    ) {
-      receiptImageUri = getReceiptFileUri(transaction.receipt.storageKey);
-    }
+    const offset = Number.isInteger(transaction.timezoneOffsetMinutes)
+      ? (transaction.timezoneOffsetMinutes as number)
+      : getTimezoneOffsetMinutes(transaction.occurredAt);
+    dateTime = toLocalDateTimeInput(transaction.occurredAt, offset);
   } catch {
-    receiptImageUri = null;
+    // Fallback
   }
+
+  const isTransfer = transaction.type === 'transfer';
 
   return (
     <Screen>
-      {/* 1. Top App Bar Header */}
+      {/* 1. Header Bar with Back & Delete Actions */}
       <View
         style={[
           styles.header,
@@ -469,48 +218,44 @@ export function TransactionDetailScreen({
           onPress={() => router.back()}
           style={({ pressed }) => [
             styles.backButton,
-            {
-              backgroundColor: isDark
-                ? 'rgba(255, 255, 255, 0.06)'
-                : 'rgba(0, 0, 0, 0.04)',
-            },
-            pressed ? styles.pressed : null,
+            pressed && styles.pressed,
           ]}
         >
           <MaterialCommunityIcons
             color={colors.textPrimary}
             name="arrow-left"
-            size={20}
+            size={22}
           />
         </Pressable>
 
         <Text
           accessibilityRole="header"
+          numberOfLines={1}
           style={[styles.headerTitle, { color: colors.textPrimary }]}
         >
-          {t.transactions.detailTitle}
+          {isTransfer
+            ? language === 'id'
+              ? 'Detail Transfer'
+              : 'Transfer Details'
+            : t.transactions.detailTitle}
         </Text>
 
         {!claimMembership || claimMembership.claimStatus === 'draft' ? (
           <Pressable
             accessibilityLabel={t.transactions.deleteTransaction}
             accessibilityRole="button"
+            disabled={deleting}
             hitSlop={8}
             onPress={confirmDelete}
             style={({ pressed }) => [
               styles.deleteIconBtn,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(239, 68, 68, 0.15)'
-                  : '#FEE2E2',
-              },
-              pressed ? styles.pressed : null,
+              pressed && styles.pressed,
             ]}
           >
             <MaterialCommunityIcons
               color={colors.destructive}
               name="trash-can-outline"
-              size={18}
+              size={22}
             />
           </Pressable>
         ) : (
@@ -519,304 +264,28 @@ export function TransactionDetailScreen({
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* 🌟 2. Digital Receipt Hero Card */}
-        <View
-          style={[
-            styles.heroCard,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            },
-          ]}
-        >
-          {/* Status & Type Row */}
-          <View style={styles.heroStatusRow}>
-            <View
-              style={[
-                styles.statusIndicatorPill,
-                {
-                  backgroundColor: isDark
-                    ? 'rgba(255, 255, 255, 0.06)'
-                    : 'rgba(0, 0, 0, 0.04)',
-                },
-              ]}
-            >
-              <View
-                style={[
-                  styles.statusDot,
-                  {
-                    backgroundColor: isTransfer
-                      ? colors.primary
-                      : isExpense
-                      ? colors.destructive
-                      : colors.positive,
-                  },
-                ]}
-              />
-              <Text
-                style={[styles.statusText, { color: colors.textSecondary }]}
-              >
-                {typeLabel}
-              </Text>
-            </View>
-          </View>
+        {/* 2. Hero Visual Card */}
+        <DetailHeroCard
+          language={language}
+          t={t}
+          transaction={transaction}
+        />
 
-          {/* Icon Badge */}
-          <View
-            style={[
-              styles.heroAvatarCircle,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(255, 255, 255, 0.06)'
-                  : 'rgba(0, 0, 0, 0.04)',
-              },
-            ]}
-          >
-            <MaterialCommunityIcons
-              color={colors.textSecondary}
-              name={isTransfer ? 'swap-horizontal' : meta.icon}
-              size={26}
-            />
-          </View>
-
-          {/* Title / Counterparty */}
-          <Text
-            numberOfLines={2}
-            style={[styles.heroCounterparty, { color: colors.textPrimary }]}
-          >
-            {heroTitle}
-          </Text>
-
-          {/* Large Amount Display */}
-          <Text
-            adjustsFontSizeToFit
-            minimumFontScale={0.7}
-            numberOfLines={1}
-            style={[
-              styles.heroAmount,
-              {
-                color: isTransfer
-                  ? colors.textPrimary
-                  : isExpense
-                  ? colors.destructive
-                  : colors.positive,
-              },
-            ]}
-          >
-            {isTransfer ? '⇄ ' : isExpense ? '−' : '+'}
-            {formatMoney(transaction.amountMinor, transaction.currencyCode)}
-          </Text>
-
-          {/* Auxiliary Pill Badges */}
-          {transaction.receipt || transaction.isReimbursable ? (
-            <View style={styles.heroBadgesRow}>
-              {transaction.receipt ? (
-                <View
-                  style={[
-                    styles.heroAuxPill,
-                    {
-                      backgroundColor: isDark
-                        ? 'rgba(255, 255, 255, 0.06)'
-                        : 'rgba(0, 0, 0, 0.04)',
-                    },
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    color={colors.textSecondary}
-                    name="receipt-outline"
-                    size={11}
-                  />
-                  <Text
-                    style={[
-                      styles.heroAuxPillText,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {t.home.receiptBadge}
-                  </Text>
-                </View>
-              ) : null}
-
-              {transaction.isReimbursable ? (
-                <View
-                  style={[
-                    styles.heroAuxPill,
-                    {
-                      backgroundColor: isDark ? '#451A03' : '#FEF3C7',
-                    },
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    color={isDark ? '#FBBF24' : '#D97706'}
-                    name="briefcase-outline"
-                    size={11}
-                  />
-                  <Text
-                    style={[
-                      styles.heroAuxPillText,
-                      { color: isDark ? '#FBBF24' : '#D97706' },
-                    ]}
-                  >
-                    {t.transactions.reimbursableBadge}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-          ) : null}
-        </View>
-
-        {/* 📋 3. Transfer Visual Flow Card (If Transfer) */}
+        {/* 3. Transfer Direction Flow (if transfer) */}
         {isTransfer ? (
-          <View
-            style={[
-              styles.infoCard,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <View style={styles.transferFlowCard}>
-              <View style={styles.transferNode}>
-                <Text
-                  style={[
-                    styles.transferNodeLabel,
-                    { color: colors.textSecondary },
-                  ]}
-                >
-                  {t.transactions.transferFrom}
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    styles.transferNodeValue,
-                    { color: colors.textPrimary },
-                  ]}
-                >
-                  {transaction.paymentMethodName || t.transactions.none}
-                </Text>
-              </View>
-
-              <View style={styles.transferArrowWrapper}>
-                <MaterialCommunityIcons
-                  color={colors.textSecondary}
-                  name="arrow-right-thin"
-                  size={24}
-                />
-              </View>
-
-              <View style={styles.transferNode}>
-                <Text
-                  style={[
-                    styles.transferNodeLabel,
-                    { color: colors.textSecondary },
-                  ]}
-                >
-                  {t.transactions.transferTo}
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    styles.transferNodeValue,
-                    { color: colors.textPrimary },
-                  ]}
-                >
-                  {transaction.transferToPaymentMethodName ||
-                    t.transactions.none}
-                </Text>
-              </View>
-            </View>
-
-            {transaction.transferFeeMinor > 0 ? (
-              <DetailItemRow
-                icon="tag-outline"
-                label={t.transactions.transferFeeToggle}
-                value={
-                  formatMoney(
-                    transaction.transferFeeMinor,
-                    transaction.currencyCode,
-                  ) +
-                  (transaction.transferFeeNote
-                    ? ` (${transaction.transferFeeNote})`
-                    : '')
-                }
-              />
-            ) : null}
-          </View>
+          <DetailTransferFlow t={t} transaction={transaction} />
         ) : null}
 
-        {/* 🧾 4. Struk / Receipt Preview Card (If Receipt Attached) */}
+        {/* 4. Receipt Photo Preview Card */}
         {transaction.receipt ? (
-          <Pressable
-            accessibilityLabel="Lihat Bukti Struk"
-            accessibilityRole="button"
-            onPress={() =>
-              router.push(`/transactions/${transaction.id}/receipt`)
-            }
-            style={({ pressed }) => [
-              styles.receiptPreviewCard,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-              },
-              pressed ? { opacity: 0.8 } : null,
-            ]}
-          >
-            <View style={styles.receiptPreviewLeft}>
-              <View
-                style={[
-                  styles.receiptThumbBox,
-                  {
-                    backgroundColor: isDark
-                      ? 'rgba(255, 255, 255, 0.06)'
-                      : '#F1F5F9',
-                  },
-                ]}
-              >
-                {receiptImageUri ? (
-                  <Image
-                    resizeMode="cover"
-                    source={{ uri: receiptImageUri }}
-                    style={styles.receiptThumbImage}
-                  />
-                ) : (
-                  <MaterialCommunityIcons
-                    color={colors.textSecondary}
-                    name="receipt-text-outline"
-                    size={22}
-                  />
-                )}
-              </View>
-              <View style={styles.receiptPreviewMeta}>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    styles.receiptPreviewTitle,
-                    { color: colors.textPrimary },
-                  ]}
-                >
-                  {receiptName(transaction.receipt.storageKey)}
-                </Text>
-                <Text
-                  style={[
-                    styles.receiptPreviewSub,
-                    { color: colors.textSecondary },
-                  ]}
-                >
-                  {transaction.receipt.mimeType.toUpperCase()} · Ketuk untuk
-                  perbesar
-                </Text>
-              </View>
-            </View>
-            <MaterialCommunityIcons
-              color={colors.textSecondary}
-              name="chevron-right"
-              size={20}
-            />
-          </Pressable>
+          <DetailReceiptCard
+            language={language}
+            t={t}
+            transaction={transaction}
+          />
         ) : null}
 
-        {/* 📋 5. Transaction Complete Info Card */}
+        {/* 5. Clean Metadata Group */}
         <View
           style={[
             styles.infoCard,
@@ -828,33 +297,37 @@ export function TransactionDetailScreen({
         >
           {!isTransfer ? (
             <>
-              <DetailItemRow
-                icon={meta.icon}
+              <DetailInfoRow
+                icon="shape-outline"
                 label={t.transactions.category}
                 value={transaction.categoryName}
               />
 
-              <DetailItemRow
+              <DetailInfoRow
                 icon="storefront-outline"
-                label={counterpartyLabel}
-                value={transaction.counterparty || t.transactions.none}
+                label={
+                  transaction.type === 'expense'
+                    ? t.transactions.merchant
+                    : t.transactions.source
+                }
+                value={transaction.counterparty || '-'}
               />
 
-              <DetailItemRow
-                icon="credit-card-outline"
+              <DetailInfoRow
+                icon="wallet-outline"
                 label={t.transactions.paymentMethod}
-                value={transaction.paymentMethodName || t.transactions.none}
+                value={transaction.paymentMethodName || '-'}
               />
             </>
           ) : null}
 
-          <DetailItemRow
+          <DetailInfoRow
             icon="calendar-clock-outline"
             label={t.transactions.dateTime}
             value={`${dateTime.date} · ${dateTime.time}`}
           />
 
-          <DetailItemRow
+          <DetailInfoRow
             icon="note-text-outline"
             label={t.transactions.note}
             value={transaction.note || t.transactions.none}
@@ -862,7 +335,7 @@ export function TransactionDetailScreen({
 
           {!isTransfer ? (
             <>
-              <DetailItemRow
+              <DetailInfoRow
                 icon="receipt-text-outline"
                 label={t.transactions.receipt}
                 value={
@@ -872,7 +345,7 @@ export function TransactionDetailScreen({
                 }
               />
 
-              <DetailItemRow
+              <DetailInfoRow
                 icon="briefcase-check-outline"
                 isLast={!claimMembership}
                 label={t.transactions.reimbursementStatus}
@@ -888,7 +361,7 @@ export function TransactionDetailScreen({
           ) : null}
 
           {claimMembership ? (
-            <DetailItemRow
+            <DetailInfoRow
               icon="file-document-outline"
               isLast={false}
               label={t.transactions.claim}
@@ -897,7 +370,7 @@ export function TransactionDetailScreen({
           ) : null}
 
           {/* Transaction ID & Copy */}
-          <DetailItemRow
+          <DetailInfoRow
             icon="identifier"
             isLast
             label={language === 'id' ? 'ID Transaksi' : 'Transaction ID'}
@@ -922,74 +395,20 @@ export function TransactionDetailScreen({
           </Text>
         ) : null}
 
-        {/* 🚀 6. Professional Dual Bottom Action Bar (Rekomendasi 3) */}
-        <View style={styles.actions}>
-          {claimMembership && claimMembership.claimStatus !== 'draft' ? (
-            <View
-              style={[
-                styles.lockedBanner,
-                {
-                  backgroundColor: isDark ? colors.surfaceSecondary : '#FEF3C7',
-                  borderColor: isDark ? colors.border : '#FDE68A',
-                },
-              ]}
-            >
-              <MaterialCommunityIcons
-                color="#D97706"
-                name="lock-outline"
-                size={18}
-              />
-              <Text
-                style={[
-                  styles.lockedText,
-                  { color: isDark ? colors.textPrimary : '#92400E' },
-                ]}
-              >
-                {t.transactions.lockedByClaim}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.dualActionBar}>
-              <View style={styles.actionBtnCol}>
-                <AppButton
-                  label={
-                    transaction.receipt
-                      ? language === 'id'
-                        ? 'Bagikan Struk'
-                        : 'Share Receipt'
-                      : language === 'id'
-                      ? 'Bagikan Slip'
-                      : 'Share Slip'
-                  }
-                  onPress={handleShareSlip}
-                  variant="secondary"
-                />
-              </View>
-
-              <View style={styles.actionBtnCol}>
-                <AppButton
-                  label={t.transactions.editTransaction}
-                  onPress={() =>
-                    router.push(`/transactions/${transaction.id}/edit`)
-                  }
-                  variant="primary"
-                />
-              </View>
-            </View>
-          )}
-        </View>
+        {/* 6. Professional Dual Bottom Action Bar */}
+        <DetailActionBar
+          claimMembership={claimMembership}
+          language={language}
+          onShareSlip={handleShareSlip}
+          t={t}
+          transaction={transaction}
+        />
       </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  actionBtnCol: {
-    flex: 1,
-  },
-  actions: {
-    marginTop: spacing.xs,
-  },
   backButton: {
     alignItems: 'center',
     borderRadius: radius.pill,
@@ -1014,52 +433,6 @@ const styles = StyleSheet.create({
     height: 36,
     justifyContent: 'center',
     width: 36,
-  },
-  detailIconBox: {
-    alignItems: 'center',
-    borderRadius: radius.sm,
-    height: 28,
-    justifyContent: 'center',
-    width: 28,
-  },
-  detailItemBorder: {
-    borderBottomWidth: 1,
-  },
-  detailItemLeft: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  detailItemRight: {
-    alignItems: 'center',
-    flex: 1,
-    flexDirection: 'row',
-    gap: 6,
-    justifyContent: 'flex-end',
-  },
-  detailItemRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 13,
-  },
-  detailLabel: {
-    ...typography.body,
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  detailValue: {
-    ...typography.body,
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '600',
-    paddingLeft: spacing.md,
-    textAlign: 'right',
-  },
-  dualActionBar: {
-    flexDirection: 'row',
-    gap: spacing.sm,
   },
   emptyIconCircle: {
     alignItems: 'center',
@@ -1100,121 +473,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
-  heroAmount: {
-    ...typography.screenTitle,
-    fontSize: 30,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-    marginTop: 4,
-  },
-  heroAuxPill: {
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    flexDirection: 'row',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  heroAuxPillText: {
-    ...typography.metadata,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  heroAvatarCircle: {
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    height: 52,
-    justifyContent: 'center',
-    marginBottom: spacing.xs,
-    width: 52,
-  },
-  heroBadgesRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    justifyContent: 'center',
-    marginTop: spacing.xs + 2,
-  },
-  heroCard: {
-    alignItems: 'center',
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-  },
-  heroCounterparty: {
-    ...typography.body,
-    fontSize: 16,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  heroStatusRow: {
-    marginBottom: spacing.xs,
-  },
   infoCard: {
     borderRadius: radius.lg,
     borderWidth: 1,
     overflow: 'hidden',
   },
-  lockedBanner: {
-    alignItems: 'center',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    padding: spacing.md,
-  },
-  lockedText: {
-    ...typography.metadata,
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 18,
-  },
   pressed: {
     opacity: 0.75,
     transform: [{ scale: 0.96 }],
-  },
-  receiptPreviewCard: {
-    alignItems: 'center',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: spacing.sm + 2,
-  },
-  receiptPreviewLeft: {
-    alignItems: 'center',
-    flex: 1,
-    flexDirection: 'row',
-    gap: spacing.sm + 2,
-  },
-  receiptPreviewMeta: {
-    flex: 1,
-    gap: 2,
-  },
-  receiptPreviewSub: {
-    ...typography.metadata,
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  receiptPreviewTitle: {
-    ...typography.body,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  receiptThumbBox: {
-    alignItems: 'center',
-    borderRadius: radius.md,
-    height: 48,
-    justifyContent: 'center',
-    overflow: 'hidden',
-    width: 48,
-  },
-  receiptThumbImage: {
-    height: '100%',
-    width: '100%',
   },
   stateActions: {
     marginTop: spacing.md,
@@ -1226,49 +492,5 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: spacing.xs,
     textAlign: 'center',
-  },
-  statusDot: {
-    borderRadius: radius.pill,
-    height: 6,
-    width: 6,
-  },
-  statusIndicatorPill: {
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    flexDirection: 'row',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-  },
-  statusText: {
-    ...typography.metadata,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  transferArrowWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
-  },
-  transferFlowCard: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  transferNode: {
-    flex: 1,
-    gap: 2,
-  },
-  transferNodeLabel: {
-    ...typography.metadata,
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  transferNodeValue: {
-    ...typography.body,
-    fontSize: 14,
-    fontWeight: '700',
   },
 });

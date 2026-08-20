@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 
-import type { Wallet } from '@/features/accounts/account-types';
+import type { Wallet } from '@/features/wallets';
 import type { Language } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';

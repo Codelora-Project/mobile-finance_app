@@ -121,7 +121,7 @@ jest.mock('@/features/payment-methods/payment-method-repository', () => ({
   ]),
 }));
 
-jest.mock('@/features/accounts/account-repository', () => ({
+jest.mock('@/features/wallets/wallet-repository', () => ({
   getWallets: jest.fn<() => Promise<unknown[]>>().mockResolvedValue([
     {
       accountNumber: null,

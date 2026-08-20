@@ -86,7 +86,7 @@ jest.mock('@/features/habits/habit-repository', () => ({
   })),
 }));
 
-jest.mock('@/features/accounts/account-repository', () => ({
+jest.mock('@/features/wallets/wallet-repository', () => ({
   getWalletSummary: jest.fn().mockImplementation(() =>
     Promise.resolve({
       operationalCashMinor: 10500000,

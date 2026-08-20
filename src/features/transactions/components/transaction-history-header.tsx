@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.97 }],
   },
   screenTitle: {
-    ...typography.screenTitle,
+    ...typography.pageTitle,
     fontSize: 24,
     fontWeight: '900',
     letterSpacing: -0.5,
