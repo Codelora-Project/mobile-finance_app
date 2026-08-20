@@ -1,3 +1,5 @@
+import type { TransactionType } from '@/domain/transaction';
+
 export type BackupCategory = {
   id: number;
   name: string;
@@ -31,7 +33,7 @@ export type BackupPaymentMethod = {
 
 export type BackupTransaction = {
   id: number;
-  type: 'expense' | 'income' | 'transfer';
+  type: TransactionType;
   amount_minor: number;
   currency_code: string;
   category_id: number;

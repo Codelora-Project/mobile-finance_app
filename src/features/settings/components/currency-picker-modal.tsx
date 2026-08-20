@@ -57,11 +57,7 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
   };
 
   return (
-    <Modal
-      animationType="slide"
-      onRequestClose={handleClose}
-      visible={visible}
-    >
+    <Modal animationType="slide" onRequestClose={handleClose} visible={visible}>
       <Screen>
         {/* Modal Header */}
         <View
@@ -73,15 +69,13 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
             },
           ]}
         >
-          <Text
-            style={[styles.modalTitle, { color: colors.textPrimary }]}
-          >
+          <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
             {language === 'id'
               ? 'Pilih Mata Uang Utama'
               : 'Select Base Currency'}
           </Text>
           <Pressable
-            accessibilityLabel="Close currency picker"
+            accessibilityLabel={language === 'id' ? 'Tutup pemilih mata uang' : 'Close currency picker'}
             accessibilityRole="button"
             hitSlop={12}
             onPress={handleClose}
@@ -105,9 +99,7 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
             style={[
               styles.infoBanner,
               {
-                backgroundColor: isDark
-                  ? colors.surfaceSecondary
-                  : '#EFF6FF',
+                backgroundColor: isDark ? colors.surfaceSecondary : '#EFF6FF',
                 borderColor: isDark ? colors.border : '#BFDBFE',
               },
             ]}
@@ -124,8 +116,8 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
               ]}
             >
               {language === 'id'
-                ? 'Mengubah mata uang utama akan langsung memperbarui simbol & format pada seluruh transaksi dan laporan.'
-                : 'Changing the base currency updates currency symbols & formatting across all transactions and reports.'}
+                ? 'Mata uang berlaku global. Nilai transaksi lama tidak dikonversi; hanya kode, simbol, dan format yang diperbarui.'
+                : 'Currency is global. Existing amounts are not converted; only their currency code, symbol, and formatting are updated.'}
             </Text>
           </View>
 
@@ -134,9 +126,7 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
             style={[
               styles.searchBarContainer,
               {
-                backgroundColor: isDark
-                  ? colors.surfaceSecondary
-                  : '#F1F5F9',
+                backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
                 borderColor: colors.border,
               },
             ]}
@@ -156,7 +146,7 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
             />
             {searchQuery ? (
               <Pressable
-                accessibilityLabel="Clear search"
+                accessibilityLabel={language === 'id' ? 'Hapus pencarian' : 'Clear search'}
                 accessibilityRole="button"
                 hitSlop={8}
                 onPress={() => setSearchQuery('')}
@@ -181,112 +171,105 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
                 },
               ]}
             >
-              {filteredCurrencies.map(
-                (currency: SupportedCurrency, index) => {
-                  const isSelected = currency.code === selectedCode;
-                  const isLast = index === filteredCurrencies.length - 1;
+              {filteredCurrencies.map((currency: SupportedCurrency, index) => {
+                const isSelected = currency.code === selectedCode;
+                const isLast = index === filteredCurrencies.length - 1;
 
-                  return (
-                    <Pressable
-                      accessibilityRole="button"
-                      key={currency.code}
-                      onPress={() => {
-                        onSelectCurrency(currency.code);
-                        handleClose();
-                      }}
-                      style={[
-                        styles.currencyRow,
-                        isSelected
-                          ? {
-                              backgroundColor: isDark
-                                ? colors.surfaceSecondary
-                                : '#F0FDF4',
-                            }
-                          : null,
-                        !isLast
-                          ? {
-                              borderBottomColor: colors.border,
-                              borderBottomWidth: 1,
-                            }
-                          : null,
-                      ]}
-                    >
-                      <View style={styles.flagSymbolRow}>
-                        <Text style={styles.flagEmoji}>
-                          {currency.flag}
+                return (
+                  <Pressable
+                    accessibilityRole="button"
+                    key={currency.code}
+                    onPress={() => {
+                      onSelectCurrency(currency.code);
+                      handleClose();
+                    }}
+                    style={[
+                      styles.currencyRow,
+                      isSelected
+                        ? {
+                            backgroundColor: isDark
+                              ? colors.surfaceSecondary
+                              : '#F0FDF4',
+                          }
+                        : null,
+                      !isLast
+                        ? {
+                            borderBottomColor: colors.border,
+                            borderBottomWidth: 1,
+                          }
+                        : null,
+                    ]}
+                  >
+                    <View style={styles.flagSymbolRow}>
+                      <Text style={styles.flagEmoji}>{currency.flag}</Text>
+                      <View
+                        style={[
+                          styles.symbolBadge,
+                          {
+                            backgroundColor: isDark
+                              ? colors.surface
+                              : '#EEF2FF',
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[styles.symbolText, { color: colors.primary }]}
+                        >
+                          {currency.symbol}
                         </Text>
-                        <View
+                      </View>
+                    </View>
+
+                    <View style={styles.currencyInfo}>
+                      <View style={styles.nameCodeRow}>
+                        <Text
                           style={[
-                            styles.symbolBadge,
+                            styles.currencyName,
+                            { color: colors.textPrimary },
+                          ]}
+                        >
+                          {currency.name}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.currencyCode,
                             {
                               backgroundColor: isDark
-                                ? colors.surface
-                                : '#EEF2FF',
+                                ? colors.surfaceSecondary
+                                : '#F1F5F9',
+                              color: colors.textSecondary,
                             },
                           ]}
                         >
-                          <Text
-                            style={[
-                              styles.symbolText,
-                              { color: colors.primary },
-                            ]}
-                          >
-                            {currency.symbol}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <View style={styles.currencyInfo}>
-                        <View style={styles.nameCodeRow}>
-                          <Text
-                            style={[
-                              styles.currencyName,
-                              { color: colors.textPrimary },
-                            ]}
-                          >
-                            {currency.name}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.currencyCode,
-                              {
-                                backgroundColor: isDark
-                                  ? colors.surfaceSecondary
-                                  : '#F1F5F9',
-                                color: colors.textSecondary,
-                              },
-                            ]}
-                          >
-                            {currency.code}
-                          </Text>
-                        </View>
-                        <Text
-                          style={[
-                            styles.countryText,
-                            { color: colors.textSecondary },
-                          ]}
-                        >
-                          {currency.country}
+                          {currency.code}
                         </Text>
                       </View>
+                      <Text
+                        style={[
+                          styles.countryText,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {currency.country}
+                      </Text>
+                    </View>
 
-                      {isSelected ? (
-                        <MaterialCommunityIcons
-                          color="#10B981"
-                          name="check-circle"
-                          size={22}
-                        />
-                      ) : (
-                        <MaterialCommunityIcons
-                          color={colors.border}
-                          name="circle-outline"
-                          size={22}
-                        />
-                      )}
-                    </Pressable>
-                  );
-                },
-              )}
+                    {isSelected ? (
+                      <MaterialCommunityIcons
+                        color="#10B981"
+                        name="check-circle"
+                        size={22}
+                      />
+                    ) : (
+                      <MaterialCommunityIcons
+                        color={colors.border}
+                        name="circle-outline"
+                        size={22}
+                      />
+                    )}
+                  </Pressable>
+                );
+              })}
             </View>
           ) : (
             <View style={styles.emptyState}>
@@ -296,10 +279,7 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
                 size={36}
               />
               <Text
-                style={[
-                  styles.emptyStateText,
-                  { color: colors.textSecondary },
-                ]}
+                style={[styles.emptyStateText, { color: colors.textSecondary }]}
               >
                 {t.settings.noCurrenciesFound}
               </Text>

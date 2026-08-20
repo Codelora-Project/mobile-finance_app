@@ -324,10 +324,18 @@ export function HomeScreen() {
 
     for (const [date, items] of map.entries()) {
       const netMinor = items.reduce(
-        (sum, item) =>
-          item.type === 'income'
-            ? sum + item.amountMinor
-            : sum - item.amountMinor,
+        (sum, item) => {
+          if (item.type === 'income') return sum + item.amountMinor;
+          if (item.type === 'expense') return sum - item.amountMinor;
+          if (selectedWalletId === null) return sum;
+          if (item.transferToPaymentMethodId === selectedWalletId) {
+            return sum + item.amountMinor;
+          }
+          if (item.paymentMethodId === selectedWalletId) {
+            return sum - item.amountMinor - (item.transferFeeMinor ?? 0);
+          }
+          return sum;
+        },
         0,
       );
 
@@ -340,7 +348,7 @@ export function HomeScreen() {
     }
 
     return groups;
-  }, [language, summary, t]);
+  }, [language, selectedWalletId, summary, t]);
 
   const activeWallets = walletSummary?.wallets ?? [];
 
@@ -445,6 +453,7 @@ export function HomeScreen() {
           groupedTimeline={groupedTimeline}
           onPressTransaction={handlePressTransaction}
           onViewAll={handleViewAllTransactions}
+          selectedWalletId={selectedWalletId}
           t={t}
         />
       </ScrollView>

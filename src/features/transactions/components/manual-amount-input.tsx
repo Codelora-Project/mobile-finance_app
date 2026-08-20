@@ -1,14 +1,9 @@
 import React, { memo } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { QuickShortcutsBar } from '@/features/transactions/components/quick-shortcuts-bar';
 import { useTheme } from '@/lib/theme/theme-context';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -37,6 +32,7 @@ export const ManualAmountInput = memo(function ManualAmountInput({
   quickShortcuts,
 }: ManualAmountInputProps) {
   const { colors } = useTheme();
+  const { language } = useLanguage();
 
   return (
     <View style={styles.container}>
@@ -55,13 +51,13 @@ export const ManualAmountInput = memo(function ManualAmountInput({
           {currencySymbol}
         </Text>
         <TextInput
-          accessibilityLabel="Amount *"
+          accessibilityLabel={language === 'id' ? 'Nominal wajib' : 'Amount *'}
           autoFocus={false}
           inputMode="numeric"
           keyboardType="numeric"
           onChangeText={onChangeAmount}
           placeholder="0"
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={colors.textMuted}
           ref={amountInputRef}
           style={[styles.amountHeroInput, { color: colors.textPrimary }]}
           value={amount}

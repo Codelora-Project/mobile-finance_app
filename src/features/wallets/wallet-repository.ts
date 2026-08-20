@@ -1,6 +1,8 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { withIntegrityCheckedTransaction } from '@/db/transactions';
+import { SYSTEM_CATEGORIES } from '@/domain/system-categories';
+import { ensureSystemCategory } from '@/features/categories/system-category-repository';
 import type {
   AccountType,
   CreateWalletInput,
@@ -336,6 +338,7 @@ export async function reconcileWalletBalance(
   }
 
   return withIntegrityCheckedTransaction(database, async (transaction) => {
+    const definition = SYSTEM_CATEGORIES.balanceReconciliation;
     const wallet = await getWalletById(transaction, walletId);
     if (!wallet) {
       throw createCodedError('VALIDATION_FAILED', 'Dompet tidak ditemukan.');
@@ -348,20 +351,11 @@ export async function reconcileWalletBalance(
     const localDate = toLocalDate(now, 0);
     const type = diffMinor > 0 ? 'income' : 'expense';
     const amountMinor = Math.abs(diffMinor);
-    let category = await transaction.getFirstAsync<{ id: number }>(
-      "SELECT id FROM categories WHERE system_key = 'balance_reconciliation' OR name = 'Penyesuaian Saldo' LIMIT 1;",
+    const categoryId = await ensureSystemCategory(
+      transaction,
+      definition,
+      now,
     );
-    if (!category) {
-      const catResult = await transaction.runAsync(
-        `INSERT INTO categories (
-          name, type, icon_key, system_key, is_default, is_fallback,
-          sort_order, created_at, updated_at
-        ) VALUES ('Penyesuaian Saldo', 'expense', 'tune-vertical',
-          'balance_reconciliation', 1, 0, 999, ?, ?);`,
-        [now, now],
-      );
-      category = { id: catResult.lastInsertRowId };
-    }
 
     const result = await transaction.runAsync(
       `INSERT INTO transactions (
@@ -373,10 +367,10 @@ export async function reconcileWalletBalance(
         type,
         amountMinor,
         normalizedCurrency,
-        category.id,
+        categoryId,
         walletId,
-        'Penyesuaian Saldo',
-        note ?? 'Penyesuaian Saldo Riil (Rekonsiliasi)',
+        definition.defaultName,
+        note ?? `${definition.defaultName} Riil (Rekonsiliasi)`,
         now,
         localDate,
         now,
@@ -435,6 +429,7 @@ export async function transferBetweenWallets(
   const localDate = toLocalDate(occurredAt, 0);
 
   return withIntegrityCheckedTransaction(database, async (transaction) => {
+    const definition = SYSTEM_CATEGORIES.walletTransfer;
     const [fromWallet, toWallet] = await Promise.all([
       getWalletById(transaction, fromWalletId),
       getWalletById(transaction, toWalletId),
@@ -446,20 +441,11 @@ export async function transferBetweenWallets(
       );
     }
 
-    let category = await transaction.getFirstAsync<{ id: number }>(
-      "SELECT id FROM categories WHERE system_key = 'wallet_transfer' OR name = 'Transfer Antar Dompet' LIMIT 1;",
+    const categoryId = await ensureSystemCategory(
+      transaction,
+      definition,
+      occurredAt,
     );
-    if (!category) {
-      const catResult = await transaction.runAsync(
-        `INSERT INTO categories (
-          name, type, icon_key, system_key, is_default, is_fallback,
-          sort_order, created_at, updated_at
-        ) VALUES ('Transfer Antar Dompet', 'expense', 'swap-horizontal',
-          'wallet_transfer', 1, 0, 998, ?, ?);`,
-        [occurredAt, occurredAt],
-      );
-      category = { id: catResult.lastInsertRowId };
-    }
 
     const result = await transaction.runAsync(
       `INSERT INTO transactions (
@@ -472,7 +458,7 @@ export async function transferBetweenWallets(
         'transfer',
         amountMinor,
         normalizedCurrency,
-        category.id,
+        categoryId,
         fromWalletId,
         toWalletId,
         transferFeeMinor,

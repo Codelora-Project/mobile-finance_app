@@ -21,15 +21,20 @@ export const TransactionDateGroupHeader = memo(
     const { currencyCode } = useCurrency();
 
     const formattedDaily =
-      totalNetMinor >= 0
+      totalNetMinor > 0
         ? `+${formatMoney(totalNetMinor, currencyCode)}`
-        : `−${formatMoney(Math.abs(totalNetMinor), currencyCode)}`;
+        : totalNetMinor < 0
+          ? `−${formatMoney(Math.abs(totalNetMinor), currencyCode)}`
+          : formatMoney(0, currencyCode);
 
     return (
       <View
         style={[
           styles.dateHeaderRow,
           {
+            backgroundColor: isDark
+              ? 'rgba(255, 255, 255, 0.025)'
+              : 'rgba(15, 23, 42, 0.025)',
             borderBottomColor: isDark
               ? 'rgba(255, 255, 255, 0.06)'
               : 'rgba(0, 0, 0, 0.05)',
@@ -43,11 +48,11 @@ export const TransactionDateGroupHeader = memo(
           {formattedDate}
         </Text>
         <Text
+          numberOfLines={1}
           style={[
             styles.dateHeaderNet,
             {
-              color:
-                totalNetMinor >= 0 ? colors.positive : colors.textSecondary,
+              color: totalNetMinor > 0 ? colors.positive : colors.textSecondary,
             },
           ]}
         >
@@ -61,21 +66,25 @@ export const TransactionDateGroupHeader = memo(
 const styles = StyleSheet.create({
   dateHeaderNet: {
     ...typography.metadata,
+    flexShrink: 0,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
+    marginLeft: spacing.md,
   },
   dateHeaderRow: {
     alignItems: 'center',
     borderBottomWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingBottom: spacing.xs + 2,
+    minHeight: 40,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 1,
   },
   dateHeaderTitle: {
     ...typography.metadata,
     flex: 1,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: -0.1,
   },
 });

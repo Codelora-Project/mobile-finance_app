@@ -84,10 +84,7 @@ export const WalletRowItem = memo(function WalletRowItem({
                 ]}
               >
                 <Text
-                  style={[
-                    styles.badgeText,
-                    { color: colors.textSecondary },
-                  ]}
+                  style={[styles.badgeText, { color: colors.textSecondary }]}
                 >
                   {language === 'id' ? 'Aset Tracking' : 'Tracked Asset'}
                 </Text>
@@ -120,10 +117,7 @@ export const WalletRowItem = memo(function WalletRowItem({
           }
           accessibilityRole="button"
           onPress={() => onReconcile(wallet)}
-          style={({ pressed }) => [
-            styles.actionBtn,
-            pressed && styles.pressed,
-          ]}
+          style={({ pressed }) => [styles.actionBtn, pressed && styles.pressed]}
         >
           <MaterialCommunityIcons
             color={colors.primary}
@@ -141,19 +135,14 @@ export const WalletRowItem = memo(function WalletRowItem({
           accessibilityLabel={language === 'id' ? 'Ubah' : 'Edit'}
           accessibilityRole="button"
           onPress={() => onEdit(wallet)}
-          style={({ pressed }) => [
-            styles.actionBtn,
-            pressed && styles.pressed,
-          ]}
+          style={({ pressed }) => [styles.actionBtn, pressed && styles.pressed]}
         >
           <MaterialCommunityIcons
             color={colors.textSecondary}
             name="pencil-outline"
             size={16}
           />
-          <Text
-            style={[styles.actionBtnText, { color: colors.textSecondary }]}
-          >
+          <Text style={[styles.actionBtnText, { color: colors.textSecondary }]}>
             {language === 'id' ? 'Ubah' : 'Edit'}
           </Text>
         </Pressable>
@@ -164,19 +153,14 @@ export const WalletRowItem = memo(function WalletRowItem({
           accessibilityLabel={language === 'id' ? 'Arsipkan' : 'Archive'}
           accessibilityRole="button"
           onPress={() => onArchive(wallet)}
-          style={({ pressed }) => [
-            styles.actionBtn,
-            pressed && styles.pressed,
-          ]}
+          style={({ pressed }) => [styles.actionBtn, pressed && styles.pressed]}
         >
           <MaterialCommunityIcons
             color={colors.destructive}
             name="archive-outline"
             size={16}
           />
-          <Text
-            style={[styles.actionBtnText, { color: colors.destructive }]}
-          >
+          <Text style={[styles.actionBtnText, { color: colors.destructive }]}>
             {language === 'id' ? 'Arsipkan' : 'Archive'}
           </Text>
         </Pressable>
@@ -184,8 +168,6 @@ export const WalletRowItem = memo(function WalletRowItem({
     </View>
   );
 });
-
-export { WalletRowItem as PaymentMethodRowItem };
 
 const styles = StyleSheet.create({
   actionBtn: {

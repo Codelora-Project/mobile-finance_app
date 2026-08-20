@@ -3,8 +3,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, type TextInput } from 'react-native';
 
-import { defaultCategories, defaultPaymentMethods } from '@/db/seeds';
-import type { Wallet } from '@/features/wallets';
+import { getWallets, type Wallet } from '@/features/wallets';
 import {
   listCategories,
   type Category,
@@ -19,12 +18,20 @@ import {
 } from '@/features/settings/settings-repository';
 import {
   pickManualReceipt,
-  type ManualReceiptSelection,
   type ManualReceiptSource,
 } from '@/features/transactions/manual-receipt-picker';
 import {
+  buildSaveInput,
+  createDefaultForm,
+  formFromTransaction,
+  INITIAL_CATEGORIES,
+  INITIAL_PAYMENT_METHODS,
+  type FormErrors,
+  type FormState,
+} from '@/features/transactions/manual-transaction-form';
+import {
   createTransaction,
-  deleteTransaction,
+  deleteTransactionForUndo,
   getTransaction,
   getTransactionClaimMembership,
   type SaveTransactionInput,
@@ -34,52 +41,15 @@ import {
   updateTransaction,
 } from '@/features/transactions/transaction-repository';
 import { useCurrency } from '@/lib/currency/currency-context';
-import {
-  getTimezoneOffsetMinutes,
-  parseLocalDateTimeInput,
-  toLocalDateTimeInput,
-} from '@/lib/dates';
 import { isCodedError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
-import { formatMoneyInput, parseMoneyInput } from '@/lib/money';
+import { parseMoneyInput } from '@/lib/money';
 
-export type SelectedReference = Readonly<{
-  id: number;
-  name: string;
-}>;
-
-export type FormErrors = Partial<
-  Record<
-    | 'amount'
-    | 'category'
-    | 'dateTime'
-    | 'note'
-    | 'paymentMethod'
-    | 'transferToPaymentMethod'
-    | 'transferFeeAmount'
-    | 'receipt'
-    | 'submit',
-    string
-  >
->;
-
-export type FormState = {
-  amount: string;
-  category: SelectedReference | null;
-  counterparty: string;
-  date: string;
-  isReimbursable: boolean;
-  note: string;
-  paymentMethod: SelectedReference | null;
-  transferToPaymentMethod: SelectedReference | null;
-  hasTransferFee: boolean;
-  transferFeeAmount: string;
-  transferFeeCategory: Category | null;
-  transferFeeNote: string;
-  receipt: ManualReceiptSelection | null;
-  time: string;
-  type: TransactionType;
-};
+export type {
+  FormErrors,
+  FormState,
+  SelectedReference,
+} from '@/features/transactions/manual-transaction-form';
 
 export type PickerState =
   | 'category'
@@ -89,119 +59,6 @@ export type PickerState =
   | 'transferFeeCategory'
   | null;
 
-const INITIAL_CATEGORIES: Category[] = defaultCategories.map(
-  (c, index) => ({
-    createdAt: 0,
-    iconKey: null,
-    id: index + 1,
-    isDefault: true,
-    isFallback: !!c.isFallback,
-    name: c.name,
-    sortOrder: index,
-    systemKey: c.systemKey,
-    type: c.type,
-    updatedAt: 0,
-  }),
-);
-
-const INITIAL_PAYMENT_METHODS: PaymentMethod[] = defaultPaymentMethods.map(
-  (pm, index) => ({
-    createdAt: 0,
-    id: index + 1,
-    isDefault: true,
-    isFallback: false,
-    name: pm.name,
-    sortOrder: index,
-    systemKey: pm.systemKey,
-    updatedAt: 0,
-  }),
-);
-
-function createDefaultForm(
-  initialCategory?: SelectedReference | null,
-  initialType?: TransactionType,
-  initialPaymentMethod?: SelectedReference | null,
-): FormState {
-  const now = Date.now();
-  const dateTime = toLocalDateTimeInput(now, getTimezoneOffsetMinutes(now));
-  const defaultMethod = INITIAL_PAYMENT_METHODS[0];
-  return {
-    amount: '',
-    category: initialCategory ?? null,
-    counterparty: '',
-    date: dateTime.date,
-    hasTransferFee: false,
-    isReimbursable: false,
-    note: '',
-    paymentMethod:
-      initialPaymentMethod ??
-      (defaultMethod ? { id: defaultMethod.id, name: defaultMethod.name } : null),
-    receipt: null,
-    time: dateTime.time,
-    transferFeeAmount: '',
-    transferFeeCategory: null,
-    transferFeeNote: '',
-    transferToPaymentMethod: null,
-    type: initialType ?? 'expense',
-  };
-}
-
-function getReceiptDisplayName(storageKey: string) {
-  const fileName = storageKey.split(/[\\/]/).at(-1)?.split(/[?#]/, 1)[0];
-  return fileName?.trim() || 'Receipt image';
-}
-
-function formFromTransaction(transaction: Transaction): FormState {
-  const dateTime = toLocalDateTimeInput(
-    transaction.occurredAt,
-    transaction.timezoneOffsetMinutes,
-  );
-  const hasFee = (transaction.transferFeeMinor ?? 0) > 0;
-
-  return {
-    amount: formatMoneyInput(transaction.amountMinor, transaction.currencyCode),
-    category: {
-      id: transaction.categoryId,
-      name: transaction.categoryName,
-    },
-    counterparty: transaction.counterparty ?? '',
-    date: dateTime.date,
-    hasTransferFee: hasFee,
-    isReimbursable: transaction.isReimbursable,
-    note: transaction.note ?? '',
-    paymentMethod:
-      transaction.paymentMethodId !== null &&
-      transaction.paymentMethodName !== null
-        ? {
-            id: transaction.paymentMethodId,
-            name: transaction.paymentMethodName,
-          }
-        : null,
-    receipt: transaction.receipt
-      ? {
-          displayName: getReceiptDisplayName(transaction.receipt.storageKey),
-          mimeType: transaction.receipt.mimeType,
-          sourceImageUri: transaction.receipt.storageKey,
-        }
-      : null,
-    time: dateTime.time,
-    transferFeeAmount: hasFee
-      ? String(transaction.transferFeeMinor)
-      : '',
-    transferFeeCategory: null,
-    transferFeeNote: transaction.transferFeeNote ?? '',
-    transferToPaymentMethod:
-      transaction.transferToPaymentMethodId !== null &&
-      transaction.transferToPaymentMethodName !== null
-        ? {
-            id: transaction.transferToPaymentMethodId,
-            name: transaction.transferToPaymentMethodName,
-          }
-        : null,
-    type: transaction.type,
-  };
-}
-
 function getOperationMessage(error: unknown) {
   if (isCodedError(error)) {
     return error.message;
@@ -209,140 +66,6 @@ function getOperationMessage(error: unknown) {
   return error instanceof Error
     ? error.message
     : 'An unexpected error occurred.';
-}
-
-function buildSaveInput(
-  form: FormState,
-  currencyCode = 'IDR',
-  fallbackCategoryId = 1,
-  language: 'id' | 'en' = 'id',
-) {
-  const errors: FormErrors = {};
-  let amountMinor: number | null = null;
-  let dateTime: ReturnType<typeof parseLocalDateTimeInput> | null = null;
-
-  try {
-    amountMinor = parseMoneyInput(form.amount, currencyCode);
-  } catch {
-    errors.amount =
-      language === 'id' ? 'Masukkan nominal transaksi.' : 'Enter an amount.';
-  }
-
-  if (form.type !== 'transfer') {
-    if (!form.category) {
-      errors.category =
-        language === 'id'
-          ? form.type === 'income'
-            ? 'Pilih kategori pemasukan.'
-            : 'Pilih kategori pengeluaran.'
-          : 'Choose a category.';
-    }
-  } else {
-    if (!form.paymentMethod) {
-      errors.paymentMethod =
-        language === 'id' ? 'Pilih dompet asal.' : 'Choose a source wallet.';
-    }
-    if (!form.transferToPaymentMethod) {
-      errors.transferToPaymentMethod =
-        language === 'id'
-          ? 'Pilih dompet tujuan.'
-          : 'Choose a destination wallet.';
-    }
-    if (
-      form.paymentMethod &&
-      form.transferToPaymentMethod &&
-      form.paymentMethod.id === form.transferToPaymentMethod.id
-    ) {
-      errors.transferToPaymentMethod =
-        language === 'id'
-          ? 'Dompet asal dan tujuan tidak boleh sama.'
-          : 'Source and destination wallet cannot be the same.';
-    }
-  }
-
-  let feeMinor = 0;
-  if (form.type === 'transfer' && form.hasTransferFee) {
-    if (!form.transferFeeAmount.trim()) {
-      errors.transferFeeAmount =
-        language === 'id'
-          ? 'Masukkan nominal biaya transfer.'
-          : 'Enter a transfer fee amount.';
-    } else {
-      try {
-        feeMinor = parseMoneyInput(form.transferFeeAmount, currencyCode);
-      } catch {
-        errors.transferFeeAmount =
-          language === 'id'
-            ? 'Nominal biaya transfer tidak valid.'
-            : 'Invalid transfer fee amount.';
-      }
-    }
-  }
-
-  try {
-    dateTime = parseLocalDateTimeInput(form.date, form.time);
-    if (dateTime.occurredAt > Date.now()) {
-      errors.dateTime =
-        language === 'id'
-          ? 'Tanggal transaksi tidak boleh di masa depan.'
-          : 'Transaction date cannot be in the future.';
-    }
-  } catch {
-    errors.dateTime =
-      language === 'id'
-        ? 'Format tanggal atau waktu tidak valid.'
-        : 'Enter a valid transaction date and time.';
-  }
-  if (Array.from(form.note.normalize('NFC').trim()).length > 500) {
-    errors.note =
-      language === 'id'
-        ? 'Catatan maksimal 500 karakter.'
-        : 'Note must be 500 characters or fewer.';
-  }
-
-  if (
-    Object.keys(errors).length > 0 ||
-    amountMinor === null ||
-    dateTime === null
-  ) {
-    return { errors, input: null };
-  }
-
-  const input: SaveTransactionInput = {
-    amountMinor,
-    categoryId: form.category?.id ?? fallbackCategoryId,
-    counterparty: form.counterparty,
-    currencyCode,
-    isReimbursable: form.type === 'expense' && form.isReimbursable,
-    localDate: dateTime.localDate,
-    note: form.note,
-    occurredAt: dateTime.occurredAt,
-    paymentMethodId: form.paymentMethod?.id ?? null,
-    receipt:
-      form.type === 'expense' && form.receipt
-        ? {
-            mimeType: form.receipt.mimeType,
-            sourceImageUri: form.receipt.sourceImageUri,
-          }
-        : null,
-    timezoneOffsetMinutes: dateTime.timezoneOffsetMinutes,
-    transferFeeCategoryId:
-      form.type === 'transfer' && form.hasTransferFee
-        ? form.transferFeeCategory?.id ?? null
-        : null,
-    transferFeeMinor:
-      form.type === 'transfer' && form.hasTransferFee ? feeMinor : 0,
-    transferFeeNote:
-      form.type === 'transfer' && form.hasTransferFee
-        ? form.transferFeeNote
-        : null,
-    transferToPaymentMethodId:
-      form.type === 'transfer'
-        ? form.transferToPaymentMethod?.id ?? null
-        : null,
-    type: form.type,
-  };
-  return { errors, input };
 }
 
 export type ManualTransactionScreenProps = {
@@ -389,12 +112,12 @@ export function useManualTransactionViewModel({
   const [form, setForm] = useState<FormState>(() =>
     createDefaultForm(initialCategoryParam, params.type),
   );
-  const [categoriesList, setCategoriesList] = useState<Category[]>(
-    INITIAL_CATEGORIES,
-  );
+  const [categoriesList, setCategoriesList] =
+    useState<Category[]>(INITIAL_CATEGORIES);
   const [paymentMethodsList, setPaymentMethodsList] = useState<PaymentMethod[]>(
     INITIAL_PAYMENT_METHODS,
   );
+  const [walletsList, setWalletsList] = useState<Wallet[]>([]);
 
   const displayedCategories = useMemo(() => {
     const targetType = form.type === 'income' ? 'income' : 'expense';
@@ -405,6 +128,8 @@ export function useManualTransactionViewModel({
   ]);
   const [claimMembership, setClaimMembership] =
     useState<TransactionClaimMembership | null>(null);
+  const [editingTransaction, setEditingTransaction] =
+    useState<Transaction | null>(null);
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -412,6 +137,8 @@ export function useManualTransactionViewModel({
   const [picker, setPicker] = useState<PickerState>(null);
   const [receiptMenuVisible, setReceiptMenuVisible] = useState(false);
   const [showDetailSection, setShowDetailSection] = useState(false);
+  const [pendingTransferInput, setPendingTransferInput] =
+    useState<SaveTransactionInput | null>(null);
 
   const savingRef = useRef(false);
   const deletingRef = useRef(false);
@@ -439,14 +166,16 @@ export function useManualTransactionViewModel({
     let active = true;
     async function loadData() {
       try {
-        const [cats, pms, shortcuts] = await Promise.all([
+        const [cats, pms, wallets, shortcuts] = await Promise.all([
           listCategories(database),
           listPaymentMethods(database),
+          getWallets(database),
           getQuickShortcuts(database),
         ]);
         if (active) {
           setCategoriesList(cats);
           setPaymentMethodsList(pms);
+          setWalletsList(wallets);
           if (shortcuts && shortcuts.length > 0) {
             setQuickShortcuts(shortcuts);
           }
@@ -456,7 +185,10 @@ export function useManualTransactionViewModel({
                 const defaultMethod = pms.find((p) => p.isDefault) ?? pms[0];
                 return {
                   ...current,
-                  paymentMethod: { id: defaultMethod.id, name: defaultMethod.name },
+                  paymentMethod: {
+                    id: defaultMethod.id,
+                    name: defaultMethod.name,
+                  },
                 };
               }
               return current;
@@ -484,6 +216,7 @@ export function useManualTransactionViewModel({
         ]);
         if (active && tx) {
           setForm(formFromTransaction(tx));
+          setEditingTransaction(tx);
           setClaimMembership(claim);
         }
       } catch (err) {
@@ -606,6 +339,46 @@ export function useManualTransactionViewModel({
     router.back();
   }, [router]);
 
+  const persistTransaction = useCallback(
+    async (input: SaveTransactionInput) => {
+      savingRef.current = true;
+      setSaving(true);
+      setErrors({});
+
+      try {
+        if (isEditMode) {
+          await updateTransaction(database, transactionId!, input);
+          router.dismissTo({
+            params: {
+              feedback:
+                language === 'id'
+                  ? 'Transaksi berhasil diperbarui'
+                  : 'Transaction updated successfully',
+            },
+            pathname: '/transactions',
+          });
+        } else {
+          const result = await createTransaction(database, input);
+          router.dismissTo({
+            params: {
+              feedback:
+                language === 'id'
+                  ? 'Transaksi berhasil dicatat'
+                  : 'Transaction recorded successfully',
+              undoCreatedId: String(result.id),
+            },
+            pathname: '/',
+          });
+        }
+      } catch (error) {
+        setErrors({ submit: getOperationMessage(error) });
+        savingRef.current = false;
+        setSaving(false);
+      }
+    },
+    [database, isEditMode, language, router, transactionId],
+  );
+
   const handleSave = useCallback(async () => {
     if (savingRef.current || deletingRef.current) return;
     const fallbackCategory = displayedCategories[0]?.id ?? 1;
@@ -619,42 +392,24 @@ export function useManualTransactionViewModel({
       setErrors(validationErrors);
       return;
     }
-
-    savingRef.current = true;
-    setSaving(true);
-    setErrors({});
-
-    try {
-      if (isEditMode) {
-        await updateTransaction(database, transactionId!, input);
-        router.dismissTo({
-          params: {
-            feedback:
-              language === 'id'
-                ? 'Transaksi berhasil diperbarui'
-                : 'Transaction updated successfully',
-          },
-          pathname: '/transactions',
-        });
-      } else {
-        const result = await createTransaction(database, input);
-        router.dismissTo({
-          params: {
-            feedback:
-              language === 'id'
-                ? 'Transaksi berhasil dicatat'
-                : 'Transaction recorded successfully',
-            undoCreatedId: String(result.id),
-          },
-          pathname: '/',
-        });
-      }
-    } catch (error) {
-      setErrors({ submit: getOperationMessage(error) });
-      savingRef.current = false;
-      setSaving(false);
+    if (input.type === 'transfer') {
+      setErrors({});
+      setPendingTransferInput(input);
+      return;
     }
-  }, [displayedCategories, currencyCode, database, form, isEditMode, language, router, transactionId]);
+    await persistTransaction(input);
+  }, [currencyCode, displayedCategories, form, language, persistTransaction]);
+
+  const handleCancelTransferReview = useCallback(() => {
+    setPendingTransferInput(null);
+  }, []);
+
+  const handleConfirmTransfer = useCallback(async () => {
+    if (!pendingTransferInput) return;
+    const input = pendingTransferInput;
+    setPendingTransferInput(null);
+    await persistTransaction(input);
+  }, [pendingTransferInput, persistTransaction]);
 
   const handleDelete = useCallback(async () => {
     if (savingRef.current || deletingRef.current || !transactionId) return;
@@ -662,13 +417,14 @@ export function useManualTransactionViewModel({
     setDeleting(true);
 
     try {
-      await deleteTransaction(database, transactionId);
+      const snapshot = await deleteTransactionForUndo(database, transactionId);
       router.dismissTo({
         params: {
           feedback:
             language === 'id'
               ? 'Transaksi telah dihapus'
               : 'Transaction deleted',
+          undoPayload: JSON.stringify(snapshot),
         },
         pathname: '/transactions',
       });
@@ -700,7 +456,9 @@ export function useManualTransactionViewModel({
     actions: {
       handleAddIncrement,
       handleClearAmount,
+      handleCancelTransferReview,
       handleClose,
+      handleConfirmTransfer,
       handleDelete,
       handleRemoveReceipt,
       handleSave,
@@ -728,6 +486,7 @@ export function useManualTransactionViewModel({
       currencyCode,
       currencySymbol,
       deleting,
+      editingTransaction,
       errors,
       form,
       isEditMode,
@@ -736,6 +495,7 @@ export function useManualTransactionViewModel({
       loading,
       parsedAmountMinor,
       paymentMethodsList,
+      pendingTransferInput,
       picker,
       quickShortcuts,
       receiptMenuVisible,
@@ -743,6 +503,7 @@ export function useManualTransactionViewModel({
       screenTitle,
       showDetailSection,
       t,
+      walletsList,
     },
   };
 }

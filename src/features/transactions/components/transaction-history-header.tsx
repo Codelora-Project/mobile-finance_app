@@ -3,6 +3,7 @@ import React, { memo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import type { TranslationSchema } from '@/lib/i18n/translations';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -18,199 +19,199 @@ export type TransactionHistoryHeaderProps = {
   t: TranslationSchema;
 };
 
-export const TransactionHistoryHeader = memo(
-  function TransactionHistoryHeader({
-    activeFiltersCount,
-    onClearSearch,
-    onExport,
-    onOpenFilter,
-    onSearchChange,
-    searchQuery,
-    t,
-  }: TransactionHistoryHeaderProps) {
-    const { colors, isDark } = useTheme();
-    const [isSearchExpanded, setIsSearchExpanded] = useState(
-      Boolean(searchQuery),
-    );
+export const TransactionHistoryHeader = memo(function TransactionHistoryHeader({
+  activeFiltersCount,
+  onClearSearch,
+  onExport,
+  onOpenFilter,
+  onSearchChange,
+  searchQuery,
+  t,
+}: TransactionHistoryHeaderProps) {
+  const { colors, isDark } = useTheme();
+  const { language } = useLanguage();
+  const [isSearchExpanded, setIsSearchExpanded] = useState(
+    Boolean(searchQuery),
+  );
 
-    function toggleSearch() {
-      if (isSearchExpanded && searchQuery) {
-        onClearSearch();
-      }
-      setIsSearchExpanded((prev) => !prev);
+  function toggleSearch() {
+    if (isSearchExpanded && searchQuery) {
+      onClearSearch();
     }
+    setIsSearchExpanded((prev) => !prev);
+  }
 
-    return (
-      <View
-        style={[
-          styles.headerRoot,
-          {
-            backgroundColor: colors.surface,
-            borderBottomColor: colors.border,
-          },
-        ]}
-      >
-        {/* Top Row: Title + Action Icons */}
-        <View style={styles.topRow}>
-          <Text
-            numberOfLines={1}
-            style={[styles.screenTitle, { color: colors.textPrimary }]}
+  return (
+    <View
+      style={[
+        styles.headerRoot,
+        {
+          backgroundColor: colors.surface,
+          borderBottomColor: colors.border,
+        },
+      ]}
+    >
+      {/* Top Row: Title + Action Icons */}
+      <View style={styles.topRow}>
+        <Text
+          numberOfLines={1}
+          style={[styles.screenTitle, { color: colors.textPrimary }]}
+        >
+          {t.transactions.title || 'Riwayat'}
+        </Text>
+
+        <View style={styles.actionsRow}>
+          {/* Search Icon Toggle */}
+          <Pressable
+            accessibilityLabel={
+              language === 'id' ? 'Cari transaksi' : 'Search transactions'
+            }
+            accessibilityRole="button"
+            hitSlop={6}
+            onPress={toggleSearch}
+            style={({ pressed }) => [
+              styles.iconActionBtn,
+              {
+                backgroundColor:
+                  isSearchExpanded || searchQuery
+                    ? isDark
+                      ? colors.surfaceSecondary
+                      : '#E2E8F0'
+                    : isDark
+                      ? colors.surfaceSecondary
+                      : '#F1F5F9',
+                borderColor: colors.border,
+              },
+              pressed && styles.pressed,
+            ]}
           >
-            {t.transactions.title || 'Riwayat'}
-          </Text>
+            <MaterialCommunityIcons
+              color={
+                isSearchExpanded || searchQuery
+                  ? colors.primary
+                  : colors.textSecondary
+              }
+              name="magnify"
+              size={20}
+            />
+          </Pressable>
 
-          <View style={styles.actionsRow}>
-            {/* Search Icon Toggle */}
+          {/* Filter Icon Button with Badge */}
+          <Pressable
+            accessibilityHint={
+              language === 'id'
+                ? `${activeFiltersCount} filter aktif`
+                : `${activeFiltersCount} active filters`
+            }
+            accessibilityLabel="Filter"
+            accessibilityRole="button"
+            hitSlop={6}
+            onPress={onOpenFilter}
+            style={({ pressed }) => [
+              styles.iconActionBtn,
+              {
+                backgroundColor:
+                  activeFiltersCount > 0
+                    ? colors.primary
+                    : isDark
+                      ? colors.surfaceSecondary
+                      : '#F1F5F9',
+                borderColor:
+                  activeFiltersCount > 0 ? colors.primary : colors.border,
+              },
+              pressed && styles.pressed,
+            ]}
+          >
+            <MaterialCommunityIcons
+              color={activeFiltersCount > 0 ? '#FFFFFF' : colors.textSecondary}
+              name="tune-variant"
+              size={19}
+            />
+            {activeFiltersCount > 0 ? (
+              <View style={styles.filterBadge}>
+                <Text style={styles.filterBadgeText}>{activeFiltersCount}</Text>
+              </View>
+            ) : null}
+          </Pressable>
+
+          {/* Export CSV Button */}
+          {onExport ? (
             <Pressable
-              accessibilityLabel="Search"
+              accessibilityLabel={
+                language === 'id' ? 'Ekspor CSV' : 'Export CSV'
+              }
               accessibilityRole="button"
               hitSlop={6}
-              onPress={toggleSearch}
+              onPress={onExport}
               style={({ pressed }) => [
                 styles.iconActionBtn,
                 {
-                  backgroundColor:
-                    isSearchExpanded || searchQuery
-                      ? isDark
-                        ? colors.surfaceSecondary
-                        : '#E2E8F0'
-                      : isDark
-                        ? colors.surfaceSecondary
-                        : '#F1F5F9',
+                  backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
                   borderColor: colors.border,
                 },
                 pressed && styles.pressed,
               ]}
             >
               <MaterialCommunityIcons
-                color={
-                  isSearchExpanded || searchQuery
-                    ? colors.primary
-                    : colors.textSecondary
-                }
-                name="magnify"
-                size={20}
-              />
-            </Pressable>
-
-            {/* Filter Icon Button with Badge */}
-            <Pressable
-              accessibilityLabel="Filter"
-              accessibilityRole="button"
-              hitSlop={6}
-              onPress={onOpenFilter}
-              style={({ pressed }) => [
-                styles.iconActionBtn,
-                {
-                  backgroundColor:
-                    activeFiltersCount > 0
-                      ? colors.primary
-                      : isDark
-                        ? colors.surfaceSecondary
-                        : '#F1F5F9',
-                  borderColor:
-                    activeFiltersCount > 0
-                      ? colors.primary
-                      : colors.border,
-                },
-                pressed && styles.pressed,
-              ]}
-            >
-              <MaterialCommunityIcons
-                color={
-                  activeFiltersCount > 0
-                    ? '#FFFFFF'
-                    : colors.textSecondary
-                }
-                name="tune-variant"
+                color={colors.textSecondary}
+                name="export-variant"
                 size={19}
               />
-              {activeFiltersCount > 0 ? (
-                <View style={styles.filterBadge}>
-                  <Text style={styles.filterBadgeText}>
-                    {activeFiltersCount}
-                  </Text>
-                </View>
-              ) : null}
             </Pressable>
+          ) : null}
+        </View>
+      </View>
 
-            {/* Export CSV Button */}
-            {onExport ? (
+      {/* Expandable Search Input Field */}
+      {isSearchExpanded || searchQuery ? (
+        <View style={styles.searchBarRow}>
+          <View style={styles.searchBarWrap}>
+            <MaterialCommunityIcons
+              color="#94A3B8"
+              name="magnify"
+              size={18}
+              style={styles.searchIcon}
+            />
+            <TextInput
+              accessibilityLabel={
+                language === 'id' ? 'Cari transaksi' : 'Search transactions'
+              }
+              autoFocus={isSearchExpanded && !searchQuery}
+              onChangeText={onSearchChange}
+              placeholder={t.transactions.searchPlaceholder}
+              placeholderTextColor="#94A3B8"
+              style={[
+                styles.searchInput,
+                {
+                  backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+                  color: colors.textPrimary,
+                },
+              ]}
+              value={searchQuery}
+            />
+            {searchQuery ? (
               <Pressable
-                accessibilityLabel="Ekspor CSV"
+                accessibilityLabel={
+                  language === 'id' ? 'Hapus pencarian' : 'Clear search'
+                }
                 accessibilityRole="button"
-                hitSlop={6}
-                onPress={onExport}
-                style={({ pressed }) => [
-                  styles.iconActionBtn,
-                  {
-                    backgroundColor: isDark
-                      ? colors.surfaceSecondary
-                      : '#F1F5F9',
-                    borderColor: colors.border,
-                  },
-                  pressed && styles.pressed,
-                ]}
+                hitSlop={8}
+                onPress={onClearSearch}
+                style={styles.clearSearchBtn}
               >
                 <MaterialCommunityIcons
-                  color={colors.textSecondary}
-                  name="export-variant"
-                  size={19}
+                  color="#94A3B8"
+                  name="close-circle"
+                  size={16}
                 />
               </Pressable>
             ) : null}
           </View>
         </View>
-
-        {/* Expandable Search Input Field */}
-        {isSearchExpanded || searchQuery ? (
-          <View style={styles.searchBarRow}>
-            <View style={styles.searchBarWrap}>
-              <MaterialCommunityIcons
-                color="#94A3B8"
-                name="magnify"
-                size={18}
-                style={styles.searchIcon}
-              />
-              <TextInput
-                accessibilityLabel="Search"
-                autoFocus={isSearchExpanded && !searchQuery}
-                onChangeText={onSearchChange}
-                placeholder={t.transactions.searchPlaceholder}
-                placeholderTextColor="#94A3B8"
-                style={[
-                  styles.searchInput,
-                  {
-                    backgroundColor: isDark
-                      ? colors.surfaceSecondary
-                      : '#F1F5F9',
-                    color: colors.textPrimary,
-                  },
-                ]}
-                value={searchQuery}
-              />
-              {searchQuery ? (
-                <Pressable
-                  accessibilityLabel="Clear search"
-                  accessibilityRole="button"
-                  hitSlop={8}
-                  onPress={onClearSearch}
-                  style={styles.clearSearchBtn}
-                >
-                  <MaterialCommunityIcons
-                    color="#94A3B8"
-                    name="close-circle"
-                    size={16}
-                  />
-                </Pressable>
-              ) : null}
-            </View>
-          </View>
-        ) : null}
-      </View>
-    );
-  },
-);
+      ) : null}
+    </View>
+  );
+});
 
 const styles = StyleSheet.create({
   actionsRow: {
@@ -251,10 +252,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: radius.md,
     borderWidth: 1,
-    height: 38,
+    height: 44,
     justifyContent: 'center',
     position: 'relative',
-    width: 38,
+    width: 44,
   },
   pressed: {
     opacity: 0.75,

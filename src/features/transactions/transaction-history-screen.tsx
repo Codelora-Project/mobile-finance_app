@@ -8,13 +8,13 @@ import {
 } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
+import { UndoToastBanner } from '@/components/ui/undo-toast-banner';
 import { TransactionDateGroupHeader } from '@/features/transactions/components/transaction-date-group-header';
 import { TransactionDateNavigator } from '@/features/transactions/components/transaction-date-navigator';
 import { TransactionHistoryEmptyState } from '@/features/transactions/components/transaction-history-empty-state';
 import { TransactionHistoryHeader } from '@/features/transactions/components/transaction-history-header';
 import { TransactionHistorySummaryBar } from '@/features/transactions/components/transaction-history-summary-bar';
 import { TransactionPeriodSegmentedControl } from '@/features/transactions/components/transaction-period-segmented-control';
-import { TransactionQuickFilterChips } from '@/features/transactions/components/transaction-quick-filter-chips';
 import { TransactionRowItem } from '@/features/transactions/components/transaction-row-item';
 import {
   useTransactionHistoryViewModel,
@@ -101,14 +101,7 @@ export function TransactionHistoryScreen() {
         secondaryLabel={state.secondaryLabel}
       />
 
-      {/* 4. Quick Filters & Chips */}
-      <TransactionQuickFilterChips
-        filters={state.filters}
-        onFilterChange={actions.setFilters}
-        t={state.t}
-      />
-
-      {/* 5. Income / Expense / Net Summary Metric Ribbon */}
+      {/* 4. Income / Expense / Net Summary also acts as the quick type filter. */}
       <TransactionHistorySummaryBar
         activeTypeFilter={state.filters.type}
         currencyCode={state.currencyCode}
@@ -120,7 +113,7 @@ export function TransactionHistoryScreen() {
         totalIncomeMinor={state.totalIncomeMinor}
       />
 
-      {/* 6. Main Infinite Scroll Transaction Feed */}
+      {/* 5. Main Infinite Scroll Transaction Feed */}
       <FlatList
         contentContainerStyle={styles.listContent}
         data={state.dateGroups}
@@ -157,7 +150,7 @@ export function TransactionHistoryScreen() {
         scrollEventThrottle={16}
       />
 
-      {/* 7. Comprehensive Filter Modal Sheet */}
+      {/* 6. Comprehensive Filter Modal Sheet */}
       <TransactionFilterModal
         filters={state.filters}
         onApply={(f) => {
@@ -166,6 +159,15 @@ export function TransactionHistoryScreen() {
         }}
         onClose={() => actions.setFilterModalVisible(false)}
         visible={state.filterModalVisible}
+      />
+
+      <UndoToastBanner
+        canUndo={state.undoCanUndo}
+        isUndoing={state.undoIsRunning}
+        message={state.undoMessage}
+        onClose={actions.dismissUndo}
+        onUndo={() => void actions.undo()}
+        visible={state.undoVisible}
       />
     </Screen>
   );
@@ -176,14 +178,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     elevation: 2,
-    marginBottom: spacing.md,
     overflow: 'hidden',
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
   },
   listContent: {
-    gap: spacing.sm,
+    gap: spacing.md,
     paddingBottom: spacing.xxl + 40,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.xs,
@@ -194,7 +195,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   timelineItemsWrap: {
-    paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
   },
 });

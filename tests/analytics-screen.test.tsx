@@ -180,8 +180,26 @@ describe('analytics screen', () => {
     // Switch to Trends Tab (testing positive/negative cash flows)
     await fireEvent.press(screen.getByText('Tren Arus Kas'));
     expect(screen.getByText('Tren Arus Kas Bulanan')).toBeOnTheScreen();
+    expect(screen.getAllByText('+Rp 2.000.000').length).toBeGreaterThanOrEqual(
+      1,
+    );
+  });
+
+  it('shows an actionable error state and retries loading', async () => {
+    mockGetAnalyticsData.mockRejectedValueOnce(new Error('offline'));
+
+    await render(
+      <ThemeProvider>
+        <LanguageProvider initialLanguage="id">
+          <AnalyticsScreen />
+        </LanguageProvider>
+      </ThemeProvider>,
+    );
+
     expect(
-      screen.getAllByText('+Rp 2.000.000').length,
-    ).toBeGreaterThanOrEqual(1);
+      await screen.findByText(/Analitik belum dapat dimuat/i),
+    ).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Coba lagi' }));
+    expect(await screen.findByText('Total Pengeluaran')).toBeOnTheScreen();
   });
 });

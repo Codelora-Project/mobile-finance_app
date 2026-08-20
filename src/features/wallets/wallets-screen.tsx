@@ -49,7 +49,9 @@ export function WalletsScreen({
   const { currencyCode, currencySymbol } = useCurrency();
   const { language, t } = useLanguage();
 
-  const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(null);
+  const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(
+    null,
+  );
   const [archivedWallets, setArchivedWallets] = useState<readonly Wallet[]>([]);
   const [loading, setLoading] = useState(true);
   const [screenError, setScreenError] = useState<string | null>(null);
@@ -100,7 +102,10 @@ export function WalletsScreen({
               await archiveWallet(database, wallet.id);
               await loadData();
             } catch (err) {
-              Alert.alert('Error', mapError(err, 'DATABASE_WRITE_FAILED').message);
+              Alert.alert(
+                'Error',
+                mapError(err, 'DATABASE_WRITE_FAILED').message,
+              );
             }
           },
           style: 'destructive',
@@ -191,11 +196,7 @@ export function WalletsScreen({
             pressed && styles.pressed,
           ]}
         >
-          <MaterialCommunityIcons
-            color="#FFFFFF"
-            name="plus"
-            size={20}
-          />
+          <MaterialCommunityIcons color="#FFFFFF" name="plus" size={20} />
         </Pressable>
       </View>
 
@@ -258,10 +259,7 @@ export function WalletsScreen({
             {/* 2. Section Header */}
             <View style={styles.sectionHeaderRow}>
               <Text
-                style={[
-                  styles.sectionTitle,
-                  { color: colors.textSecondary },
-                ]}
+                style={[styles.sectionTitle, { color: colors.textSecondary }]}
               >
                 {language === 'id'
                   ? `DOMPET AKTIF (${activeWallets.length})`
@@ -311,8 +309,6 @@ export function WalletsScreen({
     </Screen>
   );
 }
-
-export { WalletsScreen as PaymentMethodManagementScreen };
 
 const styles = StyleSheet.create({
   addWalletBtn: {

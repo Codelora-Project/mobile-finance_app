@@ -3,9 +3,10 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
-  createTransaction,
   deleteTransaction,
-  type SaveTransactionInput,
+  finalizeDeletedTransactionUndo,
+  restoreDeletedTransaction,
+  type DeletedTransactionSnapshot,
 } from '@/features/transactions/transaction-repository';
 import { useLanguage } from '@/lib/i18n/language-context';
 
@@ -27,51 +28,95 @@ export function useUndoTransaction({
   }>();
 
   const feedbackMessage = Array.isArray(feedback) ? feedback[0] : feedback;
-
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [undoCreatedTransactionId, setUndoCreatedTransactionId] = useState<
     number | null
   >(null);
-  const [undoDeletedPayload, setUndoDeletedPayload] =
-    useState<SaveTransactionInput | null>(null);
+  const [undoDeletedSnapshot, setUndoDeletedSnapshot] =
+    useState<DeletedTransactionSnapshot | null>(null);
   const [isUndoing, setIsUndoing] = useState(false);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const snapshotRef = useRef<DeletedTransactionSnapshot | null>(null);
+
+  const clearPendingSnapshot = useCallback((removeReceipt: boolean) => {
+    if (removeReceipt && snapshotRef.current) {
+      finalizeDeletedTransactionUndo(snapshotRef.current);
+    }
+    snapshotRef.current = null;
+    setUndoDeletedSnapshot(null);
+  }, []);
+
+  const scheduleHide = useCallback(
+    (snapshot: DeletedTransactionSnapshot | null, duration = toastDuration) => {
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => {
+        setToastVisible(false);
+        if (snapshot && snapshotRef.current === snapshot) {
+          clearPendingSnapshot(true);
+        }
+      }, duration);
+    },
+    [clearPendingSnapshot, toastDuration],
+  );
+
+  const showDeletedTransactionUndo = useCallback(
+    (snapshot: DeletedTransactionSnapshot, message: string) => {
+      clearPendingSnapshot(true);
+      snapshotRef.current = snapshot;
+      setUndoDeletedSnapshot(snapshot);
+      setUndoCreatedTransactionId(null);
+      setToastMessage(message);
+      setToastVisible(true);
+      scheduleHide(snapshot);
+    },
+    [clearPendingSnapshot, scheduleHide],
+  );
 
   useEffect(() => {
     if (!feedbackMessage) return;
-
     const timeoutId = setTimeout(() => {
       setToastMessage(feedbackMessage);
       if (undoCreatedId) {
+        clearPendingSnapshot(true);
         setUndoCreatedTransactionId(Number(undoCreatedId));
-        setUndoDeletedPayload(null);
+        scheduleHide(null);
       } else if (undoPayload) {
         try {
-          const parsed = JSON.parse(undoPayload) as SaveTransactionInput;
-          setUndoDeletedPayload(parsed);
+          const parsed = JSON.parse(undoPayload) as DeletedTransactionSnapshot;
+          if (!parsed.input) throw new Error('Invalid undo payload');
+          snapshotRef.current = parsed;
+          setUndoDeletedSnapshot(parsed);
           setUndoCreatedTransactionId(null);
+          scheduleHide(parsed);
         } catch {
-          setUndoDeletedPayload(null);
+          clearPendingSnapshot(true);
+          scheduleHide(null);
         }
       } else {
+        clearPendingSnapshot(true);
         setUndoCreatedTransactionId(null);
-        setUndoDeletedPayload(null);
+        scheduleHide(null);
       }
       setToastVisible(true);
     }, 0);
+    return () => clearTimeout(timeoutId);
+  }, [
+    clearPendingSnapshot,
+    feedbackMessage,
+    scheduleHide,
+    undoCreatedId,
+    undoPayload,
+  ]);
 
-    const hideTimeoutId = setTimeout(() => {
-      setToastVisible(false);
-    }, toastDuration);
-
-    toastTimeoutRef.current = hideTimeoutId;
-
-    return () => {
-      clearTimeout(timeoutId);
-      clearTimeout(hideTimeoutId);
-    };
-  }, [feedbackMessage, toastDuration, undoCreatedId, undoPayload]);
+  useEffect(
+    () => () => {
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      if (snapshotRef.current)
+        finalizeDeletedTransactionUndo(snapshotRef.current);
+    },
+    [],
+  );
 
   const handleUndo = useCallback(async () => {
     if (isUndoing) return;
@@ -85,44 +130,45 @@ export function useUndoTransaction({
             ? 'Penambahan transaksi dibatalkan'
             : 'Transaction addition undone',
         );
-      } else if (undoDeletedPayload) {
-        await createTransaction(database, undoDeletedPayload);
-        setUndoDeletedPayload(null);
+      } else if (undoDeletedSnapshot) {
+        await restoreDeletedTransaction(database, undoDeletedSnapshot);
+        clearPendingSnapshot(false);
         setToastMessage(
           language === 'id'
             ? 'Transaksi berhasil dipulihkan'
             : 'Transaction restored',
         );
       }
-      if (onSuccess) onSuccess();
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-      toastTimeoutRef.current = setTimeout(() => {
-        setToastVisible(false);
-      }, 2500);
+      onSuccess?.();
+      scheduleHide(null, 2500);
     } catch (err) {
       if (__DEV__) console.warn('Could not execute undo action', err);
     } finally {
       setIsUndoing(false);
     }
   }, [
+    clearPendingSnapshot,
     database,
     isUndoing,
     language,
     onSuccess,
+    scheduleHide,
     undoCreatedTransactionId,
-    undoDeletedPayload,
+    undoDeletedSnapshot,
   ]);
 
   const dismissToast = useCallback(() => {
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    clearPendingSnapshot(true);
     setToastVisible(false);
-  }, []);
+  }, [clearPendingSnapshot]);
 
   return {
-    canUndo: Boolean(undoCreatedTransactionId || undoDeletedPayload),
+    canUndo: Boolean(undoCreatedTransactionId || undoDeletedSnapshot),
     dismissToast,
     handleUndo,
     isUndoing,
+    showDeletedTransactionUndo,
     toastMessage,
     toastVisible,
   };

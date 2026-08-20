@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { formatShortcutLabel } from '@/lib/money';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -21,6 +22,7 @@ export const QuickShortcutsBar = memo(function QuickShortcutsBar({
   quickShortcuts,
 }: QuickShortcutsBarProps) {
   const { colors, isDark } = useTheme();
+  const { language } = useLanguage();
 
   return (
     <View style={styles.quickShortcutsRow}>
@@ -33,16 +35,14 @@ export const QuickShortcutsBar = memo(function QuickShortcutsBar({
           const label = formatShortcutLabel(amount, currencySymbol);
           return (
             <Pressable
-              accessibilityLabel={`Add ${label}`}
+              accessibilityLabel={`${language === 'id' ? 'Tambah' : 'Add'} ${label}`}
               accessibilityRole="button"
               key={amount}
               onPress={() => onAddIncrement(amount)}
               style={({ pressed }) => [
                 styles.shortcutChip,
                 {
-                  backgroundColor: isDark
-                    ? colors.surfaceSecondary
-                    : '#F8FAFC',
+                  backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
                   borderColor: isDark ? colors.border : '#E2E8F0',
                 },
                 pressed && styles.shortcutChipPressed,
@@ -60,7 +60,9 @@ export const QuickShortcutsBar = memo(function QuickShortcutsBar({
           );
         })}
         <Pressable
-          accessibilityLabel="Reset amount"
+          accessibilityLabel={
+            language === 'id' ? 'Atur ulang nominal' : 'Reset amount'
+          }
           accessibilityRole="button"
           onPress={onReset}
           style={({ pressed }) => [
@@ -79,7 +81,7 @@ export const QuickShortcutsBar = memo(function QuickShortcutsBar({
               { color: colors.textSecondary },
             ]}
           >
-            ⌫ Reset
+            ⌫ {language === 'id' ? 'Ulangi' : 'Reset'}
           </Text>
         </Pressable>
       </ScrollView>
@@ -102,6 +104,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
     justifyContent: 'center',
+    minHeight: 44,
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: spacing.xs + 2,
   },

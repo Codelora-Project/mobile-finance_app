@@ -12,6 +12,7 @@ import {
 import type { Category } from '@/features/categories/category-repository';
 import type { SelectedReference } from '@/features/transactions/hooks/use-manual-transaction-view-model';
 import type { TranslationSchema } from '@/lib/i18n/translations';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -61,6 +62,7 @@ export const ManualTransferSection = memo(function ManualTransferSection({
   onChangeFeeNote,
 }: ManualTransferSectionProps) {
   const { colors, isDark } = useTheme();
+  const { language } = useLanguage();
 
   return (
     <View style={styles.container}>
@@ -86,9 +88,7 @@ export const ManualTransferSection = memo(function ManualTransferSection({
             style={({ pressed }) => [
               styles.walletPickerBtn,
               {
-                backgroundColor: isDark
-                  ? colors.surfaceSecondary
-                  : '#F8FAFC',
+                backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
                 borderColor: errorSource ? colors.destructive : colors.border,
               },
               pressed ? { opacity: 0.75 } : null,
@@ -101,8 +101,8 @@ export const ManualTransferSection = memo(function ManualTransferSection({
                   backgroundColor: sourceWallet
                     ? 'rgba(37, 99, 235, 0.15)'
                     : isDark
-                    ? '#334155'
-                    : '#E2E8F0',
+                      ? '#334155'
+                      : '#E2E8F0',
                 },
               ]}
             >
@@ -120,7 +120,9 @@ export const ManualTransferSection = memo(function ManualTransferSection({
               ]}
             >
               {sourceWallet?.name ||
-                (t.transactions.transferFrom ? t.transactions.transferFrom : 'Pilih dompet asal')}
+                (t.transactions.transferFrom
+                  ? t.transactions.transferFrom
+                  : 'Pilih dompet asal')}
             </Text>
             <MaterialCommunityIcons
               color={colors.textMuted}
@@ -137,11 +139,13 @@ export const ManualTransferSection = memo(function ManualTransferSection({
 
         {/* Swap / Flow Indicator */}
         <View style={styles.flowConnector}>
-          <View
-            style={[styles.flowLine, { backgroundColor: colors.border }]}
-          />
+          <View style={[styles.flowLine, { backgroundColor: colors.border }]} />
           <Pressable
-            accessibilityLabel="Tukar dompet pengirim dan penerima"
+            accessibilityLabel={
+              language === 'id'
+                ? 'Tukar dompet pengirim dan penerima'
+                : 'Swap source and destination wallets'
+            }
             accessibilityRole="button"
             onPress={onSwapWallets}
             style={({ pressed }) => [
@@ -159,9 +163,7 @@ export const ManualTransferSection = memo(function ManualTransferSection({
               size={20}
             />
           </Pressable>
-          <View
-            style={[styles.flowLine, { backgroundColor: colors.border }]}
-          />
+          <View style={[styles.flowLine, { backgroundColor: colors.border }]} />
         </View>
 
         {/* Destination Wallet (Ke) */}
@@ -176,10 +178,10 @@ export const ManualTransferSection = memo(function ManualTransferSection({
             style={({ pressed }) => [
               styles.walletPickerBtn,
               {
-                backgroundColor: isDark
-                  ? colors.surfaceSecondary
-                  : '#F8FAFC',
-                borderColor: errorDestination ? colors.destructive : colors.border,
+                backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+                borderColor: errorDestination
+                  ? colors.destructive
+                  : colors.border,
               },
               pressed ? { opacity: 0.75 } : null,
             ]}
@@ -191,8 +193,8 @@ export const ManualTransferSection = memo(function ManualTransferSection({
                   backgroundColor: destinationWallet
                     ? 'rgba(16, 185, 129, 0.15)'
                     : isDark
-                    ? '#334155'
-                    : '#E2E8F0',
+                      ? '#334155'
+                      : '#E2E8F0',
                 },
               ]}
             >
@@ -206,11 +208,17 @@ export const ManualTransferSection = memo(function ManualTransferSection({
               numberOfLines={1}
               style={[
                 styles.walletPickerText,
-                { color: destinationWallet ? colors.textPrimary : colors.textMuted },
+                {
+                  color: destinationWallet
+                    ? colors.textPrimary
+                    : colors.textMuted,
+                },
               ]}
             >
               {destinationWallet?.name ||
-                (t.transactions.transferTo ? t.transactions.transferTo : 'Pilih dompet tujuan')}
+                (t.transactions.transferTo
+                  ? t.transactions.transferTo
+                  : 'Pilih dompet tujuan')}
             </Text>
             <MaterialCommunityIcons
               color={colors.textMuted}
@@ -244,8 +252,8 @@ export const ManualTransferSection = memo(function ManualTransferSection({
                 backgroundColor: hasTransferFee
                   ? 'rgba(239, 68, 68, 0.15)'
                   : isDark
-                  ? '#334155'
-                  : '#E2E8F0',
+                    ? '#334155'
+                    : '#E2E8F0',
               },
             ]}
           >
@@ -256,7 +264,9 @@ export const ManualTransferSection = memo(function ManualTransferSection({
             />
           </View>
           <View style={styles.feeToggleTitles}>
-            <Text style={[styles.feeToggleTitle, { color: colors.textPrimary }]}>
+            <Text
+              style={[styles.feeToggleTitle, { color: colors.textPrimary }]}
+            >
               {t.transactions.transferFeeToggle}
             </Text>
             <Text
@@ -281,9 +291,7 @@ export const ManualTransferSection = memo(function ManualTransferSection({
               styles.feeDetailsContainer,
               {
                 borderTopColor: colors.border,
-                backgroundColor: isDark
-                  ? colors.surfaceSecondary
-                  : '#F8FAFC',
+                backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
               },
             ]}
           >
@@ -296,7 +304,9 @@ export const ManualTransferSection = memo(function ManualTransferSection({
                 styles.feeInputRow,
                 {
                   backgroundColor: colors.surface,
-                  borderColor: errorFeeAmount ? colors.destructive : colors.border,
+                  borderColor: errorFeeAmount
+                    ? colors.destructive
+                    : colors.border,
                 },
               ]}
             >
@@ -354,7 +364,11 @@ export const ManualTransferSection = memo(function ManualTransferSection({
                     ]}
                   >
                     + {currencySymbol} {Number(fee).toLocaleString()}
-                    {fee === '2500' ? ' (BI-FAST)' : fee === '6500' ? ' (Online)' : ''}
+                    {fee === '2500'
+                      ? ' (BI-FAST)'
+                      : fee === '6500'
+                        ? ' (Online)'
+                        : ''}
                   </Text>
                 </Pressable>
               ))}
@@ -362,8 +376,7 @@ export const ManualTransferSection = memo(function ManualTransferSection({
 
             {/* Fee Category Selector */}
             <View style={styles.feeCategorySection}>
-              <Text
-                style={[styles.feeInputLabel, { color: colors.textMuted }]}>
+              <Text style={[styles.feeInputLabel, { color: colors.textMuted }]}>
                 {t.transactions.transferFeeCategoryLabel}
               </Text>
               <Pressable
@@ -386,7 +399,10 @@ export const ManualTransferSection = memo(function ManualTransferSection({
                 />
                 <Text
                   numberOfLines={1}
-                  style={[styles.feeCategoryText, { color: colors.textPrimary }]}
+                  style={[
+                    styles.feeCategoryText,
+                    { color: colors.textPrimary },
+                  ]}
                 >
                   {transferFeeCategory?.name || 'Tagihan & Admin'}
                 </Text>
@@ -565,9 +581,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: radius.pill,
     borderWidth: 1,
-    height: 32,
+    height: 44,
     justifyContent: 'center',
-    width: 32,
+    width: 44,
   },
   walletField: {
     flex: 1,

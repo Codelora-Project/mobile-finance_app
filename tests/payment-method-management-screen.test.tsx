@@ -1,9 +1,15 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react-native';
 import React from 'react';
 import { Alert } from 'react-native';
 
-import { PaymentMethodManagementScreen } from '@/features/payment-methods/payment-method-management-screen';
+import { WalletsScreen } from '@/features/wallets';
 import { CurrencyProvider } from '@/lib/currency/currency-context';
 import { LanguageProvider } from '@/lib/i18n/language-context';
 import { ThemeProvider } from '@/lib/theme/theme-context';
@@ -134,7 +140,7 @@ describe('Wallet & Account Management Screen', () => {
       <ThemeProvider>
         <LanguageProvider initialLanguage={language}>
           <CurrencyProvider initialCurrency="IDR">
-            <PaymentMethodManagementScreen />
+            <WalletsScreen />
           </CurrencyProvider>
         </LanguageProvider>
       </ThemeProvider>,
@@ -147,7 +153,9 @@ describe('Wallet & Account Management Screen', () => {
     await waitFor(() =>
       expect(screen.getAllByText('Bank BCA').length).toBeGreaterThanOrEqual(1),
     );
-    expect(screen.getAllByText('Dompet & Rekening').length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByText('Dompet & Rekening').length,
+    ).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Dompet Tunai')).toBeOnTheScreen();
     expect(screen.getByText('OVO Lama')).toBeOnTheScreen();
   });

@@ -3,6 +3,7 @@ import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/lib/theme/theme-context';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
@@ -22,6 +23,7 @@ export const ManualTransactionHeader = memo(function ManualTransactionHeader({
   title,
 }: ManualTransactionHeaderProps) {
   const { colors } = useTheme();
+  const { language } = useLanguage();
 
   return (
     <View
@@ -34,7 +36,7 @@ export const ManualTransactionHeader = memo(function ManualTransactionHeader({
       ]}
     >
       <Pressable
-        accessibilityLabel="Close modal"
+        accessibilityLabel={language === 'id' ? 'Tutup formulir' : 'Close form'}
         accessibilityRole="button"
         hitSlop={12}
         onPress={onClose}
@@ -57,7 +59,9 @@ export const ManualTransactionHeader = memo(function ManualTransactionHeader({
 
       {isEditMode && onDelete ? (
         <Pressable
-          accessibilityLabel="Delete transaction"
+          accessibilityLabel={
+            language === 'id' ? 'Hapus transaksi' : 'Delete transaction'
+          }
           accessibilityRole="button"
           disabled={deleting}
           hitSlop={12}

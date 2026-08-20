@@ -1,8 +1,10 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -11,6 +13,7 @@ import {
 } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
+import { AppButton } from '@/components/ui/app-button';
 import {
   getAnalyticsData,
   type AnalyticsData,
@@ -40,7 +43,7 @@ import { typography } from '@/theme/typography';
 export function AnalyticsScreen() {
   const database = useSQLiteContext();
   const router = useRouter();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const { colors } = useTheme();
   const { currencyCode } = useCurrency();
   const { handleScroll } = useTabBarVisibility();
@@ -50,6 +53,8 @@ export function AnalyticsScreen() {
   const [budgets, setBudgets] = useState<readonly CategoryBudget[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
 
   // Set Budget Modal State
   const [selectedBudgetForEdit, setSelectedBudgetForEdit] =
@@ -76,8 +81,17 @@ export function AnalyticsScreen() {
         if (requestId.current === currentRequest) {
           setAnalytics(nextAnalytics);
           setBudgets(nextBudgets);
+          setError(null);
+          setLastUpdatedAt(Date.now());
         }
       } catch (err) {
+        if (requestId.current === currentRequest) {
+          setError(
+            language === 'id'
+              ? 'Analitik belum dapat dimuat. Periksa data lalu coba lagi.'
+              : 'Analytics could not be loaded. Check your data and try again.',
+          );
+        }
         if (__DEV__) {
           console.warn('Failed to load analytics data', err);
         }
@@ -88,7 +102,7 @@ export function AnalyticsScreen() {
         }
       }
     },
-    [database],
+    [database, language],
   );
 
   useFocusEffect(
@@ -134,6 +148,32 @@ export function AnalyticsScreen() {
     );
   }
 
+  if (error && !analytics) {
+    return (
+      <Screen>
+        <AnalyticsHeader
+          backLabel={t.common.back}
+          onBack={() => router.back()}
+          title={t.analytics.title}
+        />
+        <View style={styles.centeredState}>
+          <MaterialCommunityIcons
+            color={colors.destructive}
+            name="chart-box-outline"
+            size={42}
+          />
+          <Text style={[styles.errorTitle, { color: colors.textPrimary }]}>
+            {error}
+          </Text>
+          <AppButton
+            label={t.common.tryAgain}
+            onPress={() => void loadData()}
+          />
+        </View>
+      </Screen>
+    );
+  }
+
   return (
     <Screen>
       {/* 1. Top Navigation Header */}
@@ -142,6 +182,32 @@ export function AnalyticsScreen() {
         onBack={() => router.back()}
         title={t.analytics.title}
       />
+
+      {error ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => void loadData('refresh')}
+          style={[
+            styles.errorBanner,
+            {
+              backgroundColor: colors.expenseBackground,
+              borderColor: colors.destructive,
+            },
+          ]}
+        >
+          <Text style={[styles.errorBannerText, { color: colors.destructive }]}>
+            {error} {t.common.tryAgain}
+          </Text>
+        </Pressable>
+      ) : lastUpdatedAt ? (
+        <Text style={[styles.updatedText, { color: colors.textMuted }]}>
+          {language === 'id' ? 'Diperbarui' : 'Updated'}{' '}
+          {new Date(lastUpdatedAt).toLocaleTimeString(
+            language === 'id' ? 'id-ID' : 'en-US',
+            { hour: '2-digit', minute: '2-digit' },
+          )}
+        </Text>
+      ) : null}
 
       {/* 2. Segmented Tab Pills */}
       <AnalyticsTabPills
@@ -216,6 +282,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: spacing.xl,
   },
+  errorBanner: {
+    borderRadius: 10,
+    borderWidth: 1,
+    marginHorizontal: spacing.md,
+    padding: spacing.sm,
+  },
+  errorBannerText: { ...typography.metadata, fontWeight: '700' },
+  errorTitle: { ...typography.body, maxWidth: 320, textAlign: 'center' },
   content: {
     gap: spacing.md,
     paddingBottom: spacing.xxl + 84,
@@ -225,5 +299,10 @@ const styles = StyleSheet.create({
   stateText: {
     ...typography.metadata,
     fontSize: 13,
+  },
+  updatedText: {
+    ...typography.metadata,
+    paddingHorizontal: spacing.md,
+    textAlign: 'right',
   },
 });

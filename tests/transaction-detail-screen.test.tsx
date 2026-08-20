@@ -6,7 +6,6 @@ import {
   waitFor,
 } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { Alert } from 'react-native';
 
 import { TransactionDetailScreen } from '@/features/transactions/transaction-detail-screen';
 
@@ -17,6 +16,8 @@ const mockRouter = {
 };
 const mockDatabase = {};
 const mockDeleteTransaction = jest.fn<(...args: unknown[]) => Promise<void>>();
+const mockDeleteTransactionForUndo =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockGetTransaction = jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockGetTransactionClaimMembership =
   jest.fn<(...args: unknown[]) => Promise<unknown>>();
@@ -55,6 +56,8 @@ jest.mock('@/features/receipts/receipt-storage', () => ({
 
 jest.mock('@/features/transactions/transaction-repository', () => ({
   deleteTransaction: (...args: unknown[]) => mockDeleteTransaction(...args),
+  deleteTransactionForUndo: (...args: unknown[]) =>
+    mockDeleteTransactionForUndo(...args),
   getTransaction: (...args: unknown[]) => mockGetTransaction(...args),
   getTransactionClaimMembership: (...args: unknown[]) =>
     mockGetTransactionClaimMembership(...args),
@@ -90,6 +93,10 @@ describe('transaction detail screen', () => {
     mockGetTransaction.mockResolvedValue(savedTransaction);
     mockGetTransactionClaimMembership.mockResolvedValue(null);
     mockDeleteTransaction.mockResolvedValue(undefined);
+    mockDeleteTransactionForUndo.mockResolvedValue({
+      claimId: null,
+      input: {},
+    });
     mockIsSharingAvailable.mockResolvedValue(true);
     mockShareAsync.mockResolvedValue(undefined);
   });
@@ -120,9 +127,7 @@ describe('transaction detail screen', () => {
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/42/receipt');
   });
 
-  it('confirms with Alert dialog before deleting transaction and returns', async () => {
-    const alertSpy = jest.spyOn(Alert, 'alert');
-
+  it('deletes immediately and routes to history with undo data', async () => {
     await render(<TransactionDetailScreen transactionId={42} />);
     await screen.findAllByText('Coffee Shop');
 
@@ -131,25 +136,17 @@ describe('transaction detail screen', () => {
     });
     await fireEvent.press(deleteButtons[0]!);
 
-    expect(alertSpy).toHaveBeenCalledWith(
-      'Hapus Transaksi?',
-      expect.stringContaining('Transaksi ini akan dihapus'),
-      expect.any(Array),
-    );
-
-    const buttons = alertSpy.mock.calls[0]![2] as Array<{
-      text: string;
-      onPress?: () => void;
-    }>;
-    const confirmBtn = buttons.find((b) => b.text === 'Hapus');
-    await act(async () => {
-      confirmBtn?.onPress?.();
-    });
-
     await waitFor(() =>
-      expect(mockDeleteTransaction).toHaveBeenCalledWith(expect.anything(), 42),
+      expect(mockDeleteTransactionForUndo).toHaveBeenCalledWith(
+        expect.anything(),
+        42,
+      ),
     );
-    await waitFor(() => expect(mockRouter.back).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(mockRouter.dismissTo).toHaveBeenCalledWith(
+        expect.objectContaining({ pathname: '/transactions' }),
+      ),
+    );
   });
 
   it('locks edit and delete while the transaction is in a submitted claim', async () => {

@@ -244,6 +244,46 @@ describe('home screen', () => {
     expect(screen.getByText('No transactions yet')).toBeOnTheScreen();
   });
 
+  it('renders wallet transfers as neutral movements instead of income categories', async () => {
+    mockGetHomeSummary.mockResolvedValue({
+      ...summary,
+      categoryTotals: [],
+      recentTransactions: [
+        {
+          amountMinor: 520_000,
+          categoryName: 'Food & Drink',
+          counterparty: null,
+          currencyCode: 'IDR',
+          hasReceipt: false,
+          id: 99,
+          isReimbursable: false,
+          localDate: '2026-08-15',
+          occurredAt: 1_755_238_800_000,
+          paymentMethodId: 1,
+          paymentMethodName: 'Bank BCA',
+          timezoneOffsetMinutes: 420,
+          transferFeeMinor: 0,
+          transferToPaymentMethodId: 2,
+          transferToPaymentMethodName: 'GoPay',
+          type: 'transfer',
+        },
+      ],
+    });
+
+    await render(
+      <LanguageProvider initialLanguage="en">
+        <HomeScreen />
+      </LanguageProvider>,
+    );
+
+    expect(await screen.findByText('Bank BCA → GoPay')).toBeOnTheScreen();
+    expect(screen.getByText('Transfer')).toBeOnTheScreen();
+    expect(
+      screen.getByText(`⇄ ${formatMoney(520_000, 'IDR')}`),
+    ).toBeOnTheScreen();
+    expect(screen.getByText(formatMoney(0, 'IDR'))).toBeOnTheScreen();
+  });
+
   it('offers a retry when the summary cannot be loaded', async () => {
     mockGetHomeSummary
       .mockRejectedValueOnce(new Error('boom'))

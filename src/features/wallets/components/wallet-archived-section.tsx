@@ -98,10 +98,7 @@ export const WalletArchivedSection = memo(function WalletArchivedSection({
                 size={15}
               />
               <Text
-                style={[
-                  styles.unarchiveBtnText,
-                  { color: colors.primary },
-                ]}
+                style={[styles.unarchiveBtnText, { color: colors.primary }]}
               >
                 {language === 'id' ? 'Buka Arsip' : 'Unarchive'}
               </Text>
@@ -112,8 +109,6 @@ export const WalletArchivedSection = memo(function WalletArchivedSection({
     </View>
   );
 });
-
-export { WalletArchivedSection as PaymentMethodArchivedSection };
 
 const styles = StyleSheet.create({
   archivedBalance: {

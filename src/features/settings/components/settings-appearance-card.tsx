@@ -10,7 +10,7 @@ import type { Language, TranslationSchema } from '@/lib/i18n/translations';
 import { formatShortcutLabel } from '@/lib/money';
 import type { ThemeSetting } from '@/lib/theme/theme-context';
 import { useTheme } from '@/lib/theme/theme-context';
-import type { BrandTheme } from '@/theme/colors';
+import { BRAND_PRESETS, type BrandTheme } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -58,10 +58,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
   return (
     <View style={styles.sectionGroup}>
       <Text
-        style={[
-          styles.sectionHeaderLabel,
-          { color: colors.textSecondary },
-        ]}
+        style={[styles.sectionHeaderLabel, { color: colors.textSecondary }]}
       >
         {language === 'id'
           ? 'TAMPILAN & PREFERENSI'
@@ -86,7 +83,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                 {
                   backgroundColor: isDark
                     ? colors.surfaceSecondary
-                    : '#EEF2FF',
+                    : colors.primaryLight,
                 },
               ]}
             >
@@ -118,7 +115,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
               {
                 backgroundColor: isDark
                   ? colors.surfaceSecondary
-                  : '#F1F5F9',
+                  : colors.surfaceSecondary,
               },
             ]}
           >
@@ -155,16 +152,14 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                           styles.themeSegmentTabActive,
                           {
                             backgroundColor: colors.surface,
-                            shadowColor: '#000',
+                            shadowColor: colors.shadow,
                           },
                         ]
                       : null,
                   ]}
                 >
                   <MaterialCommunityIcons
-                    color={
-                      isSelected ? colors.primary : colors.textSecondary
-                    }
+                    color={isSelected ? colors.primary : colors.textSecondary}
                     name={item.icon}
                     size={15}
                   />
@@ -188,10 +183,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
         </View>
 
         <View
-          style={[
-            styles.cardInnerDivider,
-            { backgroundColor: colors.border },
-          ]}
+          style={[styles.cardInnerDivider, { backgroundColor: colors.border }]}
         />
 
         {/* 2. Brand Accent Theme Color */}
@@ -203,7 +195,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                 {
                   backgroundColor: isDark
                     ? colors.surfaceSecondary
-                    : '#EEF2FF',
+                    : colors.primaryLight,
                 },
               ]}
             >
@@ -234,12 +226,12 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
           <View style={styles.colorSwatchesGrid}>
             {(
               [
-                { id: 'blue', name: 'Biru Modern', color: '#2563EB' },
-                { id: 'emerald', name: 'Emerald', color: '#059669' },
-                { id: 'indigo', name: 'Indigo', color: '#4F46E5' },
-                { id: 'violet', name: 'Violet', color: '#7C3AED' },
-                { id: 'amber', name: 'Amber', color: '#D97706' },
-                { id: 'slate', name: 'Slate', color: '#0F172A' },
+                { id: 'blue', name: 'Biru Modern' },
+                { id: 'emerald', name: 'Emerald' },
+                { id: 'indigo', name: 'Indigo' },
+                { id: 'violet', name: 'Violet' },
+                { id: 'amber', name: 'Amber' },
+                { id: 'slate', name: 'Slate' },
               ] as const
             ).map((swatch) => {
               const isSelected = brandTheme === swatch.id;
@@ -255,13 +247,13 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                       backgroundColor: isSelected
                         ? isDark
                           ? colors.surfaceSecondary
-                          : '#F8FAFC'
+                          : colors.background
                         : 'transparent',
                       borderColor: isSelected
-                        ? swatch.color
+                        ? BRAND_PRESETS[swatch.id].primary
                         : isDark
-                        ? colors.border
-                        : '#E2E8F0',
+                          ? colors.border
+                          : colors.border,
                     },
                     isSelected ? styles.colorSwatchBtnActive : null,
                   ]}
@@ -269,12 +261,14 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                   <View
                     style={[
                       styles.colorSwatchCircle,
-                      { backgroundColor: swatch.color },
+                      {
+                        backgroundColor: BRAND_PRESETS[swatch.id].primary,
+                      },
                     ]}
                   >
                     {isSelected ? (
                       <MaterialCommunityIcons
-                        color="#FFFFFF"
+                        color={colors.onPrimary}
                         name="check"
                         size={12}
                       />
@@ -301,10 +295,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
         </View>
 
         <View
-          style={[
-            styles.cardInnerDivider,
-            { backgroundColor: colors.border },
-          ]}
+          style={[styles.cardInnerDivider, { backgroundColor: colors.border }]}
         />
 
         {/* 3. Language Selection */}
@@ -316,12 +307,12 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                 {
                   backgroundColor: isDark
                     ? colors.surfaceSecondary
-                    : '#EFF6FF',
+                    : colors.primaryLight,
                 },
               ]}
             >
               <MaterialCommunityIcons
-                color="#2563EB"
+                color={colors.primary}
                 name="translate"
                 size={18}
               />
@@ -353,7 +344,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                 {
                   backgroundColor: isDark
                     ? colors.surfaceSecondary
-                    : '#F8FAFC',
+                    : colors.background,
                   borderColor: colors.border,
                 },
                 language === 'id'
@@ -373,10 +364,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                   styles.langOptionText,
                   { color: colors.textPrimary },
                   language === 'id'
-                    ? [
-                        styles.langOptionTextActive,
-                        { color: colors.primary },
-                      ]
+                    ? [styles.langOptionTextActive, { color: colors.primary }]
                     : null,
                 ]}
               >
@@ -394,7 +382,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                 {
                   backgroundColor: isDark
                     ? colors.surfaceSecondary
-                    : '#F8FAFC',
+                    : colors.background,
                   borderColor: colors.border,
                 },
                 language === 'en'
@@ -414,10 +402,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                   styles.langOptionText,
                   { color: colors.textPrimary },
                   language === 'en'
-                    ? [
-                        styles.langOptionTextActive,
-                        { color: colors.primary },
-                      ]
+                    ? [styles.langOptionTextActive, { color: colors.primary }]
                     : null,
                 ]}
               >
@@ -428,10 +413,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
         </View>
 
         <View
-          style={[
-            styles.cardInnerDivider,
-            { backgroundColor: colors.border },
-          ]}
+          style={[styles.cardInnerDivider, { backgroundColor: colors.border }]}
         />
 
         {/* 3. Base Currency Selection Row */}
@@ -449,12 +431,12 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
-                      : '#ECFDF5',
+                      : colors.incomeBackground,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
-                  color="#059669"
+                  color={colors.positive}
                   name="cash-multiple"
                   size={18}
                 />
@@ -483,7 +465,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
-                      : '#F8FAFC',
+                      : colors.background,
                     borderColor: colors.border,
                   },
                 ]}
@@ -513,10 +495,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
         </View>
 
         <View
-          style={[
-            styles.cardInnerDivider,
-            { backgroundColor: colors.border },
-          ]}
+          style={[styles.cardInnerDivider, { backgroundColor: colors.border }]}
         />
 
         {/* 4. Quick Amount Shortcuts Row */}
@@ -534,12 +513,12 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
-                      : '#FEF3C7',
+                      : colors.warningBackground,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
-                  color="#D97706"
+                  color={colors.warning}
                   name="flash"
                   size={18}
                 />
@@ -554,7 +533,8 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                 <Text
                   style={[styles.itemSubtitle, { color: colors.textSecondary }]}
                 >
-                  {shortcutPreviewSummary}... ({shortcuts.length} {language === 'id' ? 'tombol' : 'chips'})
+                  {shortcutPreviewSummary}... ({shortcuts.length}{' '}
+                  {language === 'id' ? 'tombol' : 'chips'})
                 </Text>
               </View>
             </View>
@@ -566,16 +546,18 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
-                      : '#FFFBEB',
-                    borderColor: isDark ? colors.border : '#FDE68A',
+                      : colors.warningBackground,
+                    borderColor: isDark ? colors.border : colors.warning,
                   },
                 ]}
               >
-                <Text style={[styles.actionPillText, { color: '#B45309' }]}>
+                <Text
+                  style={[styles.actionPillText, { color: colors.warning }]}
+                >
                   {language === 'id' ? 'Sesuaikan' : 'Customize'}
                 </Text>
                 <MaterialCommunityIcons
-                  color="#B45309"
+                  color={colors.warning}
                   name="chevron-right"
                   size={16}
                 />

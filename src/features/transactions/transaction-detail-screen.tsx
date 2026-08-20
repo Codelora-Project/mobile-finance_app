@@ -4,7 +4,6 @@ import { useSQLiteContext } from 'expo-sqlite';
 import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,7 +22,7 @@ import {
 } from '@/features/transactions/components/detail';
 import { useTransactionShare } from '@/features/transactions/hooks/use-transaction-share';
 import {
-  deleteTransaction,
+  deleteTransactionForUndo,
   getTransaction,
   getTransactionClaimMembership,
   type Transaction,
@@ -94,44 +93,32 @@ export function TransactionDetailScreen({
   );
 
   function confirmDelete() {
-    if (!transaction || deletingRef.current) {
-      return;
-    }
-
-    Alert.alert(
-      language === 'id' ? 'Hapus Transaksi?' : 'Delete Transaction?',
-      language === 'id'
-        ? 'Transaksi ini akan dihapus dari riwayat dan saldo dompet akan otomatis disesuaikan kembali.'
-        : 'This transaction will be removed from your history and wallet balance will be adjusted accordingly.',
-      [
-        {
-          style: 'cancel',
-          text: language === 'id' ? 'Batal' : 'Cancel',
-        },
-        {
-          onPress: () => {
-            deletingRef.current = true;
-            setDeleting(true);
-            deleteTransaction(database, transactionId)
-              .then(() => {
-                router.back();
-              })
-              .catch((deleteError) => {
-                const message = isCodedError(deleteError)
-                  ? deleteError.message
-                  : mapError(deleteError, 'DATABASE_WRITE_FAILED').message;
-                setError(message);
-              })
-              .finally(() => {
-                deletingRef.current = false;
-                setDeleting(false);
-              });
+    if (!transaction || deletingRef.current) return;
+    deletingRef.current = true;
+    setDeleting(true);
+    deleteTransactionForUndo(database, transactionId)
+      .then((snapshot) => {
+        router.dismissTo({
+          params: {
+            feedback:
+              language === 'id'
+                ? 'Transaksi telah dihapus'
+                : 'Transaction deleted',
+            undoPayload: JSON.stringify(snapshot),
           },
-          style: 'destructive',
-          text: language === 'id' ? 'Hapus' : 'Delete',
-        },
-      ],
-    );
+          pathname: '/transactions',
+        });
+      })
+      .catch((deleteError) => {
+        const message = isCodedError(deleteError)
+          ? deleteError.message
+          : mapError(deleteError, 'DATABASE_WRITE_FAILED').message;
+        setError(message);
+      })
+      .finally(() => {
+        deletingRef.current = false;
+        setDeleting(false);
+      });
   }
 
   function handleCopyDetails() {
@@ -265,11 +252,7 @@ export function TransactionDetailScreen({
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* 2. Hero Visual Card */}
-        <DetailHeroCard
-          language={language}
-          t={t}
-          transaction={transaction}
-        />
+        <DetailHeroCard language={language} t={t} transaction={transaction} />
 
         {/* 3. Transfer Direction Flow (if transfer) */}
         {isTransfer ? (
@@ -353,8 +336,8 @@ export function TransactionDetailScreen({
                   transaction.type === 'income'
                     ? t.transactions.notApplicable
                     : transaction.isReimbursable
-                    ? t.transactions.reimbursableBadge
-                    : t.transactions.notReimbursable
+                      ? t.transactions.reimbursableBadge
+                      : t.transactions.notReimbursable
                 }
               />
             </>

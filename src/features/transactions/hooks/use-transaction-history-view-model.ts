@@ -9,11 +9,12 @@ import {
   shareTransactionCsv,
 } from '@/features/transactions/transaction-export-service';
 import {
-  deleteTransaction,
+  deleteTransactionForUndo,
   listTransactions,
   type TransactionFilters,
   type TransactionListItem,
 } from '@/features/transactions/transaction-repository';
+import { useUndoTransaction } from '@/features/transactions/hooks/use-undo-transaction';
 import { useCurrency } from '@/lib/currency/currency-context';
 import { formatGroupDate } from '@/lib/dates';
 import { mapError } from '@/lib/errors';
@@ -48,9 +49,9 @@ function buildDateGroups(
   return sortedDates.map((date) => {
     const dayTransactions = grouped[date] ?? [];
     const totalNetMinor = dayTransactions.reduce((acc, curr) => {
-      return curr.type === 'income'
-        ? acc + curr.amountMinor
-        : acc - curr.amountMinor;
+      if (curr.type === 'income') return acc + curr.amountMinor;
+      if (curr.type === 'expense') return acc - curr.amountMinor;
+      return acc;
     }, 0);
 
     return {
@@ -149,9 +150,7 @@ export function useTransactionHistoryViewModel() {
         dateTo: endStr,
         primaryLabel: `${startMonth} – ${endMonth}`,
         secondaryLabel:
-          language === 'id'
-            ? 'Ketuk untuk Semua Waktu'
-            : 'Tap for All Time',
+          language === 'id' ? 'Ketuk untuk Semua Waktu' : 'Tap for All Time',
       };
     }
 
@@ -294,6 +293,11 @@ export function useTransactionHistoryViewModel() {
     [database],
   );
 
+  const undo = useUndoTransaction({
+    onSuccess: () =>
+      void loadTransactions(effectiveFilters, debouncedSearch, 0, false),
+  });
+
   useFocusEffect(
     useCallback(() => {
       void loadTransactions(effectiveFilters, debouncedSearch, 0, false);
@@ -365,39 +369,22 @@ export function useTransactionHistoryViewModel() {
   );
 
   const handleDeleteTransaction = useCallback(
-    (tx: TransactionListItem) => {
-      Alert.alert(
-        language === 'id' ? 'Hapus Transaksi' : 'Delete Transaction',
-        language === 'id'
-          ? `Hapus transaksi "${tx.counterparty || tx.categoryName}"? Saldo dompet akan disesuaikan kembali.`
-          : `Delete transaction "${tx.counterparty || tx.categoryName}"? Wallet balance will be adjusted.`,
-        [
-          {
-            text: language === 'id' ? 'Batal' : 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: language === 'id' ? 'Hapus' : 'Delete',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                await deleteTransaction(database, tx.id);
-                await loadTransactions(
-                  effectiveFilters,
-                  debouncedSearch,
-                  0,
-                  false,
-                );
-              } catch (delErr) {
-                const mapped = mapError(delErr, 'DATABASE_WRITE_FAILED');
-                Alert.alert('Error', mapped.message);
-              }
-            },
-          },
-        ],
-      );
+    async (tx: TransactionListItem) => {
+      try {
+        const snapshot = await deleteTransactionForUndo(database, tx.id);
+        setTransactions((current) =>
+          current.filter((item) => item.id !== tx.id),
+        );
+        undo.showDeletedTransactionUndo(
+          snapshot,
+          language === 'id' ? 'Transaksi dihapus' : 'Transaction deleted',
+        );
+      } catch (delErr) {
+        const mapped = mapError(delErr, 'DATABASE_WRITE_FAILED');
+        Alert.alert('Error', mapped.message);
+      }
     },
-    [database, debouncedSearch, effectiveFilters, language, loadTransactions],
+    [database, language, undo],
   );
 
   const handleLongPressTransaction = useCallback(
@@ -445,20 +432,17 @@ export function useTransactionHistoryViewModel() {
     setDebouncedSearch('');
   }, []);
 
-  const handleSelectTypeFilter = useCallback(
-    (type?: 'expense' | 'income') => {
-      setFilters((prev) => {
-        const next = { ...prev };
-        if (!type || prev.type === type) {
-          delete next.type;
-        } else {
-          next.type = type;
-        }
-        return next;
-      });
-    },
-    [],
-  );
+  const handleSelectTypeFilter = useCallback((type?: 'expense' | 'income') => {
+    setFilters((prev) => {
+      const next = { ...prev };
+      if (!type || prev.type === type) {
+        delete next.type;
+      } else {
+        next.type = type;
+      }
+      return next;
+    });
+  }, []);
 
   const handleEndReached = useCallback(() => {
     if (hasMore && !loading && !loadingMore && nextOffset !== null) {
@@ -502,7 +486,7 @@ export function useTransactionHistoryViewModel() {
     let exp = 0;
     for (const t of transactions) {
       if (t.type === 'income') inc += t.amountMinor;
-      else exp += t.amountMinor;
+      else if (t.type === 'expense') exp += t.amountMinor;
     }
     return { totalExpenseMinor: exp, totalIncomeMinor: inc };
   }, [transactions]);
@@ -531,6 +515,8 @@ export function useTransactionHistoryViewModel() {
       setFilterModalVisible,
       setFilters,
       setSearchQuery,
+      undo: undo.handleUndo,
+      dismissUndo: undo.dismissToast,
     },
     state: {
       activeFiltersCount,
@@ -554,6 +540,10 @@ export function useTransactionHistoryViewModel() {
       totalExpenseMinor,
       totalIncomeMinor,
       transactions,
+      undoCanUndo: undo.canUndo,
+      undoIsRunning: undo.isUndoing,
+      undoMessage: undo.toastMessage,
+      undoVisible: undo.toastVisible,
     },
   };
 }

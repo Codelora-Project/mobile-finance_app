@@ -8,8 +8,11 @@ import type {
 import {
   createTransaction,
   deleteTransaction,
+  deleteTransactionForUndo,
+  finalizeDeletedTransactionUndo,
   getTransaction,
   listTransactions,
+  restoreDeletedTransaction,
   TRANSACTION_PAGE_SIZE,
   updateTransaction,
   type SaveTransactionInput,
@@ -19,6 +22,7 @@ import { getTimezoneOffsetMinutes, toLocalDate } from '@/lib/dates';
 const mockCopyReceiptToStorage =
   jest.fn<(sourceImageUri: string, mimeType: string) => Promise<string>>();
 const mockRemoveReceiptFile = jest.fn<(storageKey: string) => void>();
+const mockEnsureSystemCategory = jest.fn<() => Promise<number>>();
 
 jest.mock('@/features/receipts/receipt-storage', () => ({
   copyReceiptToStorage: (sourceImageUri: string, mimeType: string) =>
@@ -28,9 +32,13 @@ jest.mock('@/features/receipts/receipt-storage', () => ({
   removeReceiptFile: (storageKey: string) => mockRemoveReceiptFile(storageKey),
 }));
 
+jest.mock('@/features/categories/system-category-repository', () => ({
+  ensureSystemCategory: () => mockEnsureSystemCategory(),
+}));
+
 type StoredTransaction = {
   id: number;
-  type: 'expense' | 'income';
+  type: 'expense' | 'income' | 'transfer';
   amountMinor: number;
   currencyCode: string;
   categoryId: number;
@@ -59,7 +67,10 @@ class TransactionDatabase {
     { id: 1, name: 'Food & Drink', type: 'expense' as const },
     { id: 2, name: 'Salary', type: 'income' as const },
   ];
-  readonly paymentMethods = [{ id: 10, name: 'Cash' }];
+  readonly paymentMethods = [
+    { id: 10, name: 'Cash' },
+    { id: 11, name: 'GoPay' },
+  ];
   readonly transactions: StoredTransaction[] = [];
   readonly receipts: StoredReceipt[] = [];
   readonly claims: Array<{
@@ -219,7 +230,7 @@ class TransactionDatabase {
         occurredAt: Number(params[11]),
         paymentMethodId: params[4] == null ? null : Number(params[4]),
         timezoneOffsetMinutes: Number(params[12]),
-        type: params[0] as 'expense' | 'income',
+        type: params[0] as StoredTransaction['type'],
         updatedAt: Number(params[16]),
       });
       return { changes: 1, lastInsertRowId: id };
@@ -254,7 +265,7 @@ class TransactionDatabase {
           occurredAt: Number(params[11]),
           paymentMethodId: params[4] == null ? null : Number(params[4]),
           timezoneOffsetMinutes: Number(params[12]),
-          type: params[0] as 'expense' | 'income',
+          type: params[0] as StoredTransaction['type'],
           updatedAt: Number(params[15]),
         });
       }
@@ -372,10 +383,27 @@ function validInput(
 describe('manual transaction repository', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockEnsureSystemCategory.mockResolvedValue(77);
     mockCopyReceiptToStorage.mockImplementation(async (sourceImageUri) => {
       const fileName = sourceImageUri.split('/').at(-1) ?? 'receipt.jpg';
       return `receipts/${fileName}`;
     });
+  });
+
+  it('forces manual transfers to use the wallet-transfer system category', async () => {
+    const database = new TransactionDatabase();
+    const input = validInput({
+      categoryId: 1,
+      isReimbursable: false,
+      receipt: null,
+      transferToPaymentMethodId: 11,
+      type: 'transfer',
+    });
+
+    await createTransaction(database.asSQLiteDatabase(), input);
+
+    expect(mockEnsureSystemCategory).toHaveBeenCalledTimes(1);
+    expect(database.transactions[0]?.categoryId).toBe(77);
   });
 
   it('saves an expense atomically with a manual not_processed receipt', async () => {
@@ -602,6 +630,49 @@ describe('manual transaction repository', () => {
 
     expect(database.receipts).toHaveLength(0);
     expect(database.transactions).toHaveLength(0);
+    expect(mockRemoveReceiptFile).toHaveBeenCalledWith('receipts/receipt.jpg');
+  });
+
+  it('restores an undo snapshot without copying or losing its receipt', async () => {
+    const database = new TransactionDatabase();
+    const created = await createTransaction(
+      database.asSQLiteDatabase(),
+      validInput(),
+    );
+    mockRemoveReceiptFile.mockClear();
+    mockCopyReceiptToStorage.mockClear();
+
+    const snapshot = await deleteTransactionForUndo(
+      database.asSQLiteDatabase(),
+      created.id,
+    );
+
+    expect(database.transactions).toHaveLength(0);
+    expect(mockRemoveReceiptFile).not.toHaveBeenCalled();
+
+    const restored = await restoreDeletedTransaction(
+      database.asSQLiteDatabase(),
+      snapshot,
+    );
+    expect(restored.receipt?.storageKey).toBe('receipts/receipt.jpg');
+    expect(mockCopyReceiptToStorage).not.toHaveBeenCalled();
+    expect(database.transactions).toHaveLength(1);
+  });
+
+  it('cleans a preserved receipt when the undo window expires', async () => {
+    const database = new TransactionDatabase();
+    const created = await createTransaction(
+      database.asSQLiteDatabase(),
+      validInput(),
+    );
+    mockRemoveReceiptFile.mockClear();
+    const snapshot = await deleteTransactionForUndo(
+      database.asSQLiteDatabase(),
+      created.id,
+    );
+
+    finalizeDeletedTransactionUndo(snapshot);
+
     expect(mockRemoveReceiptFile).toHaveBeenCalledWith('receipts/receipt.jpg');
   });
 

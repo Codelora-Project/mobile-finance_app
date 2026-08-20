@@ -21,10 +21,11 @@ export const UndoToastBanner = memo(function UndoToastBanner({
   canUndo,
   isUndoing,
   message,
+  onClose,
   onUndo,
   visible,
 }: UndoToastBannerProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { language } = useLanguage();
 
   if (!visible || !message) return null;
@@ -34,7 +35,7 @@ export const UndoToastBanner = memo(function UndoToastBanner({
       style={[
         styles.floatingUndoToast,
         {
-          backgroundColor: isDark ? colors.surface : '#FFFFFF',
+          backgroundColor: colors.surface,
           borderColor: colors.border,
           shadowColor: colors.textPrimary,
         },
@@ -45,12 +46,12 @@ export const UndoToastBanner = memo(function UndoToastBanner({
           style={[
             styles.successIconBadge,
             {
-              backgroundColor: isDark ? '#064E3B' : '#DCFCE7',
+              backgroundColor: colors.incomeBackground,
             },
           ]}
         >
           <MaterialCommunityIcons
-            color={isDark ? '#34D399' : '#16A34A'}
+            color={colors.positive}
             name="check"
             size={14}
           />
@@ -66,7 +67,9 @@ export const UndoToastBanner = memo(function UndoToastBanner({
 
       {canUndo ? (
         <Pressable
-          accessibilityLabel="Undo action"
+          accessibilityLabel={
+            language === 'id' ? 'Batalkan tindakan' : 'Undo action'
+          }
           accessibilityRole="button"
           disabled={isUndoing}
           hitSlop={8}
@@ -74,7 +77,7 @@ export const UndoToastBanner = memo(function UndoToastBanner({
           style={({ pressed }) => [
             styles.undoButton,
             {
-              backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+              backgroundColor: colors.surfaceSecondary,
               borderColor: colors.border,
             },
             pressed ? { opacity: 0.75 } : null,
@@ -90,6 +93,21 @@ export const UndoToastBanner = memo(function UndoToastBanner({
           </Text>
         </Pressable>
       ) : null}
+      <Pressable
+        accessibilityLabel={
+          language === 'id' ? 'Tutup notifikasi' : 'Dismiss notification'
+        }
+        accessibilityRole="button"
+        hitSlop={10}
+        onPress={onClose}
+        style={styles.closeButton}
+      >
+        <MaterialCommunityIcons
+          color={colors.textMuted}
+          name="close"
+          size={16}
+        />
+      </Pressable>
     </View>
   );
 });
@@ -113,6 +131,12 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     top: spacing.md + 4,
     zIndex: 999,
+  },
+  closeButton: {
+    alignItems: 'center',
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
   },
   successIconBadge: {
     alignItems: 'center',

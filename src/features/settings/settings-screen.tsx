@@ -33,9 +33,11 @@ import {
   getSettingsOverview,
   getStorageStats,
   resetApplicationData,
+  SUPPORTED_CURRENCIES,
   setQuickShortcutsSetting,
   type SettingsOverview,
   type StorageStats,
+  type SupportedCurrencyCode,
 } from '@/features/settings/settings-repository';
 import { useCurrency } from '@/lib/currency/currency-context';
 import { isCodedError, mapError } from '@/lib/errors';
@@ -209,6 +211,44 @@ export function SettingsScreen() {
   const handleNavigateBackup = useCallback(() => {
     router.push('/settings/backup');
   }, [router]);
+
+  const handleSelectCurrency = useCallback(
+    (selected: SupportedCurrencyCode) => {
+      const current = overview?.currencyCode ?? currencyCode;
+      if (selected === current) return;
+      Alert.alert(
+        language === 'id'
+          ? 'Ubah mata uang global?'
+          : 'Change global currency?',
+        language === 'id'
+          ? `Seluruh aplikasi akan menggunakan ${selected}. Nominal transaksi lama tidak dikonversi; hanya kode, simbol, dan format mata uangnya yang berubah.`
+          : `The whole app will use ${selected}. Existing transaction amounts are not converted; only their currency code, symbol, and formatting change.`,
+        [
+          { style: 'cancel', text: language === 'id' ? 'Batal' : 'Cancel' },
+          {
+            onPress: () => {
+              setCurrency(selected);
+              const selectedCurrency = SUPPORTED_CURRENCIES.find(
+                (currency) => currency.code === selected,
+              );
+              setOverview((currentOverview) =>
+                currentOverview
+                  ? {
+                      ...currentOverview,
+                      currencyCode: selected,
+                      currencyName:
+                        selectedCurrency?.name ?? currentOverview.currencyName,
+                    }
+                  : currentOverview,
+              );
+            },
+            text: language === 'id' ? 'Ubah mata uang' : 'Change currency',
+          },
+        ],
+      );
+    },
+    [currencyCode, language, overview?.currencyCode, setCurrency],
+  );
 
   const handleClearCache = useCallback(async () => {
     if (clearingCache) return;
@@ -420,10 +460,7 @@ export function SettingsScreen() {
       {/* Base Currency Picker Modal */}
       <CurrencyPickerModal
         onClose={() => setCurrencyPickerVisible(false)}
-        onSelectCurrency={(selected) => {
-          setCurrency(selected);
-          void loadSettings();
-        }}
+        onSelectCurrency={handleSelectCurrency}
         selectedCode={overview?.currencyCode ?? currencyCode}
         visible={currencyPickerVisible}
       />

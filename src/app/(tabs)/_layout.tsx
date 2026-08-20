@@ -13,7 +13,9 @@ import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 
-type BottomTabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>['tabBar']>>[0];
+type BottomTabBarProps = Parameters<
+  NonNullable<React.ComponentProps<typeof Tabs>['tabBar']>
+>[0];
 
 type TabIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
@@ -31,6 +33,8 @@ function getTabIcon(routeName: string, focused: boolean): TabIconName {
       return focused ? 'briefcase' : 'briefcase-outline';
     case 'goals':
       return focused ? 'bullseye-arrow' : 'bullseye';
+    case 'more':
+      return focused ? 'dots-grid' : 'dots-grid';
     default:
       return 'circle';
   }
@@ -97,8 +101,8 @@ function TabItem({
       </Animated.View>
       <Text
         adjustsFontSizeToFit
-        maxFontSizeMultiplier={1.2}
-        minimumFontScale={0.75}
+        maxFontSizeMultiplier={1.4}
+        minimumFontScale={0.85}
         numberOfLines={1}
         style={[
           styles.tabLabel,
@@ -312,6 +316,12 @@ function MainTabLayoutContent() {
           }}
         />
         <Tabs.Screen
+          name="more"
+          options={{
+            title: t.common.more,
+          }}
+        />
+        <Tabs.Screen
           name="goals"
           options={{
             href: null,
@@ -410,10 +420,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
+    minHeight: 48,
     paddingVertical: 2,
   },
   tabLabel: {
-    fontSize: 10,
+    fontSize: 11,
     marginTop: 2,
     textAlign: 'center',
   },

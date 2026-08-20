@@ -22,6 +22,7 @@ import { ManualReceiptModal } from '@/features/transactions/components/manual-re
 import { ManualTransactionHeader } from '@/features/transactions/components/manual-transaction-header';
 import { ManualTransferSection } from '@/features/transactions/components/manual-transfer-section';
 import { ManualTypeToggle } from '@/features/transactions/components/manual-type-toggle';
+import { TransferReviewModal } from '@/features/transactions/components/transfer-review-modal';
 import {
   useManualTransactionViewModel,
   type ManualTransactionScreenProps,
@@ -66,7 +67,9 @@ export function ManualTransactionScreen({
         ]}
       >
         <Pressable
-          accessibilityLabel="Tutup dialog"
+          accessibilityLabel={
+            state.language === 'id' ? 'Tutup dialog' : 'Close dialog'
+          }
           accessibilityRole="button"
           onPress={actions.handleClose}
           style={StyleSheet.absoluteFill}
@@ -156,17 +159,27 @@ export function ManualTransactionScreen({
               hasTransferFee={state.form.hasTransferFee}
               onChangeFeeAmount={(fee) => {
                 actions.setForm((c) => ({ ...c, transferFeeAmount: fee }));
-                actions.setErrors((c) => ({ ...c, transferFeeAmount: undefined }));
+                actions.setErrors((c) => ({
+                  ...c,
+                  transferFeeAmount: undefined,
+                }));
               }}
               onChangeFeeNote={(feeNote) =>
                 actions.setForm((c) => ({ ...c, transferFeeNote: feeNote }))
               }
-              onOpenDestinationPicker={() => actions.setPicker('transferDestination')}
-              onOpenFeeCategoryPicker={() => actions.setPicker('transferFeeCategory')}
+              onOpenDestinationPicker={() =>
+                actions.setPicker('transferDestination')
+              }
+              onOpenFeeCategoryPicker={() =>
+                actions.setPicker('transferFeeCategory')
+              }
               onOpenSourcePicker={() => actions.setPicker('transferSource')}
               onSetQuickFee={(fee) => {
                 actions.setForm((c) => ({ ...c, transferFeeAmount: fee }));
-                actions.setErrors((c) => ({ ...c, transferFeeAmount: undefined }));
+                actions.setErrors((c) => ({
+                  ...c,
+                  transferFeeAmount: undefined,
+                }));
               }}
               onSwapWallets={actions.handleSwapWallets}
               onToggleTransferFee={actions.handleToggleTransferFee}
@@ -239,16 +252,16 @@ export function ManualTransactionScreen({
                     ? 'Perbarui Transaksi'
                     : 'Update Transaction'
                   : isTransfer
-                  ? state.language === 'id'
-                    ? `Transfer (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                    : `Transfer (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                  : state.form.type === 'income'
-                  ? state.language === 'id'
-                    ? `Simpan Pemasukan (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                    : `Save Income (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                  : state.language === 'id'
-                  ? `Simpan Pengeluaran (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                  : `Save Expense (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                    ? state.language === 'id'
+                      ? `Tinjau Transfer (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                      : `Review Transfer (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                    : state.form.type === 'income'
+                      ? state.language === 'id'
+                        ? `Simpan Pemasukan (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                        : `Save Income (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                      : state.language === 'id'
+                        ? `Simpan Pengeluaran (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                        : `Save Expense (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
               }
               accessibilityRole="button"
               disabled={state.saving}
@@ -260,7 +273,9 @@ export function ManualTransactionScreen({
                   shadowColor: colors.primary,
                 },
                 state.saving ? styles.saveBigButtonDisabled : null,
-                pressed ? { opacity: 0.85, transform: [{ scale: 0.98 }] } : null,
+                pressed
+                  ? { opacity: 0.85, transform: [{ scale: 0.98 }] }
+                  : null,
               ]}
               testID="save-transaction"
             >
@@ -273,16 +288,16 @@ export function ManualTransactionScreen({
                       ? 'Perbarui Transaksi'
                       : 'Update Transaction'
                     : isTransfer
-                    ? state.language === 'id'
-                      ? `Transfer (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                      : `Transfer (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                    : state.form.type === 'income'
-                    ? state.language === 'id'
-                      ? `Simpan Pemasukan (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                      : `Save Income (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                    : state.language === 'id'
-                    ? `Simpan Pengeluaran (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                    : `Save Expense (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`}
+                      ? state.language === 'id'
+                        ? `Tinjau Transfer (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                        : `Review Transfer (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                      : state.form.type === 'income'
+                        ? state.language === 'id'
+                          ? `Simpan Pemasukan (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                          : `Save Income (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                        : state.language === 'id'
+                          ? `Simpan Pengeluaran (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
+                          : `Save Expense (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`}
                 </Text>
               )}
             </Pressable>
@@ -307,15 +322,16 @@ export function ManualTransactionScreen({
             ]}
           >
             <Text
-              style={[
-                styles.actionSheetTitle,
-                { color: colors.textPrimary },
-              ]}
+              style={[styles.actionSheetTitle, { color: colors.textPrimary }]}
             >
               {state.language === 'id' ? 'Pilih Kategori' : 'Select Category'}
             </Text>
             <Pressable
-              accessibilityLabel="Close category picker"
+              accessibilityLabel={
+                state.language === 'id'
+                  ? 'Tutup pemilih kategori'
+                  : 'Close category picker'
+              }
               accessibilityRole="button"
               hitSlop={12}
               onPress={() => actions.setPicker(null)}
@@ -352,17 +368,18 @@ export function ManualTransactionScreen({
             ]}
           >
             <Text
-              style={[
-                styles.actionSheetTitle,
-                { color: colors.textPrimary },
-              ]}
+              style={[styles.actionSheetTitle, { color: colors.textPrimary }]}
             >
               {state.language === 'id'
                 ? 'Pilih Metode Pembayaran'
                 : 'Select Payment Method'}
             </Text>
             <Pressable
-              accessibilityLabel="Close payment method picker"
+              accessibilityLabel={
+                state.language === 'id'
+                  ? 'Tutup pemilih metode pembayaran'
+                  : 'Close payment method picker'
+              }
               accessibilityRole="button"
               hitSlop={12}
               onPress={() => actions.setPicker(null)}
@@ -400,17 +417,18 @@ export function ManualTransactionScreen({
             ]}
           >
             <Text
-              style={[
-                styles.actionSheetTitle,
-                { color: colors.textPrimary },
-              ]}
+              style={[styles.actionSheetTitle, { color: colors.textPrimary }]}
             >
               {state.language === 'id'
                 ? 'Pilih Dompet Pengirim'
                 : 'Select Source Wallet'}
             </Text>
             <Pressable
-              accessibilityLabel="Close source wallet picker"
+              accessibilityLabel={
+                state.language === 'id'
+                  ? 'Tutup pemilih dompet asal'
+                  : 'Close source wallet picker'
+              }
               accessibilityRole="button"
               hitSlop={12}
               onPress={() => actions.setPicker(null)}
@@ -443,17 +461,18 @@ export function ManualTransactionScreen({
             ]}
           >
             <Text
-              style={[
-                styles.actionSheetTitle,
-                { color: colors.textPrimary },
-              ]}
+              style={[styles.actionSheetTitle, { color: colors.textPrimary }]}
             >
               {state.language === 'id'
                 ? 'Pilih Dompet Penerima'
                 : 'Select Destination Wallet'}
             </Text>
             <Pressable
-              accessibilityLabel="Close destination wallet picker"
+              accessibilityLabel={
+                state.language === 'id'
+                  ? 'Tutup pemilih dompet tujuan'
+                  : 'Close destination wallet picker'
+              }
               accessibilityRole="button"
               hitSlop={12}
               onPress={() => actions.setPicker(null)}
@@ -487,17 +506,18 @@ export function ManualTransactionScreen({
             ]}
           >
             <Text
-              style={[
-                styles.actionSheetTitle,
-                { color: colors.textPrimary },
-              ]}
+              style={[styles.actionSheetTitle, { color: colors.textPrimary }]}
             >
               {state.language === 'id'
                 ? 'Kategori Biaya Transfer'
                 : 'Transfer Fee Category'}
             </Text>
             <Pressable
-              accessibilityLabel="Close fee category picker"
+              accessibilityLabel={
+                state.language === 'id'
+                  ? 'Tutup pemilih kategori biaya'
+                  : 'Close fee category picker'
+              }
               accessibilityRole="button"
               hitSlop={12}
               onPress={() => actions.setPicker(null)}
@@ -525,8 +545,21 @@ export function ManualTransactionScreen({
         hasReceipt={Boolean(state.form.receipt)}
         onClose={() => actions.setReceiptMenuVisible(false)}
         onRemoveReceipt={actions.handleRemoveReceipt}
-        onSelectSource={(source) => void actions.handleSelectReceiptSource(source)}
+        onSelectSource={(source) =>
+          void actions.handleSelectReceiptSource(source)
+        }
         visible={state.receiptMenuVisible}
+      />
+
+      <TransferReviewModal
+        currencyCode={state.currencyCode}
+        input={state.pendingTransferInput}
+        language={state.language}
+        onCancel={actions.handleCancelTransferReview}
+        onConfirm={() => void actions.handleConfirmTransfer()}
+        originalTransaction={state.editingTransaction}
+        saving={state.saving}
+        wallets={state.walletsList}
       />
     </View>
   );

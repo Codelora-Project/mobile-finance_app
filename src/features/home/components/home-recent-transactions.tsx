@@ -23,6 +23,7 @@ export type HomeRecentTransactionsProps = {
   groupedTimeline: readonly GroupedTimelineItem[];
   onPressTransaction: (id: number) => void;
   onViewAll: () => void;
+  selectedWalletId?: number | null;
   t: TranslationSchema;
 };
 
@@ -31,6 +32,7 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
   groupedTimeline,
   onPressTransaction,
   onViewAll,
+  selectedWalletId = null,
   t,
 }: HomeRecentTransactionsProps) {
   const { colors, isDark } = useTheme();
@@ -132,8 +134,36 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
                     item.type,
                     isDark,
                   );
+                  const isTransfer = item.type === 'transfer';
                   const title =
-                    item.counterparty?.trim() || item.categoryName;
+                    isTransfer &&
+                    item.paymentMethodName &&
+                    item.transferToPaymentMethodName
+                      ? `${item.paymentMethodName} → ${item.transferToPaymentMethodName}`
+                      : item.counterparty?.trim() ||
+                        (isTransfer
+                          ? t.transactions.transfer
+                          : item.categoryName);
+                  const isIncomingTransfer =
+                    isTransfer &&
+                    selectedWalletId !== null &&
+                    item.transferToPaymentMethodId === selectedWalletId;
+                  const isOutgoingTransfer =
+                    isTransfer &&
+                    selectedWalletId !== null &&
+                    item.paymentMethodId === selectedWalletId;
+                  const amountPrefix =
+                    item.type === 'expense' || isOutgoingTransfer
+                      ? '−'
+                      : item.type === 'income' || isIncomingTransfer
+                        ? '+'
+                        : '⇄ ';
+                  const amountColor =
+                    item.type === 'expense' || isOutgoingTransfer
+                      ? colors.destructive
+                      : item.type === 'income' || isIncomingTransfer
+                        ? colors.positive
+                        : colors.textPrimary;
 
                   return (
                     <Pressable
@@ -183,14 +213,11 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
                             style={[
                               styles.timelineAmount,
                               {
-                                color:
-                                  item.type === 'expense'
-                                    ? colors.destructive
-                                    : colors.positive,
+                                color: amountColor,
                               },
                             ]}
                           >
-                            {item.type === 'expense' ? '−' : '+'}
+                            {amountPrefix}
                             {formatMoney(item.amountMinor, item.currencyCode)}
                           </Text>
                         </View>
@@ -203,7 +230,9 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
                               { color: colors.textSecondary },
                             ]}
                           >
-                            {item.categoryName}
+                            {isTransfer
+                              ? t.transactions.transfer
+                              : item.categoryName}
                           </Text>
                           {item.hasReceipt ? (
                             <View

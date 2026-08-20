@@ -1,10 +1,5 @@
 export type BrandTheme =
-  | 'blue'
-  | 'emerald'
-  | 'indigo'
-  | 'violet'
-  | 'amber'
-  | 'slate';
+  'blue' | 'emerald' | 'indigo' | 'violet' | 'amber' | 'slate';
 
 export type BrandPreset = {
   id: BrandTheme;
@@ -77,6 +72,10 @@ export type ColorPalette = {
   readonly border: string;
   readonly primary: string;
   readonly primaryLight: string;
+  /** Content rendered on top of the primary/accent color. */
+  readonly onPrimary: string;
+  /** Neutral shadow color; use opacity at the component level. */
+  readonly shadow: string;
   readonly positive: string;
   readonly destructive: string;
   readonly warning: string;
@@ -101,10 +100,12 @@ export function getLightPalette(brandTheme: BrandTheme = 'blue'): ColorPalette {
     expenseBackground: '#FEE2E2',
     incomeBackground: '#DCFCE7',
     positive: '#15803D',
+    onPrimary: '#FFFFFF',
     primary: brand.primary,
     primaryLight: brand.primaryLight,
     surface: '#FFFFFF',
     surfaceSecondary: '#F1F5F9',
+    shadow: '#000000',
     textMuted: '#94A3B8',
     textPrimary: '#0F172A',
     textSecondary: '#64748B',
@@ -124,10 +125,12 @@ export function getDarkPalette(brandTheme: BrandTheme = 'blue'): ColorPalette {
     expenseBackground: '#7F1D1D',
     incomeBackground: '#14532D',
     positive: '#22C55E',
+    onPrimary: '#FFFFFF',
     primary: brand.primaryDark,
     primaryLight: brand.primaryLightDark,
     surface: '#1E293B',
     surfaceSecondary: '#334155',
+    shadow: '#000000',
     textMuted: '#64748B',
     textPrimary: '#F8FAFC',
     textSecondary: '#94A3B8',

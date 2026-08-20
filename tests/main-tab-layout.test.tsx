@@ -70,6 +70,7 @@ describe('main tab layout', () => {
     expect(screen.getByText('Transactions')).toBeOnTheScreen();
     expect(screen.getByText('Goals')).toBeOnTheScreen();
     expect(screen.getByText('Reports')).toBeOnTheScreen();
+    expect(screen.getByText('More')).toBeOnTheScreen();
     expect(screen.getByText('Claims')).toBeOnTheScreen();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Add' }));
@@ -95,6 +96,7 @@ describe('main tab layout', () => {
     expect(screen.getByText('Riwayat')).toBeOnTheScreen();
     expect(screen.getByText('Target')).toBeOnTheScreen();
     expect(screen.getByText('Laporan')).toBeOnTheScreen();
+    expect(screen.getByText('Lainnya')).toBeOnTheScreen();
     expect(screen.getByText('Klaim')).toBeOnTheScreen();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Catat' }));

@@ -13,6 +13,7 @@ import { getCategoryMeta } from '@/features/categories/category-meta';
 import type { TransactionListItem } from '@/features/transactions/transaction-repository';
 import { toLocalDateTimeInput } from '@/lib/dates';
 import { formatMoney } from '@/lib/money';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -40,6 +41,7 @@ export const TransactionRowItem = memo(function TransactionRowItem({
   transaction,
 }: TransactionRowItemProps) {
   const { colors, isDark } = useTheme();
+  const { language } = useLanguage();
 
   const translateX = useRef(new Animated.Value(0)).current;
   const currentOffset = useRef(0);
@@ -123,21 +125,23 @@ export const TransactionRowItem = memo(function TransactionRowItem({
     isTransfer &&
     transaction.paymentMethodName &&
     transaction.transferToPaymentMethodName
-      ? `${transaction.paymentMethodName} ➔ ${transaction.transferToPaymentMethodName}`
+      ? `${transaction.paymentMethodName} → ${transaction.transferToPaymentMethodName}`
       : hasCounterparty
-      ? transaction.counterparty?.trim()
-      : transaction.categoryName;
+        ? transaction.counterparty?.trim()
+        : transaction.categoryName;
 
   // 2. Determine Subtitle
   const metaSubtitle = isTransfer
-    ? 'Transfer Antar Dompet'
+    ? language === 'id'
+      ? 'Transfer Antar Dompet'
+      : 'Wallet Transfer'
     : hasCounterparty
-    ? `${transaction.categoryName}${
-        transaction.paymentMethodName
-          ? ` · ${transaction.paymentMethodName}`
-          : ''
-      }`
-    : transaction.paymentMethodName || '';
+      ? `${transaction.categoryName}${
+          transaction.paymentMethodName
+            ? ` · ${transaction.paymentMethodName}`
+            : ''
+        }`
+      : transaction.paymentMethodName || '';
 
   // 3. Format Time
   let timeStr = '';
@@ -166,7 +170,7 @@ export const TransactionRowItem = memo(function TransactionRowItem({
           ]}
         >
           <Pressable
-            accessibilityLabel="Ubah"
+            accessibilityLabel={language === 'id' ? 'Ubah' : 'Edit'}
             accessibilityRole="button"
             onPress={() => {
               closeSwipe();
@@ -179,7 +183,9 @@ export const TransactionRowItem = memo(function TransactionRowItem({
               name="pencil-outline"
               size={18}
             />
-            <Text style={styles.swipeActionText}>Ubah</Text>
+            <Text style={styles.swipeActionText}>
+              {language === 'id' ? 'Ubah' : 'Edit'}
+            </Text>
           </Pressable>
         </View>
       ) : null}
@@ -195,7 +201,7 @@ export const TransactionRowItem = memo(function TransactionRowItem({
           ]}
         >
           <Pressable
-            accessibilityLabel="Hapus"
+            accessibilityLabel={language === 'id' ? 'Hapus' : 'Delete'}
             accessibilityRole="button"
             onPress={() => {
               closeSwipe();
@@ -208,7 +214,9 @@ export const TransactionRowItem = memo(function TransactionRowItem({
               name="trash-can-outline"
               size={18}
             />
-            <Text style={styles.swipeActionText}>Hapus</Text>
+            <Text style={styles.swipeActionText}>
+              {language === 'id' ? 'Hapus' : 'Delete'}
+            </Text>
           </Pressable>
         </View>
       ) : null}
@@ -219,6 +227,8 @@ export const TransactionRowItem = memo(function TransactionRowItem({
           styles.animatedRow,
           {
             backgroundColor: colors.surface,
+            borderBottomColor: colors.border,
+            borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth,
             transform: [{ translateX }],
           },
         ]}
@@ -230,9 +240,7 @@ export const TransactionRowItem = memo(function TransactionRowItem({
             transaction.currencyCode,
           )}`}
           accessibilityRole="button"
-          onLongPress={
-            onLongPress ? () => onLongPress(transaction) : undefined
-          }
+          onLongPress={onLongPress ? () => onLongPress(transaction) : undefined}
           onPress={() => {
             if (currentOffset.current !== 0) {
               closeSwipe();
@@ -266,12 +274,14 @@ export const TransactionRowItem = memo(function TransactionRowItem({
             {/* Row 1: Title & Amount */}
             <View style={styles.mainRow}>
               <Text
+                ellipsizeMode={isTransfer ? 'middle' : 'tail'}
                 numberOfLines={1}
                 style={[styles.itemTitle, { color: colors.textPrimary }]}
               >
                 {title}
               </Text>
               <Text
+                numberOfLines={1}
                 style={[
                   styles.itemAmount,
                   {
@@ -279,27 +289,24 @@ export const TransactionRowItem = memo(function TransactionRowItem({
                       transaction.type === 'expense'
                         ? colors.destructive
                         : transaction.type === 'income'
-                        ? colors.positive
-                        : colors.textPrimary,
+                          ? colors.positive
+                          : colors.textPrimary,
                   },
                 ]}
               >
                 {transaction.type === 'expense'
                   ? '−'
                   : transaction.type === 'income'
-                  ? '+'
-                  : '⇄ '}
-                {formatMoney(
-                  transaction.amountMinor,
-                  transaction.currencyCode,
-                )}
+                    ? '+'
+                    : '⇄ '}
+                {formatMoney(transaction.amountMinor, transaction.currencyCode)}
               </Text>
             </View>
 
             {/* Row 2: Subtitle, Time & Badges */}
             <View style={styles.metaRow}>
               <View style={styles.metaLeft}>
-                {metaSubtitle ? (
+                {metaSubtitle || timeStr ? (
                   <Text
                     numberOfLines={1}
                     style={[
@@ -308,13 +315,10 @@ export const TransactionRowItem = memo(function TransactionRowItem({
                     ]}
                   >
                     {metaSubtitle}
-                  </Text>
-                ) : null}
-                {timeStr ? (
-                  <Text
-                    style={[styles.timeText, { color: colors.textMuted }]}
-                  >
-                    {metaSubtitle ? ` · ${timeStr}` : timeStr}
+                    {metaSubtitle && timeStr ? ' · ' : null}
+                    {timeStr ? (
+                      <Text style={{ color: colors.textMuted }}>{timeStr}</Text>
+                    ) : null}
                   </Text>
                 ) : null}
               </View>
@@ -390,6 +394,7 @@ const styles = StyleSheet.create({
   badgesWrap: {
     alignItems: 'center',
     flexDirection: 'row',
+    flexShrink: 0,
     gap: 4,
   },
   categorySubtitle: {
@@ -401,6 +406,7 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 3,
     justifyContent: 'center',
+    minWidth: 0,
   },
   iconBadge: {
     alignItems: 'center',
@@ -411,6 +417,7 @@ const styles = StyleSheet.create({
   },
   itemAmount: {
     ...typography.body,
+    flexShrink: 0,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -420,16 +427,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginRight: spacing.sm,
+    minWidth: 0,
   },
   mainRow: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
+    minWidth: 0,
   },
   metaLeft: {
-    alignItems: 'center',
     flex: 1,
-    flexDirection: 'row',
+    minWidth: 0,
   },
   metaRow: {
     alignItems: 'center',
@@ -454,7 +462,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.sm + 2,
-    paddingVertical: spacing.xs + 3,
+    minHeight: 62,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
   },
   swipeActionButton: {
     alignItems: 'center',
@@ -492,9 +502,5 @@ const styles = StyleSheet.create({
   swipeWrapper: {
     overflow: 'hidden',
     position: 'relative',
-  },
-  timeText: {
-    ...typography.metadata,
-    fontSize: 12,
   },
 });

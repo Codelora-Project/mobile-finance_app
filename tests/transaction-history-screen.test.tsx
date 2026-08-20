@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { TransactionHistoryScreen } from '@/features/transactions/transaction-history-screen';
 import type { TransactionListItem } from '@/features/transactions/transaction-repository';
+import { formatMoney } from '@/lib/money';
 
 const mockRouter = {
   back: jest.fn(),
@@ -45,17 +46,32 @@ jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
 
 const mockCreateTransaction = jest.fn();
 const mockDeleteTransaction = jest.fn();
-const mockExportTransactionsToCsv = jest.fn().mockImplementation(() => Promise.resolve({ fileName: 'test.csv', uri: 'file:///test.csv' }));
-const mockShareTransactionCsv = jest.fn().mockImplementation(() => Promise.resolve(undefined));
+const mockDeleteTransactionForUndo =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockRestoreDeletedTransaction = jest.fn();
+const mockExportTransactionsToCsv = jest
+  .fn()
+  .mockImplementation(() =>
+    Promise.resolve({ fileName: 'test.csv', uri: 'file:///test.csv' }),
+  );
+const mockShareTransactionCsv = jest
+  .fn()
+  .mockImplementation(() => Promise.resolve(undefined));
 
 jest.mock('@/features/transactions/transaction-repository', () => ({
   createTransaction: (...args: unknown[]) => mockCreateTransaction(...args),
   deleteTransaction: (...args: unknown[]) => mockDeleteTransaction(...args),
+  deleteTransactionForUndo: (...args: unknown[]) =>
+    mockDeleteTransactionForUndo(...args),
+  finalizeDeletedTransactionUndo: jest.fn(),
   listTransactions: (...args: unknown[]) => mockListTransactions(...args),
+  restoreDeletedTransaction: (...args: unknown[]) =>
+    mockRestoreDeletedTransaction(...args),
 }));
 
 jest.mock('@/features/transactions/transaction-export-service', () => ({
-  exportTransactionsToCsv: (...args: unknown[]) => mockExportTransactionsToCsv(...args),
+  exportTransactionsToCsv: (...args: unknown[]) =>
+    mockExportTransactionsToCsv(...args),
   shareTransactionCsv: (...args: unknown[]) => mockShareTransactionCsv(...args),
 }));
 
@@ -100,6 +116,23 @@ describe('transaction history screen', () => {
     jest.clearAllMocks();
     mockFocusedEffect = null;
     mockLocalParams = {};
+    mockDeleteTransactionForUndo.mockResolvedValue({
+      claimId: null,
+      input: {
+        amountMinor: transaction.amountMinor,
+        categoryId: 1,
+        counterparty: transaction.counterparty,
+        currencyCode: transaction.currencyCode,
+        isReimbursable: false,
+        localDate: transaction.localDate,
+        note: null,
+        occurredAt: transaction.occurredAt,
+        paymentMethodId: 1,
+        receipt: null,
+        timezoneOffsetMinutes: transaction.timezoneOffsetMinutes,
+        type: transaction.type,
+      },
+    });
   });
 
   it('renders the empty state and Add entry point', async () => {
@@ -129,7 +162,7 @@ describe('transaction history screen', () => {
     const row = await screen.findByRole('button', {
       name: /Coffee Shop/,
     });
-    expect(screen.getByText('Food & Drink')).toBeOnTheScreen();
+    expect(screen.getByText(/Food & Drink/)).toBeOnTheScreen();
     expect(screen.getAllByText('Struk').length).toBeGreaterThanOrEqual(1);
     await fireEvent.press(row);
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/42');
@@ -139,6 +172,47 @@ describe('transaction history screen', () => {
       await Promise.resolve();
     });
     await waitFor(() => expect(mockListTransactions).toHaveBeenCalledTimes(2));
+  });
+
+  it('renders transfers with a compact route and excludes them from cashflow totals', async () => {
+    const transfer: TransactionListItem = {
+      amountMinor: 520_000,
+      categoryName: 'Food & Drink',
+      counterparty: null,
+      currencyCode: 'IDR',
+      hasReceipt: false,
+      id: 99,
+      isReimbursable: false,
+      localDate: '2026-08-15',
+      occurredAt: 1_755_238_800_000,
+      paymentMethodId: 10,
+      paymentMethodName: 'Cash',
+      timezoneOffsetMinutes: 420,
+      transferFeeMinor: 0,
+      transferToPaymentMethodId: 11,
+      transferToPaymentMethodName: 'Mandiri',
+      type: 'transfer',
+    };
+    mockListTransactions.mockResolvedValue({
+      hasMore: false,
+      items: [transfer],
+      nextOffset: 1,
+    });
+
+    await render(<TransactionHistoryScreen />);
+
+    expect(
+      await screen.findByRole('button', { name: /Cash → Mandiri/ }),
+    ).toBeOnTheScreen();
+    expect(screen.getByText(/Transfer Antar Dompet/)).toBeOnTheScreen();
+    expect(
+      screen.getByText(`⇄ ${formatMoney(520_000, 'IDR')}`),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', {
+        name: `Pengeluaran: -${formatMoney(0, 'IDR')}`,
+      }),
+    ).toBeOnTheScreen();
   });
 
   it('shows the correct empty state after applying filters', async () => {
@@ -163,7 +237,7 @@ describe('transaction history screen', () => {
     ).toBeOnTheScreen();
   });
 
-  it('filters transactions when quick filter chips are pressed', async () => {
+  it('filters transactions when the summary metric is pressed', async () => {
     mockListTransactions.mockResolvedValue({
       hasMore: false,
       items: [transaction],
@@ -173,8 +247,7 @@ describe('transaction history screen', () => {
     await render(<TransactionHistoryScreen />);
     await screen.findByRole('button', { name: /Coffee Shop/ });
 
-    // Press 'Pengeluaran' chip
-    const expenseChip = screen.getByRole('tab', { name: 'Pengeluaran' });
+    const expenseChip = screen.getByRole('button', { name: /^Pengeluaran:/ });
     await fireEvent.press(expenseChip);
 
     await waitFor(() => {
@@ -240,9 +313,6 @@ describe('transaction history screen', () => {
   });
 
   it('triggers edit and delete actions via swipe action buttons', async () => {
-    const { Alert } = require('react-native');
-    const alertSpy = jest.spyOn(Alert, 'alert');
-
     mockListTransactions.mockResolvedValue({
       hasMore: false,
       items: [transaction],
@@ -260,10 +330,12 @@ describe('transaction history screen', () => {
     // 2. Test Swipe Delete button
     const deleteBtn = screen.getByRole('button', { name: 'Hapus' });
     await fireEvent.press(deleteBtn);
-    expect(alertSpy).toHaveBeenCalledWith(
-      'Hapus Transaksi',
-      expect.stringContaining('Hapus transaksi'),
-      expect.any(Array),
+    await waitFor(() =>
+      expect(mockDeleteTransactionForUndo).toHaveBeenCalledWith(
+        mockDatabase,
+        42,
+      ),
     );
+    expect(await screen.findByText('Transaksi dihapus')).toBeOnTheScreen();
   });
-});
+});

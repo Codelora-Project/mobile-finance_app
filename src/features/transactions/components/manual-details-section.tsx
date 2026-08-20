@@ -76,7 +76,11 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
             size={20}
           />
           <TextInput
-            accessibilityLabel="Merchant"
+            accessibilityLabel={
+              language === 'id'
+                ? 'Nama toko atau pihak terkait'
+                : 'Merchant or counterparty'
+            }
             onChangeText={onChangeCounterparty}
             placeholder={
               language === 'id'
@@ -91,7 +95,9 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
 
         {isExpense ? (
           <Pressable
-            accessibilityLabel="Add receipt"
+            accessibilityLabel={
+              language === 'id' ? 'Tambah struk' : 'Add receipt'
+            }
             accessibilityRole="button"
             onPress={onOpenReceiptMenu}
             style={[
@@ -104,9 +110,7 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
                   : isDark
                     ? colors.surfaceSecondary
                     : '#F1F5F9',
-                borderColor: receipt
-                  ? colors.primary
-                  : colors.border,
+                borderColor: receipt ? colors.primary : colors.border,
               },
               receipt ? styles.receiptActionChipActive : null,
             ]}
@@ -172,7 +176,9 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
           <View style={styles.dateRow}>
             <View style={styles.dateField}>
               <AppInput
-                accessibilityLabel="Transaction date"
+                accessibilityLabel={
+                  language === 'id' ? 'Tanggal transaksi' : 'Transaction date'
+                }
                 label={language === 'id' ? 'Tanggal' : 'Date'}
                 onChangeText={onChangeDate}
                 placeholder="YYYY-MM-DD"
@@ -181,7 +187,9 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
             </View>
             <View style={styles.timeField}>
               <AppInput
-                accessibilityLabel="Transaction time"
+                accessibilityLabel={
+                  language === 'id' ? 'Waktu transaksi' : 'Transaction time'
+                }
                 label={language === 'id' ? 'Waktu' : 'Time'}
                 onChangeText={onChangeTime}
                 placeholder="HH:mm"
@@ -220,7 +228,9 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
                 </Text>
               </View>
               <Switch
-                accessibilityLabel="Reimbursable"
+                accessibilityLabel={
+                  language === 'id' ? 'Dapat diklaim' : 'Reimbursable'
+                }
                 onValueChange={onChangeReimbursable}
                 trackColor={{ false: '#CBD5E1', true: colors.primary }}
                 value={isReimbursable}

@@ -14,7 +14,7 @@ import {
   reconcileWalletBalance,
   recordTransfer,
   updateWallet,
-} from '@/features/accounts/account-repository';
+} from '@/features/wallets/wallet-repository';
 
 type PaymentMethodRow = {
   id: number;
@@ -115,7 +115,10 @@ class MockAccountDatabase {
     return balance;
   }
 
-  async getFirstAsync<T>(sql: string, ...parameters: SQLiteBindValue[]): Promise<T | null> {
+  async getFirstAsync<T>(
+    sql: string,
+    ...parameters: SQLiteBindValue[]
+  ): Promise<T | null> {
     const flattened = parameters.flat();
     const cleanSql = sql.replace(/\s+/g, ' ').trim();
 
@@ -124,16 +127,28 @@ class MockAccountDatabase {
       return { max_order: max } as T;
     }
 
-    if (cleanSql.includes('SELECT id FROM payment_methods WHERE name = ? COLLATE NOCASE AND id != ?')) {
+    if (
+      cleanSql.includes(
+        'SELECT id FROM payment_methods WHERE name = ? COLLATE NOCASE AND id != ?',
+      )
+    ) {
       const name = String(flattened[0]);
       const id = Number(flattened[1]);
-      const found = this.paymentMethods.find((p) => p.name.toLowerCase() === name.toLowerCase() && p.id !== id);
+      const found = this.paymentMethods.find(
+        (p) => p.name.toLowerCase() === name.toLowerCase() && p.id !== id,
+      );
       return found ? ({ id: found.id } as T) : null;
     }
 
-    if (cleanSql.includes('SELECT id FROM payment_methods WHERE name = ? COLLATE NOCASE')) {
+    if (
+      cleanSql.includes(
+        'SELECT id FROM payment_methods WHERE name = ? COLLATE NOCASE',
+      )
+    ) {
       const name = String(flattened[0]);
-      const found = this.paymentMethods.find((p) => p.name.toLowerCase() === name.toLowerCase());
+      const found = this.paymentMethods.find(
+        (p) => p.name.toLowerCase() === name.toLowerCase(),
+      );
       return found ? ({ id: found.id } as T) : null;
     }
 
@@ -149,7 +164,10 @@ class MockAccountDatabase {
       if (!p) return null;
       return {
         ...p,
-        current_balance_minor: this.calculateBalance(p.id, p.initial_balance_minor),
+        current_balance_minor: this.calculateBalance(
+          p.id,
+          p.initial_balance_minor,
+        ),
       } as T;
     }
 
@@ -164,7 +182,10 @@ class MockAccountDatabase {
     return null;
   }
 
-  async getAllAsync<T>(sql: string, ..._parameters: SQLiteBindValue[]): Promise<T[]> {
+  async getAllAsync<T>(
+    sql: string,
+    ..._parameters: SQLiteBindValue[]
+  ): Promise<T[]> {
     const cleanSql = sql.replace(/\s+/g, ' ').trim();
     let rows = [...this.paymentMethods];
 
@@ -174,11 +195,17 @@ class MockAccountDatabase {
 
     return rows.map((p) => ({
       ...p,
-      current_balance_minor: this.calculateBalance(p.id, p.initial_balance_minor),
+      current_balance_minor: this.calculateBalance(
+        p.id,
+        p.initial_balance_minor,
+      ),
     })) as T[];
   }
 
-  async runAsync(sql: string, ...parameters: SQLiteBindValue[]): Promise<SQLiteRunResult> {
+  async runAsync(
+    sql: string,
+    ...parameters: SQLiteBindValue[]
+  ): Promise<SQLiteRunResult> {
     const flattened = parameters.flat();
     const cleanSql = sql.replace(/\s+/g, ' ').trim();
 
@@ -242,7 +269,9 @@ class MockAccountDatabase {
         currency_code: String(flattened[2]),
         category_id: Number(flattened[3]),
         payment_method_id: Number(flattened[4]),
-        transfer_to_payment_method_id: flattened[5] ? Number(flattened[5]) : null,
+        transfer_to_payment_method_id: flattened[5]
+          ? Number(flattened[5])
+          : null,
         transfer_fee_minor: flattened[6] ? Number(flattened[6]) : 0,
         transfer_fee_category_id: flattened[7] ? Number(flattened[7]) : null,
         transfer_fee_note: flattened[8] ? String(flattened[8]) : null,
@@ -261,7 +290,9 @@ class MockAccountDatabase {
     return { changes: 0, lastInsertRowId: 0 };
   }
 
-  async withExclusiveTransactionAsync<T>(callback: (tx: SQLiteDatabase) => Promise<T>): Promise<T> {
+  async withExclusiveTransactionAsync<T>(
+    callback: (tx: SQLiteDatabase) => Promise<T>,
+  ): Promise<T> {
     return callback(this as unknown as SQLiteDatabase);
   }
 }
@@ -319,13 +350,39 @@ describe('account-repository (Multi-Wallet & Transfers)', () => {
     // 1. Income of Rp 2.000.000 to BCA
     await db.runAsync(
       'INSERT INTO transactions',
-      'income', 2000000, 'IDR', 12, bca.id, null, 0, null, null, 'Kantor', 'Gaji', Date.now(), 0, '2026-08-18'
+      'income',
+      2000000,
+      'IDR',
+      12,
+      bca.id,
+      null,
+      0,
+      null,
+      null,
+      'Kantor',
+      'Gaji',
+      Date.now(),
+      0,
+      '2026-08-18',
     );
 
     // 2. Expense of Rp 500.000 from BCA
     await db.runAsync(
       'INSERT INTO transactions',
-      'expense', 500000, 'IDR', 1, bca.id, null, 0, null, null, 'Restoran', 'Makan', Date.now(), 0, '2026-08-18'
+      'expense',
+      500000,
+      'IDR',
+      1,
+      bca.id,
+      null,
+      0,
+      null,
+      null,
+      'Restoran',
+      'Makan',
+      Date.now(),
+      0,
+      '2026-08-18',
     );
 
     const updatedBca = await getWalletById(sqliteDb, bca.id);
@@ -421,13 +478,25 @@ describe('account-repository (Multi-Wallet & Transfers)', () => {
     expect(cashWallet.currentBalanceMinor).toBe(100000);
 
     // Reconcile: User physically has Rp 85.000 (Rp 15.000 was spent without recording)
-    await reconcileWalletBalance(sqliteDb, cashWallet.id, 85000, 'IDR', 'Penyesuaian Fisik');
+    await reconcileWalletBalance(
+      sqliteDb,
+      cashWallet.id,
+      85000,
+      'IDR',
+      'Penyesuaian Fisik',
+    );
 
     const updated = await getWalletById(sqliteDb, cashWallet.id);
     expect(updated?.currentBalanceMinor).toBe(85000);
 
     // Reconcile up: User found Rp 50.000 extra -> new balance Rp 135.000
-    await reconcileWalletBalance(sqliteDb, cashWallet.id, 135000, 'IDR', 'Uang Ditemukan');
+    await reconcileWalletBalance(
+      sqliteDb,
+      cashWallet.id,
+      135000,
+      'IDR',
+      'Uang Ditemukan',
+    );
     const updatedAgain = await getWalletById(sqliteDb, cashWallet.id);
     expect(updatedAgain?.currentBalanceMinor).toBe(135000);
   });
@@ -447,7 +516,9 @@ describe('account-repository (Multi-Wallet & Transfers)', () => {
     expect(updated.color).toBe('#4C2A86');
 
     await archiveWallet(sqliteDb, wallet.id);
-    const activeWallets = await getWallets(sqliteDb, { includeArchived: false });
+    const activeWallets = await getWallets(sqliteDb, {
+      includeArchived: false,
+    });
     expect(activeWallets.some((w) => w.id === wallet.id)).toBe(false);
 
     const allWallets = await getWallets(sqliteDb, { includeArchived: true });

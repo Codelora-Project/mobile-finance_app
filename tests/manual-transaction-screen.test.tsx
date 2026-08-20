@@ -359,12 +359,16 @@ describe('manual transaction form', () => {
     );
 
     await fireEvent.changeText(screen.getByLabelText('Amount *'), '1000');
-    await fireEvent.press(screen.getByLabelText('Close modal'));
+    await fireEvent.press(screen.getByLabelText('Close form'));
 
     await waitFor(() => expect(mockRouter.back).toHaveBeenCalled());
   });
   it('prefills category and type when opened via quick category action', async () => {
-    mockParams = { categoryId: '1', categoryName: 'Food & Drink', type: 'expense' };
+    mockParams = {
+      categoryId: '1',
+      categoryName: 'Food & Drink',
+      type: 'expense',
+    };
 
     await render(
       <LanguageProvider initialLanguage="en">
@@ -375,7 +379,9 @@ describe('manual transaction form', () => {
     expect(
       screen.getByRole('tab', { name: /Expense/ }).props.accessibilityState,
     ).toEqual({ selected: true });
-    expect(screen.getAllByText('Food & Drink').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Food & Drink').length).toBeGreaterThanOrEqual(
+      1,
+    );
   });
 
   it('switches to Transfer tab and handles transfer with optional transfer fee toggle', async () => {
@@ -395,21 +401,25 @@ describe('manual transaction form', () => {
     expect(transferTab.props.accessibilityState).toEqual({ selected: true });
 
     // 2. Set transfer amount
-    const amountInput = screen.getByLabelText('Amount *');
+    const amountInput = screen.getByLabelText('Nominal wajib');
     await fireEvent.changeText(amountInput, '500000');
 
     // 3. Open Source Wallet picker and select BCA
     const sourcePickerBtn = screen.getByLabelText('Dari Dompet / Rekening');
     await fireEvent.press(sourcePickerBtn);
 
-    await waitFor(() => expect(screen.getAllByText('Bank BCA').length).toBeGreaterThanOrEqual(1));
+    await waitFor(() =>
+      expect(screen.getAllByText('Bank BCA').length).toBeGreaterThanOrEqual(1),
+    );
     await fireEvent.press(screen.getAllByText('Bank BCA')[0]);
 
     // 4. Open Destination Wallet picker and select GoPay
     const destPickerBtn = screen.getByLabelText('Ke Dompet / Rekening');
     await fireEvent.press(destPickerBtn);
 
-    await waitFor(() => expect(screen.getAllByText('GoPay').length).toBeGreaterThanOrEqual(1));
+    await waitFor(() =>
+      expect(screen.getAllByText('GoPay').length).toBeGreaterThanOrEqual(1),
+    );
     await fireEvent.press(screen.getAllByText('GoPay')[0]);
 
     // 5. Toggle Transfer Fee Switch ON
@@ -423,6 +433,7 @@ describe('manual transaction form', () => {
     // 7. Save Transfer
     const saveBtn = screen.getByTestId('save-transaction');
     await fireEvent.press(saveBtn);
+    await fireEvent.press(await screen.findByTestId('confirm-transfer'));
 
     await waitFor(() =>
       expect(mockCreateTransaction).toHaveBeenCalledWith(
@@ -461,7 +472,10 @@ describe('manual transaction form', () => {
     });
 
     // Enter amount and select Salary category
-    await fireEvent.changeText(screen.getByLabelText('Amount *'), '10000000');
+    await fireEvent.changeText(
+      screen.getByLabelText('Nominal wajib'),
+      '10000000',
+    );
     await fireEvent.press(screen.getByText('Salary'));
 
     // Save income transaction

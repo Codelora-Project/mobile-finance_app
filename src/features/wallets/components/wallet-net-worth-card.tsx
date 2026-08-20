@@ -57,9 +57,7 @@ export const WalletNetWorthCard = memo(function WalletNetWorthCard({
           >
             {language === 'id' ? 'Dana Operasional' : 'Liquid Cash'}
           </Text>
-          <Text
-            style={[styles.breakdownValue, { color: colors.textPrimary }]}
-          >
+          <Text style={[styles.breakdownValue, { color: colors.textPrimary }]}>
             {formatMoney(operationalCash, currencyCode)}
           </Text>
         </View>
@@ -72,9 +70,7 @@ export const WalletNetWorthCard = memo(function WalletNetWorthCard({
           >
             {language === 'id' ? 'Aset & Investasi' : 'Tracked Assets'}
           </Text>
-          <Text
-            style={[styles.breakdownValue, { color: colors.textPrimary }]}
-          >
+          <Text style={[styles.breakdownValue, { color: colors.textPrimary }]}>
             {formatMoney(trackingAssets, currencyCode)}
           </Text>
         </View>
@@ -82,8 +78,6 @@ export const WalletNetWorthCard = memo(function WalletNetWorthCard({
     </View>
   );
 });
-
-export { WalletNetWorthCard as PaymentMethodNetWorthHero };
 
 const styles = StyleSheet.create({
   breakdownCol: {

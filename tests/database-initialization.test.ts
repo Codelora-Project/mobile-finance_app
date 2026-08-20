@@ -108,6 +108,13 @@ describe('database initialization', () => {
     expect(database.categories).toContain('expense_other');
     expect(database.categories).toContain('income_other');
     expect(database.paymentMethods).toContain('cash');
+    expect(
+      database.executedSql.some(
+        (source) =>
+          source.includes("system_key = 'wallet_transfer'") &&
+          source.includes("WHERE type = 'transfer'"),
+      ),
+    ).toBe(true);
   });
 
   it('keeps migration and seed data idempotent across restart', async () => {

@@ -36,12 +36,10 @@ export function getCategoryMeta(
 ): CategoryMeta {
   const normalized = categoryName?.trim().toLowerCase() ?? '';
   const icon: IconName =
-    CATEGORY_ICON_MAP[normalized] ??
-    (type === 'transfer'
+    type === 'transfer'
       ? 'swap-horizontal'
-      : type === 'income'
-      ? 'arrow-bottom-left'
-      : 'tag-outline');
+      : (CATEGORY_ICON_MAP[normalized] ??
+        (type === 'income' ? 'arrow-bottom-left' : 'tag-outline'));
 
   // Unified, monochromatic styling across all categories
   const color = isDark ? '#94A3B8' : '#475569';
