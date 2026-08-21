@@ -74,6 +74,7 @@ export function TransactionHistoryScreen() {
       {/* 1. Header Toolbar with search bar */}
       <TransactionHistoryHeader
         activeFiltersCount={state.activeFiltersCount}
+        exporting={state.exporting}
         onClearSearch={() => actions.setSearchQuery('')}
         onExport={() => void actions.handleExport()}
         onOpenFilter={() => actions.setFilterModalVisible(true)}

@@ -1,6 +1,13 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { memo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import type { TranslationSchema } from '@/lib/i18n/translations';
 import { useLanguage } from '@/lib/i18n/language-context';
@@ -11,6 +18,7 @@ import { typography } from '@/theme/typography';
 
 export type TransactionHistoryHeaderProps = {
   activeFiltersCount: number;
+  exporting?: boolean;
   onClearSearch: () => void;
   onExport?: () => void;
   onOpenFilter: () => void;
@@ -21,6 +29,7 @@ export type TransactionHistoryHeaderProps = {
 
 export const TransactionHistoryHeader = memo(function TransactionHistoryHeader({
   activeFiltersCount,
+  exporting = false,
   onClearSearch,
   onExport,
   onOpenFilter,
@@ -141,6 +150,8 @@ export const TransactionHistoryHeader = memo(function TransactionHistoryHeader({
                 language === 'id' ? 'Ekspor CSV' : 'Export CSV'
               }
               accessibilityRole="button"
+              accessibilityState={{ busy: exporting, disabled: exporting }}
+              disabled={exporting}
               hitSlop={6}
               onPress={onExport}
               style={({ pressed }) => [
@@ -152,11 +163,15 @@ export const TransactionHistoryHeader = memo(function TransactionHistoryHeader({
                 pressed && styles.pressed,
               ]}
             >
-              <MaterialCommunityIcons
-                color={colors.textSecondary}
-                name="export-variant"
-                size={19}
-              />
+              {exporting ? (
+                <ActivityIndicator color={colors.primary} size="small" />
+              ) : (
+                <MaterialCommunityIcons
+                  color={colors.textSecondary}
+                  name="export-variant"
+                  size={19}
+                />
+              )}
             </Pressable>
           ) : null}
         </View>

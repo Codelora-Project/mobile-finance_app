@@ -327,16 +327,27 @@ export function useTransactionHistoryViewModel() {
 
     setExporting(true);
     try {
-      const allMatching = await listTransactions(database, {
-        filters: effectiveFilters,
-        limit: 10000,
-        search: debouncedSearch.trim() || undefined,
-      });
+      const allMatching: TransactionListItem[] = [];
+      let exportOffset = 0;
+      let hasMoreToExport = true;
 
-      const { uri } = await exportTransactionsToCsv(
-        allMatching.items,
-        language,
-      );
+      while (hasMoreToExport) {
+        const page = await listTransactions(database, {
+          filters: effectiveFilters,
+          limit: 100,
+          offset: exportOffset,
+          search: debouncedSearch.trim() || undefined,
+        });
+        allMatching.push(...page.items);
+        hasMoreToExport = page.hasMore;
+
+        if (hasMoreToExport && page.nextOffset <= exportOffset) {
+          throw new Error('Export pagination did not advance.');
+        }
+        exportOffset = page.nextOffset;
+      }
+
+      const { uri } = await exportTransactionsToCsv(allMatching, language);
       await shareTransactionCsv(
         uri,
         language === 'id'

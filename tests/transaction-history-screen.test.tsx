@@ -301,6 +301,10 @@ describe('transaction history screen', () => {
     await fireEvent.press(exportBtn);
 
     await waitFor(() => {
+      expect(mockListTransactions).toHaveBeenCalledWith(
+        mockDatabase,
+        expect.objectContaining({ limit: 100, offset: 0 }),
+      );
       expect(mockExportTransactionsToCsv).toHaveBeenCalledWith(
         [transaction],
         'id',
@@ -308,6 +312,46 @@ describe('transaction history screen', () => {
       expect(mockShareTransactionCsv).toHaveBeenCalledWith(
         'file:///test.csv',
         'Ekspor Riwayat Transaksi',
+      );
+    });
+  });
+
+  it('exports every matching page without exceeding the repository page limit', async () => {
+    const secondTransaction: TransactionListItem = {
+      ...transaction,
+      amountMinor: 20_000,
+      counterparty: 'Second Shop',
+      id: 43,
+    };
+    mockListTransactions
+      .mockResolvedValueOnce({
+        hasMore: false,
+        items: [transaction],
+        nextOffset: 1,
+      })
+      .mockResolvedValueOnce({
+        hasMore: true,
+        items: [transaction],
+        nextOffset: 1,
+      })
+      .mockResolvedValueOnce({
+        hasMore: false,
+        items: [secondTransaction],
+        nextOffset: 2,
+      });
+
+    await render(<TransactionHistoryScreen />);
+    await screen.findByRole('button', { name: /Coffee Shop/ });
+    await fireEvent.press(screen.getByRole('button', { name: 'Ekspor CSV' }));
+
+    await waitFor(() => {
+      expect(mockExportTransactionsToCsv).toHaveBeenCalledWith(
+        [transaction, secondTransaction],
+        'id',
+      );
+      expect(mockListTransactions).toHaveBeenCalledWith(
+        mockDatabase,
+        expect.objectContaining({ limit: 100, offset: 1 }),
       );
     });
   });
