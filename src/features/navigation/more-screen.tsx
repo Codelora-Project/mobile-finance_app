@@ -32,116 +32,82 @@ export function MoreScreen() {
   const { language } = useLanguage();
   const { colors, isDark } = useTheme();
 
+  const goalsItem: MenuItem = {
+    bgColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#D1FAE5',
+    borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#A7F3D0',
+    description:
+      language === 'id'
+        ? 'Pantau target dan progres tabungan'
+        : 'Track savings goals and progress',
+    icon: 'bullseye-arrow',
+    iconColor: isDark ? '#34D399' : '#059669',
+    label: language === 'id' ? 'Target Tabungan' : 'Savings Goals',
+    route: '/goals',
+  };
+  const categoriesItem: MenuItem = {
+    bgColor: isDark ? 'rgba(139, 92, 246, 0.15)' : '#EDE9FE',
+    borderColor: isDark ? 'rgba(139, 92, 246, 0.3)' : '#DDD6FE',
+    description:
+      language === 'id'
+        ? 'Atur pos pengeluaran dan pemasukan'
+        : 'Manage income and expense categories',
+    icon: 'tag-multiple-outline',
+    iconColor: isDark ? '#A78BFA' : '#7C3AED',
+    label: language === 'id' ? 'Kelola Kategori' : 'Categories',
+    route: '/categories',
+  };
+  const claimsItem: MenuItem = {
+    bgColor: isDark ? 'rgba(245, 158, 11, 0.15)' : '#FEF3C7',
+    borderColor: isDark ? 'rgba(245, 158, 11, 0.3)' : '#FDE68A',
+    description:
+      language === 'id'
+        ? 'Kelola penggantian biaya kantor'
+        : 'Manage expense reimbursements and claims',
+    icon: 'briefcase-outline',
+    iconColor: isDark ? '#FBBF24' : '#D97706',
+    label: language === 'id' ? 'Klaim Kantor' : 'Claims & Reimburse',
+    route: '/claims',
+  };
+  const settingsItem: MenuItem = {
+    bgColor: isDark ? 'rgba(99, 102, 241, 0.15)' : '#EEF2FF',
+    borderColor: isDark ? 'rgba(99, 102, 241, 0.3)' : '#C7D2FE',
+    description:
+      language === 'id'
+        ? 'Bahasa, mata uang, tampilan, dan preferensi'
+        : 'Language, currency, appearance, and preferences',
+    icon: 'cog-outline',
+    iconColor: isDark ? '#818CF8' : '#4F46E5',
+    label: language === 'id' ? 'Pengaturan Aplikasi' : 'Settings',
+    route: '/settings',
+  };
+  const backupItem: MenuItem = {
+    bgColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#DBEAFE',
+    borderColor: isDark ? 'rgba(59, 130, 246, 0.3)' : '#BFDBFE',
+    description:
+      language === 'id'
+        ? 'Cadangkan, pulihkan, dan ekspor data'
+        : 'Export, restore, and safeguard your data',
+    icon: 'cloud-sync-outline',
+    iconColor: isDark ? '#60A5FA' : '#2563EB',
+    label: language === 'id' ? 'Backup & Ekspor Data' : 'Backup & Export',
+    route: '/settings/backup',
+  };
+
   const sections: MenuSection[] = [
     {
-      id: 'financial',
-      items:
-        language === 'id'
-          ? [
-              {
-                bgColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#D1FAE5',
-                borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#A7F3D0',
-                description: 'Pantau target dan progres tabungan',
-                icon: 'bullseye-arrow',
-                iconColor: isDark ? '#34D399' : '#059669',
-                label: 'Target Tabungan',
-                route: '/goals',
-              },
-              {
-                bgColor: isDark ? 'rgba(245, 158, 11, 0.15)' : '#FEF3C7',
-                borderColor: isDark ? 'rgba(245, 158, 11, 0.3)' : '#FDE68A',
-                description: 'Kelola penggantian biaya kantor & reimbursement',
-                icon: 'briefcase-outline',
-                iconColor: isDark ? '#FBBF24' : '#D97706',
-                label: 'Klaim Kantor',
-                route: '/claims',
-              },
-              {
-                bgColor: isDark ? 'rgba(139, 92, 246, 0.15)' : '#EDE9FE',
-                borderColor: isDark ? 'rgba(139, 92, 246, 0.3)' : '#DDD6FE',
-                description: 'Atur pos pengeluaran dan pemasukan',
-                icon: 'tag-multiple-outline',
-                iconColor: isDark ? '#A78BFA' : '#7C3AED',
-                label: 'Kelola Kategori',
-                route: '/categories',
-              },
-            ]
-          : [
-              {
-                bgColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#D1FAE5',
-                borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#A7F3D0',
-                description: 'Track savings goals and progress',
-                icon: 'bullseye-arrow',
-                iconColor: isDark ? '#34D399' : '#059669',
-                label: 'Savings Goals',
-                route: '/goals',
-              },
-              {
-                bgColor: isDark ? 'rgba(245, 158, 11, 0.15)' : '#FEF3C7',
-                borderColor: isDark ? 'rgba(245, 158, 11, 0.3)' : '#FDE68A',
-                description: 'Manage expense reimbursements & claims',
-                icon: 'briefcase-outline',
-                iconColor: isDark ? '#FBBF24' : '#D97706',
-                label: 'Claims & Reimburse',
-                route: '/claims',
-              },
-              {
-                bgColor: isDark ? 'rgba(139, 92, 246, 0.15)' : '#EDE9FE',
-                borderColor: isDark ? 'rgba(139, 92, 246, 0.3)' : '#DDD6FE',
-                description: 'Manage income and expense categories',
-                icon: 'tag-multiple-outline',
-                iconColor: isDark ? '#A78BFA' : '#7C3AED',
-                label: 'Categories',
-                route: '/categories',
-              },
-            ],
-      title: language === 'id' ? 'Fitur & Finansial' : 'Financial Tools',
+      id: 'planning',
+      items: [goalsItem],
+      title: language === 'id' ? 'Perencanaan' : 'Planning',
     },
     {
-      id: 'preferences',
-      items:
-        language === 'id'
-          ? [
-              {
-                bgColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#DBEAFE',
-                borderColor: isDark ? 'rgba(59, 130, 246, 0.3)' : '#BFDBFE',
-                description: 'Cadangkan, pulihkan, dan ekspor data',
-                icon: 'cloud-sync-outline',
-                iconColor: isDark ? '#60A5FA' : '#2563EB',
-                label: 'Backup & Ekspor Data',
-                route: '/settings/backup',
-              },
-              {
-                bgColor: isDark ? 'rgba(99, 102, 241, 0.15)' : '#EEF2FF',
-                borderColor: isDark ? 'rgba(99, 102, 241, 0.3)' : '#C7D2FE',
-                description: 'Tampilan tema, mata uang, dan preferensi',
-                icon: 'cog-outline',
-                iconColor: isDark ? '#818CF8' : '#4F46E5',
-                label: 'Pengaturan Aplikasi',
-                route: '/settings',
-              },
-            ]
-          : [
-              {
-                bgColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#DBEAFE',
-                borderColor: isDark ? 'rgba(59, 130, 246, 0.3)' : '#BFDBFE',
-                description: 'Export, restore, and safeguard your data',
-                icon: 'cloud-sync-outline',
-                iconColor: isDark ? '#60A5FA' : '#2563EB',
-                label: 'Backup & Export',
-                route: '/settings/backup',
-              },
-              {
-                bgColor: isDark ? 'rgba(99, 102, 241, 0.15)' : '#EEF2FF',
-                borderColor: isDark ? 'rgba(99, 102, 241, 0.3)' : '#C7D2FE',
-                description: 'Theme appearance, currency, and preferences',
-                icon: 'cog-outline',
-                iconColor: isDark ? '#818CF8' : '#4F46E5',
-                label: 'Settings',
-                route: '/settings',
-              },
-            ],
-      title: language === 'id' ? 'Data & Preferensi' : 'Data & Preferences',
+      id: 'transactions',
+      items: [categoriesItem, claimsItem],
+      title: language === 'id' ? 'Transaksi' : 'Transaction Management',
+    },
+    {
+      id: 'app-data',
+      items: [settingsItem, backupItem],
+      title: language === 'id' ? 'Aplikasi & Data' : 'App & Data',
     },
   ];
 

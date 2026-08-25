@@ -25,6 +25,7 @@ export type TransactionHistoryHeaderProps = {
   onOpenFilter: () => void;
   onSearchChange: (query: string) => void;
   searchQuery: string;
+  showSearchAndFilter?: boolean;
   t: TranslationSchema;
 };
 
@@ -36,6 +37,7 @@ export const TransactionHistoryHeader = memo(function TransactionHistoryHeader({
   onOpenFilter,
   onSearchChange,
   searchQuery,
+  showSearchAndFilter = true,
   t,
 }: TransactionHistoryHeaderProps) {
   const { colors, isDark } = useTheme();
@@ -72,77 +74,85 @@ export const TransactionHistoryHeader = memo(function TransactionHistoryHeader({
 
         <View style={styles.actionsRow}>
           {/* Search Icon Toggle */}
-          <Pressable
-            accessibilityLabel={
-              language === 'id' ? 'Cari transaksi' : 'Search transactions'
-            }
-            accessibilityRole="button"
-            hitSlop={6}
-            onPress={toggleSearch}
-            style={({ pressed }) => [
-              styles.iconActionBtn,
-              {
-                backgroundColor:
-                  isSearchExpanded || searchQuery
-                    ? isDark
-                      ? colors.surfaceSecondary
-                      : '#E2E8F0'
-                    : isDark
-                      ? colors.surfaceSecondary
-                      : '#F1F5F9',
-                borderColor: colors.border,
-              },
-              pressed && styles.pressed,
-            ]}
-          >
-            <MaterialCommunityIcons
-              color={
-                isSearchExpanded || searchQuery
-                  ? colors.primary
-                  : colors.textSecondary
+          {showSearchAndFilter ? (
+            <Pressable
+              accessibilityLabel={
+                language === 'id' ? 'Cari transaksi' : 'Search transactions'
               }
-              name="magnify"
-              size={20}
-            />
-          </Pressable>
+              accessibilityRole="button"
+              hitSlop={6}
+              onPress={toggleSearch}
+              style={({ pressed }) => [
+                styles.iconActionBtn,
+                {
+                  backgroundColor:
+                    isSearchExpanded || searchQuery
+                      ? isDark
+                        ? colors.surfaceSecondary
+                        : '#E2E8F0'
+                      : isDark
+                        ? colors.surfaceSecondary
+                        : '#F1F5F9',
+                  borderColor: colors.border,
+                },
+                pressed && styles.pressed,
+              ]}
+            >
+              <MaterialCommunityIcons
+                color={
+                  isSearchExpanded || searchQuery
+                    ? colors.primary
+                    : colors.textSecondary
+                }
+                name="magnify"
+                size={20}
+              />
+            </Pressable>
+          ) : null}
 
           {/* Filter Icon Button with Badge */}
-          <Pressable
-            accessibilityHint={
-              language === 'id'
-                ? `${activeFiltersCount} filter aktif`
-                : `${activeFiltersCount} active filters`
-            }
-            accessibilityLabel="Filter"
-            accessibilityRole="button"
-            hitSlop={6}
-            onPress={onOpenFilter}
-            style={({ pressed }) => [
-              styles.iconActionBtn,
-              {
-                backgroundColor:
-                  activeFiltersCount > 0
-                    ? colors.primary
-                    : isDark
-                      ? colors.surfaceSecondary
-                      : '#F1F5F9',
-                borderColor:
-                  activeFiltersCount > 0 ? colors.primary : colors.border,
-              },
-              pressed && styles.pressed,
-            ]}
-          >
-            <MaterialCommunityIcons
-              color={activeFiltersCount > 0 ? '#FFFFFF' : colors.textSecondary}
-              name="tune-variant"
-              size={19}
-            />
-            {activeFiltersCount > 0 ? (
-              <View style={styles.filterBadge}>
-                <Text style={styles.filterBadgeText}>{activeFiltersCount}</Text>
-              </View>
-            ) : null}
-          </Pressable>
+          {showSearchAndFilter ? (
+            <Pressable
+              accessibilityHint={
+                language === 'id'
+                  ? `${activeFiltersCount} filter aktif`
+                  : `${activeFiltersCount} active filters`
+              }
+              accessibilityLabel="Filter"
+              accessibilityRole="button"
+              hitSlop={6}
+              onPress={onOpenFilter}
+              style={({ pressed }) => [
+                styles.iconActionBtn,
+                {
+                  backgroundColor:
+                    activeFiltersCount > 0
+                      ? colors.primary
+                      : isDark
+                        ? colors.surfaceSecondary
+                        : '#F1F5F9',
+                  borderColor:
+                    activeFiltersCount > 0 ? colors.primary : colors.border,
+                },
+                pressed && styles.pressed,
+              ]}
+            >
+              <MaterialCommunityIcons
+                color={
+                  activeFiltersCount > 0 ? '#FFFFFF' : colors.textSecondary
+                }
+                name="tune-variant"
+                size={19}
+              />
+              {activeFiltersCount > 0 ? (
+                <View style={styles.filterBadge}>
+                  <Text style={styles.filterBadgeText}>
+                    {activeFiltersCount}
+                  </Text>
+                </View>
+              ) : null}
+            </Pressable>
+          ) : null}
 
           {/* Export CSV Button */}
           {onExport ? (
@@ -179,7 +189,7 @@ export const TransactionHistoryHeader = memo(function TransactionHistoryHeader({
       </View>
 
       {/* Expandable Search Input Field */}
-      {isSearchExpanded || searchQuery ? (
+      {showSearchAndFilter && (isSearchExpanded || searchQuery) ? (
         <View style={styles.searchBarRow}>
           <View style={styles.searchBarWrap}>
             <MaterialCommunityIcons

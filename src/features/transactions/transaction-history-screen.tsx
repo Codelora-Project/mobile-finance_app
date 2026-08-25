@@ -14,6 +14,7 @@ import { TransactionDateGroupHeader } from '@/features/transactions/components/t
 import { TransactionDateNavigator } from '@/features/transactions/components/transaction-date-navigator';
 import { TransactionHistoryEmptyState } from '@/features/transactions/components/transaction-history-empty-state';
 import { TransactionHistoryHeader } from '@/features/transactions/components/transaction-history-header';
+import { TransactionHistorySearchToolbar } from '@/features/transactions/components/transaction-history-search-toolbar';
 import { TransactionHistorySummaryBar } from '@/features/transactions/components/transaction-history-summary-bar';
 import { TransactionPeriodSegmentedControl } from '@/features/transactions/components/transaction-period-segmented-control';
 import { TransactionRowItem } from '@/features/transactions/components/transaction-row-item';
@@ -74,7 +75,7 @@ export function TransactionHistoryScreen() {
 
   return (
     <Screen>
-      {/* 1. Header Toolbar with search bar */}
+      {/* 1. Screen title and low-frequency export action */}
       <TransactionHistoryHeader
         activeFiltersCount={state.activeFiltersCount}
         exporting={state.exporting}
@@ -83,29 +84,37 @@ export function TransactionHistoryScreen() {
         onOpenFilter={() => actions.setFilterModalVisible(true)}
         onSearchChange={actions.setSearchQuery}
         searchQuery={state.searchQuery}
+        showSearchAndFilter={false}
         t={state.t}
       />
 
-      {/* 2. Top Segmented Period Picker (Daily / Weekly / Monthly) */}
-      <TransactionPeriodSegmentedControl
-        activePeriod={state.period}
-        language={state.language}
-        onChangePeriod={actions.handleChangePeriod}
-      />
+      {/* 2. Period and date form one decision area. */}
+      <View
+        style={[
+          styles.periodPanel,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+      >
+        <TransactionPeriodSegmentedControl
+          activePeriod={state.period}
+          embedded
+          language={state.language}
+          onChangePeriod={actions.handleChangePeriod}
+        />
+        <TransactionDateNavigator
+          embedded
+          isAllTime={state.isAllTime}
+          language={state.language}
+          onNextPeriod={actions.handleNextPeriod}
+          onPrevPeriod={actions.handlePrevPeriod}
+          onToggleAllTime={actions.handleToggleAllTime}
+          period={state.period}
+          primaryLabel={state.primaryLabel}
+          secondaryLabel={state.secondaryLabel}
+        />
+      </View>
 
-      {/* 3. Date & Period Navigator Bar */}
-      <TransactionDateNavigator
-        isAllTime={state.isAllTime}
-        language={state.language}
-        onNextPeriod={actions.handleNextPeriod}
-        onPrevPeriod={actions.handlePrevPeriod}
-        onToggleAllTime={actions.handleToggleAllTime}
-        period={state.period}
-        primaryLabel={state.primaryLabel}
-        secondaryLabel={state.secondaryLabel}
-      />
-
-      {/* 4. Income / Expense / Net Summary also acts as the quick type filter. */}
+      {/* 3. Cash-flow summary doubles as a type filter. */}
       {!initialLoading ? (
         <TransactionHistorySummaryBar
           activeTypeFilter={state.filters.type}
@@ -118,6 +127,17 @@ export function TransactionHistoryScreen() {
           totalIncomeMinor={state.totalIncomeMinor}
         />
       ) : null}
+
+      {/* 4. Search and advanced filters support the list below. */}
+      <TransactionHistorySearchToolbar
+        activeFiltersCount={state.activeFiltersCount}
+        language={state.language}
+        onClearSearch={() => actions.setSearchQuery('')}
+        onOpenFilter={() => actions.setFilterModalVisible(true)}
+        onSearchChange={actions.setSearchQuery}
+        searchQuery={state.searchQuery}
+        t={state.t}
+      />
 
       {/* 5. Main Infinite Scroll Transaction Feed */}
       <FlatList
@@ -220,6 +240,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: spacing.md,
+  },
+  periodPanel: {
+    alignSelf: 'center',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+    maxWidth: contentMaxWidth - spacing.md * 2,
+    padding: spacing.sm,
+    width: '92%',
   },
   timelineItemsWrap: {
     paddingVertical: spacing.xs,

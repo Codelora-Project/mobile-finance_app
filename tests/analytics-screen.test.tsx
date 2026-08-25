@@ -150,6 +150,9 @@ describe('analytics screen', () => {
       await screen.findByRole('header', { name: 'Wawasan Finansial' }),
     ).toBeOnTheScreen();
     expect(screen.getByText('Total Pengeluaran')).toBeOnTheScreen();
+    expect(screen.getByText('Total Pemasukan')).toBeOnTheScreen();
+    expect(screen.getByText('Arus Bersih')).toBeOnTheScreen();
+    expect(screen.getByText('Agustus 2026')).toBeOnTheScreen();
     expect(screen.getAllByText('Food & Drink').length).toBeGreaterThanOrEqual(
       1,
     );

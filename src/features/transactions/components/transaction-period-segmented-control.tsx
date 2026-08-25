@@ -11,6 +11,7 @@ export type HistoryPeriod = 'daily' | 'weekly' | 'monthly';
 
 export type TransactionPeriodSegmentedControlProps = {
   activePeriod: HistoryPeriod;
+  embedded?: boolean;
   language: 'id' | 'en';
   onChangePeriod: (period: HistoryPeriod) => void;
 };
@@ -18,6 +19,7 @@ export type TransactionPeriodSegmentedControlProps = {
 export const TransactionPeriodSegmentedControl = memo(
   function TransactionPeriodSegmentedControl({
     activePeriod,
+    embedded = false,
     language,
     onChangePeriod,
   }: TransactionPeriodSegmentedControlProps) {
@@ -42,6 +44,7 @@ export const TransactionPeriodSegmentedControl = memo(
       <View
         style={[
           styles.container,
+          embedded ? styles.embeddedContainer : null,
           {
             backgroundColor: isDark
               ? 'rgba(255, 255, 255, 0.06)'
@@ -105,6 +108,11 @@ const styles = StyleSheet.create({
     maxWidth: contentMaxWidth - spacing.md * 2,
     padding: 3,
     width: '92%',
+  },
+  embeddedContainer: {
+    marginTop: 0,
+    maxWidth: '100%',
+    width: '100%',
   },
   tabItem: {
     alignItems: 'center',

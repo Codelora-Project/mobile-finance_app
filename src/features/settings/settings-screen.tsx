@@ -506,17 +506,7 @@ export function SettingsScreen() {
 
         {overview ? (
           <>
-            {/* 🛡️ Hero Trust Banner: 100% Private & Offline */}
-            <SettingsVaultBanner
-              description={t.settings.dataDesc}
-              title={
-                language === 'id'
-                  ? 'Data tersimpan di perangkat'
-                  : 'Data stays on this device'
-              }
-            />
-
-            {/* SECTION 1: TAMPILAN & PREFERENSI (Appearance & Preferences) */}
+            {/* SECTION 1: GENERAL & APPEARANCE */}
             <SettingsAppearanceCard
               brandTheme={brandTheme}
               currencyCode={overview.currencyCode}
@@ -536,7 +526,7 @@ export function SettingsScreen() {
               themeSetting={themeSetting}
             />
 
-            {/* SECTION 2: KELOLA KEUANGAN (Manage Financial Data) */}
+            {/* SECTION 2: TRANSACTION SETUP & DATA MANAGEMENT */}
             <SettingsDataManagementCard
               clearingCache={clearingCache}
               currencyCode={overview.currencyCode}
@@ -552,7 +542,27 @@ export function SettingsScreen() {
               t={t}
             />
 
-            {/* SECTION 3: ZONA DATA & PRIVASI (Danger Zone) */}
+            {/* SECTION 3: DATA & PRIVACY */}
+            <View style={styles.privacySection}>
+              <Text
+                style={[
+                  styles.sectionHeaderLabel,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {language === 'id' ? 'DATA & PRIVASI' : 'DATA & PRIVACY'}
+              </Text>
+              <SettingsVaultBanner
+                description={t.settings.dataDesc}
+                title={
+                  language === 'id'
+                    ? 'Data tersimpan di perangkat'
+                    : 'Data stays on this device'
+                }
+              />
+            </View>
+
+            {/* SECTION 4: DANGER ZONE */}
             <SettingsDangerZoneCard
               language={language}
               onRequestReset={requestReset}
@@ -560,7 +570,7 @@ export function SettingsScreen() {
               t={t}
             />
 
-            {/* SECTION 4: TENTANG APLIKASI (About Footer) */}
+            {/* SECTION 5: ABOUT */}
             <SettingsAboutFooter
               aboutDesc={t.settings.aboutDesc}
               version={Constants.expoConfig?.version ?? '1.0.0'}
@@ -647,6 +657,16 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.65,
+  },
+  privacySection: {
+    gap: spacing.xs,
+  },
+  sectionHeaderLabel: {
+    ...typography.metadata,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    paddingHorizontal: spacing.xs,
   },
   secondaryText: {
     ...typography.metadata,

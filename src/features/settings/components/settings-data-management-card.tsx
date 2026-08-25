@@ -58,7 +58,7 @@ export const SettingsDataManagementCard = memo(
           accessibilityRole="header"
           style={[styles.sectionHeaderLabel, { color: colors.textSecondary }]}
         >
-          {t.settings.manageSection}
+          {language === 'id' ? 'TRANSAKSI & DATA' : 'TRANSACTIONS & DATA'}
         </Text>
 
         <View

@@ -10,6 +10,7 @@ import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
 export type TransactionDateNavigatorProps = {
+  embedded?: boolean;
   isAllTime: boolean;
   language: 'id' | 'en';
   onNextPeriod: () => void;
@@ -21,6 +22,7 @@ export type TransactionDateNavigatorProps = {
 };
 
 export const TransactionDateNavigator = memo(function TransactionDateNavigator({
+  embedded = false,
   isAllTime,
   language,
   onNextPeriod,
@@ -33,10 +35,13 @@ export const TransactionDateNavigator = memo(function TransactionDateNavigator({
   const { colors, isDark } = useTheme();
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[styles.container, embedded ? styles.embeddedContainer : null]}
+    >
       <View
         style={[
           styles.cardRoot,
+          embedded ? styles.embeddedCard : null,
           {
             backgroundColor: colors.surface,
             borderColor: colors.border,
@@ -145,6 +150,16 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     maxWidth: contentMaxWidth - spacing.md * 2,
     width: '92%',
+  },
+  embeddedCard: {
+    borderWidth: 0,
+    paddingBottom: 0,
+    paddingHorizontal: 0,
+  },
+  embeddedContainer: {
+    marginTop: 0,
+    maxWidth: '100%',
+    width: '100%',
   },
   navBtn: {
     alignItems: 'center',

@@ -21,6 +21,7 @@ import {
 import { AnalyticsBudgetsTab } from '@/features/analytics/components/analytics-budgets-tab';
 import { AnalyticsHeader } from '@/features/analytics/components/analytics-header';
 import { AnalyticsOverviewTab } from '@/features/analytics/components/analytics-overview-tab';
+import { AnalyticsPeriodSummary } from '@/features/analytics/components/analytics-period-summary';
 import {
   AnalyticsTabPills,
   type AnalyticsTabMode,
@@ -216,7 +217,19 @@ export function AnalyticsScreen({
         </Text>
       ) : null}
 
-      {/* 2. Segmented Tab Pills */}
+      {/* 2. Period context and primary KPIs stay visible across tabs. */}
+      {analytics ? (
+        <View style={styles.summaryWrap}>
+          <AnalyticsPeriodSummary
+            analytics={analytics}
+            currencyCode={currencyCode}
+            language={language}
+            t={t}
+          />
+        </View>
+      ) : null}
+
+      {/* 3. Segmented Tab Pills */}
       <AnalyticsTabPills
         activeTab={activeTab}
         budgetsLabel={t.analytics.budgetsTab}
@@ -225,7 +238,7 @@ export function AnalyticsScreen({
         trendsLabel={t.analytics.trendsTab}
       />
 
-      {/* 3. Tab Body Container */}
+      {/* 4. Tab Body Container */}
       <ScrollView
         contentContainerStyle={styles.content}
         onScroll={handleScroll}
@@ -309,6 +322,13 @@ const styles = StyleSheet.create({
   stateText: {
     ...typography.metadata,
     fontSize: 13,
+  },
+  summaryWrap: {
+    alignSelf: 'center',
+    maxWidth: contentMaxWidth,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    width: '100%',
   },
   updatedText: {
     ...typography.metadata,

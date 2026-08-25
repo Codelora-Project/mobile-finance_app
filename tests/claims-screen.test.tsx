@@ -64,6 +64,7 @@ describe('claims screen', () => {
     const row = await screen.findByRole('button', {
       name: 'Travel Claim, Draf',
     });
+    expect(screen.getByText('1 klaim perlu tindakan')).toBeOnTheScreen();
     await fireEvent.press(row);
     expect(mockRouter.push).toHaveBeenCalledWith('/claims/9');
 

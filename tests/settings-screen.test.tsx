@@ -264,7 +264,7 @@ describe('settings screen', () => {
     expect(screen.getByText('Bahasa / Language')).toBeOnTheScreen();
     expect(screen.getByText('Bahasa Indonesia')).toBeOnTheScreen();
     expect(screen.getByText('English')).toBeOnTheScreen();
-    expect(screen.getByText('Kelola')).toBeOnTheScreen();
+    expect(screen.getByText('TRANSAKSI & DATA')).toBeOnTheScreen();
     expect(screen.getByText('Kategori')).toBeOnTheScreen();
     expect(screen.getByText('Metode Pembayaran')).toBeOnTheScreen();
     expect(screen.getByText('Hapus Semua Data')).toBeOnTheScreen();
@@ -272,7 +272,7 @@ describe('settings screen', () => {
     await fireEvent.press(
       screen.getByRole('button', { name: 'Select English language' }),
     );
-    expect(screen.getByText('Manage')).toBeOnTheScreen();
+    expect(screen.getByText('TRANSACTIONS & DATA')).toBeOnTheScreen();
     expect(screen.getByText('Categories')).toBeOnTheScreen();
     expect(screen.getByText('Delete All Data')).toBeOnTheScreen();
   });

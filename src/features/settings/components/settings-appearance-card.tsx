@@ -60,9 +60,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
       <Text
         style={[styles.sectionHeaderLabel, { color: colors.textSecondary }]}
       >
-        {language === 'id'
-          ? 'TAMPILAN & PREFERENSI'
-          : 'APPEARANCE & PREFERENCES'}
+        {language === 'id' ? 'UMUM & TAMPILAN' : 'GENERAL & APPEARANCE'}
       </Text>
 
       <View

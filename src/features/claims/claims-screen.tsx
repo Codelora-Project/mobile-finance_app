@@ -1,6 +1,7 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -82,6 +83,30 @@ export function ClaimsScreen() {
     [router],
   );
 
+  const displayedClaims = useMemo(() => {
+    if (status) return claims;
+    const priority: Record<ClaimStatus, number> = {
+      draft: 0,
+      rejected: 1,
+      submitted: 2,
+      reimbursed: 3,
+    };
+    return [...claims].sort(
+      (a, b) =>
+        priority[a.status] - priority[b.status] || b.updatedAt - a.updatedAt,
+    );
+  }, [claims, status]);
+
+  const actionRequiredCount = useMemo(
+    () =>
+      status
+        ? 0
+        : claims.filter(
+            (claim) => claim.status === 'draft' || claim.status === 'rejected',
+          ).length,
+    [claims, status],
+  );
+
   return (
     <Screen>
       {/* 1. Header with Title & New Claim Button */}
@@ -98,6 +123,39 @@ export function ClaimsScreen() {
         onSelectStatus={setStatus}
         selectedStatus={status}
       />
+
+      {actionRequiredCount > 0 ? (
+        <View
+          accessibilityLiveRegion="polite"
+          style={[
+            styles.priorityBanner,
+            {
+              backgroundColor: colors.warningBackground,
+              borderColor: colors.warning,
+            },
+          ]}
+        >
+          <MaterialCommunityIcons
+            color={colors.warning}
+            name="alert-circle-outline"
+            size={20}
+          />
+          <View style={styles.priorityText}>
+            <Text style={[styles.priorityTitle, { color: colors.textPrimary }]}>
+              {language === 'id'
+                ? `${actionRequiredCount} klaim perlu tindakan`
+                : `${actionRequiredCount} ${actionRequiredCount === 1 ? 'claim needs' : 'claims need'} attention`}
+            </Text>
+            <Text
+              style={[styles.prioritySubtitle, { color: colors.textSecondary }]}
+            >
+              {language === 'id'
+                ? 'Draf dan klaim ditolak ditampilkan lebih dahulu.'
+                : 'Draft and rejected claims are shown first.'}
+            </Text>
+          </View>
+        </View>
+      ) : null}
 
       {/* 3. Feedback / Error Alerts */}
       {feedback ? (
@@ -141,7 +199,7 @@ export function ClaimsScreen() {
             styles.list,
             claims.length === 0 ? styles.emptyList : null,
           ]}
-          data={claims}
+          data={displayedClaims}
           keyExtractor={(claim) => String(claim.id)}
           ListEmptyComponent={
             <ClaimsEmptyState
@@ -189,6 +247,29 @@ const styles = StyleSheet.create({
     maxWidth: contentMaxWidth,
     paddingBottom: spacing.xxl + spacing.md,
     width: '100%',
+  },
+  priorityBanner: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+    maxWidth: contentMaxWidth - spacing.md * 2,
+    padding: spacing.sm,
+    width: '92%',
+  },
+  prioritySubtitle: {
+    fontSize: 11,
+  },
+  priorityText: {
+    flex: 1,
+    gap: 1,
+  },
+  priorityTitle: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   state: {
     alignItems: 'center',
