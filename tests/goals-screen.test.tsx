@@ -95,10 +95,8 @@ describe('goals screen', () => {
     );
 
     expect(
-      await screen.findByRole('header', { name: 'Celengan Impian' }),
+      await screen.findByRole('header', { name: 'Target Tabungan' }),
     ).toBeOnTheScreen();
-    expect(screen.getByText('5 Hari')).toBeOnTheScreen();
-    expect(screen.getByText('Hari Beruntun')).toBeOnTheScreen();
     expect(screen.getByText('Laptop Gaming')).toBeOnTheScreen();
     expect(screen.getAllByText('20%').length).toBeGreaterThanOrEqual(1);
 
@@ -131,7 +129,7 @@ describe('goals screen', () => {
     );
 
     await screen.findByText('Laptop Gaming');
-    await fireEvent.press(screen.getByText('+ Target Baru'));
+    await fireEvent.press(screen.getByText('Target baru'));
 
     expect(
       screen.getByPlaceholderText('misal: Beli Laptop Baru, Liburan Bali'),
@@ -163,7 +161,7 @@ describe('goals screen', () => {
     );
 
     await screen.findByText('Laptop Gaming');
-    await fireEvent.press(screen.getByText('+ New Goal'));
+    await fireEvent.press(screen.getByText('New goal'));
     await fireEvent.changeText(
       screen.getByPlaceholderText('e.g. New Laptop, Emergency Fund'),
       'Emergency Fund',

@@ -6,6 +6,7 @@ import type {
   ClaimSummary,
 } from '@/features/claims/claim-repository';
 import { formatMoney } from '@/lib/money';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { spacing } from '@/theme/spacing';
 
@@ -14,7 +15,15 @@ export type ClaimListRowItemProps = {
   onPress: (id: number) => void;
 };
 
-function statusLabel(status: ClaimStatus) {
+function statusLabel(status: ClaimStatus, language: 'en' | 'id') {
+  if (language === 'id') {
+    return {
+      draft: 'Draf',
+      rejected: 'Ditolak',
+      reimbursed: 'Dibayar',
+      submitted: 'Diajukan',
+    }[status];
+  }
   return status[0]?.toUpperCase() + status.slice(1);
 }
 
@@ -23,10 +32,12 @@ export const ClaimListRowItem = memo(function ClaimListRowItem({
   onPress,
 }: ClaimListRowItemProps) {
   const { colors } = useTheme();
+  const { language } = useLanguage();
+  const status = statusLabel(claim.status, language);
 
   return (
     <Pressable
-      accessibilityLabel={`${claim.title}, ${statusLabel(claim.status)}`}
+      accessibilityLabel={`${claim.title}, ${status}`}
       accessibilityRole="button"
       onPress={() => onPress(claim.id)}
       style={({ pressed }) => [
@@ -46,7 +57,8 @@ export const ClaimListRowItem = memo(function ClaimListRowItem({
           {claim.title}
         </Text>
         <Text style={[styles.rowMetadata, { color: colors.textSecondary }]}>
-          {statusLabel(claim.status)} · {claim.itemCount} items
+          {status} · {claim.itemCount}{' '}
+          {language === 'id' ? 'transaksi' : 'items'}
         </Text>
       </View>
       <Text style={[styles.amount, { color: colors.textPrimary }]}>

@@ -9,10 +9,12 @@ import { typography } from '@/theme/typography';
 
 export type SettingsVaultBannerProps = {
   description: string;
+  title: string;
 };
 
 export const SettingsVaultBanner = memo(function SettingsVaultBanner({
   description,
+  title,
 }: SettingsVaultBannerProps) {
   const { colors, isDark } = useTheme();
 
@@ -41,7 +43,7 @@ export const SettingsVaultBanner = memo(function SettingsVaultBanner({
         </View>
         <View style={styles.vaultTextContainer}>
           <Text style={[styles.vaultTitle, { color: colors.textPrimary }]}>
-            Offline & Private Vault
+            {title}
           </Text>
           <Text style={[styles.vaultDesc, { color: colors.textSecondary }]}>
             {description}

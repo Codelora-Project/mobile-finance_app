@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
+import { contentMaxWidth } from '@/theme/layout';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -246,14 +247,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   summaryBarRoot: {
+    alignSelf: 'center',
     alignItems: 'center',
     borderRadius: radius.lg,
     borderWidth: 1,
     flexDirection: 'row',
-    marginHorizontal: spacing.md,
     marginTop: spacing.xs,
+    maxWidth: contentMaxWidth - spacing.md * 2,
     paddingHorizontal: spacing.sm,
     paddingVertical: 9,
+    width: '92%',
   },
   textWrap: {
     flex: 1,

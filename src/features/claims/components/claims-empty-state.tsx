@@ -7,13 +7,21 @@ import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
 export type ClaimsEmptyStateProps = {
+  createLabel: string;
+  description: string;
+  filteredDescription: string;
   hasStatusFilter: boolean;
   onCreateClaim: () => void;
+  title: string;
 };
 
 export const ClaimsEmptyState = memo(function ClaimsEmptyState({
+  createLabel,
+  description,
+  filteredDescription,
   hasStatusFilter,
   onCreateClaim,
+  title,
 }: ClaimsEmptyStateProps) {
   const { colors } = useTheme();
 
@@ -23,16 +31,14 @@ export const ClaimsEmptyState = memo(function ClaimsEmptyState({
         accessibilityRole="header"
         style={[styles.emptyTitle, { color: colors.textPrimary }]}
       >
-        No claims found
+        {title}
       </Text>
       <Text style={[styles.stateText, { color: colors.textSecondary }]}>
-        {hasStatusFilter
-          ? 'Try selecting a different status filter.'
-          : 'Submit work expenses for reimbursement by creating a claim.'}
+        {hasStatusFilter ? filteredDescription : description}
       </Text>
       {!hasStatusFilter ? (
         <View style={styles.emptyAction}>
-          <AppButton label="Create Claim" onPress={onCreateClaim} />
+          <AppButton label={createLabel} onPress={onCreateClaim} />
         </View>
       ) : null}
     </View>

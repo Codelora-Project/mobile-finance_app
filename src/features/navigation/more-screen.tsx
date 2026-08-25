@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '@/components/ui/screen';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
+import { contentMaxWidth } from '@/theme/layout';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -170,8 +171,16 @@ export function MoreScreen() {
               {section.title.toUpperCase()}
             </Text>
 
-            <View style={styles.cardsList}>
-              {section.items.map((item) => (
+            <View
+              style={[
+                styles.cardsList,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              {section.items.map((item, index) => (
                 <Pressable
                   accessibilityLabel={`${item.label}, ${item.description}`}
                   accessibilityRole="button"
@@ -180,10 +189,18 @@ export function MoreScreen() {
                   style={({ pressed }) => [
                     styles.row,
                     {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.border,
+                      borderBottomColor: colors.border,
+                      borderBottomWidth:
+                        index === section.items.length - 1
+                          ? 0
+                          : StyleSheet.hairlineWidth,
                     },
-                    pressed && styles.pressed,
+                    pressed
+                      ? [
+                          styles.pressed,
+                          { backgroundColor: colors.surfaceSecondary },
+                        ]
+                      : null,
                   ]}
                 >
                   <View
@@ -210,7 +227,7 @@ export function MoreScreen() {
                       {item.label}
                     </Text>
                     <Text
-                      numberOfLines={1}
+                      numberOfLines={2}
                       style={[
                         styles.description,
                         { color: colors.textSecondary },
@@ -237,22 +254,30 @@ export function MoreScreen() {
 
 const styles = StyleSheet.create({
   cardsList: {
-    gap: spacing.sm,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
   content: {
+    alignSelf: 'center',
     gap: spacing.lg,
+    maxWidth: contentMaxWidth,
     paddingBottom: spacing.xxl + 84,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.xs,
+    width: '100%',
   },
   description: {
     ...typography.metadata,
     fontSize: 12,
   },
   header: {
+    alignSelf: 'center',
     gap: spacing.xs,
+    maxWidth: contentMaxWidth,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
+    width: '100%',
   },
   iconBadge: {
     alignItems: 'center',
@@ -274,10 +299,9 @@ const styles = StyleSheet.create({
   },
   row: {
     alignItems: 'center',
-    borderRadius: radius.lg,
-    borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.md,
+    minHeight: 76,
     padding: spacing.md,
   },
   sectionContainer: {

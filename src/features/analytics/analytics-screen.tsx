@@ -37,10 +37,17 @@ import { useCurrency } from '@/lib/currency/currency-context';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { useTabBarVisibility } from '@/lib/navigation/tab-bar-visibility-context';
 import { useTheme } from '@/lib/theme/theme-context';
+import { contentMaxWidth } from '@/theme/layout';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
-export function AnalyticsScreen() {
+export type AnalyticsScreenProps = {
+  hideBackButton?: boolean;
+};
+
+export function AnalyticsScreen({
+  hideBackButton = false,
+}: AnalyticsScreenProps = {}) {
   const database = useSQLiteContext();
   const router = useRouter();
   const { language, t } = useLanguage();
@@ -153,7 +160,7 @@ export function AnalyticsScreen() {
       <Screen>
         <AnalyticsHeader
           backLabel={t.common.back}
-          onBack={() => router.back()}
+          onBack={hideBackButton ? undefined : () => router.back()}
           title={t.analytics.title}
         />
         <View style={styles.centeredState}>
@@ -179,7 +186,7 @@ export function AnalyticsScreen() {
       {/* 1. Top Navigation Header */}
       <AnalyticsHeader
         backLabel={t.common.back}
-        onBack={() => router.back()}
+        onBack={hideBackButton ? undefined : () => router.back()}
         title={t.analytics.title}
       />
 
@@ -291,10 +298,13 @@ const styles = StyleSheet.create({
   errorBannerText: { ...typography.metadata, fontWeight: '700' },
   errorTitle: { ...typography.body, maxWidth: 320, textAlign: 'center' },
   content: {
+    alignSelf: 'center',
     gap: spacing.md,
+    maxWidth: contentMaxWidth,
     paddingBottom: spacing.xxl + 84,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
+    width: '100%',
   },
   stateText: {
     ...typography.metadata,

@@ -33,6 +33,7 @@ import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
+import { contentMaxWidth } from '@/theme/layout';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
@@ -262,8 +263,19 @@ export function WalletsScreen({
             />
 
             {screenError ? (
-              <View style={styles.errorBanner}>
-                <Text style={styles.errorText}>{screenError}</Text>
+              <View
+                accessibilityLiveRegion="assertive"
+                style={[
+                  styles.errorBanner,
+                  {
+                    backgroundColor: colors.expenseBackground,
+                    borderColor: colors.destructive,
+                  },
+                ]}
+              >
+                <Text style={[styles.errorText, { color: colors.destructive }]}>
+                  {screenError}
+                </Text>
                 <AppButton
                   label={t.common.tryAgain}
                   onPress={() => void loadData()}
@@ -368,15 +380,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   errorBanner: {
-    backgroundColor: '#FEF2F2',
     borderRadius: radius.md,
+    borderWidth: 1,
     gap: spacing.sm,
     marginTop: spacing.sm,
     padding: spacing.sm,
   },
   errorText: {
     ...typography.metadata,
-    color: '#DC2626',
     fontSize: 12,
     textAlign: 'center',
   },
@@ -411,9 +422,12 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.96 }],
   },
   scrollContent: {
+    alignSelf: 'center',
     gap: spacing.sm,
+    maxWidth: contentMaxWidth,
     padding: spacing.md,
     paddingBottom: spacing.xxl + 40,
+    width: '100%',
   },
   sectionHeaderRow: {
     marginTop: spacing.sm,

@@ -23,6 +23,12 @@ jest.mock('expo-router', () => {
   };
 });
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: () => mockDatabase }));
+jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
+  const ReactNative = require('react-native');
+  return (props: { name: string }) => (
+    <ReactNative.Text>{props.name}</ReactNative.Text>
+  );
+});
 jest.mock('@/features/claims/claim-repository', () => ({
   listClaims: (...args: unknown[]) => mockListClaims(...args),
 }));
@@ -56,12 +62,12 @@ describe('claims screen', () => {
   it('lists claims, navigates to detail, and applies status filters', async () => {
     await render(<ClaimsScreen />);
     const row = await screen.findByRole('button', {
-      name: 'Travel Claim, Draft',
+      name: 'Travel Claim, Draf',
     });
     await fireEvent.press(row);
     expect(mockRouter.push).toHaveBeenCalledWith('/claims/9');
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Submitted' }));
+    await fireEvent.press(screen.getByRole('tab', { name: 'Diajukan' }));
     await waitFor(() =>
       expect(mockListClaims).toHaveBeenLastCalledWith(
         expect.anything(),
@@ -86,10 +92,10 @@ describe('claims screen', () => {
       .mockResolvedValueOnce([submitted]);
 
     await render(<ClaimsScreen />);
-    await fireEvent.press(screen.getByRole('button', { name: 'Submitted' }));
+    await fireEvent.press(screen.getByRole('tab', { name: 'Diajukan' }));
     expect(
       await screen.findByRole('button', {
-        name: 'Newest Submitted Claim, Submitted',
+        name: 'Newest Submitted Claim, Diajukan',
       }),
     ).toBeOnTheScreen();
 

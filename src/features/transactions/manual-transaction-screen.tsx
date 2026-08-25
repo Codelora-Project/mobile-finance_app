@@ -29,6 +29,7 @@ import {
 } from '@/features/transactions/hooks/use-manual-transaction-view-model';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
+import { contentMaxWidth } from '@/theme/layout';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -240,7 +241,12 @@ export function ManualTransactionScreen({
 
           {/* Global Submit/Validation Errors */}
           {state.errors.submit ? (
-            <Text style={styles.errorBanner}>{state.errors.submit}</Text>
+            <Text
+              accessibilityLiveRegion="assertive"
+              style={styles.errorBanner}
+            >
+              {state.errors.submit}
+            </Text>
           ) : null}
 
           {/* Big Action Save Button */}
@@ -264,6 +270,10 @@ export function ManualTransactionScreen({
                         : `Save Expense (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
               }
               accessibilityRole="button"
+              accessibilityState={{
+                busy: state.saving,
+                disabled: state.saving,
+              }}
               disabled={state.saving}
               onPress={() => void actions.handleSave()}
               style={({ pressed }) => [
@@ -648,11 +658,13 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xs,
   },
   sheetContainer: {
+    alignSelf: 'center',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     borderTopWidth: 1,
     elevation: 24,
     maxHeight: '92%',
+    maxWidth: contentMaxWidth,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.15,

@@ -149,6 +149,7 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
       {/* Expandable Advanced Options */}
       <Pressable
         accessibilityRole="button"
+        accessibilityState={{ expanded: showDetailSection }}
         onPress={onToggleShowDetails}
         style={styles.advancedToggleBtn}
       >

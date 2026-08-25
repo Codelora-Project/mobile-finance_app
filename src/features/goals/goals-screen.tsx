@@ -1,4 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   FlatList,
@@ -20,11 +21,13 @@ import {
   type GoalsFilterTab,
 } from '@/features/goals/hooks/use-goals-view-model';
 import { useTheme } from '@/lib/theme/theme-context';
+import { contentMaxWidth } from '@/theme/layout';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
 export function GoalsScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const { actions, state } = useGoalsViewModel();
 
@@ -32,15 +35,17 @@ export function GoalsScreen() {
     <Screen>
       {/* 1. Page Header */}
       <GoalsHeader
-        language={state.language}
+        backLabel={state.t.common.back}
+        onBack={() => router.back()}
         onOpenCreateGoal={actions.openCreateModal}
-        streakCount={state.habitStats?.currentStreak ?? 0}
         t={state.t}
       />
 
       {state.error ? (
-        <View style={styles.errorPanel}>
-          <Text style={styles.errorText}>{state.error}</Text>
+        <View accessibilityLiveRegion="assertive" style={styles.errorPanel}>
+          <Text style={[styles.errorText, { color: colors.destructive }]}>
+            {state.error}
+          </Text>
           <AppButton
             label={state.t.common.tryAgain}
             onPress={() => void actions.load()}
@@ -100,7 +105,8 @@ export function GoalsScreen() {
                   const isSelected = state.filterTab === tab.key;
                   return (
                     <Pressable
-                      accessibilityRole="button"
+                      accessibilityRole="tab"
+                      accessibilityState={{ selected: isSelected }}
                       key={tab.key}
                       onPress={() =>
                         actions.setFilterTab(tab.key as GoalsFilterTab)
@@ -219,7 +225,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...typography.metadata,
-    color: '#EF4444',
   },
   filterTabBtn: {
     borderRadius: radius.pill,
@@ -240,9 +245,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   listContent: {
+    alignSelf: 'center',
     gap: spacing.md,
+    maxWidth: contentMaxWidth,
     paddingBottom: spacing.xxl + 24,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.xs,
+    width: '100%',
   },
 });

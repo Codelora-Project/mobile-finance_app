@@ -4,6 +4,7 @@ import {
   FlatList,
   RefreshControl,
   StyleSheet,
+  Text,
   View,
 } from 'react-native';
 
@@ -24,12 +25,14 @@ import { TransactionFilterModal } from '@/features/transactions/transaction-filt
 import { useTabBarVisibility } from '@/lib/navigation/tab-bar-visibility-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
+import { contentMaxWidth } from '@/theme/layout';
 import { spacing } from '@/theme/spacing';
 
 export function TransactionHistoryScreen() {
   const { colors } = useTheme();
   const { handleScroll } = useTabBarVisibility();
   const { actions, state } = useTransactionHistoryViewModel();
+  const initialLoading = state.loading && state.dateGroups.length === 0;
 
   const renderItem = useCallback(
     ({ item }: { item: DateGroup }) => (
@@ -103,16 +106,18 @@ export function TransactionHistoryScreen() {
       />
 
       {/* 4. Income / Expense / Net Summary also acts as the quick type filter. */}
-      <TransactionHistorySummaryBar
-        activeTypeFilter={state.filters.type}
-        currencyCode={state.currencyCode}
-        expenseLabel={state.t.transactions.expense}
-        incomeLabel={state.t.transactions.income}
-        netLabel={state.language === 'id' ? 'Arus Bersih' : 'Net Flow'}
-        onSelectTypeFilter={actions.handleSelectTypeFilter}
-        totalExpenseMinor={state.totalExpenseMinor}
-        totalIncomeMinor={state.totalIncomeMinor}
-      />
+      {!initialLoading ? (
+        <TransactionHistorySummaryBar
+          activeTypeFilter={state.filters.type}
+          currencyCode={state.currencyCode}
+          expenseLabel={state.t.transactions.expense}
+          incomeLabel={state.t.transactions.income}
+          netLabel={state.language === 'id' ? 'Arus Bersih' : 'Net Flow'}
+          onSelectTypeFilter={actions.handleSelectTypeFilter}
+          totalExpenseMinor={state.totalExpenseMinor}
+          totalIncomeMinor={state.totalIncomeMinor}
+        />
+      ) : null}
 
       {/* 5. Main Infinite Scroll Transaction Feed */}
       <FlatList
@@ -120,14 +125,23 @@ export function TransactionHistoryScreen() {
         data={state.dateGroups}
         keyExtractor={(group) => group.key}
         ListEmptyComponent={
-          !state.loading ? (
+          initialLoading ? (
+            <View accessibilityLiveRegion="polite" style={styles.loadingState}>
+              <ActivityIndicator color={colors.primary} size="small" />
+              <Text
+                style={[styles.loadingText, { color: colors.textSecondary }]}
+              >
+                {state.t.transactions.loading}
+              </Text>
+            </View>
+          ) : (
             <TransactionHistoryEmptyState
               hasFilters={state.hasAnyFilterOrSearch}
               onAddTransaction={actions.handleAddTransaction}
               onResetFilters={actions.handleResetFilters}
               t={state.t}
             />
-          ) : null
+          )
         }
         ListFooterComponent={
           state.loadingMore ? (
@@ -185,10 +199,22 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
   listContent: {
+    alignSelf: 'center',
     gap: spacing.md,
+    maxWidth: contentMaxWidth,
     paddingBottom: spacing.xxl + 40,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.xs,
+    width: '100%',
+  },
+  loadingState: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    justifyContent: 'center',
+    minHeight: 220,
+  },
+  loadingText: {
+    fontSize: 14,
   },
   loadingMoreContainer: {
     alignItems: 'center',

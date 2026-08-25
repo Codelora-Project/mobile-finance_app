@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Constants from 'expo-constants';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -5,6 +6,7 @@ import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -46,6 +48,7 @@ import type { Language } from '@/lib/i18n/translations';
 import { getCurrencyFractionDigits, parseMoneyInput } from '@/lib/money';
 import { useTheme, type ThemeSetting } from '@/lib/theme/theme-context';
 import type { BrandTheme } from '@/theme/colors';
+import { contentMaxWidth } from '@/theme/layout';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
@@ -452,6 +455,22 @@ export function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {/* Screen Title */}
         <View style={styles.header}>
+          <Pressable
+            accessibilityLabel={t.common.back}
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => router.back()}
+            style={({ pressed }) => [
+              styles.backButton,
+              pressed ? styles.pressed : null,
+            ]}
+          >
+            <MaterialCommunityIcons
+              color={colors.textPrimary}
+              name="chevron-left"
+              size={28}
+            />
+          </Pressable>
           <Text
             accessibilityRole="header"
             style={[styles.title, { color: colors.textPrimary }]}
@@ -473,7 +492,9 @@ export function SettingsScreen() {
 
         {error ? (
           <View accessibilityLiveRegion="assertive" style={styles.errorPanel}>
-            <Text style={styles.errorText}>{error}</Text>
+            <Text style={[styles.errorText, { color: colors.destructive }]}>
+              {error}
+            </Text>
             {!overview ? (
               <AppButton
                 label={t.common.tryAgain}
@@ -486,7 +507,14 @@ export function SettingsScreen() {
         {overview ? (
           <>
             {/* 🛡️ Hero Trust Banner: 100% Private & Offline */}
-            <SettingsVaultBanner description={t.settings.dataDesc} />
+            <SettingsVaultBanner
+              description={t.settings.dataDesc}
+              title={
+                language === 'id'
+                  ? 'Data tersimpan di perangkat'
+                  : 'Data stays on this device'
+              }
+            />
 
             {/* SECTION 1: TAMPILAN & PREFERENSI (Appearance & Preferences) */}
             <SettingsAppearanceCard
@@ -589,10 +617,20 @@ export function SettingsScreen() {
 
 const styles = StyleSheet.create({
   content: {
+    alignSelf: 'center',
     gap: spacing.lg,
+    maxWidth: contentMaxWidth,
     paddingBottom: spacing.xxl + 24,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
+    width: '100%',
+  },
+  backButton: {
+    alignItems: 'center',
+    height: 40,
+    justifyContent: 'center',
+    marginLeft: -spacing.sm,
+    width: 40,
   },
   errorPanel: {
     gap: spacing.sm,
@@ -600,10 +638,15 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...typography.metadata,
-    color: '#EF4444',
   },
   header: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.xs,
     paddingVertical: spacing.xs,
+  },
+  pressed: {
+    opacity: 0.65,
   },
   secondaryText: {
     ...typography.metadata,

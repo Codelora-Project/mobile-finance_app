@@ -3,6 +3,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   RefreshControl,
   ScrollView,
@@ -52,6 +53,7 @@ import { useLanguage } from '@/lib/i18n/language-context';
 import { useTabBarVisibility } from '@/lib/navigation/tab-bar-visibility-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
+import { contentMaxWidth } from '@/theme/layout';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
@@ -406,6 +408,7 @@ export function HomeScreen() {
   }, [language, selectedWalletId, summary, t]);
 
   const activeWallets = walletSummary?.wallets ?? [];
+  const initialLoading = summary === null && error === null;
 
   return (
     <Screen>
@@ -473,57 +476,60 @@ export function HomeScreen() {
           </View>
         ) : null}
 
-        {/* 2.1 Unified Hero Cashflow Card (Catatku Style) */}
-        {summary ? (
-          <HomeSummaryCard
-            hideBalance={hideBalance}
-            onOpenDisplaySettings={handleOpenDisplaySettingsModal}
-            onPeriodChange={handlePeriodChange}
-            onToggleHideBalance={handleToggleHideBalance}
-            period={period}
-            summary={summary}
-            t={t}
-          />
-        ) : null}
+        {initialLoading ? (
+          <View accessibilityLiveRegion="polite" style={styles.loadingState}>
+            <ActivityIndicator color={colors.primary} size="small" />
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+              {t.home.loading}
+            </Text>
+          </View>
+        ) : summary ? (
+          <>
+            <HomeSummaryCard
+              hideBalance={hideBalance}
+              onOpenDisplaySettings={handleOpenDisplaySettingsModal}
+              onPeriodChange={handlePeriodChange}
+              onToggleHideBalance={handleToggleHideBalance}
+              period={period}
+              summary={summary}
+              t={t}
+            />
 
-        {/* 2.2 Optional Sleek Horizontal Wallet Filter Chips */}
-        {showWalletChips ? (
-          <HomeWalletChipsBar
-            language={language}
-            onAddWalletPress={() => router.push('/wallets')}
-            onSelectWallet={handleSelectWallet}
-            selectedWalletId={selectedWalletId}
-            wallets={activeWallets}
-          />
-        ) : null}
+            {showWalletChips ? (
+              <HomeWalletChipsBar
+                language={language}
+                onAddWalletPress={() => router.push('/wallets')}
+                onSelectWallet={handleSelectWallet}
+                selectedWalletId={selectedWalletId}
+                wallets={activeWallets}
+              />
+            ) : null}
 
-        {summary ? (
-          <HomeFinancialInsight
-            budgets={budgets}
-            hideBalance={hideBalance}
-            summary={summary}
-            t={t}
-          />
-        ) : null}
+            {showQuickLog ? (
+              <HomeQuickCategoryLog
+                categories={displayedQuickLogCategories}
+                onOpenCustomize={handleOpenCustomizeModal}
+                onSelectCategory={handleSelectQuickLogCategory}
+                t={t}
+              />
+            ) : null}
 
-        {/* Recent activity stays above secondary shortcuts. */}
-        <HomeRecentTransactions
-          currencyCode={summary?.currencyCode ?? 'IDR'}
-          groupedTimeline={groupedTimeline}
-          onPressTransaction={handlePressTransaction}
-          onViewAll={handleViewAllTransactions}
-          selectedWalletId={selectedWalletId}
-          t={t}
-        />
+            <HomeFinancialInsight
+              budgets={budgets}
+              hideBalance={hideBalance}
+              summary={summary}
+              t={t}
+            />
 
-        {/* Fast-Track Quick Category Log (Toggleable) */}
-        {showQuickLog ? (
-          <HomeQuickCategoryLog
-            categories={displayedQuickLogCategories}
-            onOpenCustomize={handleOpenCustomizeModal}
-            onSelectCategory={handleSelectQuickLogCategory}
-            t={t}
-          />
+            <HomeRecentTransactions
+              currencyCode={summary.currencyCode}
+              groupedTimeline={groupedTimeline}
+              onPressTransaction={handlePressTransaction}
+              onViewAll={handleViewAllTransactions}
+              selectedWalletId={selectedWalletId}
+              t={t}
+            />
+          </>
         ) : null}
       </ScrollView>
 
@@ -564,10 +570,13 @@ export function HomeScreen() {
 
 const styles = StyleSheet.create({
   content: {
+    alignSelf: 'center',
     gap: spacing.md,
+    maxWidth: contentMaxWidth,
     paddingBottom: spacing.xxl + 84,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
+    width: '100%',
   },
   errorCard: {
     alignItems: 'center',
@@ -580,5 +589,15 @@ const styles = StyleSheet.create({
     ...typography.body,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  loadingState: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    justifyContent: 'center',
+    minHeight: 220,
+    paddingVertical: spacing.xl,
+  },
+  loadingText: {
+    ...typography.secondary,
   },
 });

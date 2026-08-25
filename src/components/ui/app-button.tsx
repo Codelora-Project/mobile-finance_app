@@ -35,7 +35,7 @@ export function AppButton({
   const { colors } = useTheme();
   const isDisabled = disabled || loading;
   const indicatorColor =
-    variant === 'primary' ? colors.surface : colors.primary;
+    variant === 'primary' ? colors.onPrimary : colors.primary;
 
   const variantStyle: StyleProp<ViewStyle> = {
     primary: {
@@ -58,7 +58,7 @@ export function AppButton({
 
   const labelStyle: StyleProp<TextStyle> = {
     primary: {
-      color: '#FFFFFF',
+      color: colors.onPrimary,
     },
     secondary: {
       color: colors.textPrimary,

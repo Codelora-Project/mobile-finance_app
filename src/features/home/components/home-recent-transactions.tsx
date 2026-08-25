@@ -56,6 +56,8 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
           {t.home.recentTransactions}
         </Text>
         <Pressable
+          accessibilityLabel={t.home.viewAll}
+          accessibilityRole="button"
           hitSlop={8}
           onPress={onViewAll}
           style={({ pressed }) => [
@@ -107,9 +109,11 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
                     styles.timelineDailyNet,
                     {
                       color:
-                        group.netMinor >= 0
+                        group.netMinor > 0
                           ? colors.positive
-                          : colors.textSecondary,
+                          : group.netMinor < 0
+                            ? colors.destructive
+                            : colors.textSecondary,
                     },
                   ]}
                 >

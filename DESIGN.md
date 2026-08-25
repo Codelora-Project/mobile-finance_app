@@ -1,17 +1,18 @@
 # Design System & Guidelines: Mobile Finance App
 
-Dokumen ini adalah panduan desain resmi (_Design System & UX Guidelines_) untuk aplikasi **Mobile Finance App**. Panduan ini memastikan seluruh layar, komponen, interaksi, dan alur visual konsisten, modern, dan sesuai dengan target pengguna utama: **Milenial & Gen Z**.
+Dokumen ini adalah panduan desain resmi (_Design System & UX Guidelines_) untuk aplikasi **Mobile Finance App**. Panduan ini memastikan seluruh layar, komponen, interaksi, dan alur visual konsisten, dapat dipercaya, dan mudah dipindai.
 
 ---
 
 ## 1. Filosofi Desain & Persona Pengguna
 
-### Target Pengguna: Milenial & Gen Z
+### Prinsip Produk
 
 - **Zero-Friction & Speed**: Menolak formulir panjang yang membosankan. Prioritas pada _Quick-Entry_ (catat dalam < 3 detik).
-- **Visual-Driven**: Membaca ikon dan warna lebih cepat daripada membaca teks panjang.
-- **Modern & Clean Aesthetics**: Gaya antarmuka minimalis, _soft shadows_, sudut membulat (_rounded corners_), palet warna pastel yang kontras dan elegan.
-- **Clarity & Financial Confidence**: Tampilan saldo dan pengeluaran jelas, tegas, dan mudah dipahami dalam sekali pandang.
+- **Data First**: Nominal, periode, status, dan tindakan berikutnya lebih penting daripada dekorasi.
+- **Trust Through Clarity**: Label harus langsung, status tidak hanya mengandalkan warna, serta keadaan memuat, kosong, sukses, dan gagal selalu eksplisit.
+- **Intentional Visuals**: Ikon dan warna memperkuat makna. Bayangan, radius, badge, dan kartu dipakai hanya ketika membantu hierarki.
+- **Financial Confidence**: Saldo, pemasukan, pengeluaran, dan progres target mudah dipahami dalam sekali pandang.
 
 ---
 
@@ -87,15 +88,15 @@ Setiap kategori pengeluaran/pemasukan memiliki pasangan warna ikon (solid) dan w
 
 - `sm: 8px` — Sudut badge kecil & thumbnail foto
 - `md: 12px` — Sudut input form & kotak dialog
-- `lg: 18px` — Sudut kartu utama & container nominal
+- `lg: 16px` — Sudut kartu utama & container nominal
 - `modal: 28px` — Sudut atas (_Top Radius_) Bottom Sheet Modal
 - `pill: 999px` — Tombol chip, segmented toggle, FAB button
 
 ### Shadows & Elevation
 
-- **Elevasi Kartu (Card)**: `shadowOffset: { width: 0, height: 2 }`, `shadowOpacity: 0.06`, `shadowRadius: 8`, `elevation: 2`
+- **Elevasi Kartu (Card)**: Utamakan border. Bila perlu, gunakan `shadowOpacity: 0.03` dan `elevation: 1`.
 - **Elevasi Bottom Sheet**: `shadowOffset: { width: 0, height: -4 }`, `shadowOpacity: 0.15`, `shadowRadius: 16`, `elevation: 8`
-- **Elevasi Primary Button**: `shadowColor: #2563EB`, `shadowOffset: { width: 0, height: 4 }`, `shadowOpacity: 0.25`, `shadowRadius: 10`, `elevation: 4`
+- **Elevasi Primary Button**: Maksimal `elevation: 1`; status tombol dibedakan lewat warna, label, dan state interaksi.
 
 ---
 
@@ -114,20 +115,27 @@ Setiap kategori pengeluaran/pemasukan memiliki pasangan warna ikon (solid) dan w
 - **Payment Method Strip**: Chip horizontal cepat (`Tunai`, `QRIS`, `BCA/Bank`).
 - **Lampiran Foto Cepat**: Chip `[ + Foto ]` untuk melampirkan bukti kamera/galeri tanpa OCR.
 - **Hero Save Button**: Tombol full-width `56px` dengan label dinamis `✓ Simpan Pengeluaran • Rp ...`.
+- **Progressive Disclosure**: Nominal, tipe, kategori, akun, dan tombol simpan selalu terlihat lebih dulu. Catatan, lampiran, tag, dan detail lanjutan tetap opsional.
 
 ### B. Navigation Tab Bar
 
 - **Tinggi**: `64px` + Safe Area Bottom Insets.
-- **Latar Belakang**: Putih `#FFFFFF` dengan garis atas halus `#CBD5E1`.
-- **Tombol Tambah Tengah (Action FAB)**:
-  - Tombol lingkaran melayang `58x58px` dengan border putih tebal `4px` dan latar biru primer `#2563EB`.
-  - Ikon plus putih besar `32px`.
+- **Latar Belakang**: Surface yang menempel ke bawah dengan garis atas halus; bukan panel mengambang.
+- **Jumlah Tujuan**: Maksimal 5 tab utama dengan label teks selalu terlihat.
+- **Aksi Catat**: Tombol pill kompak di atas tab bar dengan ikon `cash-plus` dan label `Catat`/`Record`. Label aksesibilitas harus menjelaskan `Catat transaksi`/`Add transaction`.
 
 ### C. Kartu Transaksi (Transaction List Item)
 
 - Ikon kategori di sebelah kiri dalam lingkaran pastel `44x44px`.
 - Baris 1: Nama Toko / Keterangan (Bold 15px) di kiri, Nominal (Bold 16px) di kanan (`− Rp 45.000` merah atau `+ Rp 500.000` hijau).
 - Baris 2: Nama Kategori · Tanggal transaksi · Badge `📎 Struk` (jika ada foto).
+
+### D. Kartu & Pengelompokan
+
+- Gunakan satu surface untuk satu kelompok informasi. Hindari kartu di dalam kartu.
+- Daftar menu memakai satu container per section dengan divider antarbaris.
+- Satu layar hanya memiliki satu CTA dominan pada satu waktu; aksi sekunder memakai varian ghost atau link.
+- Batasi konten utama pada lebar `720px` dan pusatkan pada layar lebar/tablet.
 
 ---
 

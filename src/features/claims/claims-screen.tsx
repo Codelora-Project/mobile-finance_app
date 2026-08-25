@@ -21,13 +21,16 @@ import {
   type ClaimSummary,
 } from '@/features/claims/claim-repository';
 import { mapError } from '@/lib/errors';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
+import { contentMaxWidth } from '@/theme/layout';
 import { spacing } from '@/theme/spacing';
 
 export function ClaimsScreen() {
   const database = useSQLiteContext();
   const router = useRouter();
   const { colors } = useTheme();
+  const { language, t } = useLanguage();
   const params = useLocalSearchParams<{ feedback?: string | string[] }>();
   const feedback = Array.isArray(params.feedback)
     ? params.feedback[0]
@@ -82,7 +85,13 @@ export function ClaimsScreen() {
   return (
     <Screen>
       {/* 1. Header with Title & New Claim Button */}
-      <ClaimsHeader onNewClaim={handleNewClaim} />
+      <ClaimsHeader
+        backLabel={t.common.back}
+        newClaimLabel={language === 'id' ? 'Klaim baru' : 'New claim'}
+        onBack={() => router.back()}
+        onNewClaim={claims.length > 0 ? handleNewClaim : undefined}
+        title={language === 'id' ? 'Klaim' : 'Claims'}
+      />
 
       {/* 2. Horizontal Status Filter Bar */}
       <ClaimsStatusFilterBar
@@ -117,13 +126,13 @@ export function ClaimsScreen() {
           >
             {error}
           </Text>
-          <AppButton label="Try again" onPress={() => void load()} />
+          <AppButton label={t.common.tryAgain} onPress={() => void load()} />
         </View>
       ) : loading && claims.length === 0 ? (
         <View style={styles.state}>
           <ActivityIndicator color={colors.primary} size="large" />
           <Text style={[styles.stateText, { color: colors.textSecondary }]}>
-            Loading claims…
+            {language === 'id' ? 'Memuat klaim…' : 'Loading claims…'}
           </Text>
         </View>
       ) : (
@@ -136,8 +145,20 @@ export function ClaimsScreen() {
           keyExtractor={(claim) => String(claim.id)}
           ListEmptyComponent={
             <ClaimsEmptyState
+              createLabel={language === 'id' ? 'Buat klaim' : 'Create claim'}
+              description={
+                language === 'id'
+                  ? 'Kelompokkan transaksi kantor yang akan diajukan untuk penggantian biaya.'
+                  : 'Group work expenses that you want to submit for reimbursement.'
+              }
+              filteredDescription={
+                language === 'id'
+                  ? 'Pilih status lain untuk melihat klaim.'
+                  : 'Select a different status to view other claims.'
+              }
               hasStatusFilter={Boolean(status)}
               onCreateClaim={handleNewClaim}
+              title={language === 'id' ? 'Belum ada klaim' : 'No claims found'}
             />
           }
           onRefresh={() => void load()}
@@ -164,7 +185,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   list: {
+    alignSelf: 'center',
+    maxWidth: contentMaxWidth,
     paddingBottom: spacing.xxl + spacing.md,
+    width: '100%',
   },
   state: {
     alignItems: 'center',

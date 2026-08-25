@@ -49,26 +49,27 @@ export const HomeHeader = memo(function HomeHeader({
       </View>
 
       <View style={styles.headerRightActions}>
-        {/* Flame Streak Badge */}
-        <View
-          style={[
-            styles.streakBadge,
-            {
-              backgroundColor: isDark ? '#78350F' : '#FEF3C7',
-              borderColor: isDark ? '#92400E' : '#FDE68A',
-            },
-          ]}
-        >
-          <MaterialCommunityIcons color="#F59E0B" name="fire" size={15} />
-          <Text
+        {streakCount > 0 ? (
+          <View
             style={[
-              styles.streakBadgeText,
-              { color: isDark ? '#FDE68A' : '#B45309' },
+              styles.streakBadge,
+              {
+                backgroundColor: isDark ? '#78350F' : '#FEF3C7',
+                borderColor: isDark ? '#92400E' : '#FDE68A',
+              },
             ]}
           >
-            {streakCount} {streakDaysLabel}
-          </Text>
-        </View>
+            <MaterialCommunityIcons color="#F59E0B" name="fire" size={15} />
+            <Text
+              style={[
+                styles.streakBadgeText,
+                { color: isDark ? '#FDE68A' : '#B45309' },
+              ]}
+            >
+              {streakCount} {streakDaysLabel}
+            </Text>
+          </View>
+        ) : null}
 
         <Pressable
           accessibilityLabel={settingsLabel}

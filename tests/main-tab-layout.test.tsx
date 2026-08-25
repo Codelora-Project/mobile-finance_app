@@ -73,7 +73,9 @@ describe('main tab layout', () => {
     expect(screen.getByText('More')).toBeOnTheScreen();
     expect(screen.getByText('Claims')).toBeOnTheScreen();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Add' }));
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Add transaction' }),
+    );
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/new');
   });
 
@@ -99,7 +101,9 @@ describe('main tab layout', () => {
     expect(screen.getByText('Lainnya')).toBeOnTheScreen();
     expect(screen.getByText('Klaim')).toBeOnTheScreen();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Catat' }));
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Catat transaksi' }),
+    );
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/new');
   });
 });

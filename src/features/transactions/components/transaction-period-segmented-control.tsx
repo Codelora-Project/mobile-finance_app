@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/lib/theme/theme-context';
+import { contentMaxWidth } from '@/theme/layout';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -97,11 +98,13 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
   },
   container: {
+    alignSelf: 'center',
     borderRadius: radius.pill,
     flexDirection: 'row',
-    marginHorizontal: spacing.md,
     marginTop: spacing.xs,
+    maxWidth: contentMaxWidth - spacing.md * 2,
     padding: 3,
+    width: '92%',
   },
   tabItem: {
     alignItems: 'center',

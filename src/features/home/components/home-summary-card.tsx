@@ -233,19 +233,10 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
         ) : null}
       </View>
 
-      {/* 3. Symmetrical 50/50 Sub-Cards for Income & Expense */}
-      <View style={styles.subCardsRow}>
-        {/* Income Sub-Card */}
-        <View
-          style={[
-            styles.subCard,
-            {
-              backgroundColor: isDark ? '#14532D1F' : '#F0FDF4',
-              borderColor: isDark ? '#166534' : '#DCFCE7',
-            },
-          ]}
-        >
-          <View style={styles.subCardHeader}>
+      {/* 3. Supporting metrics stay inside the same information group. */}
+      <View style={[styles.metricsRow, { borderTopColor: colors.border }]}>
+        <View style={styles.metric}>
+          <View style={styles.metricHeader}>
             <View
               style={[
                 styles.iconCircle,
@@ -262,7 +253,7 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
             </View>
             <Text
               numberOfLines={1}
-              style={[styles.subCardLabel, { color: colors.textSecondary }]}
+              style={[styles.metricLabel, { color: colors.textSecondary }]}
             >
               {t.home.income}
             </Text>
@@ -271,23 +262,18 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
             adjustsFontSizeToFit
             minimumFontScale={0.75}
             numberOfLines={1}
-            style={[styles.subCardValue, { color: colors.positive }]}
+            style={[styles.metricValue, { color: colors.positive }]}
           >
             {formattedIncome}
           </Text>
         </View>
 
-        {/* Expense Sub-Card */}
         <View
-          style={[
-            styles.subCard,
-            {
-              backgroundColor: isDark ? '#7F1D1D1F' : '#FEF2F2',
-              borderColor: isDark ? '#991B1B' : '#FEE2E2',
-            },
-          ]}
-        >
-          <View style={styles.subCardHeader}>
+          style={[styles.metricDivider, { backgroundColor: colors.border }]}
+        />
+
+        <View style={styles.metric}>
+          <View style={styles.metricHeader}>
             <View
               style={[
                 styles.iconCircle,
@@ -304,7 +290,7 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
             </View>
             <Text
               numberOfLines={1}
-              style={[styles.subCardLabel, { color: colors.textSecondary }]}
+              style={[styles.metricLabel, { color: colors.textSecondary }]}
             >
               {t.home.expensesThisMonth}
             </Text>
@@ -313,7 +299,7 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
             adjustsFontSizeToFit
             minimumFontScale={0.75}
             numberOfLines={1}
-            style={[styles.subCardValue, { color: colors.destructive }]}
+            style={[styles.metricValue, { color: colors.destructive }]}
           >
             {formattedExpense}
           </Text>
@@ -393,41 +379,45 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-  subCard: {
-    borderRadius: radius.md + 2,
-    borderWidth: 1,
+  metric: {
     flex: 1,
-    padding: spacing.md,
+    gap: spacing.xs,
+    minWidth: 0,
+    paddingHorizontal: spacing.sm,
   },
-  subCardHeader: {
+  metricDivider: {
+    alignSelf: 'stretch',
+    width: StyleSheet.hairlineWidth,
+  },
+  metricHeader: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: 6,
-    marginBottom: 4,
   },
-  subCardLabel: {
+  metricLabel: {
     ...typography.metadata,
     fontSize: 12,
     fontWeight: '600',
   },
-  subCardValue: {
+  metricValue: {
     ...typography.sectionTitle,
     fontSize: 15,
     fontWeight: '800',
     letterSpacing: 0.1,
   },
-  subCardsRow: {
+  metricsRow: {
+    borderTopWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
+    paddingTop: spacing.md,
   },
   summaryCard: {
     borderRadius: radius.lg,
     borderWidth: 1,
-    elevation: 2,
+    elevation: 1,
     padding: spacing.md + 2,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.03,
     shadowRadius: 8,
   },
   topLeftGroup: {

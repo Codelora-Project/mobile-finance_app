@@ -71,7 +71,7 @@ function TabItem({
   return (
     <Pressable
       accessibilityLabel={label}
-      accessibilityRole="button"
+      accessibilityRole="tab"
       accessibilityState={{ selected: focused }}
       hitSlop={4}
       onPress={onPress}
@@ -118,7 +118,13 @@ function TabItem({
   );
 }
 
-function FloatingActionButton({ label }: { label: string }) {
+function FloatingActionButton({
+  accessibilityLabel,
+  label,
+}: {
+  accessibilityLabel: string;
+  label: string;
+}) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -143,8 +149,7 @@ function FloatingActionButton({ label }: { label: string }) {
     }).start();
   }, [fabScale]);
 
-  const bottomMargin = insets.bottom > 0 ? insets.bottom + 10 : 20;
-  const fabBottom = bottomMargin + 72;
+  const fabBottom = insets.bottom + 64 + spacing.md;
 
   const translateY = tabBarAnim.interpolate({
     inputRange: [0, 1],
@@ -168,7 +173,7 @@ function FloatingActionButton({ label }: { label: string }) {
       ]}
     >
       <Pressable
-        accessibilityLabel={label}
+        accessibilityLabel={accessibilityLabel}
         accessibilityRole="button"
         hitSlop={8}
         onPress={() => router.push('/transactions/new')}
@@ -178,7 +183,7 @@ function FloatingActionButton({ label }: { label: string }) {
           styles.fabButton,
           {
             backgroundColor: colors.primary,
-            shadowColor: colors.primary,
+            shadowColor: colors.shadow,
           },
         ]}
       >
@@ -186,9 +191,12 @@ function FloatingActionButton({ label }: { label: string }) {
           accessibilityElementsHidden
           color="#FFFFFF"
           importantForAccessibility="no-hide-descendants"
-          name="plus"
-          size={28}
+          name="cash-plus"
+          size={20}
         />
+        <Text style={[styles.fabLabel, { color: colors.onPrimary }]}>
+          {label}
+        </Text>
       </Pressable>
     </Animated.View>
   );
@@ -200,10 +208,8 @@ function CustomFloatingTabBar({
   state,
 }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { tabBarAnim } = useTabBarVisibility();
-
-  const bottomMargin = insets.bottom > 0 ? insets.bottom + 10 : 20;
 
   const HIDDEN_TAB_NAMES = new Set(['action', 'settings', 'goals', 'claims']);
 
@@ -230,7 +236,7 @@ function CustomFloatingTabBar({
       style={[
         styles.barWrapper,
         {
-          bottom: bottomMargin,
+          bottom: 0,
           opacity,
           transform: [{ translateY }],
         },
@@ -242,7 +248,8 @@ function CustomFloatingTabBar({
           {
             backgroundColor: colors.surface,
             borderColor: colors.border,
-            shadowColor: isDark ? '#000000' : colors.textPrimary,
+            height: 64 + insets.bottom,
+            paddingBottom: insets.bottom,
           },
         ]}
       >
@@ -280,7 +287,7 @@ function CustomFloatingTabBar({
 }
 
 function MainTabLayoutContent() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
 
   return (
     <View style={styles.rootContainer}>
@@ -351,7 +358,12 @@ function MainTabLayoutContent() {
       </Tabs>
 
       {/* Floating Action Button (FAB) aligned right with card */}
-      <FloatingActionButton label={t.tabs.add} />
+      <FloatingActionButton
+        accessibilityLabel={
+          language === 'id' ? 'Catat transaksi' : 'Add transaction'
+        }
+        label={language === 'id' ? 'Catat' : 'Record'}
+      />
     </View>
   );
 }
@@ -366,21 +378,23 @@ export default function MainTabLayout() {
 
 const styles = StyleSheet.create({
   barWrapper: {
-    left: spacing.md,
+    left: 0,
     position: 'absolute',
-    right: spacing.md,
+    right: 0,
     zIndex: 900,
   },
   fabButton: {
     alignItems: 'center',
-    borderRadius: radius.pill,
-    elevation: 8,
-    height: 52,
+    borderRadius: radius.md,
+    elevation: 3,
+    flexDirection: 'row',
+    gap: spacing.xs,
+    height: 48,
     justifyContent: 'center',
-    shadowOffset: { height: 4, width: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    width: 52,
+    paddingHorizontal: spacing.md,
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.16,
+    shadowRadius: 6,
   },
   fabContainer: {
     alignItems: 'flex-end',
@@ -388,19 +402,17 @@ const styles = StyleSheet.create({
     right: spacing.md,
     zIndex: 999,
   },
+  fabLabel: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
   floatingPillBar: {
     alignItems: 'center',
-    borderRadius: 24,
-    borderWidth: 1,
-    elevation: 8,
+    borderTopWidth: 1,
     flexDirection: 'row',
-    height: 64,
     justifyContent: 'space-around',
     paddingHorizontal: 4,
     paddingVertical: 4,
-    shadowOffset: { height: 4, width: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 14,
     width: '100%',
   },
   iconContainer: {

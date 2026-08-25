@@ -107,6 +107,12 @@ export function DonutBreakdownChart({
 
           return (
             <Pressable
+              accessibilityLabel={`${item.categoryName}, ${formatMoney(
+                item.amountMinor,
+                currencyCode,
+              )}, ${item.percentage}%`}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isSelected }}
               hitSlop={4}
               key={item.categoryId}
               onPress={() => setSelectedCategoryId(item.categoryId)}
@@ -131,6 +137,12 @@ export function DonutBreakdownChart({
 
           return (
             <Pressable
+              accessibilityLabel={`${item.categoryName}, ${formatMoney(
+                item.amountMinor,
+                currencyCode,
+              )}, ${item.percentage}%`}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isSelected }}
               key={item.categoryId}
               onPress={() => setSelectedCategoryId(item.categoryId)}
               style={({ pressed }) => [
@@ -244,12 +256,12 @@ const styles = StyleSheet.create({
     width: 10,
   },
   container: {
-    borderRadius: 22,
-    borderWidth: 1.5,
-    elevation: 2,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    elevation: 1,
     padding: spacing.md + 2,
     shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.03,
     shadowRadius: 8,
   },
   heroCenter: {

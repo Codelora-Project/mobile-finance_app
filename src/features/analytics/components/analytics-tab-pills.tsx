@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/lib/theme/theme-context';
+import { contentMaxWidth } from '@/theme/layout';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -37,7 +38,8 @@ export const AnalyticsTabPills = memo(function AnalyticsTabPills({
         const isSelected = activeTab === tab.key;
         return (
           <Pressable
-            accessibilityRole="button"
+            accessibilityRole="tab"
+            accessibilityState={{ selected: isSelected }}
             key={tab.key}
             onPress={() => onSelectTab(tab.key)}
             style={({ pressed }) => [
@@ -90,9 +92,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   tabsContainer: {
+    alignSelf: 'center',
     flexDirection: 'row',
     gap: spacing.xs,
+    maxWidth: contentMaxWidth,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
+    width: '100%',
   },
 });

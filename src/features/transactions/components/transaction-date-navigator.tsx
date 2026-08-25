@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { HistoryPeriod } from '@/features/transactions/components/transaction-period-segmented-control';
 import { useTheme } from '@/lib/theme/theme-context';
+import { contentMaxWidth } from '@/theme/layout';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -140,8 +141,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
   },
   container: {
-    marginHorizontal: spacing.md,
+    alignSelf: 'center',
     marginTop: spacing.xs,
+    maxWidth: contentMaxWidth - spacing.md * 2,
+    width: '92%',
   },
   navBtn: {
     alignItems: 'center',

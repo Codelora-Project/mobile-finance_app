@@ -2,7 +2,9 @@ import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { ClaimStatus } from '@/features/claims/claim-repository';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
+import { contentMaxWidth } from '@/theme/layout';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 
@@ -27,16 +29,27 @@ export const ClaimsStatusFilterBar = memo(function ClaimsStatusFilterBar({
   selectedStatus,
 }: ClaimsStatusFilterBarProps) {
   const { colors } = useTheme();
+  const { language } = useLanguage();
+  const filters =
+    language === 'id'
+      ? [
+          { label: 'Semua', value: undefined },
+          { label: 'Draf', value: 'draft' as const },
+          { label: 'Diajukan', value: 'submitted' as const },
+          { label: 'Dibayar', value: 'reimbursed' as const },
+          { label: 'Ditolak', value: 'rejected' as const },
+        ]
+      : CLAIM_STATUS_FILTERS;
 
   return (
     <View style={styles.filters}>
-      {CLAIM_STATUS_FILTERS.map((filter) => {
+      {filters.map((filter) => {
         const isSelected = filter.value === selectedStatus;
         return (
           <Pressable
-            accessibilityRole="button"
+            accessibilityRole="tab"
             accessibilityState={{ selected: isSelected }}
-            key={filter.label}
+            key={filter.value ?? 'all'}
             onPress={() => onSelectStatus(filter.value)}
             style={[
               styles.filter,
@@ -75,9 +88,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   filters: {
+    alignSelf: 'center',
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.xs,
+    maxWidth: contentMaxWidth,
     padding: spacing.md,
+    width: '100%',
   },
 });

@@ -210,14 +210,14 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                 accessibilityRole="header"
                 style={[styles.itemTitle, { color: colors.textPrimary }]}
               >
-                {language === 'id' ? 'Warna Aksen Tema' : 'Brand Accent Color'}
+                {language === 'id' ? 'Warna Utama' : 'Primary Color'}
               </Text>
               <Text
                 style={[styles.itemSubtitle, { color: colors.textSecondary }]}
               >
                 {language === 'id'
-                  ? 'Pilih warna identitas utama aplikasi'
-                  : 'Select your signature brand accent color'}
+                  ? 'Pilih warna untuk tombol utama dan status aktif'
+                  : 'Choose the color for primary actions and active states'}
               </Text>
             </View>
           </View>
