@@ -1,5 +1,5 @@
 import { useSQLiteContext } from 'expo-sqlite';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -14,7 +14,7 @@ import {
   listPaymentMethods,
   type PaymentMethod,
 } from '@/features/payment-methods/payment-method-repository';
-import { mapError } from '@/lib/errors';
+import { usePickerData } from '@/lib/use-picker-data';
 import { colors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -32,65 +32,23 @@ export function PaymentMethodPicker({
   selectedId,
 }: PaymentMethodPickerProps) {
   const database = useSQLiteContext();
-  const [paymentMethods, setPaymentMethods] = useState<
-    readonly PaymentMethod[]
-  >([]);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const loadPaymentMethods = useCallback(async () => {
-    try {
-      const nextPaymentMethods = await listPaymentMethods(database);
-      setPaymentMethods(nextPaymentMethods);
-      setError(null);
-    } catch (caughtError) {
-      if (__DEV__) {
-        console.error(
-          'Payment method picker could not load payment methods.',
-          caughtError,
-        );
-      }
-      setError(mapError(caughtError, 'DATABASE_WRITE_FAILED').message);
-    } finally {
-      setLoading(false);
-    }
-  }, [database]);
-
-  useEffect(() => {
-    let active = true;
-    listPaymentMethods(database)
-      .then((nextPaymentMethods) => {
-        if (active) {
-          setPaymentMethods(nextPaymentMethods);
-          setError(null);
-        }
-      })
-      .catch((caughtError: unknown) => {
-        if (__DEV__) {
-          console.error(
-            'Payment method picker could not load payment methods.',
-            caughtError,
-          );
-        }
-        if (active) {
-          setError(mapError(caughtError, 'DATABASE_WRITE_FAILED').message);
-        }
-      })
-      .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [database]);
+  const loadPaymentMethods = useCallback(
+    () => listPaymentMethods(database),
+    [database],
+  );
+  const {
+    error,
+    items: paymentMethods,
+    loading,
+    reload,
+  } = usePickerData({
+    diagnosticLabel: 'Payment method picker',
+    load: loadPaymentMethods,
+    resourceKey: 'payment-methods',
+  });
 
   function retryLoad() {
-    setError(null);
-    setLoading(true);
-    void loadPaymentMethods();
+    void reload();
   }
 
   if (loading) {

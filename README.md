@@ -8,11 +8,11 @@ Aplikasi dirancang dengan arsitektur **Offline-First**, di mana seluruh data tra
 
 ## 📱 Fitur Utama
 
-- **Multi-Dompet & Saldo Terpisah (_Wallets & Accounts_)**: Kelola saldo kas, rekening bank, e-wallet, hingga instrumen aset/investasi secara terpisah dengan perhitungan saldo live berbasis buku kas (*ledger-based*).
-- **Klasifikasi Kas Operasional vs Pantau Aset**: Pisahkan dompet harian yang tercatat di laporan arus kas bulanan dari akun aset/investasi yang saldonya hanya ingin dipantau (*Net Worth*).
+- **Multi-Dompet & Saldo Terpisah (_Wallets & Accounts_)**: Kelola saldo kas, rekening bank, e-wallet, hingga instrumen aset/investasi secara terpisah dengan perhitungan saldo live berbasis buku kas (_ledger-based_).
+- **Klasifikasi Kas Operasional vs Pantau Aset**: Pisahkan dompet harian yang tercatat di laporan arus kas bulanan dari akun aset/investasi yang saldonya hanya ingin dipantau (_Net Worth_).
 - **Transfer Antar Dompet & Biaya Transfer**: Pindahkan dana antar dompet seketika dengan opsi pencatatan biaya admin transfer terintegrasi.
 - **Rekonsiliasi Saldo (_Opname Saldo_)**: Sesuaikan saldo riil fisik/rekening kapan saja dengan pembuatan jurnal penyesuaian otomatis.
-- **Carousel Dompet & Filter Beranda**: Pantau Total Kekayaan (*Net Worth*) di Beranda dan filter transaksi harian per dompet dalam 1-tap.
+- **Carousel Dompet & Filter Beranda**: Pantau Total Kekayaan (_Net Worth_) di Beranda dan filter transaksi harian per dompet dalam 1-tap.
 - **Pencatatan Transaksi Cepat**: Catat pemasukan (_Income_), pengeluaran (_Expense_), dan transfer antar dompet dengan nominal, kategori, metode pembayaran, catatan, dan tanggal/waktu.
 - **Lampiran Bukti Struk Manual**: Lampirkan foto bukti struk transaksi langsung dari Kamera atau Galeri perangkat, tersimpan aman di direktori lokal.
 - **Analitik & Grafik Finansial**: Visualisasi pengeluaran bulanan, grafik perbandingan mingguan, dan diagram breakdown kategori (_Donut Chart_).
@@ -113,7 +113,7 @@ Ada beberapa cara untuk menghasilkan file instalasi APK:
 
 ### Opsi A: Build APK Standalone Lokal (Gradle) — _Direkomendasikan_
 
-Secara bawaan (*default*), React Native New Architecture mengompilasi binary C++ untuk 4 arsitektur prosesor (`arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86`) yang menghasilkan file Universal Fat APK sebesar **~100 - 120 MB**.
+Secara bawaan (_default_), React Native New Architecture mengompilasi binary C++ untuk 4 arsitektur prosesor (`arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86`) yang menghasilkan file Universal Fat APK sebesar **~100 - 120 MB**.
 
 Untuk menghasilkan APK yang jauh lebih **ringan (~25 - 30 MB)** khusus untuk HP Android fisik modern:
 
@@ -166,6 +166,7 @@ android/app/build/outputs/apk/release/app-release.apk
 
 > [!TIP]
 > **Cara Cepat Membuka Folder APK di Windows Explorer**:
+>
 > ```powershell
 > explorer.exe android\app\build\outputs\apk\release
 > ```
@@ -176,11 +177,12 @@ android/app/build/outputs/apk/release/app-release.apk
   ```bash
   adb install android/app/build/outputs/apk/release/app-release.apk
   ```
-- **Via Manual**: Kirim/copy file `app-release.apk` tersebut ke smartphone Android Anda (via USB, WhatsApp, Google Drive, dsb) lalu buka file untuk meng-install (*Sideload*).
+- **Via Manual**: Kirim/copy file `app-release.apk` tersebut ke smartphone Android Anda (via USB, WhatsApp, Google Drive, dsb) lalu buka file untuk meng-install (_Sideload_).
 
 > [!NOTE]
 > **Troubleshooting Cache Build (Windows)**:
 > Jika build gagal karena file terkunci atau error CMake clean, jalankan perintah berikut di PowerShell (folder `android`):
+>
 > ```powershell
 > Remove-Item -Recurse -Force app\.cxx, app\build, build -ErrorAction SilentlyContinue
 > ```

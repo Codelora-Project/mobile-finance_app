@@ -108,10 +108,7 @@ export const AnalyticsTrendsTab = memo(function AnalyticsTrendsTab({
           </View>
 
           <View
-            style={[
-              styles.kpiDivider,
-              { backgroundColor: colors.border },
-            ]}
+            style={[styles.kpiDivider, { backgroundColor: colors.border }]}
           />
 
           <View style={styles.kpiDetailsRow}>
@@ -188,10 +185,7 @@ export const AnalyticsTrendsTab = memo(function AnalyticsTrendsTab({
           <View style={styles.legendWrap}>
             <View style={styles.legendItem}>
               <View
-                style={[
-                  styles.legendDot,
-                  { backgroundColor: colors.positive },
-                ]}
+                style={[styles.legendDot, { backgroundColor: colors.positive }]}
               />
               <Text
                 style={[styles.legendText, { color: colors.textSecondary }]}
@@ -220,7 +214,10 @@ export const AnalyticsTrendsTab = memo(function AnalyticsTrendsTab({
           {monthlyCashFlow.map((flow) => {
             const hasData = flow.incomeMinor > 0 || flow.expenseMinor > 0;
             const incomeHeightPercent = hasData
-              ? Math.max(6, Math.round((flow.incomeMinor / maxFlowOverall) * 100))
+              ? Math.max(
+                  6,
+                  Math.round((flow.incomeMinor / maxFlowOverall) * 100),
+                )
               : 4;
             const expenseHeightPercent = hasData
               ? Math.max(
@@ -302,7 +299,7 @@ export const AnalyticsTrendsTab = memo(function AnalyticsTrendsTab({
                 >
                   {hasData
                     ? formatSignedMoney(flow.netMinor, currencyCode)
-                    : 'Rp 0'}
+                    : formatMoney(0, currencyCode)}
                 </Text>
               </View>
             );

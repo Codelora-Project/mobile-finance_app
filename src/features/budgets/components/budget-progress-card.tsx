@@ -114,10 +114,7 @@ export const BudgetProgressCard = memo(function BudgetProgressCard({
         </View>
 
         <View
-          style={[
-            styles.statusBadge,
-            { backgroundColor: statusTheme.badgeBg },
-          ]}
+          style={[styles.statusBadge, { backgroundColor: statusTheme.badgeBg }]}
         >
           <Text
             style={[styles.statusBadgeText, { color: statusTheme.badgeText }]}
@@ -227,7 +224,8 @@ export const BudgetProgressCard = memo(function BudgetProgressCard({
             <Text
               ellipsizeMode="tail"
               numberOfLines={1}
-              style={[styles.allowanceTextOver, { color: '#EF4444' }]}>
+              style={[styles.allowanceTextOver, { color: '#EF4444' }]}
+            >
               {t.budgets.overbudgetNotice}
             </Text>
           </View>

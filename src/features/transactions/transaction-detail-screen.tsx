@@ -1,7 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -49,7 +49,9 @@ export function TransactionDetailScreen({
   const router = useRouter();
   const { language, t } = useLanguage();
   const { colors } = useTheme();
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deletingRef = useRef(false);
+  const loadRequestRef = useRef(0);
 
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [claimMembership, setClaimMembership] =
@@ -65,6 +67,7 @@ export function TransactionDetailScreen({
   });
 
   const load = useCallback(async () => {
+    const requestId = ++loadRequestRef.current;
     setLoading(true);
     setError(null);
     try {
@@ -72,24 +75,40 @@ export function TransactionDetailScreen({
         getTransaction(database, transactionId),
         getTransactionClaimMembership(database, transactionId),
       ]);
+      if (requestId !== loadRequestRef.current) return;
       if (!nextTransaction) {
         setTransaction(null);
+        setClaimMembership(null);
         setError(t.transactions.notFoundDesc);
         return;
       }
       setTransaction(nextTransaction);
       setClaimMembership(nextMembership);
     } catch (loadError) {
-      setError(mapError(loadError, 'DATABASE_WRITE_FAILED').message);
+      if (requestId === loadRequestRef.current) {
+        setError(mapError(loadError, 'DATABASE_WRITE_FAILED').message);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestRef.current) {
+        setLoading(false);
+      }
     }
   }, [database, t.transactions.notFoundDesc, transactionId]);
 
   useFocusEffect(
     useCallback(() => {
       void load();
+      return () => {
+        loadRequestRef.current += 1;
+      };
     }, [load]),
+  );
+
+  useEffect(
+    () => () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    },
+    [],
   );
 
   function confirmDelete() {
@@ -123,8 +142,10 @@ export function TransactionDetailScreen({
 
   function handleCopyDetails() {
     if (!transaction) return;
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
     setCopiedNotification(true);
-    setTimeout(() => {
+    copyTimerRef.current = setTimeout(() => {
+      copyTimerRef.current = null;
       setCopiedNotification(false);
     }, 2000);
   }

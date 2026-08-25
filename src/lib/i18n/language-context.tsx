@@ -39,10 +39,10 @@ export function LanguageProvider({
 
   const setLanguage = useCallback(
     async (nextLanguage: Language) => {
-      setLanguageState(nextLanguage);
       if (onLanguageChange) {
         await onLanguageChange(nextLanguage);
       }
+      setLanguageState(nextLanguage);
     },
     [onLanguageChange],
   );

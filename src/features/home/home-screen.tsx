@@ -3,6 +3,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -87,14 +88,17 @@ export function HomeScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const periodRef = useRef(period);
+  const preferenceMutationRef = useRef(false);
   const requestId = useRef(0);
+  const selectedWalletIdRef = useRef(selectedWalletId);
 
   const loadSummary = useCallback(
     async (
-      activePeriod = period,
-      activeDate = referenceDate,
-      mode: 'focus' | 'refresh' = 'focus',
-      activeWalletId = selectedWalletId,
+      activePeriod: HomePeriod,
+      activeDate: Date,
+      mode: 'focus' | 'refresh',
+      activeWalletId: number | null,
     ) => {
       const currentRequest = ++requestId.current;
       if (mode === 'refresh') {
@@ -164,36 +168,44 @@ export function HomeScreen() {
         }
       }
     },
-    [
-      database,
-      language,
-      period,
-      referenceDate,
-      selectedWalletId,
-      t.home.loadFailed,
-    ],
+    [database, language, t.home.loadFailed],
   );
 
   useFocusEffect(
     useCallback(() => {
-      void loadSummary(period, referenceDate, 'focus', selectedWalletId);
-    }, [loadSummary, period, referenceDate, selectedWalletId]),
+      void loadSummary(
+        periodRef.current,
+        referenceDate,
+        'focus',
+        selectedWalletIdRef.current,
+      );
+      return () => {
+        requestId.current += 1;
+      };
+    }, [loadSummary, referenceDate]),
   );
 
   const handlePeriodChange = useCallback(
     (newPeriod: HomePeriod) => {
+      periodRef.current = newPeriod;
       setPeriod(newPeriod);
-      void loadSummary(newPeriod, referenceDate, 'focus', selectedWalletId);
+      void loadSummary(
+        newPeriod,
+        referenceDate,
+        'focus',
+        selectedWalletIdRef.current,
+      );
     },
-    [loadSummary, referenceDate, selectedWalletId],
+    [loadSummary, referenceDate],
   );
 
   const handleSelectWallet = useCallback(
     (walletId: number | null) => {
+      selectedWalletIdRef.current = walletId;
       setSelectedWalletId(walletId);
-      void loadSummary(period, referenceDate, 'focus', walletId);
+      void loadSummary(periodRef.current, referenceDate, 'focus', walletId);
     },
-    [loadSummary, period, referenceDate],
+    [loadSummary, referenceDate],
   );
 
   // Quick Log Customizer Gesture Modal
@@ -233,49 +245,80 @@ export function HomeScreen() {
   }, []);
 
   const handleSaveQuickLogCategories = useCallback(async () => {
+    if (preferenceMutationRef.current) return;
+    preferenceMutationRef.current = true;
     try {
       await setQuickLogCategoryIds(database, selectedIdsInModal);
       setPinnedCategoryIds(selectedIdsInModal);
       handleCloseCustomizeModal();
     } catch (err) {
       if (__DEV__) console.warn('Could not save quick log settings', err);
+      Alert.alert(
+        language === 'id' ? 'Pengaturan tidak tersimpan' : 'Setting not saved',
+        mapError(err, 'DATABASE_WRITE_FAILED').message,
+      );
+    } finally {
+      preferenceMutationRef.current = false;
     }
-  }, [database, handleCloseCustomizeModal, selectedIdsInModal]);
+  }, [database, handleCloseCustomizeModal, language, selectedIdsInModal]);
 
   const handleResetQuickLogCategories = useCallback(() => {
     setSelectedIdsInModal(DEFAULT_QUICK_LOG_IDS);
   }, []);
 
-  const handleToggleShowWalletChips = useCallback(
-    (val: boolean) => {
-      setShowWalletChips(val);
-      void setHomeDisplayPreferences(database, { showWalletChips: val });
+  const persistDisplayPreference = useCallback(
+    async (
+      preference: Parameters<typeof setHomeDisplayPreferences>[1],
+      apply: () => void,
+    ) => {
+      if (preferenceMutationRef.current) return;
+      preferenceMutationRef.current = true;
+      try {
+        await setHomeDisplayPreferences(database, preference);
+        apply();
+      } catch (caughtError) {
+        Alert.alert(
+          language === 'id'
+            ? 'Pengaturan tidak tersimpan'
+            : 'Setting not saved',
+          mapError(caughtError, 'DATABASE_WRITE_FAILED').message,
+        );
+      } finally {
+        preferenceMutationRef.current = false;
+      }
     },
-    [database],
+    [database, language],
+  );
+
+  const handleToggleShowWalletChips = useCallback(
+    (val: boolean) =>
+      void persistDisplayPreference({ showWalletChips: val }, () =>
+        setShowWalletChips(val),
+      ),
+    [persistDisplayPreference],
   );
 
   const handleToggleShowQuickLog = useCallback(
-    (val: boolean) => {
-      setShowQuickLog(val);
-      void setHomeDisplayPreferences(database, { showQuickLog: val });
-    },
-    [database],
+    (val: boolean) =>
+      void persistDisplayPreference({ showQuickLog: val }, () =>
+        setShowQuickLog(val),
+      ),
+    [persistDisplayPreference],
   );
 
   const handleToggleHideBalance = useCallback(() => {
-    setHideBalance((prev) => {
-      const next = !prev;
-      void setHomeDisplayPreferences(database, { hideBalance: next });
-      return next;
-    });
-  }, [database]);
+    const next = !hideBalance;
+    void persistDisplayPreference({ hideBalance: next }, () =>
+      setHideBalance(next),
+    );
+  }, [hideBalance, persistDisplayPreference]);
 
   const handleSetHideBalance = useCallback(
-    (val: boolean) => {
-      setHideBalance(val);
-      void setHomeDisplayPreferences(database, { hideBalance: val });
-    },
-    [database],
+    (val: boolean) =>
+      void persistDisplayPreference({ hideBalance: val }, () =>
+        setHideBalance(val),
+      ),
+    [persistDisplayPreference],
   );
 
   const handleSelectQuickLogCategory = useCallback(

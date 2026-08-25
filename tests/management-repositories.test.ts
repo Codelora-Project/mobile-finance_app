@@ -121,8 +121,10 @@ class ManagementDatabase {
     id: number;
     categoryId: number;
     paymentMethodId: number | null;
+    transferFeeCategoryId: number | null;
     updatedAt: number;
   }> = [];
+  readonly categoryBudgets = new Set<number>();
 
   private nextCategoryId = 20;
   private nextPaymentMethodId = 30;
@@ -144,6 +146,10 @@ class ManagementDatabase {
       return this.categories
         .filter((category) => category.type === params[0])
         .map(({ id, name }) => ({ id, name })) as T[];
+    }
+
+    if (sql === 'PRAGMA foreign_key_check') {
+      return [] as T[];
     }
 
     if (sql === 'SELECT id, name FROM payment_methods') {
@@ -308,6 +314,23 @@ class ManagementDatabase {
       return { changes, lastInsertRowId: 0 };
     }
 
+    if (sql.startsWith('UPDATE transactions SET transfer_fee_category_id')) {
+      let changes = 0;
+      for (const transaction of this.transactions) {
+        if (transaction.transferFeeCategoryId === params[2]) {
+          transaction.transferFeeCategoryId = Number(params[0]);
+          transaction.updatedAt = Number(params[1]);
+          changes += 1;
+        }
+      }
+      return { changes, lastInsertRowId: 0 };
+    }
+
+    if (sql === 'DELETE FROM category_budgets WHERE category_id = ?') {
+      const existed = this.categoryBudgets.delete(Number(params[0]));
+      return { changes: existed ? 1 : 0, lastInsertRowId: 0 };
+    }
+
     if (sql.startsWith('DELETE FROM categories')) {
       const index = this.categories.findIndex(
         (category) =>
@@ -453,14 +476,18 @@ describe('category management repository', () => {
       categoryId: category.id,
       id: 100,
       paymentMethodId: null,
+      transferFeeCategoryId: category.id,
       updatedAt: 1,
     });
+    database.categoryBudgets.add(category.id);
 
     await expect(
       deleteCategory(database.asSQLiteDatabase(), category.id),
     ).resolves.toEqual({ reassignedTransactions: 1 });
 
     expect(database.transactions[0]?.categoryId).toBe(2);
+    expect(database.transactions[0]?.transferFeeCategoryId).toBe(2);
+    expect(database.categoryBudgets.has(category.id)).toBe(false);
     expect(
       database.categories.some((candidate) => candidate.id === category.id),
     ).toBe(false);
@@ -484,6 +511,7 @@ describe('payment method management repository', () => {
       categoryId: 1,
       id: 101,
       paymentMethodId: created.id,
+      transferFeeCategoryId: null,
       updatedAt: 1,
     });
     await expect(

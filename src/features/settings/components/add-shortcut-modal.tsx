@@ -60,9 +60,7 @@ export const AddShortcutModal = memo(function AddShortcutModal({
           <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
             {t.settings.addShortcut}
           </Text>
-          <Text
-            style={[styles.secondaryText, { color: colors.textSecondary }]}
-          >
+          <Text style={[styles.secondaryText, { color: colors.textSecondary }]}>
             {t.settings.enterShortcutAmount}
           </Text>
 
@@ -70,9 +68,7 @@ export const AddShortcutModal = memo(function AddShortcutModal({
             style={[
               styles.modalInputWrap,
               {
-                backgroundColor: isDark
-                  ? colors.surfaceSecondary
-                  : '#F1F5F9',
+                backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
                 borderColor: colors.border,
               },
             ]}
@@ -80,7 +76,7 @@ export const AddShortcutModal = memo(function AddShortcutModal({
             <Text style={styles.modalInputPrefix}>{currencySymbol}</Text>
             <TextInput
               autoFocus
-              keyboardType="number-pad"
+              keyboardType="decimal-pad"
               onChangeText={onChangeInput}
               placeholder={currencyCode === 'IDR' ? '15000' : '15'}
               placeholderTextColor={colors.textSecondary}

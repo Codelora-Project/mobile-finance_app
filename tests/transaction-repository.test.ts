@@ -43,6 +43,7 @@ type StoredTransaction = {
   currencyCode: string;
   categoryId: number;
   paymentMethodId: number | null;
+  transferToPaymentMethodId: number | null;
   counterparty: string | null;
   note: string | null;
   occurredAt: number;
@@ -68,8 +69,8 @@ class TransactionDatabase {
     { id: 2, name: 'Salary', type: 'income' as const },
   ];
   readonly paymentMethods = [
-    { id: 10, name: 'Cash' },
-    { id: 11, name: 'GoPay' },
+    { id: 10, isArchived: false, name: 'Cash' },
+    { id: 11, isArchived: false, name: 'GoPay' },
   ];
   readonly transactions: StoredTransaction[] = [];
   readonly receipts: StoredReceipt[] = [];
@@ -108,11 +109,39 @@ class TransactionDatabase {
     if (sql === 'SELECT id, type FROM categories WHERE id = ?') {
       row =
         this.categories.find((category) => category.id === params[0]) ?? null;
+    } else if (
+      sql === 'SELECT id, is_archived FROM payment_methods WHERE id = ?'
+    ) {
+      const paymentMethod = this.paymentMethods.find(
+        (method) => method.id === params[0],
+      );
+      row = paymentMethod
+        ? {
+            id: paymentMethod.id,
+            is_archived: paymentMethod.isArchived ? 1 : 0,
+          }
+        : null;
     } else if (sql === 'SELECT id FROM payment_methods WHERE id = ?') {
       const paymentMethod = this.paymentMethods.find(
         (method) => method.id === params[0],
       );
       row = paymentMethod ? { id: paymentMethod.id } : null;
+    } else if (
+      sql.includes(
+        'SELECT id, payment_method_id, transfer_to_payment_method_id FROM transactions',
+      )
+    ) {
+      const transaction = this.transactions.find(
+        (candidate) => candidate.id === params[0],
+      );
+      row = transaction
+        ? {
+            id: transaction.id,
+            payment_method_id: transaction.paymentMethodId,
+            transfer_to_payment_method_id:
+              transaction.transferToPaymentMethodId,
+          }
+        : null;
     } else if (sql === 'SELECT id FROM transactions WHERE id = ?') {
       const transaction = this.transactions.find(
         (candidate) => candidate.id === params[0],
@@ -190,6 +219,12 @@ class TransactionDatabase {
           occurred_at: transaction.occurredAt,
           payment_method_id: transaction.paymentMethodId,
           payment_method_name: paymentMethod?.name ?? null,
+          transfer_to_payment_method_id: transaction.transferToPaymentMethodId,
+          transfer_to_payment_method_name:
+            this.paymentMethods.find(
+              (candidate) =>
+                candidate.id === transaction.transferToPaymentMethodId,
+            )?.name ?? null,
           receipt_id: receipt?.id ?? null,
           receipt_mime_type: receipt?.mimeType ?? null,
           receipt_ocr_status: 'not_processed',
@@ -229,6 +264,7 @@ class TransactionDatabase {
         note: params[10] == null ? null : String(params[10]),
         occurredAt: Number(params[11]),
         paymentMethodId: params[4] == null ? null : Number(params[4]),
+        transferToPaymentMethodId: params[5] == null ? null : Number(params[5]),
         timezoneOffsetMinutes: Number(params[12]),
         type: params[0] as StoredTransaction['type'],
         updatedAt: Number(params[16]),
@@ -264,6 +300,8 @@ class TransactionDatabase {
           note: params[10] == null ? null : String(params[10]),
           occurredAt: Number(params[11]),
           paymentMethodId: params[4] == null ? null : Number(params[4]),
+          transferToPaymentMethodId:
+            params[5] == null ? null : Number(params[5]),
           timezoneOffsetMinutes: Number(params[12]),
           type: params[0] as StoredTransaction['type'],
           updatedAt: Number(params[15]),
@@ -503,6 +541,56 @@ describe('manual transaction repository', () => {
       ),
     ).rejects.toMatchObject({
       message: 'Transaction date cannot be in the future.',
+    });
+  });
+
+  it('requires an active source wallet for every new transfer', async () => {
+    const database = new TransactionDatabase();
+    const transferInput = validInput({
+      isReimbursable: false,
+      paymentMethodId: null,
+      receipt: null,
+      transferToPaymentMethodId: 11,
+      type: 'transfer',
+    });
+
+    await expect(
+      createTransaction(database.asSQLiteDatabase(), transferInput),
+    ).rejects.toMatchObject({
+      code: 'VALIDATION_FAILED',
+      message: 'Choose a source wallet.',
+    });
+
+    database.paymentMethods[0]!.isArchived = true;
+    await expect(
+      createTransaction(
+        database.asSQLiteDatabase(),
+        validInput({ receipt: null }),
+      ),
+    ).rejects.toMatchObject({
+      code: 'VALIDATION_FAILED',
+      message: 'Choose an active wallet.',
+    });
+  });
+
+  it('allows an existing transaction to retain its archived wallet while editing', async () => {
+    const database = new TransactionDatabase();
+    const created = await createTransaction(
+      database.asSQLiteDatabase(),
+      validInput({ receipt: null }),
+    );
+    database.paymentMethods[0]!.isArchived = true;
+
+    await expect(
+      updateTransaction(
+        database.asSQLiteDatabase(),
+        created.id,
+        validInput({ note: 'Updated after archive', receipt: null }),
+      ),
+    ).resolves.toMatchObject({
+      id: created.id,
+      note: 'Updated after archive',
+      paymentMethodId: 10,
     });
   });
 

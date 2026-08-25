@@ -1,12 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { memo } from 'react';
-import {
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
@@ -137,10 +131,7 @@ export const BackupRestoreModal = memo(function BackupRestoreModal({
                 <View style={styles.modalStatsGrid}>
                   <View style={styles.modalStatItem}>
                     <Text
-                      style={[
-                        styles.modalStatNum,
-                        { color: colors.primary },
-                      ]}
+                      style={[styles.modalStatNum, { color: colors.primary }]}
                     >
                       {selectedBackup.stats.transactionsCount}
                     </Text>
@@ -155,9 +146,7 @@ export const BackupRestoreModal = memo(function BackupRestoreModal({
                   </View>
 
                   <View style={styles.modalStatItem}>
-                    <Text
-                      style={[styles.modalStatNum, { color: '#0284C7' }]}
-                    >
+                    <Text style={[styles.modalStatNum, { color: '#0284C7' }]}>
                       {selectedBackup.stats.categoriesCount}
                     </Text>
                     <Text
@@ -171,9 +160,7 @@ export const BackupRestoreModal = memo(function BackupRestoreModal({
                   </View>
 
                   <View style={styles.modalStatItem}>
-                    <Text
-                      style={[styles.modalStatNum, { color: '#7C3AED' }]}
-                    >
+                    <Text style={[styles.modalStatNum, { color: '#7C3AED' }]}>
                       {selectedBackup.stats.paymentMethodsCount}
                     </Text>
                     <Text
@@ -187,9 +174,7 @@ export const BackupRestoreModal = memo(function BackupRestoreModal({
                   </View>
 
                   <View style={styles.modalStatItem}>
-                    <Text
-                      style={[styles.modalStatNum, { color: '#16A34A' }]}
-                    >
+                    <Text style={[styles.modalStatNum, { color: '#16A34A' }]}>
                       {selectedBackup.stats.goalsCount}
                     </Text>
                     <Text
@@ -203,9 +188,7 @@ export const BackupRestoreModal = memo(function BackupRestoreModal({
                   </View>
 
                   <View style={styles.modalStatItem}>
-                    <Text
-                      style={[styles.modalStatNum, { color: '#EA580C' }]}
-                    >
+                    <Text style={[styles.modalStatNum, { color: '#EA580C' }]}>
                       {selectedBackup.stats.budgetsCount}
                     </Text>
                     <Text
@@ -219,9 +202,7 @@ export const BackupRestoreModal = memo(function BackupRestoreModal({
                   </View>
 
                   <View style={styles.modalStatItem}>
-                    <Text
-                      style={[styles.modalStatNum, { color: '#D97706' }]}
-                    >
+                    <Text style={[styles.modalStatNum, { color: '#D97706' }]}>
                       {selectedBackup.stats.claimsCount}
                     </Text>
                     <Text

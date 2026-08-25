@@ -51,10 +51,7 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
       <View style={styles.integratedCardHeader}>
         <Text
           numberOfLines={1}
-          style={[
-            styles.integratedCardTitle,
-            { color: colors.textPrimary },
-          ]}
+          style={[styles.integratedCardTitle, { color: colors.textPrimary }]}
         >
           {t.home.recentTransactions}
         </Text>
@@ -82,16 +79,11 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
             name="receipt-text-plus-outline"
             size={38}
           />
-          <Text
-            style={[styles.emptyStateTitle, { color: colors.textPrimary }]}
-          >
+          <Text style={[styles.emptyStateTitle, { color: colors.textPrimary }]}>
             {t.home.noTransactionsYet}
           </Text>
           <Text
-            style={[
-              styles.emptyStateSubtitle,
-              { color: colors.textSecondary },
-            ]}
+            style={[styles.emptyStateSubtitle, { color: colors.textSecondary }]}
           >
             {t.home.noTransactionsDesc}
           </Text>

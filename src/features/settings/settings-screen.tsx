@@ -42,7 +42,10 @@ import {
 import { useCurrency } from '@/lib/currency/currency-context';
 import { isCodedError, mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
-import { useTheme } from '@/lib/theme/theme-context';
+import type { Language } from '@/lib/i18n/translations';
+import { getCurrencyFractionDigits, parseMoneyInput } from '@/lib/money';
+import { useTheme, type ThemeSetting } from '@/lib/theme/theme-context';
+import type { BrandTheme } from '@/theme/colors';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
@@ -69,8 +72,69 @@ export function SettingsScreen() {
   const [shortcutError, setShortcutError] = useState<string | null>(null);
 
   const resettingRef = useRef(false);
+  const appearanceMutationRef = useRef(false);
+  const loadRequestRef = useRef(0);
+  const shortcutMutationRef = useRef(false);
+
+  const showAppearanceSaveError = useCallback(
+    (caughtError: unknown) => {
+      Alert.alert(
+        language === 'id' ? 'Pengaturan tidak tersimpan' : 'Setting not saved',
+        mapError(caughtError, 'DATABASE_WRITE_FAILED').message,
+      );
+    },
+    [language],
+  );
+
+  const handleLanguageChange = useCallback(
+    async (nextLanguage: Language) => {
+      if (appearanceMutationRef.current || nextLanguage === language) return;
+      appearanceMutationRef.current = true;
+      try {
+        await setLanguage(nextLanguage);
+      } catch (caughtError) {
+        showAppearanceSaveError(caughtError);
+      } finally {
+        appearanceMutationRef.current = false;
+      }
+    },
+    [language, setLanguage, showAppearanceSaveError],
+  );
+
+  const handleThemeChange = useCallback(
+    async (nextTheme: ThemeSetting) => {
+      if (appearanceMutationRef.current || nextTheme === themeSetting) return;
+      appearanceMutationRef.current = true;
+      try {
+        await setThemeSetting(nextTheme);
+      } catch (caughtError) {
+        showAppearanceSaveError(caughtError);
+      } finally {
+        appearanceMutationRef.current = false;
+      }
+    },
+    [setThemeSetting, showAppearanceSaveError, themeSetting],
+  );
+
+  const handleBrandThemeChange = useCallback(
+    async (nextBrandTheme: BrandTheme) => {
+      if (appearanceMutationRef.current || nextBrandTheme === brandTheme) {
+        return;
+      }
+      appearanceMutationRef.current = true;
+      try {
+        await setBrandTheme(nextBrandTheme);
+      } catch (caughtError) {
+        showAppearanceSaveError(caughtError);
+      } finally {
+        appearanceMutationRef.current = false;
+      }
+    },
+    [brandTheme, setBrandTheme, showAppearanceSaveError],
+  );
 
   const loadSettings = useCallback(async () => {
+    const requestId = ++loadRequestRef.current;
     setLoading(true);
     setError(null);
     try {
@@ -78,24 +142,34 @@ export function SettingsScreen() {
         getSettingsOverview(database),
         getStorageStats(database),
       ]);
+      if (requestId !== loadRequestRef.current) return;
       setOverview(nextOverview);
       setStorageStats(nextStorage);
       setShortcuts(nextOverview.quickShortcuts ?? DEFAULT_QUICK_SHORTCUTS);
     } catch (loadError) {
-      const mappedError = mapError(loadError, 'DATABASE_WRITE_FAILED');
-      setError(mappedError.message);
+      if (requestId === loadRequestRef.current) {
+        const mappedError = mapError(loadError, 'DATABASE_WRITE_FAILED');
+        setError(mappedError.message);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestRef.current) {
+        setLoading(false);
+      }
     }
   }, [database]);
 
   useFocusEffect(
     useCallback(() => {
       void loadSettings();
+      return () => {
+        loadRequestRef.current += 1;
+      };
     }, [loadSettings]),
   );
 
   const handleResetShortcuts = useCallback(async () => {
+    if (shortcutMutationRef.current) return;
+    shortcutMutationRef.current = true;
     try {
       const targetCode = overview?.currencyCode ?? currencyCode;
       const recommended = getRecommendedShortcuts(targetCode);
@@ -103,26 +177,44 @@ export function SettingsScreen() {
       setShortcuts(recommended);
     } catch (err) {
       if (__DEV__) console.warn('Could not reset shortcuts', err);
+      Alert.alert(
+        language === 'id' ? 'Shortcut tidak tersimpan' : 'Shortcuts not saved',
+        mapError(err, 'DATABASE_WRITE_FAILED').message,
+      );
+    } finally {
+      shortcutMutationRef.current = false;
     }
-  }, [currencyCode, database, overview]);
+  }, [currencyCode, database, language, overview]);
 
   const handleRemoveShortcut = useCallback(
     async (amount: number) => {
-      if (shortcuts.length <= 1) return;
+      if (shortcuts.length <= 1 || shortcutMutationRef.current) return;
+      shortcutMutationRef.current = true;
       const updated = shortcuts.filter((s) => s !== amount);
       try {
         await setQuickShortcutsSetting(database, updated);
         setShortcuts(updated);
       } catch (err) {
         if (__DEV__) console.warn('Could not remove shortcut', err);
+        Alert.alert(
+          language === 'id' ? 'Shortcut tidak tersimpan' : 'Shortcut not saved',
+          mapError(err, 'DATABASE_WRITE_FAILED').message,
+        );
+      } finally {
+        shortcutMutationRef.current = false;
       }
     },
-    [database, shortcuts],
+    [database, language, shortcuts],
   );
 
   const handleAddShortcut = useCallback(async () => {
-    const parsed = Number(newShortcutInput.replace(/[^0-9]/g, ''));
-    if (!parsed || parsed <= 0) {
+    if (shortcutMutationRef.current) return;
+    const targetCode = overview?.currencyCode ?? currencyCode;
+    let parsed: number;
+    try {
+      const minor = parseMoneyInput(newShortcutInput, targetCode);
+      parsed = minor / 10 ** getCurrencyFractionDigits(targetCode);
+    } catch {
       setShortcutError(t.settings.errorShortcutInvalid);
       return;
     }
@@ -136,6 +228,7 @@ export function SettingsScreen() {
     }
 
     const updated = [...shortcuts, parsed].sort((a, b) => a - b);
+    shortcutMutationRef.current = true;
     try {
       await setQuickShortcutsSetting(database, updated);
       setShortcuts(updated);
@@ -146,8 +239,17 @@ export function SettingsScreen() {
       setShortcutError(
         isCodedError(err) ? err.message : t.settings.errorShortcutInvalid,
       );
+    } finally {
+      shortcutMutationRef.current = false;
     }
-  }, [database, newShortcutInput, shortcuts, t.settings]);
+  }, [
+    currencyCode,
+    database,
+    newShortcutInput,
+    overview,
+    shortcuts,
+    t.settings,
+  ]);
 
   const performReset = useCallback(async () => {
     if (resettingRef.current) return;
@@ -221,26 +323,39 @@ export function SettingsScreen() {
           ? 'Ubah mata uang global?'
           : 'Change global currency?',
         language === 'id'
-          ? `Seluruh aplikasi akan menggunakan ${selected}. Nominal transaksi lama tidak dikonversi; hanya kode, simbol, dan format mata uangnya yang berubah.`
-          : `The whole app will use ${selected}. Existing transaction amounts are not converted; only their currency code, symbol, and formatting change.`,
+          ? `Seluruh aplikasi akan menggunakan ${selected}. Angka nominal lama tetap sama tanpa konversi kurs; hanya kode, simbol, dan format mata uangnya yang berubah.`
+          : `The whole app will use ${selected}. Existing nominal amounts stay the same without exchange-rate conversion; only their currency code, symbol, and formatting change.`,
         [
           { style: 'cancel', text: language === 'id' ? 'Batal' : 'Cancel' },
           {
             onPress: () => {
-              setCurrency(selected);
-              const selectedCurrency = SUPPORTED_CURRENCIES.find(
-                (currency) => currency.code === selected,
-              );
-              setOverview((currentOverview) =>
-                currentOverview
-                  ? {
-                      ...currentOverview,
-                      currencyCode: selected,
-                      currencyName:
-                        selectedCurrency?.name ?? currentOverview.currencyName,
-                    }
-                  : currentOverview,
-              );
+              void (async () => {
+                setError(null);
+                try {
+                  await setCurrency(selected);
+                  const selectedCurrency = SUPPORTED_CURRENCIES.find(
+                    (currency) => currency.code === selected,
+                  );
+                  setOverview((currentOverview) =>
+                    currentOverview
+                      ? {
+                          ...currentOverview,
+                          currencyCode: selected,
+                          currencyName:
+                            selectedCurrency?.name ??
+                            currentOverview.currencyName,
+                        }
+                      : currentOverview,
+                  );
+                } catch (currencyError) {
+                  setError(
+                    isCodedError(currencyError)
+                      ? currencyError.message
+                      : mapError(currencyError, 'DATABASE_WRITE_FAILED')
+                          .message,
+                  );
+                }
+              })();
             },
             text: language === 'id' ? 'Ubah mata uang' : 'Change currency',
           },
@@ -381,9 +496,13 @@ export function SettingsScreen() {
               language={language}
               onOpenCurrencyPicker={() => setCurrencyPickerVisible(true)}
               onOpenShortcutsModal={() => setShortcutsModalVisible(true)}
-              onSelectBrandTheme={setBrandTheme}
-              onSelectLanguage={(lang) => void setLanguage(lang)}
-              onSelectTheme={setThemeSetting}
+              onSelectBrandTheme={(nextBrandTheme) =>
+                void handleBrandThemeChange(nextBrandTheme)
+              }
+              onSelectLanguage={(nextLanguage) =>
+                void handleLanguageChange(nextLanguage)
+              }
+              onSelectTheme={(nextTheme) => void handleThemeChange(nextTheme)}
               shortcuts={shortcuts}
               t={t}
               themeSetting={themeSetting}

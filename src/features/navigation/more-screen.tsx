@@ -17,11 +17,7 @@ type MenuItem = {
   iconColor: string;
   label: string;
   route:
-    | '/goals'
-    | '/claims'
-    | '/categories'
-    | '/settings/backup'
-    | '/settings';
+    '/goals' | '/claims' | '/categories' | '/settings/backup' | '/settings';
 };
 
 type MenuSection = {
@@ -170,9 +166,7 @@ export function MoreScreen() {
       >
         {sections.map((section) => (
           <View key={section.id} style={styles.sectionContainer}>
-            <Text
-              style={[styles.sectionTitle, { color: colors.textMuted }]}
-            >
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
               {section.title.toUpperCase()}
             </Text>
 

@@ -44,9 +44,7 @@ export const BackupRestoreCard = memo(function BackupRestoreCard({
             style={[
               styles.cardIconBadge,
               {
-                backgroundColor: isDark
-                  ? colors.surfaceSecondary
-                  : '#FEF3C7',
+                backgroundColor: isDark ? colors.surfaceSecondary : '#FEF3C7',
               },
             ]}
           >

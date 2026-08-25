@@ -38,6 +38,14 @@ export function useUndoTransaction({
   const [isUndoing, setIsUndoing] = useState(false);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const snapshotRef = useRef<DeletedTransactionSnapshot | null>(null);
+  const undoingRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  const cancelToastTimeout = useCallback(() => {
+    if (!toastTimeoutRef.current) return;
+    clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = null;
+  }, []);
 
   const clearPendingSnapshot = useCallback((removeReceipt: boolean) => {
     if (removeReceipt && snapshotRef.current) {
@@ -49,15 +57,16 @@ export function useUndoTransaction({
 
   const scheduleHide = useCallback(
     (snapshot: DeletedTransactionSnapshot | null, duration = toastDuration) => {
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      cancelToastTimeout();
       toastTimeoutRef.current = setTimeout(() => {
+        toastTimeoutRef.current = null;
         setToastVisible(false);
         if (snapshot && snapshotRef.current === snapshot) {
           clearPendingSnapshot(true);
         }
       }, duration);
     },
-    [clearPendingSnapshot, toastDuration],
+    [cancelToastTimeout, clearPendingSnapshot, toastDuration],
   );
 
   const showDeletedTransactionUndo = useCallback(
@@ -109,47 +118,82 @@ export function useUndoTransaction({
     undoPayload,
   ]);
 
-  useEffect(
-    () => () => {
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      cancelToastTimeout();
       if (snapshotRef.current)
         finalizeDeletedTransactionUndo(snapshotRef.current);
-    },
-    [],
-  );
+    };
+  }, [cancelToastTimeout]);
 
   const handleUndo = useCallback(async () => {
-    if (isUndoing) return;
+    if (undoingRef.current) return;
+    undoingRef.current = true;
+    cancelToastTimeout();
     setIsUndoing(true);
+    let detachedSnapshot: DeletedTransactionSnapshot | null = null;
     try {
       if (undoCreatedTransactionId) {
         await deleteTransaction(database, undoCreatedTransactionId);
-        setUndoCreatedTransactionId(null);
-        setToastMessage(
-          language === 'id'
-            ? 'Penambahan transaksi dibatalkan'
-            : 'Transaction addition undone',
-        );
+        if (mountedRef.current) {
+          setUndoCreatedTransactionId(null);
+          setToastMessage(
+            language === 'id'
+              ? 'Penambahan transaksi dibatalkan'
+              : 'Transaction addition undone',
+          );
+        }
       } else if (undoDeletedSnapshot) {
-        await restoreDeletedTransaction(database, undoDeletedSnapshot);
-        clearPendingSnapshot(false);
-        setToastMessage(
-          language === 'id'
-            ? 'Transaksi berhasil dipulihkan'
-            : 'Transaction restored',
-        );
+        detachedSnapshot = undoDeletedSnapshot;
+        if (snapshotRef.current === detachedSnapshot) {
+          snapshotRef.current = null;
+        }
+        setUndoDeletedSnapshot(null);
+        await restoreDeletedTransaction(database, detachedSnapshot);
+        if (mountedRef.current) {
+          clearPendingSnapshot(false);
+          setToastMessage(
+            language === 'id'
+              ? 'Transaksi berhasil dipulihkan'
+              : 'Transaction restored',
+          );
+        }
       }
-      onSuccess?.();
-      scheduleHide(null, 2500);
+      if (mountedRef.current) {
+        onSuccess?.();
+        scheduleHide(null, 2500);
+      }
     } catch (err) {
       if (__DEV__) console.warn('Could not execute undo action', err);
+      if (!mountedRef.current) {
+        if (detachedSnapshot) {
+          finalizeDeletedTransactionUndo(detachedSnapshot);
+        }
+        return;
+      }
+      if (detachedSnapshot) {
+        snapshotRef.current = detachedSnapshot;
+        setUndoDeletedSnapshot(detachedSnapshot);
+        scheduleHide(detachedSnapshot);
+      } else {
+        scheduleHide(null, 2500);
+      }
+      setToastMessage(
+        language === 'id'
+          ? 'Tindakan tidak dapat dibatalkan. Coba lagi.'
+          : 'The action could not be undone. Try again.',
+      );
+      setToastVisible(true);
     } finally {
-      setIsUndoing(false);
+      undoingRef.current = false;
+      if (mountedRef.current) setIsUndoing(false);
     }
   }, [
+    cancelToastTimeout,
     clearPendingSnapshot,
     database,
-    isUndoing,
     language,
     onSuccess,
     scheduleHide,
@@ -158,10 +202,10 @@ export function useUndoTransaction({
   ]);
 
   const dismissToast = useCallback(() => {
-    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    cancelToastTimeout();
     clearPendingSnapshot(true);
     setToastVisible(false);
-  }, [clearPendingSnapshot]);
+  }, [cancelToastTimeout, clearPendingSnapshot]);
 
   return {
     canUndo: Boolean(undoCreatedTransactionId || undoDeletedSnapshot),

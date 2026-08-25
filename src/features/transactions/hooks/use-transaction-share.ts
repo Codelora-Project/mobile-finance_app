@@ -39,12 +39,12 @@ export function useTransactionShare({
     const typeLabel = isTransfer
       ? 'TRANSFER'
       : isExpense
-      ? language === 'id'
-        ? 'PENGELUARAN'
-        : 'EXPENSE'
-      : language === 'id'
-      ? 'PEMASUKAN'
-      : 'INCOME';
+        ? language === 'id'
+          ? 'PENGELUARAN'
+          : 'EXPENSE'
+        : language === 'id'
+          ? 'PEMASUKAN'
+          : 'INCOME';
 
     const amountFormatted = formatMoney(
       transaction.amountMinor,

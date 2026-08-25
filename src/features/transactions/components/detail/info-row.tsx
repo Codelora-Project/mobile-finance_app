@@ -52,9 +52,7 @@ export const DetailInfoRow = memo(function DetailInfoRow({
         style={[
           styles.iconCircle,
           {
-            backgroundColor: isDark
-              ? 'rgba(255, 255, 255, 0.05)'
-              : '#F1F5F9',
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F1F5F9',
           },
         ]}
       >

@@ -41,9 +41,7 @@ export const DetailReceiptCard = memo(function DetailReceiptCard({
           style={[
             styles.receiptIconCircle,
             {
-              backgroundColor: isDark
-                ? 'rgba(59, 130, 246, 0.15)'
-                : '#EFF6FF',
+              backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#EFF6FF',
             },
           ]}
         >
@@ -54,12 +52,8 @@ export const DetailReceiptCard = memo(function DetailReceiptCard({
           />
         </View>
         <View style={styles.receiptMetaCol}>
-          <Text
-            style={[styles.receiptTitle, { color: colors.textPrimary }]}
-          >
-            {language === 'id'
-              ? 'Bukti Struk Pembayaran'
-              : 'Receipt Proof'}
+          <Text style={[styles.receiptTitle, { color: colors.textPrimary }]}>
+            {language === 'id' ? 'Bukti Struk Pembayaran' : 'Receipt Proof'}
           </Text>
           <Text
             style={[styles.receiptSubtitle, { color: colors.textSecondary }]}
@@ -76,9 +70,7 @@ export const DetailReceiptCard = memo(function DetailReceiptCard({
         style={({ pressed }) => [
           styles.viewReceiptButton,
           {
-            backgroundColor: isDark
-              ? 'rgba(59, 130, 246, 0.12)'
-              : '#EFF6FF',
+            backgroundColor: isDark ? 'rgba(59, 130, 246, 0.12)' : '#EFF6FF',
             borderColor: colors.primary,
           },
           pressed && styles.pressed,

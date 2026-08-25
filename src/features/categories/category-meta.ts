@@ -1,16 +1,13 @@
-import type { ComponentProps } from 'react';
-import type MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-
-export type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
+import type { MaterialCommunityIconName } from '@/lib/material-community-icons';
 
 export type CategoryMeta = {
-  icon: IconName;
+  icon: MaterialCommunityIconName;
   color: string;
   backgroundColor: string;
 };
 
 // Clean, consistent, monochromatic icon mapping (Apple / Linear style)
-const CATEGORY_ICON_MAP: Record<string, IconName> = {
+const CATEGORY_ICON_MAP: Record<string, MaterialCommunityIconName> = {
   'food & drink': 'silverware-fork-knife',
   transportation: 'car-outline',
   shopping: 'shopping-outline',
@@ -35,7 +32,7 @@ export function getCategoryMeta(
   isDark = false,
 ): CategoryMeta {
   const normalized = categoryName?.trim().toLowerCase() ?? '';
-  const icon: IconName =
+  const icon: MaterialCommunityIconName =
     type === 'transfer'
       ? 'swap-horizontal'
       : (CATEGORY_ICON_MAP[normalized] ??

@@ -12,7 +12,7 @@ import type {
   Wallet,
   WalletSummary,
 } from '@/features/wallets/wallet-types';
-import { toLocalDate } from '@/lib/dates';
+import { getTimezoneOffsetMinutes, toLocalDate } from '@/lib/dates';
 import { createCodedError } from '@/lib/errors';
 import { normalizeOptionalText } from '@/lib/strings';
 
@@ -140,6 +140,10 @@ export async function createWallet(
       'Nama dompet tidak boleh kosong.',
     );
   }
+  const initialBalanceMinor = input.initialBalanceMinor ?? 0;
+  if (!Number.isSafeInteger(initialBalanceMinor)) {
+    throw createCodedError('VALIDATION_FAILED', 'Saldo awal tidak valid.');
+  }
 
   const existing = await database.getFirstAsync<{ id: number }>(
     'SELECT id FROM payment_methods WHERE LOWER(name) = LOWER(?) LIMIT 1;',
@@ -180,7 +184,7 @@ export async function createWallet(
       normalizeOptionalText(input.accountNumber),
       input.color ?? '#2563EB',
       input.iconKey ?? 'wallet',
-      input.initialBalanceMinor ?? 0,
+      initialBalanceMinor,
       input.includeInCashflow !== false ? 1 : 0,
       input.isDefault ? 1 : 0,
       nextOrder,
@@ -215,6 +219,12 @@ export async function updateWallet(
       'VALIDATION_FAILED',
       'Nama dompet tidak boleh kosong.',
     );
+  }
+  if (
+    input.initialBalanceMinor !== undefined &&
+    !Number.isSafeInteger(input.initialBalanceMinor)
+  ) {
+    throw createCodedError('VALIDATION_FAILED', 'Saldo awal tidak valid.');
   }
 
   if (name.toLowerCase() !== existing.name.toLowerCase()) {
@@ -316,6 +326,10 @@ export async function unarchiveWallet(
   database: SQLiteDatabase,
   id: number,
 ): Promise<void> {
+  const existing = await getWalletById(database, id);
+  if (!existing) {
+    throw createCodedError('VALIDATION_FAILED', 'Dompet tidak ditemukan.');
+  }
   await database.runAsync(
     'UPDATE payment_methods SET is_archived = 0, updated_at = ? WHERE id = ?;',
     [Date.now(), id],
@@ -343,26 +357,29 @@ export async function reconcileWalletBalance(
     if (!wallet) {
       throw createCodedError('VALIDATION_FAILED', 'Dompet tidak ditemukan.');
     }
+    if (wallet.isArchived) {
+      throw createCodedError(
+        'VALIDATION_FAILED',
+        'Dompet yang diarsipkan tidak dapat direkonsiliasi.',
+      );
+    }
 
     const diffMinor = actualBalanceMinor - wallet.currentBalanceMinor;
     if (diffMinor === 0) return null;
 
     const now = Date.now();
-    const localDate = toLocalDate(now, 0);
+    const timezoneOffsetMinutes = getTimezoneOffsetMinutes(now);
+    const localDate = toLocalDate(now, timezoneOffsetMinutes);
     const type = diffMinor > 0 ? 'income' : 'expense';
     const amountMinor = Math.abs(diffMinor);
-    const categoryId = await ensureSystemCategory(
-      transaction,
-      definition,
-      now,
-    );
+    const categoryId = await ensureSystemCategory(transaction, definition, now);
 
     const result = await transaction.runAsync(
       `INSERT INTO transactions (
         type, amount_minor, currency_code, category_id, payment_method_id,
         counterparty, note, occurred_at, timezone_offset_minutes, local_date,
         is_reimbursable, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?);`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?);`,
       [
         type,
         amountMinor,
@@ -372,6 +389,7 @@ export async function reconcileWalletBalance(
         definition.defaultName,
         note ?? `${definition.defaultName} Riil (Rekonsiliasi)`,
         now,
+        timezoneOffsetMinutes,
         localDate,
         now,
         now,
@@ -426,7 +444,8 @@ export async function transferBetweenWallets(
   }
 
   const now = Date.now();
-  const localDate = toLocalDate(occurredAt, 0);
+  const timezoneOffsetMinutes = getTimezoneOffsetMinutes(occurredAt);
+  const localDate = toLocalDate(occurredAt, timezoneOffsetMinutes);
 
   return withIntegrityCheckedTransaction(database, async (transaction) => {
     const definition = SYSTEM_CATEGORIES.walletTransfer;
@@ -438,6 +457,12 @@ export async function transferBetweenWallets(
       throw createCodedError(
         'VALIDATION_FAILED',
         'Dompet asal atau tujuan tidak ditemukan.',
+      );
+    }
+    if (fromWallet.isArchived || toWallet.isArchived) {
+      throw createCodedError(
+        'VALIDATION_FAILED',
+        'Dompet yang diarsipkan tidak dapat digunakan untuk transfer.',
       );
     }
 
@@ -467,7 +492,7 @@ export async function transferBetweenWallets(
         toWallet.name,
         note ? note.trim() : `Transfer ke ${toWallet.name}`,
         occurredAt,
-        0,
+        timezoneOffsetMinutes,
         localDate,
         now,
         now,

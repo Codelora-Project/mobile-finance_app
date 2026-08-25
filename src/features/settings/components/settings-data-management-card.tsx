@@ -56,10 +56,7 @@ export const SettingsDataManagementCard = memo(
       <View style={styles.sectionGroup}>
         <Text
           accessibilityRole="header"
-          style={[
-            styles.sectionHeaderLabel,
-            { color: colors.textSecondary },
-          ]}
+          style={[styles.sectionHeaderLabel, { color: colors.textSecondary }]}
         >
           {t.settings.manageSection}
         </Text>
@@ -102,10 +99,7 @@ export const SettingsDataManagementCard = memo(
               </View>
               <View style={styles.navTextWrap}>
                 <Text
-                  style={[
-                    styles.navRowTitle,
-                    { color: colors.textPrimary },
-                  ]}
+                  style={[styles.navRowTitle, { color: colors.textPrimary }]}
                 >
                   {t.settings.categories}
                 </Text>
@@ -164,10 +158,7 @@ export const SettingsDataManagementCard = memo(
               </View>
               <View style={styles.navTextWrap}>
                 <Text
-                  style={[
-                    styles.navRowTitle,
-                    { color: colors.textPrimary },
-                  ]}
+                  style={[styles.navRowTitle, { color: colors.textPrimary }]}
                 >
                   {t.settings.paymentMethods}
                 </Text>
@@ -226,10 +217,7 @@ export const SettingsDataManagementCard = memo(
               </View>
               <View style={styles.navTextWrap}>
                 <Text
-                  style={[
-                    styles.navRowTitle,
-                    { color: colors.textPrimary },
-                  ]}
+                  style={[styles.navRowTitle, { color: colors.textPrimary }]}
                 >
                   {t.backup.title}
                 </Text>
@@ -288,10 +276,7 @@ export const SettingsDataManagementCard = memo(
               </View>
               <View style={styles.navTextWrap}>
                 <Text
-                  style={[
-                    styles.navRowTitle,
-                    { color: colors.textPrimary },
-                  ]}
+                  style={[styles.navRowTitle, { color: colors.textPrimary }]}
                 >
                   {t.settings.quickExportTitle}
                 </Text>
@@ -346,10 +331,7 @@ export const SettingsDataManagementCard = memo(
                 </View>
                 <View style={styles.navTextWrap}>
                   <Text
-                    style={[
-                      styles.navRowTitle,
-                      { color: colors.textPrimary },
-                    ]}
+                    style={[styles.navRowTitle, { color: colors.textPrimary }]}
                   >
                     {t.settings.storageSection}
                   </Text>
@@ -420,7 +402,12 @@ export const SettingsDataManagementCard = memo(
                   },
                 ]}
               >
-                <View style={[styles.progressSegment, { backgroundColor: '#3B82F6', flex: 3 }]} />
+                <View
+                  style={[
+                    styles.progressSegment,
+                    { backgroundColor: '#3B82F6', flex: 3 },
+                  ]}
+                />
                 <View
                   style={[
                     styles.progressSegment,
@@ -459,7 +446,10 @@ export const SettingsDataManagementCard = memo(
                 >
                   <View style={styles.metricCardHeader}>
                     <View
-                      style={[styles.indicatorDot, { backgroundColor: '#3B82F6' }]}
+                      style={[
+                        styles.indicatorDot,
+                        { backgroundColor: '#3B82F6' },
+                      ]}
                     />
                     <Text
                       numberOfLines={1}
@@ -496,7 +486,10 @@ export const SettingsDataManagementCard = memo(
                 >
                   <View style={styles.metricCardHeader}>
                     <View
-                      style={[styles.indicatorDot, { backgroundColor: '#8B5CF6' }]}
+                      style={[
+                        styles.indicatorDot,
+                        { backgroundColor: '#8B5CF6' },
+                      ]}
                     />
                     <Text
                       numberOfLines={1}
@@ -533,7 +526,10 @@ export const SettingsDataManagementCard = memo(
                 >
                   <View style={styles.metricCardHeader}>
                     <View
-                      style={[styles.indicatorDot, { backgroundColor: '#F59E0B' }]}
+                      style={[
+                        styles.indicatorDot,
+                        { backgroundColor: '#F59E0B' },
+                      ]}
                     />
                     <Text
                       numberOfLines={1}

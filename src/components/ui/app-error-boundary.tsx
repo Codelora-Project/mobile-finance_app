@@ -37,7 +37,11 @@ export class AppErrorBoundary extends Component<
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     if (__DEV__) {
-      console.error('AppErrorBoundary caught an unhandled error:', error, errorInfo);
+      console.error(
+        'AppErrorBoundary caught an unhandled error:',
+        error,
+        errorInfo,
+      );
     }
     this.props.onError?.(error, errorInfo);
   }

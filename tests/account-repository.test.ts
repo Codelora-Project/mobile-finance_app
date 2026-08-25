@@ -15,6 +15,7 @@ import {
   recordTransfer,
   updateWallet,
 } from '@/features/wallets/wallet-repository';
+import { getTimezoneOffsetMinutes, toLocalDate } from '@/lib/dates';
 
 type PaymentMethodRow = {
   id: number;
@@ -262,6 +263,7 @@ class MockAccountDatabase {
     if (cleanSql.startsWith('INSERT INTO transactions')) {
       const id = this.nextId++;
       const type = String(flattened[0]) as 'expense' | 'income' | 'transfer';
+      const isTransfer = type === 'transfer';
       this.transactions.push({
         id,
         type,
@@ -269,20 +271,26 @@ class MockAccountDatabase {
         currency_code: String(flattened[2]),
         category_id: Number(flattened[3]),
         payment_method_id: Number(flattened[4]),
-        transfer_to_payment_method_id: flattened[5]
-          ? Number(flattened[5])
+        transfer_to_payment_method_id:
+          isTransfer && flattened[5] ? Number(flattened[5]) : null,
+        transfer_fee_minor:
+          isTransfer && flattened[6] ? Number(flattened[6]) : 0,
+        transfer_fee_category_id:
+          isTransfer && flattened[7] ? Number(flattened[7]) : null,
+        transfer_fee_note:
+          isTransfer && flattened[8] ? String(flattened[8]) : null,
+        counterparty: flattened[isTransfer ? 9 : 5]
+          ? String(flattened[isTransfer ? 9 : 5])
           : null,
-        transfer_fee_minor: flattened[6] ? Number(flattened[6]) : 0,
-        transfer_fee_category_id: flattened[7] ? Number(flattened[7]) : null,
-        transfer_fee_note: flattened[8] ? String(flattened[8]) : null,
-        counterparty: flattened[9] ? String(flattened[9]) : null,
-        note: flattened[10] ? String(flattened[10]) : null,
-        occurred_at: Number(flattened[11]),
-        timezone_offset_minutes: Number(flattened[12]),
-        local_date: String(flattened[13]),
+        note: flattened[isTransfer ? 10 : 6]
+          ? String(flattened[isTransfer ? 10 : 6])
+          : null,
+        occurred_at: Number(flattened[isTransfer ? 11 : 7]),
+        timezone_offset_minutes: Number(flattened[isTransfer ? 12 : 8]),
+        local_date: String(flattened[isTransfer ? 13 : 9]),
         is_reimbursable: 0,
-        created_at: Number(flattened[14] || Date.now()),
-        updated_at: Number(flattened[15] || Date.now()),
+        created_at: Number(flattened[isTransfer ? 14 : 10] || Date.now()),
+        updated_at: Number(flattened[isTransfer ? 15 : 11] || Date.now()),
       });
       return { changes: 1, lastInsertRowId: id };
     }
@@ -488,6 +496,13 @@ describe('account-repository (Multi-Wallet & Transfers)', () => {
 
     const updated = await getWalletById(sqliteDb, cashWallet.id);
     expect(updated?.currentBalanceMinor).toBe(85000);
+    const adjustment = db.transactions.at(-1)!;
+    expect(adjustment.timezone_offset_minutes).toBe(
+      getTimezoneOffsetMinutes(adjustment.occurred_at),
+    );
+    expect(adjustment.local_date).toBe(
+      toLocalDate(adjustment.occurred_at, adjustment.timezone_offset_minutes),
+    );
 
     // Reconcile up: User found Rp 50.000 extra -> new balance Rp 135.000
     await reconcileWalletBalance(
@@ -523,5 +538,35 @@ describe('account-repository (Multi-Wallet & Transfers)', () => {
 
     const allWallets = await getWallets(sqliteDb, { includeArchived: true });
     expect(allWallets.some((w) => w.id === wallet.id)).toBe(true);
+  });
+
+  it('rejects unsafe balances and archived-wallet mutations', async () => {
+    await expect(
+      createWallet(sqliteDb, {
+        accountType: 'cash',
+        initialBalanceMinor: 1.5,
+        name: 'Invalid Balance',
+      }),
+    ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+
+    const archived = await createWallet(sqliteDb, {
+      accountType: 'cash',
+      initialBalanceMinor: 10_000,
+      name: 'Archived Cash',
+    });
+    await archiveWallet(sqliteDb, archived.id);
+
+    await expect(
+      reconcileWalletBalance(sqliteDb, archived.id, 20_000, 'IDR'),
+    ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+    await expect(
+      recordTransfer(sqliteDb, {
+        amountMinor: 1_000,
+        currencyCode: 'IDR',
+        fromWalletId: archived.id,
+        occurredAt: Date.now(),
+        toWalletId: 1,
+      }),
+    ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
   });
 });

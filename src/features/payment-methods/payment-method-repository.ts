@@ -111,6 +111,7 @@ async function requirePaymentMethod(database: SQLiteDatabase, id: number) {
 export async function listPaymentMethods(database: SQLiteDatabase) {
   const rows = await database.getAllAsync<PaymentMethodRow>(
     `${PAYMENT_METHOD_SELECT}
+     WHERE is_archived = 0
      ORDER BY is_default DESC, sort_order, name COLLATE NOCASE`,
   );
   return rows.map(mapPaymentMethod);

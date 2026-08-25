@@ -1,5 +1,8 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { withIntegrityCheckedTransaction } from '@/db/transactions';
+import { createCodedError } from '@/lib/errors';
+import { getCurrencyFractionDigits } from '@/lib/money';
 import type { ThemeSetting } from '@/lib/theme/theme-context';
 import type { BrandTheme } from '@/theme/colors';
 
@@ -95,6 +98,106 @@ export function getRecommendedShortcuts(
 type SettingRow = {
   value: string;
 };
+
+const MONEY_TABLES = [
+  {
+    columns: ['amount_minor', 'transfer_fee_minor'],
+    table: 'transactions',
+    updatesTimestamp: true,
+  },
+  {
+    columns: ['subtotal_minor', 'tax_minor'],
+    table: 'receipts',
+    updatesTimestamp: true,
+  },
+  {
+    columns: ['initial_balance_minor'],
+    table: 'payment_methods',
+    updatesTimestamp: true,
+  },
+  {
+    columns: ['monthly_limit_minor'],
+    table: 'category_budgets',
+    updatesTimestamp: true,
+  },
+  {
+    columns: ['target_amount_minor', 'current_amount_minor'],
+    table: 'savings_goals',
+    updatesTimestamp: true,
+  },
+  {
+    columns: ['amount_minor'],
+    table: 'goal_transactions',
+    updatesTimestamp: false,
+  },
+] as const;
+
+async function validateMoneyRescale(
+  database: SQLiteDatabase,
+  multiplier: number,
+  divisor: number,
+) {
+  for (const table of MONEY_TABLES) {
+    for (const column of table.columns) {
+      if (multiplier > 1) {
+        const row = await database.getFirstAsync<{ max_abs: number | null }>(
+          `SELECT MAX(ABS(${column})) AS max_abs FROM ${table.table} WHERE ${column} IS NOT NULL`,
+        );
+        if (
+          row?.max_abs !== null &&
+          row?.max_abs !== undefined &&
+          row.max_abs > Math.floor(Number.MAX_SAFE_INTEGER / multiplier)
+        ) {
+          throw createCodedError(
+            'VALIDATION_FAILED',
+            'Currency cannot be changed because an amount would exceed the safe storage limit.',
+          );
+        }
+      }
+
+      if (divisor > 1) {
+        const row = await database.getFirstAsync<{
+          incompatible_count: number;
+        }>(
+          `SELECT COUNT(*) AS incompatible_count FROM ${table.table} WHERE ${column} IS NOT NULL AND ${column} % ? != 0`,
+          divisor,
+        );
+        if ((row?.incompatible_count ?? 0) > 0) {
+          throw createCodedError(
+            'VALIDATION_FAILED',
+            'Currency cannot be changed without rounding one or more existing amounts.',
+          );
+        }
+      }
+    }
+  }
+}
+
+async function rescaleStoredMoney(
+  database: SQLiteDatabase,
+  multiplier: number,
+  divisor: number,
+  timestamp: number,
+) {
+  if (multiplier === 1 && divisor === 1) return;
+
+  const operator = multiplier > 1 ? '*' : '/';
+  const factor = multiplier > 1 ? multiplier : divisor;
+  for (const table of MONEY_TABLES) {
+    const assignments = table.columns.map(
+      (column) => `${column} = ${column} ${operator} ?`,
+    );
+    const params: number[] = table.columns.map(() => factor);
+    if (table.updatesTimestamp) {
+      assignments.push('updated_at = ?');
+      params.push(timestamp);
+    }
+    await database.runAsync(
+      `UPDATE ${table.table} SET ${assignments.join(', ')}`,
+      ...params,
+    );
+  }
+}
 
 export type SettingsOverview = Readonly<{
   brandTheme: BrandTheme;
@@ -194,18 +297,49 @@ export async function setCurrencySetting(
   currencyCode: SupportedCurrencyCode,
 ) {
   const timestamp = Date.now();
-  await database.runAsync(
-    `INSERT INTO app_settings (key, value, updated_at)
-     VALUES ('default_currency_code', ?, ?)
-     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-    currencyCode,
-    timestamp,
-  );
-  await database.runAsync(
-    `UPDATE transactions SET currency_code = ? WHERE currency_code != ?`,
-    currencyCode,
-    currencyCode,
-  );
+  await withIntegrityCheckedTransaction(database, async (transaction) => {
+    const currentSetting = await transaction.getFirstAsync<SettingRow>(
+      `SELECT value FROM app_settings WHERE key = 'default_currency_code'`,
+    );
+    const currentCurrency = SUPPORTED_CURRENCIES.find(
+      (currency) => currency.code === currentSetting?.value,
+    )?.code;
+    const sourceCurrency = currentCurrency ?? 'IDR';
+    if (sourceCurrency === currencyCode) return;
+
+    const mixedCurrency = await transaction.getFirstAsync<{ id: number }>(
+      `SELECT id FROM transactions WHERE currency_code != ? LIMIT 1`,
+      sourceCurrency,
+    );
+    if (mixedCurrency) {
+      throw createCodedError(
+        'VALIDATION_FAILED',
+        'Currency cannot be changed while transactions contain mixed currency codes.',
+      );
+    }
+
+    const sourceDigits = getCurrencyFractionDigits(sourceCurrency);
+    const targetDigits = getCurrencyFractionDigits(currencyCode);
+    const digitDelta = targetDigits - sourceDigits;
+    const multiplier = digitDelta > 0 ? 10 ** digitDelta : 1;
+    const divisor = digitDelta < 0 ? 10 ** Math.abs(digitDelta) : 1;
+
+    await validateMoneyRescale(transaction, multiplier, divisor);
+    await rescaleStoredMoney(transaction, multiplier, divisor, timestamp);
+    await transaction.runAsync(
+      `UPDATE transactions SET currency_code = ?, updated_at = ? WHERE currency_code != ?`,
+      currencyCode,
+      timestamp,
+      currencyCode,
+    );
+    await transaction.runAsync(
+      `INSERT INTO app_settings (key, value, updated_at)
+       VALUES ('default_currency_code', ?, ?)
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+      currencyCode,
+      timestamp,
+    );
+  });
 }
 
 export async function setLanguageSetting(

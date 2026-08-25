@@ -23,8 +23,8 @@ type ThemeContextValue = Readonly<{
   brandTheme: BrandTheme;
   colors: ColorPalette;
   isDark: boolean;
-  setBrandTheme: (brandTheme: BrandTheme) => void;
-  setThemeSetting: (theme: ThemeSetting) => void;
+  setBrandTheme: (brandTheme: BrandTheme) => Promise<void>;
+  setThemeSetting: (theme: ThemeSetting) => Promise<void>;
   theme: ActiveTheme;
   themeSetting: ThemeSetting;
 }>;
@@ -66,17 +66,21 @@ export function ThemeProvider({
   }
 
   const setThemeSetting = useCallback(
-    (nextSetting: ThemeSetting) => {
+    async (nextSetting: ThemeSetting) => {
+      if (onThemeChange) {
+        await onThemeChange(nextSetting);
+      }
       setThemeSettingState(nextSetting);
-      void onThemeChange?.(nextSetting);
     },
     [onThemeChange],
   );
 
   const setBrandTheme = useCallback(
-    (nextBrandTheme: BrandTheme) => {
+    async (nextBrandTheme: BrandTheme) => {
+      if (onBrandThemeChange) {
+        await onBrandThemeChange(nextBrandTheme);
+      }
       setBrandThemeState(nextBrandTheme);
-      void onBrandThemeChange?.(nextBrandTheme);
     },
     [onBrandThemeChange],
   );
@@ -104,7 +108,14 @@ export function ThemeProvider({
       theme: activeTheme,
       themeSetting,
     }),
-    [activeColors, activeTheme, brandTheme, setBrandTheme, setThemeSetting, themeSetting],
+    [
+      activeColors,
+      activeTheme,
+      brandTheme,
+      setBrandTheme,
+      setThemeSetting,
+      themeSetting,
+    ],
   );
 
   return (
@@ -119,8 +130,8 @@ export function useTheme() {
       brandTheme: 'blue' as BrandTheme,
       colors: lightColors,
       isDark: false,
-      setBrandTheme: () => {},
-      setThemeSetting: () => {},
+      setBrandTheme: async () => {},
+      setThemeSetting: async () => {},
       theme: 'light' as ActiveTheme,
       themeSetting: 'system' as ThemeSetting,
     };

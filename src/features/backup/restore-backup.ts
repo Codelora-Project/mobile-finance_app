@@ -6,7 +6,11 @@ import type {
   BackupReceipt,
   BackupStats,
 } from '@/features/backup/backup-types';
-import { getBackupPayloadStats } from '@/features/backup/backup-validation';
+import {
+  getBackupPayloadStats,
+  MAX_RECEIPT_BASE64_LENGTH,
+  validateBackupPayload,
+} from '@/features/backup/backup-validation';
 import { supportedReceiptMimeTypes } from '@/features/receipts/receipt-types';
 import {
   removeReceiptFile,
@@ -18,26 +22,40 @@ async function stageReceiptFiles(payload: BackupPayload) {
   const storageKeys: string[] = [];
   const receipts: BackupReceipt[] = [];
 
-  for (const receipt of payload.data.receipts) {
-    if (payload.version < 2 || !receipt.file_base64) {
-      receipts.push(receipt);
-      continue;
-    }
-    const mimeType = supportedReceiptMimeTypes.find(
-      (supported) => supported === receipt.mime_type,
-    );
-    if (!mimeType) {
-      throw createCodedError(
-        'VALIDATION_FAILED',
-        'File backup berisi format gambar struk yang tidak didukung.',
+  try {
+    for (const receipt of payload.data.receipts) {
+      // V1 backups did not embed image data. Restoring their receipt rows would
+      // create broken references on a different device, so only their
+      // transactions are restored.
+      if (payload.version < 2) continue;
+      if (
+        !receipt.file_base64 ||
+        receipt.file_base64.length > MAX_RECEIPT_BASE64_LENGTH
+      ) {
+        throw createCodedError(
+          'VALIDATION_FAILED',
+          'File backup tidak berisi data gambar struk yang valid.',
+        );
+      }
+      const mimeType = supportedReceiptMimeTypes.find(
+        (supported) => supported === receipt.mime_type,
       );
+      if (!mimeType) {
+        throw createCodedError(
+          'VALIDATION_FAILED',
+          'File backup berisi format gambar struk yang tidak didukung.',
+        );
+      }
+      const storageKey = await writeReceiptBase64ToStorage(
+        receipt.file_base64,
+        mimeType,
+      );
+      storageKeys.push(storageKey);
+      receipts.push({ ...receipt, storage_key: storageKey });
     }
-    const storageKey = await writeReceiptBase64ToStorage(
-      receipt.file_base64,
-      mimeType,
-    );
-    storageKeys.push(storageKey);
-    receipts.push({ ...receipt, storage_key: storageKey });
+  } catch (error) {
+    removeReceiptFiles(storageKeys);
+    throw error;
   }
 
   return { receipts, storageKeys };
@@ -277,14 +295,15 @@ export async function restoreBackupData(
   database: SQLiteDatabase,
   payload: BackupPayload,
 ): Promise<{ stats: BackupStats }> {
+  const validatedPayload = validateBackupPayload(payload);
   const previousReceipts = await database.getAllAsync<{ storage_key: string }>(
     'SELECT storage_key FROM receipts;',
   );
   let staged: Awaited<ReturnType<typeof stageReceiptFiles>> | null = null;
 
   try {
-    staged = await stageReceiptFiles(payload);
-    await replaceDatabaseData(database, payload, staged.receipts);
+    staged = await stageReceiptFiles(validatedPayload);
+    await replaceDatabaseData(database, validatedPayload, staged.receipts);
   } catch (error) {
     removeReceiptFiles(staged?.storageKeys ?? []);
     throw error;
@@ -299,5 +318,5 @@ export async function restoreBackupData(
       .filter((storageKey) => !activeReceiptKeys.has(storageKey)),
   );
 
-  return { stats: getBackupPayloadStats(payload) };
+  return { stats: getBackupPayloadStats(validatedPayload) };
 }

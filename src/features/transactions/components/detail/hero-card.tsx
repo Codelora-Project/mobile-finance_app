@@ -100,8 +100,8 @@ export const DetailHeroCard = memo(function DetailHeroCard({
             {isTransfer
               ? t.transactions.transfer
               : isExpense
-              ? t.transactions.expense
-              : t.transactions.income}
+                ? t.transactions.expense
+                : t.transactions.income}
           </Text>
         </View>
       </View>
@@ -116,8 +116,8 @@ export const DetailHeroCard = memo(function DetailHeroCard({
                 ? 'rgba(59, 130, 246, 0.15)'
                 : '#DBEAFE'
               : isDark
-              ? `${colors.primary}22`
-              : `${colors.primary}15`,
+                ? `${colors.primary}22`
+                : `${colors.primary}15`,
           },
         ]}
       >

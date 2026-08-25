@@ -31,6 +31,7 @@
       "expo-font"
     ],
     "android": {
+      "allowBackup": false,
       "package": "com.personalfinance.app",
       "adaptiveIcon": {
         "backgroundColor": "#F8FAFC",

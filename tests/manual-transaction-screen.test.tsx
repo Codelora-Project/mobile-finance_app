@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Alert } from 'react-native';
 
 import { ManualTransactionScreen } from '@/features/transactions/manual-transaction-screen';
+import { CurrencyProvider } from '@/lib/currency/currency-context';
 import { LanguageProvider } from '@/lib/i18n/language-context';
 
 const mockRouter = {
@@ -53,6 +54,22 @@ jest.mock('@/features/settings/settings-repository', () => ({
   getQuickShortcuts: jest
     .fn<() => Promise<number[]>>()
     .mockResolvedValue([2000, 5000, 10000, 20000, 50000, 100000]),
+  SUPPORTED_CURRENCIES: [
+    {
+      code: 'IDR',
+      country: 'Indonesia',
+      flag: '🇮🇩',
+      name: 'Indonesian Rupiah',
+      symbol: 'Rp',
+    },
+    {
+      code: 'USD',
+      country: 'United States',
+      flag: '🇺🇸',
+      name: 'US Dollar',
+      symbol: '$',
+    },
+  ],
 }));
 
 jest.mock('@/features/categories/category-repository', () => ({
@@ -254,6 +271,21 @@ describe('manual transaction form', () => {
     expect(screen.getByLabelText('Amount *').props.value).toBe('');
   });
 
+  it('adds quick shortcuts without losing USD decimal precision', async () => {
+    await render(
+      <CurrencyProvider initialCurrency="USD">
+        <LanguageProvider initialLanguage="en">
+          <ManualTransactionScreen />
+        </LanguageProvider>
+      </CurrencyProvider>,
+    );
+
+    await fireEvent.changeText(screen.getByLabelText('Amount *'), '1.50');
+    await fireEvent.press(screen.getByRole('button', { name: 'Add +$2k' }));
+
+    expect(screen.getByLabelText('Amount *').props.value).toBe('2001.50');
+  });
+
   it('offers camera and gallery from one receipt action', async () => {
     mockPickManualReceipt.mockResolvedValue(null);
     await render(
@@ -386,7 +418,13 @@ describe('manual transaction form', () => {
 
   it('switches to Transfer tab and handles transfer with optional transfer fee toggle', async () => {
     mockParams = {};
-    mockCreateTransaction.mockResolvedValueOnce({ id: 99, type: 'transfer' });
+    let resolveTransfer: ((value: unknown) => void) | null = null;
+    mockCreateTransaction.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveTransfer = resolve;
+        }),
+    );
 
     await render(
       <LanguageProvider initialLanguage="id">
@@ -433,7 +471,13 @@ describe('manual transaction form', () => {
     // 7. Save Transfer
     const saveBtn = screen.getByTestId('save-transaction');
     await fireEvent.press(saveBtn);
-    await fireEvent.press(await screen.findByTestId('confirm-transfer'));
+    const confirmTransfer = await screen.findByTestId('confirm-transfer');
+    const confirmPress = confirmTransfer.props.onClick as () => void;
+    await act(async () => {
+      confirmPress();
+      confirmPress();
+      await Promise.resolve();
+    });
 
     await waitFor(() =>
       expect(mockCreateTransaction).toHaveBeenCalledWith(
@@ -447,6 +491,11 @@ describe('manual transaction form', () => {
         }),
       ),
     );
+    expect(mockCreateTransaction).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      resolveTransfer?.({ id: 99, type: 'transfer' });
+    });
+    await waitFor(() => expect(mockRouter.dismissTo).toHaveBeenCalled());
   });
 
   it('filters category grid by income type when Income tab is selected', async () => {

@@ -1,5 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -11,8 +11,10 @@ import {
 
 import { AppButton } from '@/components/ui/app-button';
 import type { CategoryBudget } from '@/features/budgets/budget-repository';
+import { useCurrency } from '@/lib/currency/currency-context';
+import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
-import { formatMoney } from '@/lib/money';
+import { formatMoney, formatMoneyInput, parseMoneyInput } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -38,6 +40,8 @@ export function SetBudgetModal({
 }: SetBudgetModalProps) {
   const { t } = useLanguage();
   const { colors, isDark } = useTheme();
+  const { currencySymbol } = useCurrency();
+  const savingRef = useRef(false);
   const [amountStr, setAmountStr] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,41 +50,47 @@ export function SetBudgetModal({
   const handleShow = () => {
     setError(null);
     if (budget?.monthlyLimitMinor) {
-      setAmountStr(String(budget.monthlyLimitMinor));
+      setAmountStr(formatMoneyInput(budget.monthlyLimitMinor, currencyCode));
     } else {
       setAmountStr('');
     }
   };
 
   const handleSave = async () => {
-    if (!budget) return;
-    const parsed = Number(amountStr.replace(/\D/g, ''));
-    if (!parsed || parsed <= 0) {
+    if (!budget || savingRef.current) return;
+    let parsed: number;
+    try {
+      parsed = parseMoneyInput(amountStr, currencyCode);
+    } catch {
       setError(t.budgets.invalidAmountError);
       return;
     }
 
+    savingRef.current = true;
     setSaving(true);
     setError(null);
     try {
       await onSave(budget.categoryId, parsed);
       onClose();
     } catch (err) {
-      setError((err as Error).message || t.budgets.saveBudgetSuccess);
+      setError(mapError(err, 'DATABASE_WRITE_FAILED').message);
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!budget || !onDelete) return;
+    if (!budget || !onDelete || savingRef.current) return;
+    savingRef.current = true;
     setSaving(true);
     try {
       await onDelete(budget.categoryId);
       onClose();
     } catch (err) {
-      setError((err as Error).message || 'Error');
+      setError(mapError(err, 'DATABASE_WRITE_FAILED').message);
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };
@@ -90,11 +100,19 @@ export function SetBudgetModal({
   return (
     <Modal
       animationType="slide"
+      onRequestClose={() => {
+        if (!savingRef.current) onClose();
+      }}
       onShow={handleShow}
       transparent
       visible={visible}
     >
-      <Pressable onPress={onClose} style={styles.backdrop}>
+      <Pressable
+        onPress={() => {
+          if (!savingRef.current) onClose();
+        }}
+        style={styles.backdrop}
+      >
         <Pressable
           onPress={(e) => e.stopPropagation()}
           style={[
@@ -119,7 +137,13 @@ export function SetBudgetModal({
                 {t.budgets.categoryLabel} {budget.categoryName}
               </Text>
             </View>
-            <Pressable hitSlop={8} onPress={onClose}>
+            <Pressable
+              disabled={saving}
+              hitSlop={8}
+              onPress={() => {
+                if (!savingRef.current) onClose();
+              }}
+            >
               <MaterialCommunityIcons
                 color={colors.textSecondary}
                 name="close"
@@ -163,13 +187,13 @@ export function SetBudgetModal({
               <Text
                 style={[styles.currencyPrefix, { color: colors.textSecondary }]}
               >
-                Rp
+                {currencySymbol}
               </Text>
               <TextInput
-                keyboardType="number-pad"
+                keyboardType="decimal-pad"
                 onChangeText={(val) => {
                   setError(null);
-                  setAmountStr(val.replace(/\D/g, ''));
+                  setAmountStr(val);
                 }}
                 placeholder="1000000"
                 placeholderTextColor={colors.textSecondary}
@@ -214,9 +238,10 @@ export function SetBudgetModal({
                     },
                   ]}
                 >
-                  {amount >= 1_000_000
-                    ? `${amount / 1_000_000} Jt`
-                    : `${amount / 1_000} Rb`}
+                  {formatMoney(
+                    parseMoneyInput(String(amount), currencyCode),
+                    currencyCode,
+                  )}
                 </Text>
               </Pressable>
             ))}

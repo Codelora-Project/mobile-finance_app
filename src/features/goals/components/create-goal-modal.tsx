@@ -12,7 +12,9 @@ import {
 
 import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
-import { GOAL_ICONS } from '@/features/goals/components/goal-card';
+import { GOAL_ICONS } from '@/features/goals/goal-icons';
+import { useCurrency } from '@/lib/currency/currency-context';
+import { useLanguage } from '@/lib/i18n/language-context';
 import type { TranslationSchema } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -70,17 +72,27 @@ export const CreateGoalModal = memo(function CreateGoalModal({
   visible,
 }: CreateGoalModalProps) {
   const { colors } = useTheme();
+  const { currencyCode, currencySymbol } = useCurrency();
+  const { language } = useLanguage();
+  const amountPlaceholder = currencyCode === 'IDR' ? '5000000' : '50000.00';
+  const namePlaceholder =
+    language === 'id'
+      ? 'misal: Beli Laptop Baru, Liburan Bali'
+      : 'e.g. New Laptop, Emergency Fund';
 
   return (
     <Modal
       animationType="slide"
-      onRequestClose={onClose}
+      onRequestClose={() => {
+        if (!saving) onClose();
+      }}
       presentationStyle="pageSheet"
       visible={visible}
     >
       <Screen>
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <AppButton
+            disabled={saving}
             label={t.common.cancel}
             onPress={onClose}
             variant="ghost"
@@ -109,7 +121,7 @@ export const CreateGoalModal = memo(function CreateGoalModal({
             <TextInput
               autoFocus
               onChangeText={onChangeName}
-              placeholder="misal: Beli Laptop Baru, Liburan Bali"
+              placeholder={namePlaceholder}
               placeholderTextColor={colors.textSecondary}
               style={[
                 styles.formTextInput,
@@ -137,16 +149,13 @@ export const CreateGoalModal = memo(function CreateGoalModal({
                 },
               ]}
             >
-              <Text style={styles.amountPrefix}>Rp</Text>
+              <Text style={styles.amountPrefix}>{currencySymbol}</Text>
               <TextInput
-                keyboardType="number-pad"
+                keyboardType="decimal-pad"
                 onChangeText={onChangeTargetAmount}
-                placeholder="5000000"
+                placeholder={amountPlaceholder}
                 placeholderTextColor={colors.textSecondary}
-                style={[
-                  styles.amountTextInput,
-                  { color: colors.textPrimary },
-                ]}
+                style={[styles.amountTextInput, { color: colors.textPrimary }]}
                 value={targetAmount}
               />
             </View>
@@ -166,16 +175,13 @@ export const CreateGoalModal = memo(function CreateGoalModal({
                 },
               ]}
             >
-              <Text style={styles.amountPrefix}>Rp</Text>
+              <Text style={styles.amountPrefix}>{currencySymbol}</Text>
               <TextInput
-                keyboardType="number-pad"
+                keyboardType="decimal-pad"
                 onChangeText={onChangeInitialDeposit}
                 placeholder="0"
                 placeholderTextColor={colors.textSecondary}
-                style={[
-                  styles.amountTextInput,
-                  { color: colors.textPrimary },
-                ]}
+                style={[styles.amountTextInput, { color: colors.textPrimary }]}
                 value={initialDeposit}
               />
             </View>
@@ -184,7 +190,7 @@ export const CreateGoalModal = memo(function CreateGoalModal({
           {/* Icon Picker */}
           <View style={styles.formFieldGroup}>
             <Text style={[styles.fieldLabel, { color: colors.textPrimary }]}>
-              Pilih Ikon
+              {language === 'id' ? 'Pilih Ikon' : 'Choose Icon'}
             </Text>
             <View style={styles.iconsGrid}>
               {ICON_KEYS.map((key) => {
@@ -192,7 +198,7 @@ export const CreateGoalModal = memo(function CreateGoalModal({
                 const iconName = GOAL_ICONS[key] || 'target';
                 return (
                   <Pressable
-                    accessibilityLabel={`Ikon ${key}`}
+                    accessibilityLabel={`${language === 'id' ? 'Ikon' : 'Icon'} ${key}`}
                     accessibilityRole="button"
                     key={key}
                     onPress={() => onChangeSelectedIcon(key)}
@@ -202,15 +208,13 @@ export const CreateGoalModal = memo(function CreateGoalModal({
                         backgroundColor: isSelected
                           ? selectedColor
                           : colors.surface,
-                        borderColor: isSelected
-                          ? selectedColor
-                          : colors.border,
+                        borderColor: isSelected ? selectedColor : colors.border,
                       },
                     ]}
                   >
                     <MaterialCommunityIcons
                       color={isSelected ? '#FFFFFF' : colors.textPrimary}
-                      name={iconName as any}
+                      name={iconName}
                       size={22}
                     />
                   </Pressable>
@@ -222,14 +226,14 @@ export const CreateGoalModal = memo(function CreateGoalModal({
           {/* Color Picker */}
           <View style={styles.formFieldGroup}>
             <Text style={[styles.fieldLabel, { color: colors.textPrimary }]}>
-              Pilih Warna Tema
+              {language === 'id' ? 'Pilih Warna Tema' : 'Choose Theme Color'}
             </Text>
             <View style={styles.colorsRow}>
               {COLOR_OPTIONS.map((c) => {
                 const isSelected = selectedColor === c;
                 return (
                   <Pressable
-                    accessibilityLabel={`Warna ${c}`}
+                    accessibilityLabel={`${language === 'id' ? 'Warna' : 'Color'} ${c}`}
                     accessibilityRole="button"
                     key={c}
                     onPress={() => onChangeSelectedColor(c)}
@@ -255,7 +259,15 @@ export const CreateGoalModal = memo(function CreateGoalModal({
           <View style={styles.modalSubmitWrap}>
             <AppButton
               disabled={saving || !name.trim() || !targetAmount}
-              label={saving ? 'Menyimpan…' : 'Simpan Target Tabungan'}
+              label={
+                saving
+                  ? language === 'id'
+                    ? 'Menyimpan…'
+                    : 'Saving…'
+                  : language === 'id'
+                    ? 'Simpan Target Tabungan'
+                    : 'Save Savings Goal'
+              }
               loading={saving}
               onPress={onSubmit}
               variant="primary"

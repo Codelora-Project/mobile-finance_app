@@ -2,7 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { GOAL_ICONS } from '@/features/goals/components/goal-card';
+import { getGoalIconName } from '@/features/goals/goal-icons';
 import type { SavingsGoal } from '@/features/goals/goals-repository';
 import type { TranslationSchema } from '@/lib/i18n/translations';
 import { formatMoney } from '@/lib/money';
@@ -37,9 +37,7 @@ export const GoalDetailHeroCard = memo(function GoalDetailHeroCard({
     goal.targetAmountMinor - goal.currentAmountMinor,
   );
 
-  const iconName = (
-    GOAL_ICONS[goal.iconKey] || 'bullseye-arrow'
-  ) as React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  const iconName = getGoalIconName(goal.iconKey, 'bullseye-arrow');
 
   const goalColor = goal.colorKey || colors.primary;
 
@@ -59,17 +57,11 @@ export const GoalDetailHeroCard = memo(function GoalDetailHeroCard({
           style={[
             styles.goalIconCircle,
             {
-              backgroundColor: isDark
-                ? `${goalColor}22`
-                : `${goalColor}15`,
+              backgroundColor: isDark ? `${goalColor}22` : `${goalColor}15`,
             },
           ]}
         >
-          <MaterialCommunityIcons
-            color={goalColor}
-            name={iconName}
-            size={28}
-          />
+          <MaterialCommunityIcons color={goalColor} name={iconName} size={28} />
         </View>
 
         <View style={styles.heroTitleCol}>
@@ -119,12 +111,7 @@ export const GoalDetailHeroCard = memo(function GoalDetailHeroCard({
           <Text style={[styles.amountLabel, { color: colors.textSecondary }]}>
             {language === 'id' ? 'Terkumpul' : 'Collected'}
           </Text>
-          <Text
-            style={[
-              styles.currentAmount,
-              { color: goalColor },
-            ]}
-          >
+          <Text style={[styles.currentAmount, { color: goalColor }]}>
             {formatMoney(goal.currentAmountMinor, currencyCode)}
           </Text>
         </View>
@@ -133,9 +120,7 @@ export const GoalDetailHeroCard = memo(function GoalDetailHeroCard({
           <Text style={[styles.amountLabel, { color: colors.textSecondary }]}>
             {language === 'id' ? 'Target' : 'Target'}
           </Text>
-          <Text
-            style={[styles.targetAmount, { color: colors.textPrimary }]}
-          >
+          <Text style={[styles.targetAmount, { color: colors.textPrimary }]}>
             {formatMoney(goal.targetAmountMinor, currencyCode)}
           </Text>
         </View>
@@ -147,9 +132,7 @@ export const GoalDetailHeroCard = memo(function GoalDetailHeroCard({
           style={[
             styles.progressBarTrack,
             {
-              backgroundColor: isDark
-                ? 'rgba(255, 255, 255, 0.08)'
-                : '#F1F5F9',
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
             },
           ]}
         >
@@ -177,7 +160,9 @@ export const GoalDetailHeroCard = memo(function GoalDetailHeroCard({
             </Text>
           ) : (
             <Text style={[styles.remainingText, { color: '#16A34A' }]}>
-              {language === 'id' ? '🎉 Target Tercapai!' : '🎉 Target Achieved!'}
+              {language === 'id'
+                ? '🎉 Target Tercapai!'
+                : '🎉 Target Achieved!'}
             </Text>
           )}
         </View>
@@ -282,4 +267,3 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-

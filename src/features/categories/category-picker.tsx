@@ -1,5 +1,5 @@
 import { useSQLiteContext } from 'expo-sqlite';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -15,7 +15,7 @@ import {
   type Category,
   type CategoryType,
 } from '@/features/categories/category-repository';
-import { mapError } from '@/lib/errors';
+import { usePickerData } from '@/lib/use-picker-data';
 import { colors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -33,69 +33,26 @@ export function CategoryPicker({
   type,
 }: CategoryPickerProps) {
   const database = useSQLiteContext();
-  const [categories, setCategories] = useState<readonly Category[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [loadedType, setLoadedType] = useState<CategoryType | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const loadCategories = useCallback(async () => {
-    try {
-      const nextCategories = await listCategories(database, type);
-      setCategories(nextCategories);
-      setError(null);
-      setLoadedType(type);
-    } catch (caughtError) {
-      if (__DEV__) {
-        console.error(
-          'Category picker could not load categories.',
-          caughtError,
-        );
-      }
-      setError(mapError(caughtError, 'DATABASE_WRITE_FAILED').message);
-    } finally {
-      setLoading(false);
-    }
-  }, [database, type]);
-
-  useEffect(() => {
-    let active = true;
-    listCategories(database, type)
-      .then((nextCategories) => {
-        if (active) {
-          setCategories(nextCategories);
-          setError(null);
-          setLoadedType(type);
-        }
-      })
-      .catch((caughtError: unknown) => {
-        if (__DEV__) {
-          console.error(
-            'Category picker could not load categories.',
-            caughtError,
-          );
-        }
-        if (active) {
-          setError(mapError(caughtError, 'DATABASE_WRITE_FAILED').message);
-        }
-      })
-      .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [database, type]);
+  const loadCategories = useCallback(
+    () => listCategories(database, type),
+    [database, type],
+  );
+  const {
+    error,
+    items: categories,
+    loading,
+    reload,
+  } = usePickerData({
+    diagnosticLabel: 'Category picker',
+    load: loadCategories,
+    resourceKey: type,
+  });
 
   function retryLoad() {
-    setError(null);
-    setLoading(true);
-    void loadCategories();
+    void reload();
   }
 
-  if (loading || loadedType !== type) {
+  if (loading) {
     return (
       <View accessibilityLiveRegion="polite" style={styles.state}>
         <ActivityIndicator color={colors.primary} />

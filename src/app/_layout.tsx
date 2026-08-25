@@ -77,15 +77,6 @@ function AppWithProviders() {
         if (!mounted) return;
         if (settings.currencyCode) {
           setCurrency(settings.currencyCode);
-          try {
-            await database.runAsync(
-              `UPDATE transactions SET currency_code = ? WHERE currency_code != ?`,
-              settings.currencyCode,
-              settings.currencyCode,
-            );
-          } catch {
-            // Ignore transaction currency update if database is closing/closed
-          }
         }
         if (!mounted) return;
         if (settings.language) setLanguage(settings.language);
@@ -113,42 +104,26 @@ function AppWithProviders() {
       initialBrandTheme={brandTheme}
       initialTheme={theme}
       onBrandThemeChange={async (nextBrand) => {
+        await setBrandThemeSetting(database, nextBrand);
         setBrandTheme(nextBrand);
-        try {
-          await setBrandThemeSetting(database, nextBrand);
-        } catch (err) {
-          if (__DEV__) console.warn('Could not persist brand theme', err);
-        }
       }}
       onThemeChange={async (nextTheme) => {
+        await setThemeSetting(database, nextTheme);
         setTheme(nextTheme);
-        try {
-          await setThemeSetting(database, nextTheme);
-        } catch (err) {
-          if (__DEV__) console.warn('Could not persist theme', err);
-        }
       }}
     >
       <LanguageProvider
         initialLanguage={language}
         onLanguageChange={async (nextLang) => {
+          await setLanguageSetting(database, nextLang);
           setLanguage(nextLang);
-          try {
-            await setLanguageSetting(database, nextLang);
-          } catch (err) {
-            if (__DEV__) console.warn('Could not persist language', err);
-          }
         }}
       >
         <CurrencyProvider
           initialCurrency={currency}
           onCurrencyChange={async (nextCurrency) => {
+            await setCurrencySetting(database, nextCurrency);
             setCurrency(nextCurrency);
-            try {
-              await setCurrencySetting(database, nextCurrency);
-            } catch (err) {
-              if (__DEV__) console.warn('Could not persist currency', err);
-            }
           }}
         >
           <AppErrorBoundary>

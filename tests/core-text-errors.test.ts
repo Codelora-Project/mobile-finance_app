@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import { mapError } from '@/lib/errors';
 import { escapeHtml } from '@/lib/html';
+import { resolveMaterialCommunityIconName } from '@/lib/material-community-icons';
 import {
   normalizeOptionalText,
   normalizeSearchText,
@@ -17,6 +18,23 @@ describe('string utilities', () => {
   it('maps an empty optional value to null', () => {
     expect(normalizeOptionalText(' \n ')).toBeNull();
     expect(normalizeOptionalText('  Taxi  ')).toBe('Taxi');
+  });
+});
+
+describe('dynamic icon resolution', () => {
+  it('keeps valid names and replaces invalid persisted values', () => {
+    const supportedNames = new Set(['bank', 'wallet']);
+
+    expect(
+      resolveMaterialCommunityIconName('bank', 'wallet', supportedNames),
+    ).toBe('bank');
+    expect(
+      resolveMaterialCommunityIconName(
+        'removed-legacy-icon',
+        'wallet',
+        supportedNames,
+      ),
+    ).toBe('wallet');
   });
 });
 

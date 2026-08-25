@@ -1,6 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useSQLiteContext } from 'expo-sqlite';
-import React, { memo, useEffect, useState } from 'react';
+import React, { memo, useEffect, useRef, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -17,9 +17,12 @@ import {
   createWallet,
   updateWallet,
 } from '@/features/wallets/wallet-repository';
+import { getWalletIconName } from '@/features/wallets/wallet-icons';
 import type { AccountType, Wallet } from '@/features/wallets/wallet-types';
 import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
+import type { MaterialCommunityIconName } from '@/lib/material-community-icons';
+import { formatMoneyInput, parseSignedMoneyInput } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -45,17 +48,13 @@ const PRESET_COLORS = [
   '#64748B', // Slate
 ];
 
-const PRESET_ICONS = [
-  { icon: 'bank', label: 'Bank' },
-  { icon: 'cellphone', label: 'E-Wallet' },
-  { icon: 'cash', label: 'Tunai' },
-  { icon: 'trending-up', label: 'Investasi' },
-  { icon: 'wallet', label: 'Dompet' },
-  { icon: 'credit-card', label: 'Kartu' },
-  { icon: 'safe', label: 'Brankas' },
-];
+const DEFAULT_WALLET_ICON: MaterialCommunityIconName = 'bank';
 
-const ACCOUNT_TYPES: { icon: string; key: AccountType; label: string }[] = [
+const ACCOUNT_TYPES: readonly {
+  icon: MaterialCommunityIconName;
+  key: AccountType;
+  label: string;
+}[] = [
   { icon: 'bank', key: 'bank', label: 'Bank' },
   { icon: 'cellphone', key: 'ewallet', label: 'E-Wallet' },
   { icon: 'cash', key: 'cash', label: 'Tunai' },
@@ -75,6 +74,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
   const database = useSQLiteContext();
   const { colors, isDark } = useTheme();
   const { language } = useLanguage();
+  const savingRef = useRef(false);
 
   const isEditing = wallet !== null && wallet !== 'new';
 
@@ -82,7 +82,8 @@ export const WalletEditorModal = memo(function WalletEditorModal({
   const [accountType, setAccountType] = useState<AccountType>('bank');
   const [accountNumber, setAccountNumber] = useState('');
   const [color, setColor] = useState(PRESET_COLORS[0]);
-  const [icon, setIcon] = useState(PRESET_ICONS[0].icon);
+  const [icon, setIcon] =
+    useState<MaterialCommunityIconName>(DEFAULT_WALLET_ICON);
   const [initialBalance, setInitialBalance] = useState('');
   const [excludeNetWorth, setExcludeNetWorth] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -95,7 +96,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
       setInitialBalance('');
       setAccountNumber('');
       setColor(PRESET_COLORS[0]);
-      setIcon(PRESET_ICONS[0].icon);
+      setIcon(DEFAULT_WALLET_ICON);
       setAccountType('bank');
       setExcludeNetWorth(false);
       setError(null);
@@ -104,16 +105,19 @@ export const WalletEditorModal = memo(function WalletEditorModal({
       setAccountType(wallet.accountType);
       setAccountNumber(wallet.accountNumber || '');
       setColor(wallet.color || PRESET_COLORS[0]);
-      setIcon(wallet.iconKey || PRESET_ICONS[0].icon);
-      setInitialBalance(String(wallet.initialBalanceMinor));
+      setIcon(getWalletIconName(wallet));
+      setInitialBalance(
+        formatMoneyInput(wallet.initialBalanceMinor, currencyCode),
+      );
       setExcludeNetWorth(!wallet.includeInCashflow);
       setError(null);
     }
-  }, [visible, wallet]);
+  }, [currencyCode, visible, wallet]);
 
   if (!visible) return null;
 
   async function handleSave() {
+    if (savingRef.current) return;
     const trimmed = name.trim();
     if (!trimmed) {
       setError(
@@ -124,11 +128,23 @@ export const WalletEditorModal = memo(function WalletEditorModal({
       return;
     }
 
+    let balanceMinor = 0;
+    if (!isEditing && initialBalance.trim()) {
+      try {
+        balanceMinor = parseSignedMoneyInput(initialBalance, currencyCode);
+      } catch {
+        setError(
+          language === 'id'
+            ? 'Saldo awal tidak valid.'
+            : 'The initial balance is invalid.',
+        );
+        return;
+      }
+    }
+
+    savingRef.current = true;
     setSaving(true);
     setError(null);
-
-    const balanceMinor = Number(initialBalance.replace(/[^0-9-]/g, '')) || 0;
-
     try {
       if (isEditing && typeof wallet === 'object' && wallet !== null) {
         await updateWallet(database, wallet.id, {
@@ -156,6 +172,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
       const mapped = mapError(caughtError, 'DATABASE_WRITE_FAILED');
       setError(mapped.message);
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   }
@@ -163,7 +180,9 @@ export const WalletEditorModal = memo(function WalletEditorModal({
   return (
     <Modal
       animationType="slide"
-      onRequestClose={onClose}
+      onRequestClose={() => {
+        if (!savingRef.current) onClose();
+      }}
       transparent
       visible={visible}
     >
@@ -185,14 +204,17 @@ export const WalletEditorModal = memo(function WalletEditorModal({
                   ? 'Ubah Dompet'
                   : 'Edit Wallet'
                 : language === 'id'
-                ? 'Tambah Dompet Baru'
-                : 'Add New Wallet'}
+                  ? 'Tambah Dompet Baru'
+                  : 'Add New Wallet'}
             </Text>
             <Pressable
-              accessibilityLabel="Tutup"
+              accessibilityLabel={language === 'id' ? 'Tutup' : 'Close'}
               accessibilityRole="button"
+              disabled={saving}
               hitSlop={8}
-              onPress={onClose}
+              onPress={() => {
+                if (!savingRef.current) onClose();
+              }}
               style={styles.closeBtn}
             >
               <MaterialCommunityIcons
@@ -259,7 +281,8 @@ export const WalletEditorModal = memo(function WalletEditorModal({
                         if (type.key === 'bank') setIcon('bank');
                         else if (type.key === 'ewallet') setIcon('cellphone');
                         else if (type.key === 'cash') setIcon('cash');
-                        else if (type.key === 'investment') setIcon('trending-up');
+                        else if (type.key === 'investment')
+                          setIcon('trending-up');
                       }}
                       style={[
                         styles.typeChip,
@@ -269,8 +292,8 @@ export const WalletEditorModal = memo(function WalletEditorModal({
                               ? `${colors.primary}30`
                               : '#EFF6FF'
                             : isDark
-                            ? colors.surfaceSecondary
-                            : '#F8FAFC',
+                              ? colors.surfaceSecondary
+                              : '#F8FAFC',
                           borderColor: isSelected
                             ? colors.primary
                             : colors.border,
@@ -281,11 +304,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
                         color={
                           isSelected ? colors.primary : colors.textSecondary
                         }
-                        name={
-                          type.icon as React.ComponentProps<
-                            typeof MaterialCommunityIcons
-                          >['name']
-                        }
+                        name={type.icon}
                         size={16}
                       />
                       <Text
@@ -334,7 +353,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
                     accessibilityLabel={
                       language === 'id' ? 'Saldo Awal' : 'Initial Balance'
                     }
-                    keyboardType="numeric"
+                    keyboardType="decimal-pad"
                     onChangeText={setInitialBalance}
                     placeholder="0"
                     placeholderTextColor={colors.textMuted}
@@ -356,9 +375,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
                 accessibilityLabel="Nomor Rekening"
                 onChangeText={setAccountNumber}
                 placeholder={
-                  language === 'id'
-                    ? 'Contoh: 1234567890'
-                    : 'e.g. 1234567890'
+                  language === 'id' ? 'Contoh: 1234567890' : 'e.g. 1234567890'
                 }
                 placeholderTextColor={colors.textMuted}
                 style={[
@@ -413,9 +430,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
               style={[
                 styles.toggleCard,
                 {
-                  backgroundColor: isDark
-                    ? colors.surfaceSecondary
-                    : '#F8FAFC',
+                  backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
                   borderColor: colors.border,
                 },
               ]}
@@ -466,8 +481,8 @@ export const WalletEditorModal = memo(function WalletEditorModal({
                       ? 'Simpan Perubahan'
                       : 'Save Changes'
                     : language === 'id'
-                    ? 'Simpan'
-                    : 'Save'
+                      ? 'Simpan'
+                      : 'Save'
                 }
                 loading={saving}
                 onPress={() => void handleSave()}

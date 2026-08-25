@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -67,5 +68,37 @@ describe('claims screen', () => {
         'submitted',
       ),
     );
+  });
+
+  it('ignores a stale claim response after the status filter changes', async () => {
+    let resolveInitial: (claims: unknown[]) => void = () => {};
+    const initialRequest = new Promise<unknown[]>((resolve) => {
+      resolveInitial = resolve;
+    });
+    const submitted = {
+      ...summary,
+      id: 10,
+      status: 'submitted',
+      title: 'Newest Submitted Claim',
+    };
+    mockListClaims
+      .mockImplementationOnce(() => initialRequest)
+      .mockResolvedValueOnce([submitted]);
+
+    await render(<ClaimsScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Submitted' }));
+    expect(
+      await screen.findByRole('button', {
+        name: 'Newest Submitted Claim, Submitted',
+      }),
+    ).toBeOnTheScreen();
+
+    await act(async () => {
+      resolveInitial([summary]);
+      await initialRequest;
+    });
+
+    expect(screen.queryByText('Travel Claim')).not.toBeOnTheScreen();
+    expect(screen.getByText('Newest Submitted Claim')).toBeOnTheScreen();
   });
 });

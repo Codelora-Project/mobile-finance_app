@@ -1,14 +1,9 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { memo, useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { Wallet, WalletSummary } from '@/features/wallets';
+import { getWalletIconName } from '@/features/wallets/wallet-icons';
 import type { Language } from '@/lib/i18n/translations';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
@@ -69,8 +64,8 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
                   ? 'Tampilkan Saldo'
                   : 'Show Balance'
                 : language === 'id'
-                ? 'Sembunyikan Saldo'
-                : 'Hide Balance'
+                  ? 'Sembunyikan Saldo'
+                  : 'Hide Balance'
             }
             accessibilityRole="button"
             hitSlop={8}
@@ -97,9 +92,7 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
             style={({ pressed }) => [
               styles.resetFilterBtn,
               {
-                backgroundColor: isDark
-                  ? 'rgba(37, 99, 235, 0.2)'
-                  : '#EFF6FF',
+                backgroundColor: isDark ? 'rgba(37, 99, 235, 0.2)' : '#EFF6FF',
                 borderColor: colors.primary,
               },
               pressed ? { opacity: 0.75 } : null,
@@ -159,11 +152,9 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
                   ? '#1E3A8A'
                   : '#EFF6FF'
                 : isDark
-                ? colors.surface
-                : '#FFFFFF',
-              borderColor: isAllSelected
-                ? colors.primary
-                : colors.border,
+                  ? colors.surface
+                  : '#FFFFFF',
+              borderColor: isAllSelected ? colors.primary : colors.border,
             },
             isAllSelected ? styles.cardActiveGlow : null,
             pressed ? { opacity: 0.85 } : null,
@@ -178,8 +169,8 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
                     ? '#2563EB'
                     : '#DBEAFE'
                   : isDark
-                  ? 'rgba(37, 99, 235, 0.2)'
-                  : '#EFF6FF',
+                    ? 'rgba(37, 99, 235, 0.2)'
+                    : '#EFF6FF',
               },
             ]}
           >
@@ -219,10 +210,7 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
               adjustsFontSizeToFit
               minimumFontScale={0.75}
               numberOfLines={1}
-              style={[
-                styles.miniCardBalance,
-                { color: colors.textPrimary },
-              ]}
+              style={[styles.miniCardBalance, { color: colors.textPrimary }]}
             >
               {renderBalance(totalNetWorth)}
             </Text>
@@ -248,8 +236,8 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
                       ? `${walletColor}22`
                       : `${walletColor}10`
                     : isDark
-                    ? colors.surface
-                    : '#FFFFFF',
+                      ? colors.surface
+                      : '#FFFFFF',
                   borderColor: isSelected ? walletColor : colors.border,
                 },
                 isSelected ? styles.cardActiveGlow : null,
@@ -268,16 +256,7 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
               >
                 <MaterialCommunityIcons
                   color={walletColor}
-                  name={
-                    (wallet.iconKey as any) ||
-                    (wallet.accountType === 'bank'
-                      ? 'bank'
-                      : wallet.accountType === 'ewallet'
-                      ? 'cellphone'
-                      : wallet.accountType === 'investment'
-                      ? 'trending-up'
-                      : 'wallet')
-                  }
+                  name={getWalletIconName(wallet)}
                   size={19}
                 />
               </View>
@@ -289,9 +268,7 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
                     style={[
                       styles.miniCardName,
                       {
-                        color: isSelected
-                          ? walletColor
-                          : colors.textSecondary,
+                        color: isSelected ? walletColor : colors.textSecondary,
                       },
                     ]}
                   >
@@ -335,9 +312,7 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
               styles.miniCard,
               styles.addMiniCard,
               {
-                backgroundColor: isDark
-                  ? colors.surfaceSecondary
-                  : '#F8FAFC',
+                backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
                 borderColor: colors.border,
               },
               pressed ? { opacity: 0.75 } : null,
@@ -355,9 +330,7 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
                 size={18}
               />
             </View>
-            <Text
-              style={[styles.addCardText, { color: colors.textSecondary }]}
-            >
+            <Text style={[styles.addCardText, { color: colors.textSecondary }]}>
               {language === 'id' ? '+ Tambah' : '+ Add'}
             </Text>
           </Pressable>

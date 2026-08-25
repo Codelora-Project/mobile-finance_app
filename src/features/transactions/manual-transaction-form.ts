@@ -146,7 +146,9 @@ export function formFromTransaction(transaction: Transaction): FormState {
         }
       : null,
     time: dateTime.time,
-    transferFeeAmount: hasFee ? String(transaction.transferFeeMinor) : '',
+    transferFeeAmount: hasFee
+      ? formatMoneyInput(transaction.transferFeeMinor, transaction.currencyCode)
+      : '',
     transferFeeCategory: null,
     transferFeeNote: transaction.transferFeeNote ?? '',
     transferToPaymentMethod:

@@ -16,144 +16,142 @@ export type TransactionMonthSelectorProps = {
   year: number;
 };
 
-export const TransactionMonthSelector = memo(
-  function TransactionMonthSelector({
-    isAllTime,
-    language,
-    month,
-    onChangeMonth,
-    onToggleAllTime,
-    year,
-  }: TransactionMonthSelectorProps) {
-    const { colors, isDark } = useTheme();
+export const TransactionMonthSelector = memo(function TransactionMonthSelector({
+  isAllTime,
+  language,
+  month,
+  onChangeMonth,
+  onToggleAllTime,
+  year,
+}: TransactionMonthSelectorProps) {
+  const { colors, isDark } = useTheme();
 
-    const dateObj = new Date(year, month - 1, 1);
-    const monthLabel = new Intl.DateTimeFormat(
-      language === 'id' ? 'id-ID' : 'en-US',
-      {
-        month: 'long',
-        year: 'numeric',
-      },
-    ).format(dateObj);
+  const dateObj = new Date(year, month - 1, 1);
+  const monthLabel = new Intl.DateTimeFormat(
+    language === 'id' ? 'id-ID' : 'en-US',
+    {
+      month: 'long',
+      year: 'numeric',
+    },
+  ).format(dateObj);
 
-    function handlePrevMonth() {
-      if (isAllTime) {
-        onToggleAllTime();
-        return;
-      }
-      if (month === 1) {
-        onChangeMonth(year - 1, 12);
-      } else {
-        onChangeMonth(year, month - 1);
-      }
+  function handlePrevMonth() {
+    if (isAllTime) {
+      onToggleAllTime();
+      return;
     }
-
-    function handleNextMonth() {
-      if (isAllTime) {
-        onToggleAllTime();
-        return;
-      }
-      if (month === 12) {
-        onChangeMonth(year + 1, 1);
-      } else {
-        onChangeMonth(year, month + 1);
-      }
+    if (month === 1) {
+      onChangeMonth(year - 1, 12);
+    } else {
+      onChangeMonth(year, month - 1);
     }
+  }
 
-    return (
-      <View style={styles.container}>
-        <View style={styles.navRow}>
-          {/* Previous Month Button */}
-          <Pressable
-            accessibilityLabel={
-              language === 'id' ? 'Bulan Sebelumnya' : 'Previous Month'
-            }
-            accessibilityRole="button"
-            hitSlop={12}
-            onPress={handlePrevMonth}
-            style={({ pressed }) => [
-              styles.navBtn,
-              pressed ? { opacity: 0.5 } : null,
+  function handleNextMonth() {
+    if (isAllTime) {
+      onToggleAllTime();
+      return;
+    }
+    if (month === 12) {
+      onChangeMonth(year + 1, 1);
+    } else {
+      onChangeMonth(year, month + 1);
+    }
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.navRow}>
+        {/* Previous Month Button */}
+        <Pressable
+          accessibilityLabel={
+            language === 'id' ? 'Bulan Sebelumnya' : 'Previous Month'
+          }
+          accessibilityRole="button"
+          hitSlop={12}
+          onPress={handlePrevMonth}
+          style={({ pressed }) => [
+            styles.navBtn,
+            pressed ? { opacity: 0.5 } : null,
+          ]}
+        >
+          <MaterialCommunityIcons
+            color={colors.textSecondary}
+            name="chevron-left"
+            size={22}
+          />
+        </Pressable>
+
+        {/* Month / Period Label & Toggle */}
+        <Pressable
+          accessibilityLabel={
+            isAllTime
+              ? language === 'id'
+                ? 'Semua Waktu'
+                : 'All Time'
+              : monthLabel
+          }
+          accessibilityRole="button"
+          onPress={onToggleAllTime}
+          style={styles.labelWrapper}
+        >
+          <Text
+            numberOfLines={1}
+            style={[styles.monthText, { color: colors.textPrimary }]}
+          >
+            {isAllTime
+              ? language === 'id'
+                ? 'Semua Waktu'
+                : 'All Time'
+              : monthLabel}
+          </Text>
+          <View
+            style={[
+              styles.modePill,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(255,255,255,0.06)'
+                  : 'rgba(0,0,0,0.04)',
+              },
             ]}
           >
-            <MaterialCommunityIcons
-              color={colors.textSecondary}
-              name="chevron-left"
-              size={22}
-            />
-          </Pressable>
-
-          {/* Month / Period Label & Toggle */}
-          <Pressable
-            accessibilityLabel={
-              isAllTime
-                ? language === 'id'
-                  ? 'Semua Waktu'
-                  : 'All Time'
-                : monthLabel
-            }
-            accessibilityRole="button"
-            onPress={onToggleAllTime}
-            style={styles.labelWrapper}
-          >
             <Text
-              numberOfLines={1}
-              style={[styles.monthText, { color: colors.textPrimary }]}
+              style={[styles.subToggleText, { color: colors.textSecondary }]}
             >
               {isAllTime
                 ? language === 'id'
-                  ? 'Semua Waktu'
-                  : 'All Time'
-                : monthLabel}
-            </Text>
-            <View
-              style={[
-                styles.modePill,
-                {
-                  backgroundColor: isDark
-                    ? 'rgba(255,255,255,0.06)'
-                    : 'rgba(0,0,0,0.04)',
-                },
-              ]}
-            >
-              <Text
-                style={[styles.subToggleText, { color: colors.textSecondary }]}
-              >
-                {isAllTime
-                  ? language === 'id'
-                    ? 'Pilih per bulan'
-                    : 'View by month'
-                  : language === 'id'
+                  ? 'Pilih per bulan'
+                  : 'View by month'
+                : language === 'id'
                   ? 'Semua waktu'
                   : 'All time'}
-              </Text>
-            </View>
-          </Pressable>
+            </Text>
+          </View>
+        </Pressable>
 
-          {/* Next Month Button */}
-          <Pressable
-            accessibilityLabel={
-              language === 'id' ? 'Bulan Berikutnya' : 'Next Month'
-            }
-            accessibilityRole="button"
-            hitSlop={12}
-            onPress={handleNextMonth}
-            style={({ pressed }) => [
-              styles.navBtn,
-              pressed ? { opacity: 0.5 } : null,
-            ]}
-          >
-            <MaterialCommunityIcons
-              color={colors.textSecondary}
-              name="chevron-right"
-              size={22}
-            />
-          </Pressable>
-        </View>
+        {/* Next Month Button */}
+        <Pressable
+          accessibilityLabel={
+            language === 'id' ? 'Bulan Berikutnya' : 'Next Month'
+          }
+          accessibilityRole="button"
+          hitSlop={12}
+          onPress={handleNextMonth}
+          style={({ pressed }) => [
+            styles.navBtn,
+            pressed ? { opacity: 0.5 } : null,
+          ]}
+        >
+          <MaterialCommunityIcons
+            color={colors.textSecondary}
+            name="chevron-right"
+            size={22}
+          />
+        </Pressable>
       </View>
-    );
-  },
-);
+    </View>
+  );
+});
 
 const styles = StyleSheet.create({
   container: {

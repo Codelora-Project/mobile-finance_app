@@ -7,6 +7,7 @@ import {
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { GoalsScreen } from '@/features/goals/goals-screen';
+import { CurrencyProvider } from '@/lib/currency/currency-context';
 import { LanguageProvider } from '@/lib/i18n/language-context';
 import { ThemeProvider } from '@/lib/theme/theme-context';
 
@@ -146,5 +147,43 @@ describe('goals screen', () => {
 
     await fireEvent.press(screen.getByText('Simpan Target Tabungan'));
     await waitFor(() => expect(mockCreateSavingsGoal).toHaveBeenCalled());
+  });
+
+  it('stores decimal goal amounts in USD minor units', async () => {
+    mockCreateSavingsGoal.mockResolvedValue({ id: 2 });
+
+    await render(
+      <ThemeProvider>
+        <LanguageProvider initialLanguage="en">
+          <CurrencyProvider initialCurrency="USD">
+            <GoalsScreen />
+          </CurrencyProvider>
+        </LanguageProvider>
+      </ThemeProvider>,
+    );
+
+    await screen.findByText('Laptop Gaming');
+    await fireEvent.press(screen.getByText('+ New Goal'));
+    await fireEvent.changeText(
+      screen.getByPlaceholderText('e.g. New Laptop, Emergency Fund'),
+      'Emergency Fund',
+    );
+    await fireEvent.changeText(
+      screen.getByPlaceholderText('50000.00'),
+      '12.50',
+    );
+    await fireEvent.changeText(screen.getByPlaceholderText('0'), '1.25');
+    await fireEvent.press(screen.getByText('Save Savings Goal'));
+
+    await waitFor(() =>
+      expect(mockCreateSavingsGoal).toHaveBeenCalledWith(
+        mockDatabase,
+        expect.objectContaining({
+          initialDepositMinor: 125,
+          name: 'Emergency Fund',
+          targetAmountMinor: 1_250,
+        }),
+      ),
+    );
   });
 });

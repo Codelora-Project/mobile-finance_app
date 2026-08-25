@@ -10,7 +10,9 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Alert } from 'react-native';
 
 import { SettingsScreen } from '@/features/settings/settings-screen';
+import { CurrencyProvider } from '@/lib/currency/currency-context';
 import { LanguageProvider } from '@/lib/i18n/language-context';
+import { formatMoney } from '@/lib/money';
 import { ThemeProvider } from '@/lib/theme/theme-context';
 
 const mockRouter = {
@@ -175,6 +177,42 @@ describe('settings screen', () => {
     );
   });
 
+  it('accepts decimal quick shortcuts for currencies with cents', async () => {
+    mockGetSettingsOverview.mockResolvedValue({
+      brandTheme: 'blue',
+      currencyCode: 'USD',
+      currencyName: 'US Dollar',
+      language: 'en',
+      quickShortcuts: [1, 2, 5, 10, 20, 50],
+      theme: 'system',
+    });
+    await render(
+      <ThemeProvider>
+        <LanguageProvider initialLanguage="en">
+          <CurrencyProvider initialCurrency="USD">
+            <SettingsScreen />
+          </CurrencyProvider>
+        </LanguageProvider>
+      </ThemeProvider>,
+    );
+
+    await fireEvent.press(
+      await screen.findByLabelText('Quick Amount Shortcuts'),
+    );
+    await fireEvent.press(screen.getByRole('button', { name: 'Add +$1' }));
+    expect(screen.getByText(formatMoney(100, 'USD'))).toBeOnTheScreen();
+    await fireEvent.press(screen.getByText('+ Add Amount'));
+    await fireEvent.changeText(screen.getByPlaceholderText('15'), '1.25');
+    await fireEvent.press(screen.getByText('Save'));
+
+    await waitFor(() =>
+      expect(mockSetQuickShortcutsSetting).toHaveBeenCalledWith(
+        mockDatabase,
+        [1, 1.25, 2, 5, 10, 20, 50],
+      ),
+    );
+  });
+
   it('requires two deliberate confirmations before resetting', async () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     await render(
@@ -324,7 +362,7 @@ describe('settings screen', () => {
     await fireEvent.press(screen.getByText('US Dollar'));
     expect(alertSpy).toHaveBeenCalledWith(
       'Change global currency?',
-      expect.stringContaining('Existing transaction amounts are not converted'),
+      expect.stringContaining('Existing nominal amounts stay the same'),
       expect.any(Array),
     );
   });

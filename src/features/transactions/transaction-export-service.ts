@@ -19,7 +19,12 @@ function formatTimestampForFilename(date = new Date()): string {
 function escapeCsvField(val: string | number | null | undefined): string {
   if (val === null || val === undefined) return '';
   const str = String(val);
-  if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+  if (
+    str.includes(',') ||
+    str.includes('"') ||
+    str.includes('\n') ||
+    str.includes('\r')
+  ) {
     return `"${str.replace(/"/g, '""')}"`;
   }
   return str;
@@ -79,8 +84,8 @@ export async function exportTransactionsToCsv(
         ? t.type === 'expense'
           ? 'Pengeluaran'
           : t.type === 'income'
-          ? 'Pemasukan'
-          : 'Transfer'
+            ? 'Pemasukan'
+            : 'Transfer'
         : t.type.toUpperCase();
 
     return [
@@ -94,8 +99,24 @@ export async function exportTransactionsToCsv(
       escapeCsvField(t.currencyCode),
       escapeCsvField(t.paymentMethodName ?? ''),
       escapeCsvField(t.transferToPaymentMethodName ?? ''),
-      escapeCsvField(t.hasReceipt ? (language === 'id' ? 'Ya' : 'Yes') : (language === 'id' ? 'Tidak' : 'No')),
-      escapeCsvField(t.isReimbursable ? (language === 'id' ? 'Ya' : 'Yes') : (language === 'id' ? 'Tidak' : 'No')),
+      escapeCsvField(
+        t.hasReceipt
+          ? language === 'id'
+            ? 'Ya'
+            : 'Yes'
+          : language === 'id'
+            ? 'Tidak'
+            : 'No',
+      ),
+      escapeCsvField(
+        t.isReimbursable
+          ? language === 'id'
+            ? 'Ya'
+            : 'Yes'
+          : language === 'id'
+            ? 'Tidak'
+            : 'No',
+      ),
     ].join(',');
   });
 

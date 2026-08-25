@@ -301,6 +301,9 @@ export function useTransactionHistoryViewModel() {
   useFocusEffect(
     useCallback(() => {
       void loadTransactions(effectiveFilters, debouncedSearch, 0, false);
+      return () => {
+        fetchIdRef.current += 1;
+      };
     }, [debouncedSearch, effectiveFilters, loadTransactions]),
   );
 

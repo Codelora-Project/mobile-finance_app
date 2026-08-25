@@ -7,6 +7,7 @@ import {
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { AnalyticsScreen } from '@/features/analytics/analytics-screen';
+import { CurrencyProvider } from '@/lib/currency/currency-context';
 import { LanguageProvider } from '@/lib/i18n/language-context';
 import { ThemeProvider } from '@/lib/theme/theme-context';
 
@@ -201,5 +202,31 @@ describe('analytics screen', () => {
     ).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: 'Coba lagi' }));
     expect(await screen.findByText('Total Pengeluaran')).toBeOnTheScreen();
+  });
+
+  it('stores decimal USD budget limits in minor units', async () => {
+    await render(
+      <ThemeProvider>
+        <LanguageProvider initialLanguage="en">
+          <CurrencyProvider initialCurrency="USD">
+            <AnalyticsScreen />
+          </CurrencyProvider>
+        </LanguageProvider>
+      </ThemeProvider>,
+    );
+
+    await screen.findByText('Total Expenses');
+    await fireEvent.press(screen.getByText('Budgets'));
+    await fireEvent.press(screen.getByText('Set Budget'));
+    await fireEvent.changeText(screen.getByPlaceholderText('1000000'), '12.50');
+    await fireEvent.press(screen.getByText('Save Budget Limit'));
+
+    await waitFor(() =>
+      expect(mockSetCategoryBudget).toHaveBeenCalledWith(
+        mockDatabase,
+        2,
+        1_250,
+      ),
+    );
   });
 });

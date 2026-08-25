@@ -9,10 +9,12 @@ import {
 } from 'react-native';
 
 import { AppButton } from '@/components/ui/app-button';
+import { getRecommendedShortcuts } from '@/features/settings/settings-repository';
 import type { SavingsGoal } from '@/features/goals/goals-repository';
 import { useCurrency } from '@/lib/currency/currency-context';
+import { useLanguage } from '@/lib/i18n/language-context';
 import type { TranslationSchema } from '@/lib/i18n/translations';
-import { formatMoney } from '@/lib/money';
+import { formatMoney, formatShortcutLabel } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -44,19 +46,29 @@ export const DepositGoalModal = memo(function DepositGoalModal({
   t,
 }: DepositGoalModalProps) {
   const { colors, isDark } = useTheme();
-  const { currencyCode } = useCurrency();
+  const { currencyCode, currencySymbol } = useCurrency();
+  const { language } = useLanguage();
+  const shortcutAmounts = getRecommendedShortcuts(currencyCode).slice(-4);
 
   if (!depositGoal) return null;
 
   return (
     <Modal
       animationType="fade"
-      onRequestClose={onClose}
+      onRequestClose={() => {
+        if (!saving) onClose();
+      }}
       transparent
       visible={depositGoal !== null}
     >
-      <Pressable onPress={onClose} style={styles.depositModalOverlay}>
-        <View
+      <Pressable
+        onPress={() => {
+          if (!saving) onClose();
+        }}
+        style={styles.depositModalOverlay}
+      >
+        <Pressable
+          onPress={(event) => event.stopPropagation()}
           style={[
             styles.depositModalCard,
             {
@@ -68,7 +80,7 @@ export const DepositGoalModal = memo(function DepositGoalModal({
           <Text
             style={[styles.depositModalTitle, { color: colors.textPrimary }]}
           >
-            Nabung untuk {depositGoal.name}
+            {language === 'id' ? 'Nabung untuk' : 'Save for'} {depositGoal.name}
           </Text>
           <Text
             style={[
@@ -76,8 +88,10 @@ export const DepositGoalModal = memo(function DepositGoalModal({
               { color: colors.textSecondary },
             ]}
           >
-            Target: {formatMoney(depositGoal.targetAmountMinor, currencyCode)} ·
-            Terkumpul: {formatMoney(depositGoal.currentAmountMinor, currencyCode)}
+            {t.goals.target}:{' '}
+            {formatMoney(depositGoal.targetAmountMinor, currencyCode)} ·{' '}
+            {t.goals.saved}:{' '}
+            {formatMoney(depositGoal.currentAmountMinor, currencyCode)}
           </Text>
 
           {depositError ? (
@@ -86,7 +100,7 @@ export const DepositGoalModal = memo(function DepositGoalModal({
 
           {/* Quick Shortcut Pills */}
           <View style={styles.depositShortcutsRow}>
-            {[50000, 100000, 200000, 500000].map((amt) => (
+            {shortcutAmounts.map((amt) => (
               <Pressable
                 key={amt}
                 onPress={() => onChangeAmount(String(amt))}
@@ -103,7 +117,7 @@ export const DepositGoalModal = memo(function DepositGoalModal({
                 <Text
                   style={[styles.depositChipText, { color: colors.primary }]}
                 >
-                  +{amt >= 1000 ? `${amt / 1000}k` : amt}
+                  {formatShortcutLabel(amt, currencySymbol)}
                 </Text>
               </Pressable>
             ))}
@@ -118,10 +132,10 @@ export const DepositGoalModal = memo(function DepositGoalModal({
               },
             ]}
           >
-            <Text style={styles.amountPrefix}>Rp</Text>
+            <Text style={styles.amountPrefix}>{currencySymbol}</Text>
             <TextInput
               autoFocus
-              keyboardType="number-pad"
+              keyboardType="decimal-pad"
               onChangeText={onChangeAmount}
               placeholder="100000"
               placeholderTextColor={colors.textSecondary}
@@ -132,7 +146,11 @@ export const DepositGoalModal = memo(function DepositGoalModal({
 
           <TextInput
             onChangeText={onChangeNote}
-            placeholder="Catatan setor (opsional)"
+            placeholder={
+              language === 'id'
+                ? 'Catatan setor (opsional)'
+                : 'Deposit note (optional)'
+            }
             placeholderTextColor={colors.textSecondary}
             style={[
               styles.noteInput,
@@ -148,6 +166,7 @@ export const DepositGoalModal = memo(function DepositGoalModal({
           <View style={styles.depositActionsRow}>
             <View style={{ flex: 1 }}>
               <AppButton
+                disabled={saving}
                 label={t.common.cancel}
                 onPress={onClose}
                 variant="secondary"
@@ -156,14 +175,20 @@ export const DepositGoalModal = memo(function DepositGoalModal({
             <View style={{ flex: 1 }}>
               <AppButton
                 disabled={saving || !depositAmount}
-                label={saving ? 'Menyimpan…' : 'Setor Tabungan'}
+                label={
+                  saving
+                    ? language === 'id'
+                      ? 'Menyimpan…'
+                      : 'Saving…'
+                    : t.goals.deposit
+                }
                 loading={saving}
                 onPress={onSubmit}
                 variant="primary"
               />
             </View>
           </View>
-        </View>
+        </Pressable>
       </Pressable>
     </Modal>
   );

@@ -93,10 +93,7 @@ export const ClaimFormStepDetails = memo(function ClaimFormStepDetails({
           </View>
         </View>
       ) : null}
-      <AppButton
-        label="Select Expenses"
-        onPress={onNext}
-      />
+      <AppButton label="Select Expenses" onPress={onNext} />
     </View>
   );
 });

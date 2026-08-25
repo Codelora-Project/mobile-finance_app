@@ -62,7 +62,9 @@ export const TransactionPeriodSegmentedControl = memo(
                 isActive && [
                   styles.activeTabItem,
                   {
-                    backgroundColor: isDark ? colors.surfaceSecondary : '#FFFFFF',
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : '#FFFFFF',
                     shadowColor: '#000000',
                   },
                 ],
@@ -72,9 +74,7 @@ export const TransactionPeriodSegmentedControl = memo(
                 style={[
                   styles.tabText,
                   {
-                    color: isActive
-                      ? colors.textPrimary
-                      : colors.textSecondary,
+                    color: isActive ? colors.textPrimary : colors.textSecondary,
                     fontWeight: isActive ? '700' : '500',
                   },
                 ]}

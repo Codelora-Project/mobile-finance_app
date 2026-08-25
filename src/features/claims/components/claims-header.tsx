@@ -25,11 +25,7 @@ export const ClaimsHeader = memo(function ClaimsHeader({
       >
         {title}
       </Text>
-      <AppButton
-        label="New Claim"
-        onPress={onNewClaim}
-        variant="ghost"
-      />
+      <AppButton label="New Claim" onPress={onNewClaim} variant="ghost" />
     </View>
   );
 });

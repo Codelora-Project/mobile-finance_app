@@ -135,11 +135,14 @@ describe('Wallet & Account Management Screen', () => {
     mockGetWallets.mockResolvedValue(sampleAllWallets);
   });
 
-  function renderScreen(language: 'id' | 'en' = 'id') {
+  function renderScreen(
+    language: 'id' | 'en' = 'id',
+    currency: 'IDR' | 'USD' = 'IDR',
+  ) {
     return render(
       <ThemeProvider>
         <LanguageProvider initialLanguage={language}>
-          <CurrencyProvider initialCurrency="IDR">
+          <CurrencyProvider initialCurrency={currency}>
             <WalletsScreen />
           </CurrencyProvider>
         </LanguageProvider>
@@ -201,6 +204,33 @@ describe('Wallet & Account Management Screen', () => {
     );
   });
 
+  it('stores decimal USD wallet balances as minor units', async () => {
+    mockCreateWallet.mockResolvedValue({ id: 4, name: 'USD Cash' });
+    await renderScreen('en', 'USD');
+    await screen.findByText('Bank BCA');
+
+    await fireEvent.press(screen.getByLabelText('Add New Wallet'));
+    await fireEvent.changeText(
+      screen.getByLabelText('Wallet / Account Name *'),
+      'USD Cash',
+    );
+    await fireEvent.changeText(
+      screen.getByLabelText('Initial Balance'),
+      '12.50',
+    );
+    await fireEvent.press(screen.getByText('Save'));
+
+    await waitFor(() =>
+      expect(mockCreateWallet).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          initialBalanceMinor: 1_250,
+          name: 'USD Cash',
+        }),
+      ),
+    );
+  });
+
   it('opens Reconcile modal and saves balance adjustment', async () => {
     mockReconcileWalletBalance.mockResolvedValue({
       id: 99,
@@ -236,6 +266,46 @@ describe('Wallet & Account Management Screen', () => {
         1,
         10500000,
         'IDR',
+        undefined,
+      ),
+    );
+  });
+
+  it('reconciles decimal USD balances without losing cents', async () => {
+    mockGetWalletSummary.mockResolvedValue({
+      ...sampleSummary,
+      wallets: [
+        {
+          ...sampleSummary.wallets[0],
+          currentBalanceMinor: 1_000,
+          initialBalanceMinor: 1_000,
+        },
+      ],
+    });
+    mockGetWallets.mockResolvedValue([
+      {
+        ...sampleSummary.wallets[0],
+        currentBalanceMinor: 1_000,
+        initialBalanceMinor: 1_000,
+      },
+    ]);
+    mockReconcileWalletBalance.mockResolvedValue({ id: 99, type: 'income' });
+
+    await renderScreen('en', 'USD');
+    await screen.findByText('Bank BCA');
+    await fireEvent.press(screen.getByLabelText('Reconcile balance Bank BCA'));
+    await fireEvent.changeText(
+      screen.getByLabelText('Actual Balance *'),
+      '12.50',
+    );
+    await fireEvent.press(screen.getByText('Save Balance Adjustment'));
+
+    await waitFor(() =>
+      expect(mockReconcileWalletBalance).toHaveBeenCalledWith(
+        expect.anything(),
+        1,
+        1_250,
+        'USD',
         undefined,
       ),
     );

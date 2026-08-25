@@ -1,4 +1,4 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import {
@@ -8,7 +8,52 @@ import {
 } from '@/features/backup/backup-service';
 import type { BackupPayload } from '@/features/backup/backup-types';
 
+const mockReadReceiptBase64 = jest.fn<() => Promise<string | null>>();
+const mockRemoveReceiptFile = jest.fn();
+const mockWriteReceiptBase64ToStorage = jest.fn<() => Promise<string>>();
+
+jest.mock('@/features/receipts/receipt-storage', () => ({
+  readReceiptBase64: () => mockReadReceiptBase64(),
+  removeReceiptFile: (...args: unknown[]) => mockRemoveReceiptFile(...args),
+  writeReceiptBase64ToStorage: () => mockWriteReceiptBase64ToStorage(),
+}));
+
+function emptyBackupPayload(version: 1 | 2 = 2): BackupPayload {
+  return {
+    app_identifier: 'personal_finance_app',
+    app_version: '1.0.0',
+    data: {
+      app_settings: [],
+      categories: [],
+      category_budgets: [],
+      claim_items: [],
+      claims: [],
+      goal_transactions: [],
+      payment_methods: [],
+      receipts: [],
+      savings_goals: [],
+      transactions: [],
+    },
+    exported_at: '2026-08-24T00:00:00.000Z',
+    summary: {
+      budgets_count: 0,
+      categories_count: 0,
+      claims_count: 0,
+      goals_count: 0,
+      payment_methods_count: 0,
+      transactions_count: 0,
+    },
+    version,
+  };
+}
+
 describe('Backup Service', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockReadReceiptBase64.mockResolvedValue('AAAA');
+    mockWriteReceiptBase64ToStorage.mockResolvedValue('receipts/restored.jpg');
+  });
+
   it('creates a valid BackupPayload structure with summary counts', async () => {
     const mockDb = {
       getAllAsync: jest.fn(async (sql: string) => {
@@ -166,6 +211,80 @@ describe('Backup Service', () => {
       expect.arrayContaining(['cash', '#2563EB', 'wallet']),
     );
     expect(runAsyncCalls[2].params).toHaveLength(18);
+  });
+
+  it('fails backup creation when a referenced receipt image is missing', async () => {
+    mockReadReceiptBase64.mockResolvedValueOnce(null);
+    const mockDb = {
+      getAllAsync: jest.fn(async (sql: string) => {
+        if (sql.includes('FROM receipts')) {
+          return [
+            {
+              created_at: 1,
+              id: 1,
+              mime_type: 'image/jpeg',
+              ocr_raw_text: null,
+              ocr_status: 'not_processed',
+              storage_key: 'receipts/missing.jpg',
+              subtotal_minor: null,
+              tax_minor: null,
+              transaction_id: 1,
+              updated_at: 1,
+            },
+          ];
+        }
+        return [];
+      }),
+    } as unknown as SQLiteDatabase;
+
+    await expect(createBackupPayload(mockDb)).rejects.toMatchObject({
+      code: 'FILE_OPERATION_FAILED',
+      message: expect.stringContaining('receipt image is missing'),
+    });
+  });
+
+  it('removes already staged receipt files when a later receipt fails', async () => {
+    mockWriteReceiptBase64ToStorage
+      .mockResolvedValueOnce('receipts/first.jpg')
+      .mockRejectedValueOnce(new Error('storage full'));
+    const payload = emptyBackupPayload(2);
+    payload.data.receipts.push(
+      {
+        created_at: 1,
+        file_base64: 'AAAA',
+        id: 1,
+        mime_type: 'image/jpeg',
+        ocr_raw_text: null,
+        ocr_status: 'not_processed',
+        storage_key: 'receipts/original-one.jpg',
+        subtotal_minor: null,
+        tax_minor: null,
+        transaction_id: 1,
+        updated_at: 1,
+      },
+      {
+        created_at: 1,
+        file_base64: 'BBBB',
+        id: 2,
+        mime_type: 'image/jpeg',
+        ocr_raw_text: null,
+        ocr_status: 'not_processed',
+        storage_key: 'receipts/original-two.jpg',
+        subtotal_minor: null,
+        tax_minor: null,
+        transaction_id: 2,
+        updated_at: 1,
+      },
+    );
+    const mockDb = {
+      getAllAsync: jest.fn(async () => []),
+    } as unknown as SQLiteDatabase;
+
+    await expect(restoreBackupData(mockDb, payload)).rejects.toThrow(
+      'storage full',
+    );
+    expect(mockRemoveReceiptFile).toHaveBeenCalledTimes(1);
+    expect(mockRemoveReceiptFile).toHaveBeenCalledWith('receipts/first.jpg');
   });
 
   it('generates CSV with proper UTF-8 BOM and headers', async () => {

@@ -3,6 +3,7 @@ import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Wallet } from '@/features/wallets/wallet-types';
+import { getWalletIconName } from '@/features/wallets/wallet-icons';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -54,11 +55,7 @@ export const WalletRowItem = memo(function WalletRowItem({
         >
           <MaterialCommunityIcons
             color={wallet.color || colors.primary}
-            name={
-              (wallet.iconKey || 'wallet') as React.ComponentProps<
-                typeof MaterialCommunityIcons
-              >['name']
-            }
+            name={getWalletIconName(wallet)}
             size={22}
           />
         </View>

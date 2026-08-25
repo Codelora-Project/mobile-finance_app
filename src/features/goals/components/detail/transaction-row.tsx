@@ -27,86 +27,81 @@ export type GoalDetailTransactionRowProps = {
   language: 'id' | 'en';
 };
 
-export const GoalDetailTransactionRow = memo(
-  function GoalDetailTransactionRow({
-    currencyCode,
-    isLast = false,
-    item,
-    language,
-  }: GoalDetailTransactionRowProps) {
-    const { colors, isDark } = useTheme();
+export const GoalDetailTransactionRow = memo(function GoalDetailTransactionRow({
+  currencyCode,
+  isLast = false,
+  item,
+  language,
+}: GoalDetailTransactionRowProps) {
+  const { colors, isDark } = useTheme();
 
-    const isDeposit = item.type === 'deposit';
+  const isDeposit = item.type === 'deposit';
 
-    return (
+  return (
+    <View
+      style={[
+        styles.txRow,
+        !isLast
+          ? [
+              styles.txRowBorder,
+              {
+                borderBottomColor: isDark
+                  ? 'rgba(255, 255, 255, 0.06)'
+                  : 'rgba(0, 0, 0, 0.05)',
+              },
+            ]
+          : null,
+      ]}
+    >
       <View
         style={[
-          styles.txRow,
-          !isLast
-            ? [
-                styles.txRowBorder,
-                {
-                  borderBottomColor: isDark
-                    ? 'rgba(255, 255, 255, 0.06)'
-                    : 'rgba(0, 0, 0, 0.05)',
-                },
-              ]
-            : null,
-        ]}
-      >
-        <View
-          style={[
-            styles.txIconCircle,
-            {
-              backgroundColor: isDeposit
-                ? isDark
-                  ? '#14532D'
-                  : '#DCFCE7'
-                : isDark
+          styles.txIconCircle,
+          {
+            backgroundColor: isDeposit
+              ? isDark
+                ? '#14532D'
+                : '#DCFCE7'
+              : isDark
                 ? '#7F1D1D'
                 : '#FEE2E2',
-            },
-          ]}
-        >
-          <MaterialCommunityIcons
-            color={isDeposit ? '#16A34A' : '#DC2626'}
-            name={isDeposit ? 'arrow-down-left' : 'arrow-up-right'}
-            size={16}
-          />
-        </View>
+          },
+        ]}
+      >
+        <MaterialCommunityIcons
+          color={isDeposit ? '#16A34A' : '#DC2626'}
+          name={isDeposit ? 'arrow-down-left' : 'arrow-up-right'}
+          size={16}
+        />
+      </View>
 
-        <View style={styles.txMetaCol}>
-          <Text
-            numberOfLines={1}
-            style={[styles.txNote, { color: colors.textPrimary }]}
-          >
-            {item.note ||
-              (isDeposit
-                ? language === 'id'
-                  ? 'Setoran Tabungan'
-                  : 'Deposit'
-                : language === 'id'
+      <View style={styles.txMetaCol}>
+        <Text
+          numberOfLines={1}
+          style={[styles.txNote, { color: colors.textPrimary }]}
+        >
+          {item.note ||
+            (isDeposit
+              ? language === 'id'
+                ? 'Setoran Tabungan'
+                : 'Deposit'
+              : language === 'id'
                 ? 'Penarikan Dana'
                 : 'Withdrawal')}
-          </Text>
-          <Text style={[styles.txDate, { color: colors.textSecondary }]}>
-            {formatTxDate(item.createdAt, language)}
-          </Text>
-        </View>
-
-        <Text
-          style={[
-            styles.txAmount,
-            { color: isDeposit ? '#16A34A' : '#DC2626' },
-          ]}
-        >
-          {isDeposit ? '+' : '−'}
-          {formatMoney(item.amountMinor, currencyCode)}
+        </Text>
+        <Text style={[styles.txDate, { color: colors.textSecondary }]}>
+          {formatTxDate(item.createdAt, language)}
         </Text>
       </View>
-    );
-  },
-);
+
+      <Text
+        style={[styles.txAmount, { color: isDeposit ? '#16A34A' : '#DC2626' }]}
+      >
+        {isDeposit ? '+' : '−'}
+        {formatMoney(item.amountMinor, currencyCode)}
+      </Text>
+    </View>
+  );
+});
 
 const styles = StyleSheet.create({
   txAmount: {

@@ -57,9 +57,7 @@ export const TransactionHistorySummaryBar = memo(
           style={({ pressed }) => [
             styles.statCol,
             activeTypeFilter === 'expense' && {
-              backgroundColor: isDark
-                ? 'rgba(239, 68, 68, 0.16)'
-                : '#FEE2E2',
+              backgroundColor: isDark ? 'rgba(239, 68, 68, 0.16)' : '#FEE2E2',
               borderRadius: radius.md,
             },
             pressed ? { opacity: 0.75 } : null,
@@ -69,9 +67,7 @@ export const TransactionHistorySummaryBar = memo(
             style={[
               styles.iconCircle,
               {
-                backgroundColor: isDark
-                  ? 'rgba(239, 68, 68, 0.15)'
-                  : '#FEE2E2',
+                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2',
               },
             ]}
           >
@@ -122,9 +118,7 @@ export const TransactionHistorySummaryBar = memo(
           style={({ pressed }) => [
             styles.statCol,
             activeTypeFilter === 'income' && {
-              backgroundColor: isDark
-                ? 'rgba(34, 197, 94, 0.16)'
-                : '#DCFCE7',
+              backgroundColor: isDark ? 'rgba(34, 197, 94, 0.16)' : '#DCFCE7',
               borderRadius: radius.md,
             },
             pressed ? { opacity: 0.75 } : null,
@@ -134,9 +128,7 @@ export const TransactionHistorySummaryBar = memo(
             style={[
               styles.iconCircle,
               {
-                backgroundColor: isDark
-                  ? 'rgba(34, 197, 94, 0.15)'
-                  : '#DCFCE7',
+                backgroundColor: isDark ? 'rgba(34, 197, 94, 0.15)' : '#DCFCE7',
               },
             ]}
           >

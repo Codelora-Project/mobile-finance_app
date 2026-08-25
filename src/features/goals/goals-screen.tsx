@@ -64,16 +64,11 @@ export function GoalsScreen() {
                 name="bullseye-arrow"
                 size={56}
               />
-              <Text
-                style={[styles.emptyTitle, { color: colors.textPrimary }]}
-              >
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
                 {state.t.goals.noGoalsYet}
               </Text>
               <Text
-                style={[
-                  styles.emptySubtitle,
-                  { color: colors.textSecondary },
-                ]}
+                style={[styles.emptySubtitle, { color: colors.textSecondary }]}
               >
                 {state.t.goals.noGoalsDesc}
               </Text>
@@ -107,7 +102,9 @@ export function GoalsScreen() {
                     <Pressable
                       accessibilityRole="button"
                       key={tab.key}
-                      onPress={() => actions.setFilterTab(tab.key as GoalsFilterTab)}
+                      onPress={() =>
+                        actions.setFilterTab(tab.key as GoalsFilterTab)
+                      }
                       style={[
                         styles.filterTabBtn,
                         {

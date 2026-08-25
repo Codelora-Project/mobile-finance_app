@@ -60,19 +60,13 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
             <View style={styles.overallTitleWrap}>
               <Text
                 numberOfLines={1}
-                style={[
-                  styles.overallTitle,
-                  { color: colors.textSecondary },
-                ]}
+                style={[styles.overallTitle, { color: colors.textSecondary }]}
               >
                 {t.budgets.overallProgress}
               </Text>
               <Text
                 numberOfLines={1}
-                style={[
-                  styles.overallSpentText,
-                  { color: colors.textPrimary },
-                ]}
+                style={[styles.overallSpentText, { color: colors.textPrimary }]}
               >
                 {formatMoney(totalSpentInBudgeted, currencyCode)}{' '}
                 <Text
@@ -106,9 +100,7 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
                   styles.overallPercentText,
                   {
                     color:
-                      overallSpentPercent > 100
-                        ? '#EF4444'
-                        : colors.primary,
+                      overallSpentPercent > 100 ? '#EF4444' : colors.primary,
                   },
                 ]}
               >
@@ -121,9 +113,7 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
             style={[
               styles.overallBarTrack,
               {
-                backgroundColor: isDark
-                  ? colors.surfaceSecondary
-                  : '#F1F5F9',
+                backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
               },
             ]}
           >
@@ -149,10 +139,7 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
       {budgetedCategories.length > 0 ? (
         <View style={styles.sectionContainer}>
           <Text
-            style={[
-              styles.sectionHeaderTitle,
-              { color: colors.textSecondary },
-            ]}
+            style={[styles.sectionHeaderTitle, { color: colors.textSecondary }]}
           >
             ANGGARAN AKTIF ({budgetedCategories.length})
           </Text>
@@ -191,18 +178,14 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
               size={28}
             />
           </View>
-          <Text
-            style={[styles.emptyHeroTitle, { color: colors.textPrimary }]}
-          >
+          <Text style={[styles.emptyHeroTitle, { color: colors.textPrimary }]}>
             Atur Batas Anggaran Bulanan
           </Text>
           <Text
-            style={[
-              styles.emptyHeroSubtitle,
-              { color: colors.textSecondary },
-            ]}
+            style={[styles.emptyHeroSubtitle, { color: colors.textSecondary }]}
           >
-            Pasang batas pengeluaran pada kategori di bawah ini untuk mengontrol arus kas dan mencegah pengeluaran berlebih.
+            Pasang batas pengeluaran pada kategori di bawah ini untuk mengontrol
+            arus kas dan mencegah pengeluaran berlebih.
           </Text>
         </View>
       )}
@@ -211,10 +194,7 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
       {unbudgetedCategories.length > 0 ? (
         <View style={styles.sectionContainer}>
           <Text
-            style={[
-              styles.sectionHeaderTitle,
-              { color: colors.textSecondary },
-            ]}
+            style={[styles.sectionHeaderTitle, { color: colors.textSecondary }]}
           >
             KATEGORI LAINNYA ({unbudgetedCategories.length})
           </Text>

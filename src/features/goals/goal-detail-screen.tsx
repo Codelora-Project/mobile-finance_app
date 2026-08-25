@@ -1,7 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -29,7 +29,7 @@ import {
 import { useCurrency } from '@/lib/currency/currency-context';
 import { isCodedError, mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
-import { parseIntegerInput } from '@/lib/strings';
+import { parseMoneyInput } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -45,6 +45,9 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
   const { language, t } = useLanguage();
   const { colors } = useTheme();
   const { currencyCode } = useCurrency();
+  const deletingRef = useRef(false);
+  const loadRequestRef = useRef(0);
+  const submittingRef = useRef(false);
 
   const [loading, setLoading] = useState(true);
   const [goal, setGoal] = useState<SavingsGoal | null>(null);
@@ -61,36 +64,52 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
   const [note, setNote] = useState('');
   const [modalError, setModalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
+    const requestId = ++loadRequestRef.current;
     setLoading(true);
     setError(null);
     try {
       const data = await getSavingsGoal(database, goalId);
+      if (requestId !== loadRequestRef.current) return;
       if (!data) {
+        setGoal(null);
+        setTransactions([]);
         setError(t.goals.targetNotFound);
         return;
       }
       setGoal(data.goal);
       setTransactions(data.transactions);
     } catch (loadError) {
-      setError(mapError(loadError, 'DATABASE_WRITE_FAILED').message);
+      if (requestId === loadRequestRef.current) {
+        setError(mapError(loadError, 'DATABASE_WRITE_FAILED').message);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestRef.current) {
+        setLoading(false);
+      }
     }
   }, [database, goalId, t.goals.targetNotFound]);
 
   useFocusEffect(
     useCallback(() => {
       void load();
+      return () => {
+        loadRequestRef.current += 1;
+      };
     }, [load]),
   );
 
   const handleDeleteGoal = () => {
+    if (deletingRef.current || submittingRef.current) return;
     Alert.alert(t.goals.deleteGoal, t.goals.deleteConfirm, [
       { style: 'cancel', text: t.common.cancel },
       {
         onPress: async () => {
+          if (deletingRef.current || submittingRef.current) return;
+          deletingRef.current = true;
+          setDeleting(true);
           try {
             await deleteSavingsGoal(database, goalId);
             router.back();
@@ -99,6 +118,9 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
               'Gagal',
               mapError(err, 'DATABASE_WRITE_FAILED').message,
             );
+          } finally {
+            deletingRef.current = false;
+            setDeleting(false);
           }
         },
         style: 'destructive',
@@ -108,9 +130,13 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
   };
 
   const handleSubmitTransaction = async () => {
-    if (!modalType || !goal) return;
-    const amountMinor = parseIntegerInput(amount);
-    if (!amountMinor) {
+    if (!modalType || !goal || submittingRef.current || deletingRef.current) {
+      return;
+    }
+    let amountMinor: number;
+    try {
+      amountMinor = parseMoneyInput(amount, currencyCode);
+    } catch {
       setModalError(t.goals.errorAmountInvalid);
       return;
     }
@@ -119,6 +145,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
     setModalError(null);
     try {
@@ -140,6 +167,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
         : mapError(err, 'DATABASE_WRITE_FAILED').message;
       setModalError(msg);
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
@@ -173,7 +201,17 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
             {error || t.goals.targetNotFound}
           </Text>
           <View style={{ marginTop: spacing.md }}>
-            <AppButton label={t.common.back} onPress={() => router.back()} />
+            {error !== t.goals.targetNotFound ? (
+              <AppButton
+                label={t.common.tryAgain}
+                onPress={() => void load()}
+              />
+            ) : null}
+            <AppButton
+              label={t.common.back}
+              onPress={() => router.back()}
+              variant="secondary"
+            />
           </View>
         </View>
       </Screen>
@@ -197,10 +235,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
           accessibilityRole="button"
           hitSlop={8}
           onPress={() => router.back()}
-          style={({ pressed }) => [
-            styles.headerBtn,
-            pressed && styles.pressed,
-          ]}
+          style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
         >
           <MaterialCommunityIcons
             color={colors.textPrimary}
@@ -220,12 +255,10 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
         <Pressable
           accessibilityLabel={t.goals.deleteGoal}
           accessibilityRole="button"
+          disabled={deleting || submitting}
           hitSlop={8}
           onPress={handleDeleteGoal}
-          style={({ pressed }) => [
-            styles.headerBtn,
-            pressed && styles.pressed,
-          ]}
+          style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
         >
           <MaterialCommunityIcons
             color={colors.destructive}
@@ -257,6 +290,19 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
               language={language}
               t={t}
             />
+
+            {error ? (
+              <View style={styles.errorPanel}>
+                <Text style={[styles.stateText, { color: colors.destructive }]}>
+                  {error}
+                </Text>
+                <AppButton
+                  label={t.common.tryAgain}
+                  onPress={() => void load()}
+                  variant="secondary"
+                />
+              </View>
+            ) : null}
 
             {/* Quick Actions (Setor & Tarik) */}
             <View style={styles.actionButtonsRow}>
@@ -292,10 +338,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
 
             {/* Transaction History Section Header */}
             <Text
-              style={[
-                styles.sectionTitle,
-                { color: colors.textSecondary },
-              ]}
+              style={[styles.sectionTitle, { color: colors.textSecondary }]}
             >
               {language === 'id' ? 'RIWAYAT TABUNGAN' : 'SAVINGS HISTORY'}
             </Text>
@@ -360,6 +403,9 @@ const styles = StyleSheet.create({
   emptyTxContainer: {
     alignItems: 'center',
     paddingVertical: spacing.xl,
+  },
+  errorPanel: {
+    gap: spacing.sm,
   },
   emptyTxText: {
     ...typography.metadata,

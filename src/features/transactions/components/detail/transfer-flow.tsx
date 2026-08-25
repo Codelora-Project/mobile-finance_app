@@ -33,12 +33,7 @@ export const DetailTransferFlow = memo(function DetailTransferFlow({
         },
       ]}
     >
-      <Text
-        style={[
-          styles.transferFlowTitle,
-          { color: colors.textSecondary },
-        ]}
-      >
+      <Text style={[styles.transferFlowTitle, { color: colors.textSecondary }]}>
         {language === 'id' ? 'ALUR TRANSFER DANA' : 'TRANSFER FLOW'}
       </Text>
 
@@ -49,9 +44,7 @@ export const DetailTransferFlow = memo(function DetailTransferFlow({
             style={[
               styles.transferNodeIcon,
               {
-                backgroundColor: isDark
-                  ? 'rgba(239, 68, 68, 0.15)'
-                  : '#FEE2E2',
+                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2',
               },
             ]}
           >
@@ -62,19 +55,13 @@ export const DetailTransferFlow = memo(function DetailTransferFlow({
             />
           </View>
           <Text
-            style={[
-              styles.transferNodeLabel,
-              { color: colors.textSecondary },
-            ]}
+            style={[styles.transferNodeLabel, { color: colors.textSecondary }]}
           >
             {t.transactions.transferFrom}
           </Text>
           <Text
             numberOfLines={1}
-            style={[
-              styles.transferNodeName,
-              { color: colors.textPrimary },
-            ]}
+            style={[styles.transferNodeName, { color: colors.textPrimary }]}
           >
             {transaction.paymentMethodName || '-'}
           </Text>
@@ -115,19 +102,13 @@ export const DetailTransferFlow = memo(function DetailTransferFlow({
             />
           </View>
           <Text
-            style={[
-              styles.transferNodeLabel,
-              { color: colors.textSecondary },
-            ]}
+            style={[styles.transferNodeLabel, { color: colors.textSecondary }]}
           >
             {t.transactions.transferTo}
           </Text>
           <Text
             numberOfLines={1}
-            style={[
-              styles.transferNodeName,
-              { color: colors.textPrimary },
-            ]}
+            style={[styles.transferNodeName, { color: colors.textPrimary }]}
           >
             {transaction.transferToPaymentMethodName || '-'}
           </Text>
@@ -140,9 +121,7 @@ export const DetailTransferFlow = memo(function DetailTransferFlow({
           style={[
             styles.transferFeeRow,
             {
-              backgroundColor: isDark
-                ? 'rgba(255, 255, 255, 0.05)'
-                : '#F8FAFC',
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC',
               borderColor: colors.border,
             },
           ]}
@@ -154,19 +133,13 @@ export const DetailTransferFlow = memo(function DetailTransferFlow({
               size={16}
             />
             <Text
-              style={[
-                styles.transferFeeLabel,
-                { color: colors.textSecondary },
-              ]}
+              style={[styles.transferFeeLabel, { color: colors.textSecondary }]}
             >
               {language === 'id' ? 'Biaya Transfer' : 'Transfer Fee'}
             </Text>
           </View>
           <Text
-            style={[
-              styles.transferFeeAmount,
-              { color: colors.destructive },
-            ]}
+            style={[styles.transferFeeAmount, { color: colors.destructive }]}
           >
             {formatMoney(
               transaction.transferFeeMinor,

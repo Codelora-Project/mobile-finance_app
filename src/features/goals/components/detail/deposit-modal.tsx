@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 
 import { AppButton } from '@/components/ui/app-button';
+import { useCurrency } from '@/lib/currency/currency-context';
+import { useLanguage } from '@/lib/i18n/language-context';
 import type { TranslationSchema } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -42,6 +44,8 @@ export const GoalDetailModal = memo(function GoalDetailModal({
   t,
 }: GoalDetailModalProps) {
   const { colors, isDark } = useTheme();
+  const { currencySymbol } = useCurrency();
+  const { language } = useLanguage();
 
   if (!modalType) return null;
 
@@ -83,8 +87,8 @@ export const GoalDetailModal = memo(function GoalDetailModal({
                       ? '#14532D'
                       : '#DCFCE7'
                     : isDark
-                    ? '#7F1D1D'
-                    : '#FEE2E2',
+                      ? '#7F1D1D'
+                      : '#FEE2E2',
                 },
               ]}
             >
@@ -98,49 +102,55 @@ export const GoalDetailModal = memo(function GoalDetailModal({
               accessibilityRole="header"
               style={[styles.modalTitle, { color: colors.textPrimary }]}
             >
-              {isDeposit ? 'Setor Tabungan' : 'Tarik Tabungan'}
+              {isDeposit ? t.goals.deposit : t.goals.withdraw}
             </Text>
           </View>
 
           {/* Amount Input */}
           <View style={styles.inputGroup}>
-            <Text
-              style={[styles.inputLabel, { color: colors.textSecondary }]}
-            >
-              Nominal
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+              {language === 'id' ? 'Nominal' : 'Amount'}
             </Text>
-            <TextInput
-              keyboardType="number-pad"
-              onChangeText={onAmountChange}
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
+            <View
               style={[
-                styles.textInput,
+                styles.amountInputRow,
                 {
                   backgroundColor: isDark
                     ? 'rgba(255, 255, 255, 0.05)'
                     : '#F8FAFC',
                   borderColor: colors.border,
-                  color: colors.textPrimary,
                 },
               ]}
-              value={amount}
-            />
+            >
+              <Text style={[styles.amountPrefix, { color: colors.textMuted }]}>
+                {currencySymbol}
+              </Text>
+              <TextInput
+                keyboardType="decimal-pad"
+                onChangeText={onAmountChange}
+                placeholder="0"
+                placeholderTextColor={colors.textMuted}
+                style={[styles.amountTextInput, { color: colors.textPrimary }]}
+                value={amount}
+              />
+            </View>
           </View>
 
           {/* Note Input */}
           <View style={styles.inputGroup}>
-            <Text
-              style={[styles.inputLabel, { color: colors.textSecondary }]}
-            >
-              {t.transactions.note || 'Catatan'}
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+              {t.transactions.note}
             </Text>
             <TextInput
               onChangeText={onNoteChange}
               placeholder={
                 isDeposit
-                  ? 'Contoh: Tabungan gaji bulanan'
-                  : 'Contoh: Beli kebutuhan'
+                  ? language === 'id'
+                    ? 'Contoh: Tabungan gaji bulanan'
+                    : 'Example: Monthly salary savings'
+                  : language === 'id'
+                    ? 'Contoh: Beli kebutuhan'
+                    : 'Example: Essential purchase'
               }
               placeholderTextColor={colors.textMuted}
               style={[
@@ -183,11 +193,7 @@ export const GoalDetailModal = memo(function GoalDetailModal({
                   isDeposit ? t.goals.deposit : t.goals.withdraw
                 }
                 disabled={submitting}
-                label={
-                  isDeposit
-                    ? t.goals.deposit || 'Setor'
-                    : t.goals.withdraw || 'Tarik'
-                }
+                label={isDeposit ? t.goals.deposit : t.goals.withdraw}
                 loading={submitting}
                 onPress={onSubmit}
                 variant="primary"
@@ -201,6 +207,25 @@ export const GoalDetailModal = memo(function GoalDetailModal({
 });
 
 const styles = StyleSheet.create({
+  amountInputRow: {
+    alignItems: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    paddingHorizontal: spacing.sm + 4,
+  },
+  amountPrefix: {
+    ...typography.body,
+    fontWeight: '700',
+  },
+  amountTextInput: {
+    ...typography.body,
+    flex: 1,
+    fontSize: 14,
+    minHeight: 44,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs + 2,
+  },
   inputGroup: {
     gap: 4,
   },

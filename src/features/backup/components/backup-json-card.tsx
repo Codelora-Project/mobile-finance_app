@@ -44,9 +44,7 @@ export const BackupJsonCard = memo(function BackupJsonCard({
             style={[
               styles.cardIconBadge,
               {
-                backgroundColor: isDark
-                  ? colors.surfaceSecondary
-                  : '#EFF6FF',
+                backgroundColor: isDark ? colors.surfaceSecondary : '#EFF6FF',
               },
             ]}
           >

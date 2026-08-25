@@ -2,7 +2,10 @@ import React, { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '@/components/ui/app-button';
-import type { ClaimExpense, ClaimPeriodMode } from '@/features/claims/claim-repository';
+import type {
+  ClaimExpense,
+  ClaimPeriodMode,
+} from '@/features/claims/claim-repository';
 import { formatMoney } from '@/lib/money';
 import { normalizeText } from '@/lib/strings';
 import { colors } from '@/theme/colors';

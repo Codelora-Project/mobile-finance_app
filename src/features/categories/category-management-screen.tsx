@@ -47,6 +47,7 @@ export function CategoryManagementScreen() {
   const { colors } = useTheme();
   const savingRef = useRef(false);
   const deletingRef = useRef(false);
+  const loadRequestRef = useRef(0);
   const [categories, setCategories] = useState<readonly Category[]>([]);
   const [selectedType, setSelectedType] = useState<CategoryType>('expense');
   const [loading, setLoading] = useState(true);
@@ -58,50 +59,36 @@ export function CategoryManagementScreen() {
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const loadCategories = useCallback(async () => {
+    const requestId = ++loadRequestRef.current;
+    setLoading(true);
     try {
       const nextCategories = await listCategories(database, selectedType);
+      if (requestId !== loadRequestRef.current) return;
       setCategories(nextCategories);
       setScreenError(null);
     } catch (error) {
       if (__DEV__) {
         console.error('Category management could not load categories.', error);
       }
-      setScreenError(mapError(error, 'DATABASE_WRITE_FAILED').message);
+      if (requestId === loadRequestRef.current) {
+        setScreenError(mapError(error, 'DATABASE_WRITE_FAILED').message);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestRef.current) {
+        setLoading(false);
+      }
     }
   }, [database, selectedType]);
 
   useEffect(() => {
-    let active = true;
-    listCategories(database, selectedType)
-      .then((nextCategories) => {
-        if (active) {
-          setCategories(nextCategories);
-          setScreenError(null);
-        }
-      })
-      .catch((error: unknown) => {
-        if (__DEV__) {
-          console.error(
-            'Category management could not load categories.',
-            error,
-          );
-        }
-        if (active) {
-          setScreenError(mapError(error, 'DATABASE_WRITE_FAILED').message);
-        }
-      })
-      .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
-      });
-
+    const loadTimer = setTimeout(() => {
+      void loadCategories();
+    }, 0);
     return () => {
-      active = false;
+      clearTimeout(loadTimer);
+      loadRequestRef.current += 1;
     };
-  }, [database, selectedType]);
+  }, [loadCategories]);
 
   function selectType(type: CategoryType) {
     setSelectedType(type);

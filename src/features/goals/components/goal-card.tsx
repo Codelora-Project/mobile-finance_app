@@ -2,6 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { SavingsGoal } from '@/features/goals/goals-repository';
+import { getGoalIconName } from '@/features/goals/goal-icons';
 import { useCurrency } from '@/lib/currency/currency-context';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
@@ -17,19 +18,6 @@ type GoalCardProps = {
   compact?: boolean;
 };
 
-export const GOAL_ICONS: Record<string, string> = {
-  target: 'target',
-  piggy: 'piggy-bank',
-  laptop: 'laptop',
-  travel: 'airplane',
-  car: 'car',
-  home: 'home-heart',
-  shopping: 'shopping',
-  gift: 'gift',
-  gadget: 'cellphone',
-  emergency: 'shield-star',
-};
-
 export function GoalCard({
   goal,
   onPress,
@@ -39,7 +27,7 @@ export function GoalCard({
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();
   const { currencyCode } = useCurrency();
-  const iconName = GOAL_ICONS[goal.iconKey] ?? 'target';
+  const iconName = getGoalIconName(goal.iconKey);
 
   const clampedPercent = Math.min(100, Math.max(0, goal.progressPercent));
   const remainingMinor = Math.max(
@@ -74,7 +62,7 @@ export function GoalCard({
           <View style={[styles.iconCircle, { backgroundColor: accentBg }]}>
             <MaterialCommunityIcons
               color={goal.colorKey}
-              name={iconName as any}
+              name={iconName}
               size={22}
             />
           </View>
@@ -88,7 +76,8 @@ export function GoalCard({
             <Text
               style={[styles.targetAmountText, { color: colors.textSecondary }]}
             >
-              {t.goals.target}: {formatMoney(goal.targetAmountMinor, currencyCode)}
+              {t.goals.target}:{' '}
+              {formatMoney(goal.targetAmountMinor, currencyCode)}
             </Text>
           </View>
         </View>

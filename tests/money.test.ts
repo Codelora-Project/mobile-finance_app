@@ -7,6 +7,7 @@ import {
   formatShortcutLabel,
   getCurrencyFractionDigits,
   parseMoneyInput,
+  parseSignedMoneyInput,
   sumMoney,
 } from '@/lib/money';
 
@@ -31,6 +32,13 @@ describe('money utilities', () => {
   it('parses JPY input without fractional units', () => {
     expect(parseMoneyInput('1,250', 'JPY')).toBe(1_250);
     expect(parseMoneyInput('1.250', 'JPY')).toBe(1_250);
+  });
+
+  it('parses zero and negative wallet balances using currency fractions', () => {
+    expect(parseSignedMoneyInput('0', 'USD')).toBe(0);
+    expect(parseSignedMoneyInput('-12.50', 'USD')).toBe(-1_250);
+    expect(parseSignedMoneyInput('-35.000', 'IDR')).toBe(-35_000);
+    expect(() => parseSignedMoneyInput('12.3456', 'USD')).toThrow(RangeError);
   });
 
   it('formats currencies without hard-coded symbols', () => {

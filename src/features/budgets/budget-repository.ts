@@ -137,7 +137,7 @@ export async function setCategoryBudget(
   categoryId: number,
   monthlyLimitMinor: number,
 ): Promise<void> {
-  if (monthlyLimitMinor <= 0) {
+  if (!Number.isSafeInteger(monthlyLimitMinor) || monthlyLimitMinor <= 0) {
     throw createCodedError(
       'VALIDATION_FAILED',
       'Batas anggaran harus lebih besar dari 0.',

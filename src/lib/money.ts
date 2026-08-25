@@ -62,9 +62,7 @@ function localizeDigits(value: string, locale: string) {
 
 function assertSafeInteger(amountMinor: number) {
   if (!Number.isSafeInteger(amountMinor)) {
-    throw new RangeError(
-      'Money must use a safe integer minor-unit amount.',
-    );
+    throw new RangeError('Money must use a safe integer minor-unit amount.');
   }
 }
 
@@ -186,10 +184,19 @@ export function assertMoney(amountMinor: number) {
   }
 }
 
-export function parseMoneyInput(input: string, currencyCode: string) {
-  const normalizedInput = input.trim().replace(/\s/g, '');
+function parseMoneyInputToMinor(
+  input: string,
+  currencyCode: string,
+  allowSignedZero: boolean,
+) {
+  const trimmedInput = input.trim().replace(/\s/g, '');
+  const isNegative = trimmedInput.startsWith('-');
+  const normalizedInput = isNegative ? trimmedInput.slice(1) : trimmedInput;
   if (!/^\d[\d.,]*$/.test(normalizedInput)) {
     throw new RangeError('Money input contains unsupported characters.');
+  }
+  if (isNegative && !allowSignedZero) {
+    throw new RangeError('Money input must be greater than zero.');
   }
 
   const fractionDigits = getCurrencyFractionDigits(currencyCode);
@@ -201,8 +208,23 @@ export function parseMoneyInput(input: string, currencyCode: string) {
   );
   const amountMinor = Number(minorUnitText);
 
-  assertMoney(amountMinor);
-  return amountMinor;
+  if (!Number.isSafeInteger(amountMinor)) {
+    throw new RangeError('Money must use a safe integer minor-unit amount.');
+  }
+  if (!allowSignedZero && amountMinor <= 0) {
+    throw new RangeError('Money input must be greater than zero.');
+  }
+
+  return isNegative ? -amountMinor : amountMinor;
+}
+
+export function parseMoneyInput(input: string, currencyCode: string) {
+  return parseMoneyInputToMinor(input, currencyCode, false);
+}
+
+/** Parses wallet balances, which may legitimately be zero or negative. */
+export function parseSignedMoneyInput(input: string, currencyCode: string) {
+  return parseMoneyInputToMinor(input, currencyCode, true);
 }
 
 export function formatMoney(

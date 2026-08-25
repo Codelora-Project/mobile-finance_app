@@ -1,7 +1,10 @@
 import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { ClaimStatus, ClaimSummary } from '@/features/claims/claim-repository';
+import type {
+  ClaimStatus,
+  ClaimSummary,
+} from '@/features/claims/claim-repository';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { spacing } from '@/theme/spacing';
@@ -42,9 +45,7 @@ export const ClaimListRowItem = memo(function ClaimListRowItem({
         >
           {claim.title}
         </Text>
-        <Text
-          style={[styles.rowMetadata, { color: colors.textSecondary }]}
-        >
+        <Text style={[styles.rowMetadata, { color: colors.textSecondary }]}>
           {statusLabel(claim.status)} · {claim.itemCount} items
         </Text>
       </View>

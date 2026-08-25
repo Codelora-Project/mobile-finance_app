@@ -44,9 +44,7 @@ export const BackupCsvCard = memo(function BackupCsvCard({
             style={[
               styles.cardIconBadge,
               {
-                backgroundColor: isDark
-                  ? colors.surfaceSecondary
-                  : '#ECFDF5',
+                backgroundColor: isDark ? colors.surfaceSecondary : '#ECFDF5',
               },
             ]}
           >
@@ -70,11 +68,7 @@ export const BackupCsvCard = memo(function BackupCsvCard({
           <AppButton
             accessibilityLabel={t.backup.exportCsvBtn}
             disabled={exportingCsv}
-            label={
-              exportingCsv
-                ? t.backup.exportingCsv
-                : t.backup.exportCsvBtn
-            }
+            label={exportingCsv ? t.backup.exportingCsv : t.backup.exportCsvBtn}
             loading={exportingCsv}
             onPress={onExportCsv}
             variant="secondary"

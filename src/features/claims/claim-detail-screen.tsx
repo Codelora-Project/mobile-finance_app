@@ -37,6 +37,7 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
   const router = useRouter();
   const workingRef = useRef(false);
   const pdfActionRef = useRef(false);
+  const loadRequestRef = useRef(0);
   const [claim, setClaim] = useState<ClaimDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
@@ -45,20 +46,31 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    const requestId = ++loadRequestRef.current;
     setLoading(true);
     setError(null);
     try {
-      setClaim(await getClaim(database, claimId));
+      const nextClaim = await getClaim(database, claimId);
+      if (requestId === loadRequestRef.current) {
+        setClaim(nextClaim);
+      }
     } catch (loadError) {
-      setError(mapError(loadError, 'DATABASE_WRITE_FAILED').message);
+      if (requestId === loadRequestRef.current) {
+        setError(mapError(loadError, 'DATABASE_WRITE_FAILED').message);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestRef.current) {
+        setLoading(false);
+      }
     }
   }, [claimId, database]);
 
   useFocusEffect(
     useCallback(() => {
       void load();
+      return () => {
+        loadRequestRef.current += 1;
+      };
     }, [load]),
   );
 

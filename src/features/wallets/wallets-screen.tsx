@@ -1,7 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -55,17 +55,21 @@ export function WalletsScreen({
   const [archivedWallets, setArchivedWallets] = useState<readonly Wallet[]>([]);
   const [loading, setLoading] = useState(true);
   const [screenError, setScreenError] = useState<string | null>(null);
+  const loadRequestRef = useRef(0);
 
   // Modal States
   const [editorTarget, setEditorTarget] = useState<Wallet | 'new' | null>(null);
   const [reconcileTarget, setReconcileTarget] = useState<Wallet | null>(null);
 
   const loadData = useCallback(async () => {
+    const requestId = ++loadRequestRef.current;
+    setLoading(true);
     try {
       const [summary, allWithArchived] = await Promise.all([
         getWalletSummary(database),
         getWallets(database, { includeArchived: true }),
       ]);
+      if (requestId !== loadRequestRef.current) return;
       setWalletSummary(summary);
       setArchivedWallets(allWithArchived.filter((w) => w.isArchived));
       setScreenError(null);
@@ -73,15 +77,22 @@ export function WalletsScreen({
       if (__DEV__) {
         console.error('Wallets load error:', caughtError);
       }
-      setScreenError(mapError(caughtError, 'DATABASE_WRITE_FAILED').message);
+      if (requestId === loadRequestRef.current) {
+        setScreenError(mapError(caughtError, 'DATABASE_WRITE_FAILED').message);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestRef.current) {
+        setLoading(false);
+      }
     }
   }, [database]);
 
   useFocusEffect(
     useCallback(() => {
       void loadData();
+      return () => {
+        loadRequestRef.current += 1;
+      };
     }, [loadData]),
   );
 
@@ -253,6 +264,11 @@ export function WalletsScreen({
             {screenError ? (
               <View style={styles.errorBanner}>
                 <Text style={styles.errorText}>{screenError}</Text>
+                <AppButton
+                  label={t.common.tryAgain}
+                  onPress={() => void loadData()}
+                  variant="secondary"
+                />
               </View>
             ) : null}
 
@@ -354,6 +370,7 @@ const styles = StyleSheet.create({
   errorBanner: {
     backgroundColor: '#FEF2F2',
     borderRadius: radius.md,
+    gap: spacing.sm,
     marginTop: spacing.sm,
     padding: spacing.sm,
   },

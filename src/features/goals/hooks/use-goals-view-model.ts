@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import {
   addGoalTransaction,
@@ -14,9 +14,10 @@ import {
   getHabitStats,
   type HabitStats,
 } from '@/features/habits/habit-repository';
+import { useCurrency } from '@/lib/currency/currency-context';
 import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
-import { parseIntegerInput } from '@/lib/strings';
+import { parseMoneyInput } from '@/lib/money';
 
 export type GoalsFilterTab = 'active' | 'all' | 'completed';
 
@@ -24,6 +25,9 @@ export function useGoalsViewModel() {
   const database = useSQLiteContext();
   const router = useRouter();
   const { language, t } = useLanguage();
+  const { currencyCode } = useCurrency();
+  const loadRequestRef = useRef(0);
+  const savingRef = useRef(false);
 
   const [loading, setLoading] = useState(true);
   const [goals, setGoals] = useState<readonly SavingsGoal[]>([]);
@@ -49,6 +53,7 @@ export function useGoalsViewModel() {
   const [depositError, setDepositError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    const requestId = ++loadRequestRef.current;
     setLoading(true);
     setError(null);
     try {
@@ -57,20 +62,28 @@ export function useGoalsViewModel() {
         getGoalsSummary(database),
         getHabitStats(database),
       ]);
+      if (requestId !== loadRequestRef.current) return;
       setGoals(goalsList);
       setSummary(sum);
       setHabitStats(habits);
     } catch (err) {
-      const mapped = mapError(err, 'DATABASE_WRITE_FAILED');
-      setError(mapped.message);
+      if (requestId === loadRequestRef.current) {
+        const mapped = mapError(err, 'DATABASE_WRITE_FAILED');
+        setError(mapped.message);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestRef.current) {
+        setLoading(false);
+      }
     }
   }, [database]);
 
   useFocusEffect(
     useCallback(() => {
       void load();
+      return () => {
+        loadRequestRef.current += 1;
+      };
     }, [load]),
   );
 
@@ -95,20 +108,30 @@ export function useGoalsViewModel() {
   }, []);
 
   const handleCreateGoal = useCallback(async () => {
+    if (savingRef.current) return;
     const trimmedName = name.trim();
     if (!trimmedName) {
       setFormError(t.goals.errorNameRequired);
       return;
     }
-    const targetMinor = parseIntegerInput(targetAmount);
-    if (!targetMinor || targetMinor <= 0) {
+    let targetMinor: number;
+    try {
+      targetMinor = parseMoneyInput(targetAmount, currencyCode);
+    } catch {
       setFormError(t.goals.errorTargetRequired);
       return;
     }
-    const depositMinor = initialDeposit.trim()
-      ? parseIntegerInput(initialDeposit) ?? 0
-      : 0;
+    let depositMinor = 0;
+    if (initialDeposit.trim()) {
+      try {
+        depositMinor = parseMoneyInput(initialDeposit, currencyCode);
+      } catch {
+        setFormError(t.goals.errorDepositInvalid);
+        return;
+      }
+    }
 
+    savingRef.current = true;
     setSaving(true);
     setFormError(null);
     try {
@@ -131,9 +154,11 @@ export function useGoalsViewModel() {
       const mapped = mapError(err, 'DATABASE_WRITE_FAILED');
       setFormError(mapped.message);
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   }, [
+    currencyCode,
     database,
     initialDeposit,
     load,
@@ -145,13 +170,16 @@ export function useGoalsViewModel() {
   ]);
 
   const handleDeposit = useCallback(async () => {
-    if (!depositGoal) return;
-    const amountMinor = parseIntegerInput(depositAmount);
-    if (!amountMinor || amountMinor <= 0) {
+    if (!depositGoal || savingRef.current) return;
+    let amountMinor: number;
+    try {
+      amountMinor = parseMoneyInput(depositAmount, currencyCode);
+    } catch {
       setDepositError(t.goals.errorAmountInvalid);
       return;
     }
 
+    savingRef.current = true;
     setSaving(true);
     setDepositError(null);
     try {
@@ -169,9 +197,18 @@ export function useGoalsViewModel() {
       const mapped = mapError(err, 'DATABASE_WRITE_FAILED');
       setDepositError(mapped.message);
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
-  }, [database, depositAmount, depositGoal, depositNote, load, t.goals]);
+  }, [
+    currencyCode,
+    database,
+    depositAmount,
+    depositGoal,
+    depositNote,
+    load,
+    t.goals,
+  ]);
 
   const navigateToDetail = useCallback(
     (id: number) => {

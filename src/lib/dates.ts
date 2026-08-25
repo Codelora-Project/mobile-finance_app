@@ -193,4 +193,3 @@ export function formatGroupDate(
     year: 'numeric',
   }).format(date);
 }
-

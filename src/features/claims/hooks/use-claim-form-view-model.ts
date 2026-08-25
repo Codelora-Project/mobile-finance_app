@@ -257,7 +257,19 @@ export function useClaimFormViewModel({
       savingRef.current = false;
       setSaving(false);
     }
-  }, [claimId, database, description, periodEnd, periodMode, periodStart, router, selectedIds, title, totalMinor, validateDetails]);
+  }, [
+    claimId,
+    database,
+    description,
+    periodEnd,
+    periodMode,
+    periodStart,
+    router,
+    selectedIds,
+    title,
+    totalMinor,
+    validateDetails,
+  ]);
 
   return {
     actions: {

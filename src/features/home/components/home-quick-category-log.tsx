@@ -44,9 +44,7 @@ export const HomeQuickCategoryLog = memo(function HomeQuickCategoryLog({
               name="lightning-bolt"
               size={18}
             />
-            <Text
-              style={[styles.quickLogTitle, { color: colors.textPrimary }]}
-            >
+            <Text style={[styles.quickLogTitle, { color: colors.textPrimary }]}>
               {t.home.quickLogTitle}
             </Text>
           </View>
@@ -78,10 +76,7 @@ export const HomeQuickCategoryLog = memo(function HomeQuickCategoryLog({
             size={14}
           />
           <Text
-            style={[
-              styles.customizeQuickLogText,
-              { color: colors.primary },
-            ]}
+            style={[styles.customizeQuickLogText, { color: colors.primary }]}
           >
             {t.home.quickLogCustomize}
           </Text>
@@ -125,10 +120,7 @@ export const HomeQuickCategoryLog = memo(function HomeQuickCategoryLog({
               </View>
               <Text
                 numberOfLines={1}
-                style={[
-                  styles.quickLogLabel,
-                  { color: colors.textPrimary },
-                ]}
+                style={[styles.quickLogLabel, { color: colors.textPrimary }]}
               >
                 {cat.name}
               </Text>
@@ -150,9 +142,7 @@ export const HomeQuickCategoryLog = memo(function HomeQuickCategoryLog({
             style={[
               styles.quickLogIconCircle,
               {
-                backgroundColor: isDark
-                  ? colors.surfaceSecondary
-                  : '#F1F5F9',
+                backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
                 borderColor: isDark ? colors.border : '#CBD5E1',
                 borderStyle: 'dashed',
                 borderWidth: 1.5,

@@ -246,8 +246,14 @@ export async function updateTransaction(
   now = Date.now(),
 ) {
   const normalized = await normalizeInputForWrite(database, input, now);
-  const existing = await database.getFirstAsync<{ id: number }>(
-    'SELECT id FROM transactions WHERE id = ?',
+  const existing = await database.getFirstAsync<{
+    id: number;
+    payment_method_id: number | null;
+    transfer_to_payment_method_id: number | null;
+  }>(
+    `SELECT id, payment_method_id, transfer_to_payment_method_id
+     FROM transactions
+     WHERE id = ?`,
     id,
   );
   if (!existing) {
@@ -272,7 +278,11 @@ export async function updateTransaction(
       'Remove this transaction from its Draft claim before making it ineligible.',
     );
   }
-  await validateTransactionReferences(database, normalized);
+  await validateTransactionReferences(database, normalized, {
+    allowedArchivedPaymentMethodId: existing.payment_method_id,
+    allowedArchivedTransferDestinationId:
+      existing.transfer_to_payment_method_id,
+  });
   const oldReceipt = await database.getFirstAsync<{ storage_key: string }>(
     'SELECT storage_key FROM receipts WHERE transaction_id = ?',
     id,
@@ -283,7 +293,14 @@ export async function updateTransaction(
     await withIntegrityCheckedTransaction(database, async (transaction) => {
       const transactionStillExists = await transaction.getFirstAsync<{
         id: number;
-      }>('SELECT id FROM transactions WHERE id = ?', id);
+        payment_method_id: number | null;
+        transfer_to_payment_method_id: number | null;
+      }>(
+        `SELECT id, payment_method_id, transfer_to_payment_method_id
+         FROM transactions
+         WHERE id = ?`,
+        id,
+      );
       if (!transactionStillExists) {
         throw createCodedError(
           'VALIDATION_FAILED',
@@ -323,7 +340,12 @@ export async function updateTransaction(
           );
         }
       }
-      await validateTransactionReferences(transaction, normalized);
+      await validateTransactionReferences(transaction, normalized, {
+        allowedArchivedPaymentMethodId:
+          transactionStillExists.payment_method_id,
+        allowedArchivedTransferDestinationId:
+          transactionStillExists.transfer_to_payment_method_id,
+      });
       const timestamp = Date.now();
       await transaction.runAsync(
         `UPDATE transactions

@@ -75,7 +75,11 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
               : 'Select Base Currency'}
           </Text>
           <Pressable
-            accessibilityLabel={language === 'id' ? 'Tutup pemilih mata uang' : 'Close currency picker'}
+            accessibilityLabel={
+              language === 'id'
+                ? 'Tutup pemilih mata uang'
+                : 'Close currency picker'
+            }
             accessibilityRole="button"
             hitSlop={12}
             onPress={handleClose}
@@ -116,8 +120,8 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
               ]}
             >
               {language === 'id'
-                ? 'Mata uang berlaku global. Nilai transaksi lama tidak dikonversi; hanya kode, simbol, dan format yang diperbarui.'
-                : 'Currency is global. Existing amounts are not converted; only their currency code, symbol, and formatting are updated.'}
+                ? 'Mata uang berlaku global. Angka nominal lama tetap sama tanpa konversi kurs; hanya kode, simbol, dan format yang diperbarui.'
+                : 'Currency is global. Existing nominal amounts stay the same without exchange-rate conversion; only their currency code, symbol, and formatting are updated.'}
             </Text>
           </View>
 
@@ -146,7 +150,9 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
             />
             {searchQuery ? (
               <Pressable
-                accessibilityLabel={language === 'id' ? 'Hapus pencarian' : 'Clear search'}
+                accessibilityLabel={
+                  language === 'id' ? 'Hapus pencarian' : 'Clear search'
+                }
                 accessibilityRole="button"
                 hitSlop={8}
                 onPress={() => setSearchQuery('')}

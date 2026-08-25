@@ -1,6 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useSQLiteContext } from 'expo-sqlite';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -12,12 +12,13 @@ import {
 
 import { AppButton } from '@/components/ui/app-button';
 import { getWallets } from '@/features/wallets/wallet-repository';
+import { getWalletIconName } from '@/features/wallets/wallet-icons';
 import type { Wallet } from '@/features/wallets/wallet-types';
 import { useCurrency } from '@/lib/currency/currency-context';
-import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
+import { usePickerData } from '@/lib/use-picker-data';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -42,49 +43,20 @@ export function WalletPicker({
   const { currencyCode } = useCurrency();
   const { language } = useLanguage();
 
-  const [wallets, setWallets] = useState<readonly Wallet[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const loadWallets = useCallback(async () => {
-    try {
-      const data = await getWallets(database, { includeArchived: false });
-      setWallets(data);
-      setError(null);
-    } catch (caughtError) {
-      if (__DEV__) {
-        console.error('Wallet picker load error:', caughtError);
-      }
-      setError(mapError(caughtError, 'DATABASE_WRITE_FAILED').message);
-    } finally {
-      setLoading(false);
-    }
-  }, [database]);
-
-  useEffect(() => {
-    let active = true;
-    getWallets(database, { includeArchived: false })
-      .then((data) => {
-        if (active) {
-          setWallets(data);
-          setError(null);
-        }
-      })
-      .catch((caughtError: unknown) => {
-        if (active) {
-          setError(mapError(caughtError, 'DATABASE_WRITE_FAILED').message);
-        }
-      })
-      .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [database]);
+  const loadWallets = useCallback(
+    () => getWallets(database, { includeArchived: false }),
+    [database],
+  );
+  const {
+    error,
+    items: wallets,
+    loading,
+    reload,
+  } = usePickerData({
+    diagnosticLabel: 'Wallet picker',
+    load: loadWallets,
+    resourceKey: 'wallets',
+  });
 
   const filteredWallets = excludeWalletId
     ? wallets.filter((w) => w.id !== excludeWalletId)
@@ -104,13 +76,12 @@ export function WalletPicker({
   if (error) {
     return (
       <View style={styles.stateContainer}>
-        <Text style={[styles.errorText, { color: colors.destructive }]}>{error}</Text>
+        <Text style={[styles.errorText, { color: colors.destructive }]}>
+          {error}
+        </Text>
         <AppButton
           label={language === 'id' ? 'Coba Lagi' : 'Try Again'}
-          onPress={() => {
-            setLoading(true);
-            void loadWallets();
-          }}
+          onPress={() => void reload()}
           variant="secondary"
         />
       </View>
@@ -162,7 +133,9 @@ export function WalletPicker({
                 />
               </View>
               <View style={styles.rowInfo}>
-                <Text style={[styles.walletName, { color: colors.textPrimary }]}>
+                <Text
+                  style={[styles.walletName, { color: colors.textPrimary }]}
+                >
                   {language === 'id' ? 'Tanpa Dompet' : 'No wallet selected'}
                 </Text>
                 <Text style={[styles.walletMeta, { color: colors.textMuted }]}>
@@ -171,7 +144,11 @@ export function WalletPicker({
               </View>
               <MaterialCommunityIcons
                 color={noneSelected ? colors.primary : 'transparent'}
-                name={noneSelected ? 'checkbox-marked-circle' : 'checkbox-blank-circle-outline'}
+                name={
+                  noneSelected
+                    ? 'checkbox-marked-circle'
+                    : 'checkbox-blank-circle-outline'
+                }
                 size={22}
               />
             </Pressable>
@@ -205,24 +182,13 @@ export function WalletPicker({
               style={[
                 styles.iconBadge,
                 {
-                  backgroundColor: isDark
-                    ? `${iconColor}25`
-                    : `${iconColor}15`,
+                  backgroundColor: isDark ? `${iconColor}25` : `${iconColor}15`,
                 },
               ]}
             >
               <MaterialCommunityIcons
                 color={iconColor}
-                name={
-                  (item.iconKey as any) ||
-                  (item.accountType === 'bank'
-                    ? 'bank'
-                    : item.accountType === 'ewallet'
-                    ? 'cellphone'
-                    : item.accountType === 'investment'
-                    ? 'trending-up'
-                    : 'wallet')
-                }
+                name={getWalletIconName(item)}
                 size={22}
               />
             </View>
@@ -230,7 +196,9 @@ export function WalletPicker({
             {/* Wallet Info */}
             <View style={styles.rowInfo}>
               <View style={styles.nameRow}>
-                <Text style={[styles.walletName, { color: colors.textPrimary }]}>
+                <Text
+                  style={[styles.walletName, { color: colors.textPrimary }]}
+                >
                   {item.name}
                 </Text>
                 {!item.includeInCashflow ? (
@@ -259,8 +227,14 @@ export function WalletPicker({
 
             {/* Checkmark indicator */}
             <MaterialCommunityIcons
-              color={isSelected ? colors.primary : isDark ? '#475569' : '#CBD5E1'}
-              name={isSelected ? 'checkbox-marked-circle' : 'checkbox-blank-circle-outline'}
+              color={
+                isSelected ? colors.primary : isDark ? '#475569' : '#CBD5E1'
+              }
+              name={
+                isSelected
+                  ? 'checkbox-marked-circle'
+                  : 'checkbox-blank-circle-outline'
+              }
               size={22}
             />
           </Pressable>

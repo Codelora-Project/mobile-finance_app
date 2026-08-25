@@ -99,10 +99,7 @@ export const HomeQuickLogModal = memo(function HomeQuickLogModal({
             <View style={styles.modalHeaderRow}>
               <View style={{ flex: 1 }}>
                 <Text
-                  style={[
-                    styles.modalTitle,
-                    { color: colors.textPrimary },
-                  ]}
+                  style={[styles.modalTitle, { color: colors.textPrimary }]}
                 >
                   {t.home.quickLogModalTitle}
                 </Text>
@@ -156,9 +153,7 @@ export const HomeQuickLogModal = memo(function HomeQuickLogModal({
                         : isDark
                           ? colors.surfaceSecondary
                           : '#F8FAFC',
-                      borderColor: isSelected
-                        ? colors.primary
-                        : colors.border,
+                      borderColor: isSelected ? colors.primary : colors.border,
                     },
                     pressed && styles.pressed,
                   ]}
@@ -192,9 +187,7 @@ export const HomeQuickLogModal = memo(function HomeQuickLogModal({
                   </View>
 
                   <MaterialCommunityIcons
-                    color={
-                      isSelected ? colors.primary : colors.textSecondary
-                    }
+                    color={isSelected ? colors.primary : colors.textSecondary}
                     name={
                       isSelected
                         ? 'checkbox-marked-circle'
@@ -212,10 +205,7 @@ export const HomeQuickLogModal = memo(function HomeQuickLogModal({
             <Pressable
               accessibilityRole="button"
               onPress={onReset}
-              style={[
-                styles.modalResetBtn,
-                { borderColor: colors.border },
-              ]}
+              style={[styles.modalResetBtn, { borderColor: colors.border }]}
             >
               <Text
                 style={[

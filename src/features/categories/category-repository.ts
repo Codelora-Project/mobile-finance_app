@@ -1,5 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { withIntegrityCheckedTransaction } from '@/db/transactions';
 import { createCodedError } from '@/lib/errors';
 import { normalizeSearchText, normalizeText } from '@/lib/strings';
 
@@ -231,7 +232,7 @@ export async function updateCategory(
 export async function deleteCategory(database: SQLiteDatabase, id: number) {
   let reassignedTransactions = 0;
 
-  await database.withExclusiveTransactionAsync(async (transaction) => {
+  await withIntegrityCheckedTransaction(database, async (transaction) => {
     const category = await requireCategory(transaction, id);
     if (category.is_fallback === 1) {
       throw createCodedError(
@@ -269,6 +270,18 @@ export async function deleteCategory(database: SQLiteDatabase, id: number) {
       id,
     );
     reassignedTransactions = updateResult.changes;
+    await transaction.runAsync(
+      `UPDATE transactions
+       SET transfer_fee_category_id = ?, updated_at = ?
+       WHERE transfer_fee_category_id = ?`,
+      fallback.id,
+      timestamp,
+      id,
+    );
+    await transaction.runAsync(
+      'DELETE FROM category_budgets WHERE category_id = ?',
+      id,
+    );
     await transaction.runAsync(
       `DELETE FROM categories
        WHERE id = ? AND is_default = 0 AND is_fallback = 0`,

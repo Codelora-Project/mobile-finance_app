@@ -1,12 +1,13 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { seedDefaultsInTransaction } from '@/db/seeds';
+import { withIntegrityCheckedTransaction } from '@/db/transactions';
 import { removeCachedClaimPdfs } from '@/features/claims/claim-pdf';
 import { removeAllReceiptFiles } from '@/features/receipts/receipt-storage';
 import { createCodedError } from '@/lib/errors';
 
 async function resetDatabase(database: SQLiteDatabase) {
-  await database.withExclusiveTransactionAsync(async (transaction) => {
+  await withIntegrityCheckedTransaction(database, async (transaction) => {
     await transaction.execAsync(`
       DELETE FROM goal_transactions;
       DELETE FROM savings_goals;
@@ -15,8 +16,8 @@ async function resetDatabase(database: SQLiteDatabase) {
       DELETE FROM receipts;
       DELETE FROM claims;
       DELETE FROM transactions;
-      DELETE FROM categories WHERE is_default = 0;
-      DELETE FROM payment_methods WHERE is_default = 0;
+      DELETE FROM payment_methods;
+      DELETE FROM categories;
       DELETE FROM app_settings;
     `);
     await seedDefaultsInTransaction(transaction);

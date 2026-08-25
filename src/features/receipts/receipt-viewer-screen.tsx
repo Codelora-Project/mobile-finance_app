@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -38,12 +38,15 @@ export function ReceiptViewerScreen({
   const [receipt, setReceipt] = useState<ViewableReceipt | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const loadRequestRef = useRef(0);
 
   const load = useCallback(async () => {
+    const requestId = ++loadRequestRef.current;
     setLoading(true);
     setError(null);
     try {
       const transaction = await getTransaction(database, transactionId);
+      if (requestId !== loadRequestRef.current) return;
       if (!transaction?.receipt) {
         setReceipt(null);
         setError('This transaction has no receipt.');
@@ -59,16 +62,23 @@ export function ReceiptViewerScreen({
         uri: getReceiptFileUri(transaction.receipt.storageKey),
       });
     } catch (loadError) {
-      setReceipt(null);
-      setError(mapError(loadError, 'FILE_OPERATION_FAILED').message);
+      if (requestId === loadRequestRef.current) {
+        setReceipt(null);
+        setError(mapError(loadError, 'FILE_OPERATION_FAILED').message);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestRef.current) {
+        setLoading(false);
+      }
     }
   }, [database, transactionId]);
 
   useFocusEffect(
     useCallback(() => {
       void load();
+      return () => {
+        loadRequestRef.current += 1;
+      };
     }, [load]),
   );
 
@@ -111,6 +121,7 @@ export function ReceiptViewerScreen({
             label="Edit transaction"
             onPress={() => router.push(`/transactions/${transactionId}/edit`)}
           />
+          <AppButton label="Try again" onPress={() => void load()} />
           <AppButton
             label="Back"
             onPress={() => router.back()}

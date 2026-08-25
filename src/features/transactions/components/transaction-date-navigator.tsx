@@ -19,114 +19,108 @@ export type TransactionDateNavigatorProps = {
   secondaryLabel: string;
 };
 
-export const TransactionDateNavigator = memo(
-  function TransactionDateNavigator({
-    isAllTime,
-    language,
-    onNextPeriod,
-    onPrevPeriod,
-    onToggleAllTime,
-    period,
-    primaryLabel,
-    secondaryLabel,
-  }: TransactionDateNavigatorProps) {
-    const { colors, isDark } = useTheme();
+export const TransactionDateNavigator = memo(function TransactionDateNavigator({
+  isAllTime,
+  language,
+  onNextPeriod,
+  onPrevPeriod,
+  onToggleAllTime,
+  period,
+  primaryLabel,
+  secondaryLabel,
+}: TransactionDateNavigatorProps) {
+  const { colors, isDark } = useTheme();
 
-    return (
-      <View style={styles.container}>
-        <View
-          style={[
-            styles.cardRoot,
+  return (
+    <View style={styles.container}>
+      <View
+        style={[
+          styles.cardRoot,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          },
+        ]}
+      >
+        {/* Previous Period Button */}
+        <Pressable
+          accessibilityLabel={
+            language === 'id' ? 'Bulan Sebelumnya' : 'Previous Period'
+          }
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={onPrevPeriod}
+          style={({ pressed }) => [
+            styles.navBtn,
             {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC',
             },
+            pressed ? { opacity: 0.6 } : null,
           ]}
         >
-          {/* Previous Period Button */}
-          <Pressable
-            accessibilityLabel={
-              language === 'id' ? 'Bulan Sebelumnya' : 'Previous Period'
-            }
-            accessibilityRole="button"
-            hitSlop={8}
-            onPress={onPrevPeriod}
-            style={({ pressed }) => [
-              styles.navBtn,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(255, 255, 255, 0.05)'
-                  : '#F8FAFC',
-              },
-              pressed ? { opacity: 0.6 } : null,
-            ]}
-          >
-            <MaterialCommunityIcons
-              color={colors.textSecondary}
-              name="chevron-left"
-              size={20}
-            />
-          </Pressable>
+          <MaterialCommunityIcons
+            color={colors.textSecondary}
+            name="chevron-left"
+            size={20}
+          />
+        </Pressable>
 
-          {/* Period Title & Subtitle */}
-          <Pressable
-            accessibilityLabel={primaryLabel}
-            accessibilityRole="button"
-            onPress={onToggleAllTime}
-            style={styles.centerCol}
+        {/* Period Title & Subtitle */}
+        <Pressable
+          accessibilityLabel={primaryLabel}
+          accessibilityRole="button"
+          onPress={onToggleAllTime}
+          style={styles.centerCol}
+        >
+          <Text
+            numberOfLines={1}
+            style={[styles.primaryText, { color: colors.textPrimary }]}
           >
-            <Text
-              numberOfLines={1}
-              style={[styles.primaryText, { color: colors.textPrimary }]}
-            >
-              {isAllTime
-                ? language === 'id'
-                  ? 'Semua Waktu'
-                  : 'All Time'
-                : primaryLabel}
-            </Text>
-            <Text
-              numberOfLines={1}
-              style={[styles.secondaryText, { color: colors.textMuted }]}
-            >
-              {isAllTime
-                ? language === 'id'
-                  ? 'Sentuh untuk filter per periode'
-                  : 'Tap to view by period'
-                : secondaryLabel ||
-                  (language === 'id' ? 'Semua waktu' : 'All time')}
-            </Text>
-          </Pressable>
+            {isAllTime
+              ? language === 'id'
+                ? 'Semua Waktu'
+                : 'All Time'
+              : primaryLabel}
+          </Text>
+          <Text
+            numberOfLines={1}
+            style={[styles.secondaryText, { color: colors.textMuted }]}
+          >
+            {isAllTime
+              ? language === 'id'
+                ? 'Sentuh untuk filter per periode'
+                : 'Tap to view by period'
+              : secondaryLabel ||
+                (language === 'id' ? 'Semua waktu' : 'All time')}
+          </Text>
+        </Pressable>
 
-          {/* Next Period Button */}
-          <Pressable
-            accessibilityLabel={
-              language === 'id' ? 'Bulan Berikutnya' : 'Next Period'
-            }
-            accessibilityRole="button"
-            hitSlop={8}
-            onPress={onNextPeriod}
-            style={({ pressed }) => [
-              styles.navBtn,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(255, 255, 255, 0.05)'
-                  : '#F8FAFC',
-              },
-              pressed ? { opacity: 0.6 } : null,
-            ]}
-          >
-            <MaterialCommunityIcons
-              color={colors.textSecondary}
-              name="chevron-right"
-              size={20}
-            />
-          </Pressable>
-        </View>
+        {/* Next Period Button */}
+        <Pressable
+          accessibilityLabel={
+            language === 'id' ? 'Bulan Berikutnya' : 'Next Period'
+          }
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={onNextPeriod}
+          style={({ pressed }) => [
+            styles.navBtn,
+            {
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC',
+            },
+            pressed ? { opacity: 0.6 } : null,
+          ]}
+        >
+          <MaterialCommunityIcons
+            color={colors.textSecondary}
+            name="chevron-right"
+            size={20}
+          />
+        </Pressable>
       </View>
-    );
-  },
-);
+    </View>
+  );
+});
 
 const styles = StyleSheet.create({
   cardRoot: {

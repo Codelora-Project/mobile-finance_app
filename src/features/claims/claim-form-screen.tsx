@@ -1,9 +1,4 @@
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-} from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
 import { ClaimFormHeader } from '@/features/claims/components/claim-form-header';

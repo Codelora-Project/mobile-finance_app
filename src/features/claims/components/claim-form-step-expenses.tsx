@@ -54,9 +54,7 @@ export const ClaimFormStepExpenses = memo(function ClaimFormStepExpenses({
                   {expense.categoryName} · {expense.localDate}
                 </Text>
                 <Text style={styles.metadata}>
-                  {expense.hasReceipt
-                    ? 'Receipt attached'
-                    : 'Receipt missing'}
+                  {expense.hasReceipt ? 'Receipt attached' : 'Receipt missing'}
                 </Text>
               </View>
               <Text style={styles.expenseAmount}>
@@ -66,13 +64,8 @@ export const ClaimFormStepExpenses = memo(function ClaimFormStepExpenses({
           );
         })
       )}
-      <Text style={styles.selectionSummary}>
-        {selectedIds.length} selected
-      </Text>
-      <AppButton
-        label="Review Claim"
-        onPress={onNext}
-      />
+      <Text style={styles.selectionSummary}>{selectedIds.length} selected</Text>
+      <AppButton label="Review Claim" onPress={onNext} />
     </View>
   );
 });

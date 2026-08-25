@@ -33,6 +33,7 @@ class ResetDatabase {
   claimItems = 2;
   claims = 1;
   currency = 'IDR';
+  defaultWalletAccountNumber: string | null = '1234567890';
   executedSql: string[] = [];
   goalTransactions = 2;
   paymentSystemKeys = new Set(['cash', 'custom_method']);
@@ -69,8 +70,11 @@ class ResetDatabase {
     this.receipts = 0;
     this.claims = 0;
     this.transactions = 0;
-    this.categorySystemKeys.delete('custom_category');
-    this.paymentSystemKeys.delete('custom_method');
+    if (source.includes('DELETE FROM payment_methods;')) {
+      this.defaultWalletAccountNumber = null;
+    }
+    this.categorySystemKeys.clear();
+    this.paymentSystemKeys.clear();
     this.settings.clear();
   }
 
@@ -133,6 +137,7 @@ describe('settings repository', () => {
     expect(database.receipts).toBe(0);
     expect(database.claims).toBe(0);
     expect(database.transactions).toBe(0);
+    expect(database.defaultWalletAccountNumber).toBeNull();
     expect(database.categorySystemKeys).toEqual(
       new Set(defaultCategories.map((category) => category.systemKey)),
     );
@@ -150,9 +155,8 @@ describe('settings repository', () => {
     expect(database.executedSql[0]).toContain('DELETE FROM savings_goals');
     expect(database.executedSql[0]).toContain('DELETE FROM category_budgets');
     expect(database.executedSql[0]).toContain('DELETE FROM claim_items');
-    expect(database.executedSql[0]).toContain(
-      'DELETE FROM categories WHERE is_default = 0',
-    );
+    expect(database.executedSql[0]).toContain('DELETE FROM payment_methods');
+    expect(database.executedSql[0]).toContain('DELETE FROM categories');
     expect(mockRemoveAllReceiptFiles).toHaveBeenCalledTimes(1);
     expect(mockRemoveCachedClaimPdfs).toHaveBeenCalledTimes(1);
   });

@@ -1,6 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useSQLiteContext } from 'expo-sqlite';
-import React, { memo, useEffect, useState } from 'react';
+import React, { memo, useEffect, useRef, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -16,7 +16,11 @@ import { reconcileWalletBalance } from '@/features/wallets/wallet-repository';
 import type { Wallet } from '@/features/wallets/wallet-types';
 import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
-import { formatMoney } from '@/lib/money';
+import {
+  formatMoney,
+  formatMoneyInput,
+  parseSignedMoneyInput,
+} from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -41,7 +45,8 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
 }: WalletReconcileModalProps) {
   const database = useSQLiteContext();
   const { colors, isDark } = useTheme();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+  const savingRef = useRef(false);
 
   const [actualBalanceInput, setActualBalanceInput] = useState('');
   const [note, setNote] = useState('');
@@ -50,29 +55,44 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
 
   useEffect(() => {
     if (visible && wallet) {
-      setActualBalanceInput(String(wallet.currentBalanceMinor));
+      setActualBalanceInput(
+        formatMoneyInput(wallet.currentBalanceMinor, currencyCode),
+      );
       setNote('');
       setError(null);
     }
-  }, [visible, wallet]);
+  }, [currencyCode, visible, wallet]);
 
   if (!wallet) return null;
 
+  const walletId = wallet.id;
   const currentBalance = wallet.currentBalanceMinor;
-  const isNegativeInput = actualBalanceInput.trim().startsWith('-');
-  const digitsOnly = actualBalanceInput.replace(/[^0-9]/g, '');
-  const parsedActual = (isNegativeInput ? -1 : 1) * (Number(digitsOnly) || 0);
-  const difference = parsedActual - currentBalance;
+  let parsedActual: number | null = null;
+  try {
+    parsedActual = parseSignedMoneyInput(actualBalanceInput, currencyCode);
+  } catch {
+    // The field-level error is shown when the user submits the form.
+  }
+  const difference = parsedActual === null ? 0 : parsedActual - currentBalance;
 
   async function handleSave() {
-    if (saving) return;
+    if (savingRef.current) return;
+    if (parsedActual === null) {
+      setError(
+        language === 'id'
+          ? 'Saldo aktual tidak valid.'
+          : 'The actual balance is invalid.',
+      );
+      return;
+    }
+    savingRef.current = true;
     setSaving(true);
     setError(null);
 
     try {
       await reconcileWalletBalance(
         database,
-        wallet!.id,
+        walletId,
         parsedActual,
         currencyCode,
         note.trim() || undefined,
@@ -83,6 +103,7 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
       const mapped = mapError(caughtError, 'DATABASE_WRITE_FAILED');
       setError(mapped.message);
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   }
@@ -92,7 +113,9 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
   return (
     <Modal
       animationType="slide"
-      onRequestClose={onClose}
+      onRequestClose={() => {
+        if (!savingRef.current) onClose();
+      }}
       transparent
       visible={visible}
     >
@@ -140,10 +163,13 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
             </View>
 
             <Pressable
-              accessibilityLabel="Tutup"
+              accessibilityLabel={language === 'id' ? 'Tutup' : 'Close'}
               accessibilityRole="button"
+              disabled={saving}
               hitSlop={8}
-              onPress={onClose}
+              onPress={() => {
+                if (!savingRef.current) onClose();
+              }}
               style={styles.closeBtn}
             >
               <MaterialCommunityIcons
@@ -168,14 +194,14 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
               style={[
                 styles.balanceCard,
                 {
-                  backgroundColor: isDark
-                    ? colors.surfaceSecondary
-                    : '#F8FAFC',
+                  backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
                   borderColor: colors.border,
                 },
               ]}
             >
-              <Text style={[styles.balanceCardLabel, { color: colors.textMuted }]}>
+              <Text
+                style={[styles.balanceCardLabel, { color: colors.textMuted }]}
+              >
                 {t.wallets.recordedBalance}
               </Text>
               <Text
@@ -206,7 +232,7 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
                 </Text>
                 <TextInput
                   accessibilityLabel={t.wallets.actualBalanceLabel}
-                  keyboardType="numeric"
+                  keyboardType="decimal-pad"
                   onChangeText={setActualBalanceInput}
                   placeholder={t.wallets.actualBalancePlaceholder}
                   placeholderTextColor={colors.textMuted}
@@ -227,18 +253,18 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
                         ? 'rgba(16, 185, 129, 0.15)'
                         : '#DCFCE7'
                       : difference < 0
-                      ? isDark
-                        ? 'rgba(239, 68, 68, 0.15)'
-                        : '#FEE2E2'
-                      : isDark
-                      ? colors.surfaceSecondary
-                      : '#EFF6FF',
+                        ? isDark
+                          ? 'rgba(239, 68, 68, 0.15)'
+                          : '#FEE2E2'
+                        : isDark
+                          ? colors.surfaceSecondary
+                          : '#EFF6FF',
                   borderColor:
                     difference > 0
                       ? '#10B981'
                       : difference < 0
-                      ? '#EF4444'
-                      : colors.primary,
+                        ? '#EF4444'
+                        : colors.primary,
                 },
               ]}
             >
@@ -248,15 +274,15 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
                     difference > 0
                       ? '#10B981'
                       : difference < 0
-                      ? '#EF4444'
-                      : colors.primary
+                        ? '#EF4444'
+                        : colors.primary
                   }
                   name={
                     difference > 0
                       ? 'arrow-up-circle-outline'
                       : difference < 0
-                      ? 'arrow-down-circle-outline'
-                      : 'check-circle-outline'
+                        ? 'arrow-down-circle-outline'
+                        : 'check-circle-outline'
                   }
                   size={20}
                 />
@@ -268,8 +294,8 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
                         difference > 0
                           ? '#10B981'
                           : difference < 0
-                          ? '#EF4444'
-                          : colors.primary,
+                            ? '#EF4444'
+                            : colors.primary,
                     },
                   ]}
                 >
@@ -284,18 +310,24 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
                       difference > 0
                         ? '#10B981'
                         : difference < 0
-                        ? '#EF4444'
-                        : colors.primary,
+                          ? '#EF4444'
+                          : colors.primary,
                   },
                 ]}
               >
                 {difference > 0 ? '+ ' : difference < 0 ? '− ' : ''}
                 {formatMoney(Math.abs(difference), currencyCode)}
                 {difference > 0
-                  ? ' (Pemasukan Penyesuaian)'
+                  ? language === 'id'
+                    ? ' (Pemasukan Penyesuaian)'
+                    : ' (Adjustment income)'
                   : difference < 0
-                  ? ' (Pengeluaran Penyesuaian)'
-                  : ' (Saldo Pas)'}
+                    ? language === 'id'
+                      ? ' (Pengeluaran Penyesuaian)'
+                      : ' (Adjustment expense)'
+                    : language === 'id'
+                      ? ' (Saldo Pas)'
+                      : ' (Balance matched)'}
               </Text>
             </View>
 

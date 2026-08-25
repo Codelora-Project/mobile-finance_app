@@ -43,7 +43,7 @@ import {
 import { useCurrency } from '@/lib/currency/currency-context';
 import { isCodedError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
-import { parseMoneyInput } from '@/lib/money';
+import { formatMoneyInput, parseMoneyInput } from '@/lib/money';
 
 export type {
   FormErrors,
@@ -296,17 +296,31 @@ export function useManualTransactionViewModel({
     setErrors((c) => ({ ...c, transferFeeAmount: undefined }));
   }, []);
 
-  const handleAddIncrement = useCallback((amountToAdd: number) => {
-    setForm((current) => {
-      const currentVal = Number(current.amount.replace(/[^0-9]/g, '')) || 0;
-      const nextVal = currentVal + amountToAdd;
-      return {
-        ...current,
-        amount: String(nextVal),
-      };
-    });
-    setErrors((c) => ({ ...c, amount: undefined }));
-  }, []);
+  const handleAddIncrement = useCallback(
+    (amountToAdd: number) => {
+      setForm((current) => {
+        try {
+          const currentMinor = current.amount.trim()
+            ? parseMoneyInput(current.amount, currencyCode)
+            : 0;
+          const incrementMinor = parseMoneyInput(
+            String(amountToAdd),
+            currencyCode,
+          );
+          const nextMinor = currentMinor + incrementMinor;
+          if (!Number.isSafeInteger(nextMinor)) return current;
+          return {
+            ...current,
+            amount: formatMoneyInput(nextMinor, currencyCode),
+          };
+        } catch {
+          return current;
+        }
+      });
+      setErrors((c) => ({ ...c, amount: undefined }));
+    },
+    [currencyCode],
+  );
 
   const handleClearAmount = useCallback(() => {
     setForm((current) => ({ ...current, amount: '' }));
@@ -341,6 +355,7 @@ export function useManualTransactionViewModel({
 
   const persistTransaction = useCallback(
     async (input: SaveTransactionInput) => {
+      if (savingRef.current || deletingRef.current) return;
       savingRef.current = true;
       setSaving(true);
       setErrors({});
@@ -405,7 +420,8 @@ export function useManualTransactionViewModel({
   }, []);
 
   const handleConfirmTransfer = useCallback(async () => {
-    if (!pendingTransferInput) return;
+    if (savingRef.current || deletingRef.current || !pendingTransferInput)
+      return;
     const input = pendingTransferInput;
     setPendingTransferInput(null);
     await persistTransaction(input);

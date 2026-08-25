@@ -1,8 +1,15 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
+import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
 import { ClaimListRowItem } from '@/features/claims/components/claim-list-row-item';
 import { ClaimsEmptyState } from '@/features/claims/components/claims-empty-state';
@@ -30,22 +37,34 @@ export function ClaimsScreen() {
   const [claims, setClaims] = useState<readonly ClaimSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const loadRequestRef = useRef(0);
 
   const load = useCallback(async () => {
+    const requestId = ++loadRequestRef.current;
     setLoading(true);
     setError(null);
     try {
-      setClaims(await listClaims(database, status));
+      const nextClaims = await listClaims(database, status);
+      if (requestId === loadRequestRef.current) {
+        setClaims(nextClaims);
+      }
     } catch (loadError) {
-      setError(mapError(loadError, 'DATABASE_WRITE_FAILED').message);
+      if (requestId === loadRequestRef.current) {
+        setError(mapError(loadError, 'DATABASE_WRITE_FAILED').message);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestRef.current) {
+        setLoading(false);
+      }
     }
   }, [database, status]);
 
   useFocusEffect(
     useCallback(() => {
       void load();
+      return () => {
+        loadRequestRef.current += 1;
+      };
     }, [load]),
   );
 
@@ -80,7 +99,7 @@ export function ClaimsScreen() {
           {feedback}
         </Text>
       ) : null}
-      {error ? (
+      {error && claims.length > 0 ? (
         <Text
           accessibilityLiveRegion="assertive"
           style={[styles.error, { color: colors.destructive }]}
@@ -90,7 +109,17 @@ export function ClaimsScreen() {
       ) : null}
 
       {/* 4. Claims List */}
-      {loading && claims.length === 0 ? (
+      {error && claims.length === 0 ? (
+        <View style={styles.state}>
+          <Text
+            accessibilityLiveRegion="assertive"
+            style={[styles.error, { color: colors.destructive }]}
+          >
+            {error}
+          </Text>
+          <AppButton label="Try again" onPress={() => void load()} />
+        </View>
+      ) : loading && claims.length === 0 ? (
         <View style={styles.state}>
           <ActivityIndicator color={colors.primary} size="large" />
           <Text style={[styles.stateText, { color: colors.textSecondary }]}>

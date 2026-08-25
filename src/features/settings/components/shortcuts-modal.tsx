@@ -1,5 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import React, { memo, useCallback, useState } from 'react';
+import React, { memo, useCallback, useEffect, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -13,7 +13,7 @@ import { Screen } from '@/components/ui/screen';
 import type { SupportedCurrencyCode } from '@/features/settings/settings-repository';
 import { QuickShortcutsBar } from '@/features/transactions/components/quick-shortcuts-bar';
 import type { TranslationSchema } from '@/lib/i18n/translations';
-import { formatMoney, formatShortcutLabel } from '@/lib/money';
+import { formatMoney, formatShortcutLabel, parseMoneyInput } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -43,22 +43,33 @@ export const ShortcutsModal = memo(function ShortcutsModal({
   visible,
 }: ShortcutsModalProps) {
   const { colors, isDark } = useTheme();
-  const [previewAmount, setPreviewAmount] = useState(0);
+  const [previewAmountMinor, setPreviewAmountMinor] = useState(0);
 
-  const handlePreviewAdd = useCallback((amount: number) => {
-    setPreviewAmount((prev) => prev + amount);
-  }, []);
+  useEffect(() => {
+    if (visible) setPreviewAmountMinor(0);
+  }, [currencyCode, visible]);
+
+  const handlePreviewAdd = useCallback(
+    (amount: number) => {
+      try {
+        const incrementMinor = parseMoneyInput(String(amount), currencyCode);
+        setPreviewAmountMinor((previous) => {
+          const next = previous + incrementMinor;
+          return Number.isSafeInteger(next) ? next : previous;
+        });
+      } catch {
+        // Stored shortcuts are validated before this preview is rendered.
+      }
+    },
+    [currencyCode],
+  );
 
   const handlePreviewReset = useCallback(() => {
-    setPreviewAmount(0);
+    setPreviewAmountMinor(0);
   }, []);
 
   return (
-    <Modal
-      animationType="slide"
-      onRequestClose={onClose}
-      visible={visible}
-    >
+    <Modal animationType="slide" onRequestClose={onClose} visible={visible}>
       <Screen>
         {/* Modal Header */}
         <View
@@ -76,9 +87,7 @@ export const ShortcutsModal = memo(function ShortcutsModal({
               name="flash"
               size={22}
             />
-            <Text
-              style={[styles.modalTitle, { color: colors.textPrimary }]}
-            >
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
               {t.settings.shortcutsSection}
             </Text>
           </View>
@@ -106,9 +115,7 @@ export const ShortcutsModal = memo(function ShortcutsModal({
             style={[
               styles.infoBanner,
               {
-                backgroundColor: isDark
-                  ? colors.surfaceSecondary
-                  : '#EFF6FF',
+                backgroundColor: isDark ? colors.surfaceSecondary : '#EFF6FF',
                 borderColor: isDark ? colors.border : '#BFDBFE',
               },
             ]}
@@ -155,19 +162,15 @@ export const ShortcutsModal = memo(function ShortcutsModal({
                   { color: colors.textPrimary },
                 ]}
               >
-                {previewAmount > 0
-                  ? formatMoney(previewAmount, currencyCode)
-                  : `${currencySymbol} 0`}
+                {formatMoney(previewAmountMinor, currencyCode)}
               </Text>
             </View>
 
             <Text
-              style={[
-                styles.previewHelpText,
-                { color: colors.textSecondary },
-              ]}
+              style={[styles.previewHelpText, { color: colors.textSecondary }]}
             >
-              {t.settings.previewAmountLabel} Ketuk chip di bawah untuk mencoba respons tombol:
+              {t.settings.previewAmountLabel} Ketuk chip di bawah untuk mencoba
+              respons tombol:
             </Text>
 
             <QuickShortcutsBar
@@ -190,18 +193,12 @@ export const ShortcutsModal = memo(function ShortcutsModal({
           >
             <View style={styles.sectionHeaderRow}>
               <Text
-                style={[
-                  styles.sectionCardTitle,
-                  { color: colors.textPrimary },
-                ]}
+                style={[styles.sectionCardTitle, { color: colors.textPrimary }]}
               >
                 {t.settings.editShortcuts}
               </Text>
               <Text
-                style={[
-                  styles.countBadgeText,
-                  { color: colors.textSecondary },
-                ]}
+                style={[styles.countBadgeText, { color: colors.textSecondary }]}
               >
                 {shortcuts.length}/8
               </Text>
@@ -223,10 +220,7 @@ export const ShortcutsModal = memo(function ShortcutsModal({
                   ]}
                 >
                   <Text
-                    style={[
-                      styles.shortcutPillText,
-                      { color: colors.primary },
-                    ]}
+                    style={[styles.shortcutPillText, { color: colors.primary }]}
                   >
                     {formatShortcutLabel(amount, currencySymbol)}
                   </Text>
@@ -269,10 +263,7 @@ export const ShortcutsModal = memo(function ShortcutsModal({
                     size={18}
                   />
                   <Text
-                    style={[
-                      styles.addShortcutText,
-                      { color: colors.primary },
-                    ]}
+                    style={[styles.addShortcutText, { color: colors.primary }]}
                   >
                     {t.settings.addShortcut}
                   </Text>

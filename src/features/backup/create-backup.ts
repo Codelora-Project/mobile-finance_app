@@ -15,7 +15,9 @@ import type {
   BackupStats,
   BackupTransaction,
 } from '@/features/backup/backup-types';
+import { MAX_RECEIPT_BASE64_LENGTH } from '@/features/backup/backup-validation';
 import { readReceiptBase64 } from '@/features/receipts/receipt-storage';
+import { createCodedError } from '@/lib/errors';
 
 export async function fetchBackupStats(
   database: SQLiteDatabase,
@@ -98,10 +100,22 @@ export async function createBackupPayload(
   ]);
 
   const receipts = await Promise.all(
-    receiptRows.map(async (receipt) => ({
-      ...receipt,
-      file_base64: await readReceiptBase64(receipt.storage_key),
-    })),
+    receiptRows.map(async (receipt) => {
+      const fileBase64 = await readReceiptBase64(receipt.storage_key);
+      if (!fileBase64) {
+        throw createCodedError(
+          'FILE_OPERATION_FAILED',
+          'Backup could not be created because a receipt image is missing.',
+        );
+      }
+      if (fileBase64.length > MAX_RECEIPT_BASE64_LENGTH) {
+        throw createCodedError(
+          'FILE_OPERATION_FAILED',
+          'Backup could not be created because a receipt image is too large.',
+        );
+      }
+      return { ...receipt, file_base64: fileBase64 };
+    }),
   );
 
   return {

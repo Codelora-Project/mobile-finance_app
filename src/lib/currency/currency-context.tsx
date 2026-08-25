@@ -18,7 +18,7 @@ type CurrencyContextValue = Readonly<{
   currencyCode: SupportedCurrencyCode;
   currencyName: string;
   currencySymbol: string;
-  setCurrency: (code: SupportedCurrencyCode) => void;
+  setCurrency: (code: SupportedCurrencyCode) => Promise<void>;
 }>;
 
 const CurrencyContext = createContext<CurrencyContextValue | null>(null);
@@ -45,11 +45,12 @@ export function CurrencyProvider({
   }
 
   const setCurrency = useCallback(
-    (nextCode: SupportedCurrencyCode) => {
+    async (nextCode: SupportedCurrencyCode) => {
+      if (nextCode === currencyCode) return;
+      await onCurrencyChange?.(nextCode);
       setCurrencyCodeState(nextCode);
-      void onCurrencyChange?.(nextCode);
     },
-    [onCurrencyChange],
+    [currencyCode, onCurrencyChange],
   );
 
   const matched = useMemo(() => {
@@ -85,7 +86,7 @@ export function useCurrency(): CurrencyContextValue {
       currencyCode: 'IDR',
       currencyName: 'Indonesian Rupiah',
       currencySymbol: 'Rp',
-      setCurrency: () => {},
+      setCurrency: async () => {},
     };
   }
   return context;

@@ -1,10 +1,5 @@
 export type AccountType =
-  | 'cash'
-  | 'bank'
-  | 'ewallet'
-  | 'investment'
-  | 'credit_card'
-  | 'other';
+  'cash' | 'bank' | 'ewallet' | 'investment' | 'credit_card' | 'other';
 
 export type Wallet = {
   id: number;

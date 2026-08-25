@@ -39,8 +39,8 @@ export const DetailActionBar = memo(function DetailActionBar({
       ? 'Bagikan Struk'
       : 'Share Receipt'
     : language === 'id'
-    ? 'Bagikan Slip'
-    : 'Share Slip';
+      ? 'Bagikan Slip'
+      : 'Share Slip';
 
   return (
     <View style={styles.container}>
@@ -104,9 +104,7 @@ export const DetailActionBar = memo(function DetailActionBar({
               name="pencil-outline"
               size={18}
             />
-            <Text
-              style={[styles.actionBtnText, { color: colors.textPrimary }]}
-            >
+            <Text style={[styles.actionBtnText, { color: colors.textPrimary }]}>
               {t.common.edit}
             </Text>
           </Pressable>

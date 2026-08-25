@@ -49,6 +49,13 @@ export function normalizeTransactionInput(
   }
   if (input.type === 'transfer') {
     if (
+      !input.paymentMethodId ||
+      !Number.isSafeInteger(input.paymentMethodId) ||
+      input.paymentMethodId <= 0
+    ) {
+      throw createCodedError('VALIDATION_FAILED', 'Choose a source wallet.');
+    }
+    if (
       !input.transferToPaymentMethodId ||
       !Number.isSafeInteger(input.transferToPaymentMethodId) ||
       input.transferToPaymentMethodId <= 0
@@ -157,6 +164,10 @@ export type NormalizedTransactionInput = ReturnType<
 export async function validateTransactionReferences(
   database: SQLiteDatabase,
   input: NormalizedTransactionInput,
+  options?: {
+    allowedArchivedPaymentMethodId?: number | null;
+    allowedArchivedTransferDestinationId?: number | null;
+  },
 ) {
   if (input.type !== 'transfer') {
     const category = await database.getFirstAsync<{
@@ -172,8 +183,11 @@ export async function validateTransactionReferences(
   }
 
   if (input.paymentMethodId !== null) {
-    const wallet = await database.getFirstAsync<{ id: number }>(
-      'SELECT id FROM payment_methods WHERE id = ?',
+    const wallet = await database.getFirstAsync<{
+      id: number;
+      is_archived: number;
+    }>(
+      'SELECT id, is_archived FROM payment_methods WHERE id = ?',
       input.paymentMethodId,
     );
     if (!wallet) {
@@ -182,17 +196,36 @@ export async function validateTransactionReferences(
         'Payment method no longer exists.',
       );
     }
+    if (
+      wallet.is_archived === 1 &&
+      options?.allowedArchivedPaymentMethodId !== input.paymentMethodId
+    ) {
+      throw createCodedError('VALIDATION_FAILED', 'Choose an active wallet.');
+    }
   }
 
   if (input.type === 'transfer' && input.transferToPaymentMethodId !== null) {
-    const targetWallet = await database.getFirstAsync<{ id: number }>(
-      'SELECT id FROM payment_methods WHERE id = ?',
+    const targetWallet = await database.getFirstAsync<{
+      id: number;
+      is_archived: number;
+    }>(
+      'SELECT id, is_archived FROM payment_methods WHERE id = ?',
       input.transferToPaymentMethodId,
     );
     if (!targetWallet) {
       throw createCodedError(
         'VALIDATION_FAILED',
         'Destination wallet no longer exists.',
+      );
+    }
+    if (
+      targetWallet.is_archived === 1 &&
+      options?.allowedArchivedTransferDestinationId !==
+        input.transferToPaymentMethodId
+    ) {
+      throw createCodedError(
+        'VALIDATION_FAILED',
+        'Choose an active destination wallet.',
       );
     }
   }

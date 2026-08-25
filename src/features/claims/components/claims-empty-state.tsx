@@ -32,10 +32,7 @@ export const ClaimsEmptyState = memo(function ClaimsEmptyState({
       </Text>
       {!hasStatusFilter ? (
         <View style={styles.emptyAction}>
-          <AppButton
-            label="Create Claim"
-            onPress={onCreateClaim}
-          />
+          <AppButton label="Create Claim" onPress={onCreateClaim} />
         </View>
       ) : null}
     </View>

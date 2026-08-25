@@ -1,5 +1,18 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { withIntegrityCheckedTransaction } from '@/db/transactions';
+import { createCodedError } from '@/lib/errors';
+
+function isValidQuickLogCategoryIds(value: unknown): value is number[] {
+  return (
+    Array.isArray(value) &&
+    value.length >= 1 &&
+    value.length <= 8 &&
+    value.every((id) => Number.isSafeInteger(id) && id > 0) &&
+    new Set(value).size === value.length
+  );
+}
+
 export async function getQuickLogCategoryIds(
   database: SQLiteDatabase,
 ): Promise<number[]> {
@@ -11,11 +24,7 @@ export async function getQuickLogCategoryIds(
   }
   try {
     const parsed = JSON.parse(row.value);
-    if (
-      Array.isArray(parsed) &&
-      parsed.length > 0 &&
-      parsed.every((id) => Number.isInteger(id))
-    ) {
+    if (isValidQuickLogCategoryIds(parsed)) {
       return parsed;
     }
   } catch {
@@ -29,6 +38,25 @@ export async function setQuickLogCategoryIds(
   categoryIds: number[],
   now = Date.now(),
 ): Promise<void> {
+  if (!isValidQuickLogCategoryIds(categoryIds)) {
+    throw createCodedError(
+      'VALIDATION_FAILED',
+      'Pilih 1 sampai 8 kategori catat cepat yang berbeda.',
+    );
+  }
+  const placeholders = categoryIds.map(() => '?').join(', ');
+  const existing = await database.getFirstAsync<{ total: number }>(
+    `SELECT COUNT(*) AS total
+     FROM categories
+     WHERE type = 'expense' AND id IN (${placeholders})`,
+    ...categoryIds,
+  );
+  if (existing?.total !== categoryIds.length) {
+    throw createCodedError(
+      'VALIDATION_FAILED',
+      'Satu atau beberapa kategori catat cepat sudah tidak tersedia.',
+    );
+  }
   const value = JSON.stringify(categoryIds);
   await database.runAsync(
     `INSERT INTO app_settings (key, value, updated_at)
@@ -72,42 +100,36 @@ export async function setHomeDisplayPreferences(
   prefs: Partial<HomeDisplayPreferences>,
   now = Date.now(),
 ): Promise<void> {
-  const queries: Promise<unknown>[] = [];
-  if (prefs.showWalletChips !== undefined) {
-    queries.push(
-      database.runAsync(
+  await withIntegrityCheckedTransaction(database, async (transaction) => {
+    if (prefs.showWalletChips !== undefined) {
+      await transaction.runAsync(
         `INSERT INTO app_settings (key, value, updated_at)
          VALUES (?, ?, ?)
          ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
         'home_show_wallet_chips',
         prefs.showWalletChips ? '1' : '0',
         now,
-      ),
-    );
-  }
-  if (prefs.showQuickLog !== undefined) {
-    queries.push(
-      database.runAsync(
+      );
+    }
+    if (prefs.showQuickLog !== undefined) {
+      await transaction.runAsync(
         `INSERT INTO app_settings (key, value, updated_at)
          VALUES (?, ?, ?)
          ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
         'home_show_quick_log',
         prefs.showQuickLog ? '1' : '0',
         now,
-      ),
-    );
-  }
-  if (prefs.hideBalance !== undefined) {
-    queries.push(
-      database.runAsync(
+      );
+    }
+    if (prefs.hideBalance !== undefined) {
+      await transaction.runAsync(
         `INSERT INTO app_settings (key, value, updated_at)
          VALUES (?, ?, ?)
          ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
         'home_hide_balance',
         prefs.hideBalance ? '1' : '0',
         now,
-      ),
-    );
-  }
-  await Promise.all(queries);
+      );
+    }
+  });
 }

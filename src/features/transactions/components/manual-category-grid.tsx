@@ -63,20 +63,20 @@ export const ManualCategoryGrid = memo(function ManualCategoryGrid({
               ? colors.primaryLight
               : colors.primaryLight
             : isDark
-            ? colors.surfaceSecondary
-            : '#F1F5F9';
+              ? colors.surfaceSecondary
+              : '#F1F5F9';
 
           const badgeBorder = isSelected
             ? colors.primary
             : isDark
-            ? colors.border
-            : '#E2E8F0';
+              ? colors.border
+              : '#E2E8F0';
 
           const iconColor = isSelected
             ? colors.primary
             : isDark
-            ? '#94A3B8'
-            : '#475569';
+              ? '#94A3B8'
+              : '#475569';
 
           const textColor = isSelected ? colors.primary : colors.textPrimary;
 

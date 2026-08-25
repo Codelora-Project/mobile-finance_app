@@ -44,7 +44,9 @@ export const ManualReceiptModal = memo(function ManualReceiptModal({
             },
           ]}
         >
-          <Text style={[styles.actionSheetTitle, { color: colors.textPrimary }]}>
+          <Text
+            style={[styles.actionSheetTitle, { color: colors.textPrimary }]}
+          >
             {language === 'id' ? 'Foto Bukti / Struk' : 'Attach Photo Proof'}
           </Text>
           <AppButton

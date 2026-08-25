@@ -27,10 +27,7 @@ export const SettingsDangerZoneCard = memo(function SettingsDangerZoneCard({
     <View style={styles.sectionGroup}>
       <Text
         accessibilityRole="header"
-        style={[
-          styles.sectionHeaderLabel,
-          { color: colors.textSecondary },
-        ]}
+        style={[styles.sectionHeaderLabel, { color: colors.textSecondary }]}
       >
         {t.settings.dataSection}
       </Text>
@@ -74,10 +71,7 @@ export const SettingsDangerZoneCard = memo(function SettingsDangerZoneCard({
                 {t.settings.deleteAllData}
               </Text>
               <Text
-                style={[
-                  styles.navRowSubtitle,
-                  { color: colors.textSecondary },
-                ]}
+                style={[styles.navRowSubtitle, { color: colors.textSecondary }]}
               >
                 {language === 'id'
                   ? 'Hapus seluruh riwayat transaksi & reset data'

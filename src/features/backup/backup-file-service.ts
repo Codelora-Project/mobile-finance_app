@@ -5,8 +5,9 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { formatTimestampForFilename } from '@/features/backup/backup-utils';
 import {
-  parseBackupPayload,
   getBackupPayloadStats,
+  MAX_BACKUP_TEXT_LENGTH,
+  parseBackupPayload,
 } from '@/features/backup/backup-validation';
 import { createBackupPayload } from '@/features/backup/create-backup';
 import type {
@@ -27,6 +28,12 @@ export async function exportBackupToJsonFile(
 }> {
   const payload = await createBackupPayload(database);
   const jsonContent = JSON.stringify(payload, null, 2);
+  if (jsonContent.length > MAX_BACKUP_TEXT_LENGTH) {
+    throw createCodedError(
+      'FILE_OPERATION_FAILED',
+      'Ukuran backup melebihi batas 50 MB. Kurangi jumlah lampiran struk lalu coba lagi.',
+    );
+  }
   const directory = new Directory(Paths.cache, BACKUP_DIRECTORY);
   directory.create({ idempotent: true, intermediates: true });
 
@@ -71,6 +78,12 @@ export async function pickBackupFile(): Promise<{
   if (result.canceled || !result.assets?.length) return null;
 
   const asset = result.assets[0];
+  if (typeof asset.size === 'number' && asset.size > MAX_BACKUP_TEXT_LENGTH) {
+    throw createCodedError(
+      'VALIDATION_FAILED',
+      'Ukuran file backup melebihi batas 50 MB.',
+    );
+  }
   const file = new File(asset.uri);
   if (!file.exists) {
     throw createCodedError(
