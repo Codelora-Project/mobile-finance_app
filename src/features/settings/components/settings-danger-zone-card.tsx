@@ -21,7 +21,7 @@ export const SettingsDangerZoneCard = memo(function SettingsDangerZoneCard({
   resetting,
   t,
 }: SettingsDangerZoneCardProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <View style={styles.sectionGroup}>
@@ -37,7 +37,7 @@ export const SettingsDangerZoneCard = memo(function SettingsDangerZoneCard({
           styles.groupedCard,
           {
             backgroundColor: colors.surface,
-            borderColor: isDark ? '#7F1D1D' : '#FCA5A5',
+            borderColor: colors.destructive,
           },
         ]}
       >
@@ -56,18 +56,20 @@ export const SettingsDangerZoneCard = memo(function SettingsDangerZoneCard({
               style={[
                 styles.itemIconBadge,
                 {
-                  backgroundColor: isDark ? '#450A0A' : '#FEE2E2',
+                  backgroundColor: colors.expenseBackground,
                 },
               ]}
             >
               <MaterialCommunityIcons
-                color="#EF4444"
+                color={colors.destructive}
                 name="trash-can-outline"
                 size={19}
               />
             </View>
             <View>
-              <Text style={styles.dangerRowTitle}>
+              <Text
+                style={[styles.dangerRowTitle, { color: colors.destructive }]}
+              >
                 {t.settings.deleteAllData}
               </Text>
               <Text
@@ -80,7 +82,7 @@ export const SettingsDangerZoneCard = memo(function SettingsDangerZoneCard({
             </View>
           </View>
           <MaterialCommunityIcons
-            color="#EF4444"
+            color={colors.destructive}
             name="chevron-right"
             size={22}
           />
@@ -93,7 +95,6 @@ export const SettingsDangerZoneCard = memo(function SettingsDangerZoneCard({
 const styles = StyleSheet.create({
   dangerRowTitle: {
     ...typography.body,
-    color: '#EF4444',
     fontWeight: '700',
   },
   groupedCard: {

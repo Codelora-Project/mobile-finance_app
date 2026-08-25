@@ -365,12 +365,8 @@ export const AnalyticsTrendsTab = memo(function AnalyticsTrendsTab({
                     {
                       backgroundColor:
                         flow.netMinor >= 0
-                          ? isDark
-                            ? '#064E3B'
-                            : '#DCFCE7'
-                          : isDark
-                            ? '#3A171B'
-                            : '#FEE2E2',
+                          ? colors.incomeBackground
+                          : colors.expenseBackground,
                     },
                   ]}
                 >
@@ -380,12 +376,8 @@ export const AnalyticsTrendsTab = memo(function AnalyticsTrendsTab({
                       {
                         color:
                           flow.netMinor >= 0
-                            ? isDark
-                              ? '#34D399'
-                              : '#16A34A'
-                            : isDark
-                              ? '#FCA5A5'
-                              : '#DC2626',
+                            ? colors.positive
+                            : colors.destructive,
                       },
                     ]}
                   >

@@ -130,7 +130,7 @@ export const en = {
     loading: 'Loading settings…',
     // Theme Section
     themeSection: 'Appearance Theme',
-    themeDesc: 'Choose light mode, dark mode (OLED), or follow system.',
+    themeDesc: 'Choose light mode, dark mode, or follow system.',
     themeLight: 'Light',
     themeDark: 'Dark',
     themeSystem: 'Follow System',

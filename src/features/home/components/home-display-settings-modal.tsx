@@ -181,7 +181,7 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
                 onValueChange={onShowWalletChipsChange}
                 thumbColor="#FFFFFF"
                 trackColor={{
-                  false: isDark ? '#334155' : '#CBD5E1',
+                  false: isDark ? colors.surfaceSecondary : '#CBD5E1',
                   true: colors.primary,
                 }}
                 value={showWalletChips}
@@ -232,7 +232,7 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
                 onValueChange={onShowQuickLogChange}
                 thumbColor="#FFFFFF"
                 trackColor={{
-                  false: isDark ? '#334155' : '#CBD5E1',
+                  false: isDark ? colors.surfaceSecondary : '#CBD5E1',
                   true: colors.primary,
                 }}
                 value={showQuickLog}
@@ -283,7 +283,7 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
                 onValueChange={onHideBalanceChange}
                 thumbColor="#FFFFFF"
                 trackColor={{
-                  false: isDark ? '#334155' : '#CBD5E1',
+                  false: isDark ? colors.surfaceSecondary : '#CBD5E1',
                   true: colors.primary,
                 }}
                 value={hideBalance}

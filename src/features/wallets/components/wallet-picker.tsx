@@ -123,7 +123,11 @@ export function WalletPicker({
               <View
                 style={[
                   styles.iconBadge,
-                  { backgroundColor: isDark ? '#334155' : '#E2E8F0' },
+                  {
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : '#E2E8F0',
+                  },
                 ]}
               >
                 <MaterialCommunityIcons
@@ -205,7 +209,11 @@ export function WalletPicker({
                   <View
                     style={[
                       styles.trackingPill,
-                      { backgroundColor: isDark ? '#334155' : '#E2E8F0' },
+                      {
+                        backgroundColor: isDark
+                          ? colors.surfaceSecondary
+                          : '#E2E8F0',
+                      },
                     ]}
                   >
                     <Text
@@ -228,7 +236,7 @@ export function WalletPicker({
             {/* Checkmark indicator */}
             <MaterialCommunityIcons
               color={
-                isSelected ? colors.primary : isDark ? '#475569' : '#CBD5E1'
+                isSelected ? colors.primary : isDark ? '#52525B' : '#CBD5E1'
               }
               name={
                 isSelected

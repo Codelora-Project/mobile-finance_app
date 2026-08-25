@@ -75,7 +75,7 @@ export const ManualCategoryGrid = memo(function ManualCategoryGrid({
           const iconColor = isSelected
             ? colors.primary
             : isDark
-              ? '#94A3B8'
+              ? colors.textSecondary
               : '#475569';
 
           const textColor = isSelected ? colors.primary : colors.textPrimary;

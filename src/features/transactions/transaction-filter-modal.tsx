@@ -269,7 +269,7 @@ export function TransactionFilterModal({
           <View
             style={[
               styles.dragHandle,
-              { backgroundColor: isDark ? '#475569' : '#CBD5E1' },
+              { backgroundColor: isDark ? '#52525B' : '#CBD5E1' },
             ]}
           />
 

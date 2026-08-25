@@ -129,7 +129,7 @@ export const id = {
     loading: 'Memuat pengaturan…',
     // Theme Section
     themeSection: 'Tema Tampilan',
-    themeDesc: 'Pilih mode terang, gelap (OLED), atau ikuti setelan sistem.',
+    themeDesc: 'Pilih mode terang, gelap, atau ikuti setelan sistem.',
     themeLight: 'Terang',
     themeDark: 'Gelap',
     themeSystem: 'Ikuti Sistem',

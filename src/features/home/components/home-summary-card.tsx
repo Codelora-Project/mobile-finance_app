@@ -241,7 +241,7 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
               style={[
                 styles.iconCircle,
                 {
-                  backgroundColor: isDark ? '#14532D' : '#DCFCE7',
+                  backgroundColor: colors.incomeBackground,
                 },
               ]}
             >
@@ -278,7 +278,7 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
               style={[
                 styles.iconCircle,
                 {
-                  backgroundColor: isDark ? '#7F1D1D' : '#FEE2E2',
+                  backgroundColor: colors.expenseBackground,
                 },
               ]}
             >

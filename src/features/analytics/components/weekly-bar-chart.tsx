@@ -96,10 +96,7 @@ export function WeeklyBarChart({
 
         <View style={styles.legendItem}>
           <View
-            style={[
-              styles.legendDot,
-              { backgroundColor: colors.textMuted },
-            ]}
+            style={[styles.legendDot, { backgroundColor: colors.textMuted }]}
           />
           <Text style={[styles.legendLabel, { color: colors.textSecondary }]}>
             {t.analytics.lastWeek}:{' '}

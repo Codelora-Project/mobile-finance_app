@@ -68,22 +68,17 @@ export const BackupRestoreCard = memo(function BackupRestoreCard({
           style={[
             styles.warningNoticeBox,
             {
-              backgroundColor: isDark ? '#451A03' : '#FFFBEB',
-              borderColor: isDark ? '#78350F' : '#FDE68A',
+              backgroundColor: colors.warningBackground,
+              borderColor: colors.warning,
             },
           ]}
         >
           <MaterialCommunityIcons
-            color="#D97706"
+            color={colors.warning}
             name="alert-circle-outline"
             size={18}
           />
-          <Text
-            style={[
-              styles.warningNoticeText,
-              { color: isDark ? '#FDE68A' : '#92400E' },
-            ]}
-          >
+          <Text style={[styles.warningNoticeText, { color: colors.warning }]}>
             {t.backup.restoreWarning}
           </Text>
         </View>

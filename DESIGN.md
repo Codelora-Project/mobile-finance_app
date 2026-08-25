@@ -20,7 +20,7 @@ Dokumen ini adalah panduan desain resmi (_Design System & UX Guidelines_) untuk 
 
 ### A. Core Neutral & Surfaces (Light & Dark Mode)
 
-| Token              | Light Theme              | Dark Theme (OLED)     | Penggunaan                                     |
+| Token              | Light Theme              | Dark Theme            | Penggunaan                                     |
 | :----------------- | :----------------------- | :-------------------- | :--------------------------------------------- |
 | `background`       | `#F8FAFC`                | `#09090B`             | Latar belakang layar utama                     |
 | `surface`          | `#FFFFFF`                | `#18181B`             | Kartu konten, popup modal, input wrap          |

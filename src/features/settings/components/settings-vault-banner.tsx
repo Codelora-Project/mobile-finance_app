@@ -16,7 +16,7 @@ export const SettingsVaultBanner = memo(function SettingsVaultBanner({
   description,
   title,
 }: SettingsVaultBannerProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <View

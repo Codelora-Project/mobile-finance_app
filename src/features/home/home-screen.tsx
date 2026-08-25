@@ -63,7 +63,7 @@ export function HomeScreen() {
   const database = useSQLiteContext();
   const router = useRouter();
   const { language, t } = useLanguage();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { handleScroll } = useTabBarVisibility();
 
   const [period, setPeriod] = useState<HomePeriod>('monthly');
@@ -448,8 +448,8 @@ export function HomeScreen() {
             style={[
               styles.errorCard,
               {
-                backgroundColor: isDark ? '#7F1D1D' : '#FEE2E2',
-                borderColor: isDark ? '#991B1B' : '#FCA5A5',
+                backgroundColor: colors.expenseBackground,
+                borderColor: colors.destructive,
               },
             ]}
           >

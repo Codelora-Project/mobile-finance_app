@@ -13,7 +13,7 @@ export const BackupVaultBanner = memo(function BackupVaultBanner({
 }: {
   t: TranslationSchema;
 }) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <View

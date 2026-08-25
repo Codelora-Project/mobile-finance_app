@@ -212,9 +212,7 @@ export const BudgetProgressCard = memo(function BudgetProgressCard({
             style={[
               styles.allowanceBannerOver,
               {
-                backgroundColor: isDark
-                  ? colors.expenseBackground
-                  : '#FEF2F2',
+                backgroundColor: isDark ? colors.expenseBackground : '#FEF2F2',
               },
             ]}
           >
@@ -226,10 +224,7 @@ export const BudgetProgressCard = memo(function BudgetProgressCard({
             <Text
               ellipsizeMode="tail"
               numberOfLines={1}
-              style={[
-                styles.allowanceTextOver,
-                { color: colors.destructive },
-              ]}
+              style={[styles.allowanceTextOver, { color: colors.destructive }]}
             >
               {t.budgets.overbudgetNotice}
             </Text>

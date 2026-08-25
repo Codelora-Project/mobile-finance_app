@@ -222,13 +222,13 @@ export const BackupRestoreModal = memo(function BackupRestoreModal({
                 style={[
                   styles.dangerAlertBox,
                   {
-                    backgroundColor: isDark ? '#450A0A' : '#FEF2F2',
-                    borderColor: isDark ? '#7F1D1D' : '#FCA5A5',
+                    backgroundColor: colors.expenseBackground,
+                    borderColor: colors.destructive,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
-                  color="#EF4444"
+                  color={colors.destructive}
                   name="alert-circle"
                   size={22}
                   style={{ marginTop: 2 }}
@@ -237,7 +237,7 @@ export const BackupRestoreModal = memo(function BackupRestoreModal({
                   <Text
                     style={[
                       styles.dangerAlertTitle,
-                      { color: isDark ? '#FCA5A5' : '#991B1B' },
+                      { color: colors.destructive },
                     ]}
                   >
                     Peringatan Penggantian Data

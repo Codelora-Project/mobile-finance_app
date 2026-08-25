@@ -86,7 +86,7 @@ export function GoalCard({
           <View
             style={[
               styles.completedBadge,
-              { backgroundColor: isDark ? '#064E3B' : '#D1FAE5' },
+              { backgroundColor: colors.incomeBackground },
             ]}
           >
             <MaterialCommunityIcons

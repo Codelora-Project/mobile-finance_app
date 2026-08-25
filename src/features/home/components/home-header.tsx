@@ -58,18 +58,17 @@ export const HomeHeader = memo(function HomeHeader({
             style={[
               styles.streakBadge,
               {
-                backgroundColor: isDark ? '#78350F' : '#FEF3C7',
-                borderColor: isDark ? '#92400E' : '#FDE68A',
+                backgroundColor: colors.warningBackground,
+                borderColor: colors.warning,
               },
             ]}
           >
-            <MaterialCommunityIcons color="#F59E0B" name="fire" size={15} />
-            <Text
-              style={[
-                styles.streakBadgeText,
-                { color: isDark ? '#FDE68A' : '#B45309' },
-              ]}
-            >
+            <MaterialCommunityIcons
+              color={colors.warning}
+              name="fire"
+              size={15}
+            />
+            <Text style={[styles.streakBadgeText, { color: colors.warning }]}>
               {streakCount} {streakDaysLabel}
             </Text>
           </View>

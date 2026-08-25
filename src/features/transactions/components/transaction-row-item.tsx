@@ -196,7 +196,7 @@ export const TransactionRowItem = memo(function TransactionRowItem({
           style={[
             styles.swipeActionRight,
             {
-              backgroundColor: isDark ? '#7F1D1D' : '#DC2626',
+              backgroundColor: colors.destructive,
             },
           ]}
         >

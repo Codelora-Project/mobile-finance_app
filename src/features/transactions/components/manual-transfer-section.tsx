@@ -101,7 +101,7 @@ export const ManualTransferSection = memo(function ManualTransferSection({
                   backgroundColor: sourceWallet
                     ? 'rgba(37, 99, 235, 0.15)'
                     : isDark
-                      ? '#334155'
+                      ? colors.surfaceSecondary
                       : '#E2E8F0',
                 },
               ]}
@@ -193,7 +193,7 @@ export const ManualTransferSection = memo(function ManualTransferSection({
                   backgroundColor: destinationWallet
                     ? 'rgba(16, 185, 129, 0.15)'
                     : isDark
-                      ? '#334155'
+                      ? colors.surfaceSecondary
                       : '#E2E8F0',
                 },
               ]}
@@ -252,7 +252,7 @@ export const ManualTransferSection = memo(function ManualTransferSection({
                 backgroundColor: hasTransferFee
                   ? 'rgba(239, 68, 68, 0.15)'
                   : isDark
-                    ? '#334155'
+                    ? colors.surfaceSecondary
                     : '#E2E8F0',
               },
             ]}

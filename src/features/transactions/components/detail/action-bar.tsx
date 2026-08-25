@@ -50,22 +50,17 @@ export const DetailActionBar = memo(function DetailActionBar({
           style={[
             styles.lockedBanner,
             {
-              backgroundColor: isDark ? '#451A03' : '#FEF3C7',
-              borderColor: isDark ? '#78350F' : '#FDE68A',
+              backgroundColor: colors.warningBackground,
+              borderColor: colors.warning,
             },
           ]}
         >
           <MaterialCommunityIcons
-            color="#D97706"
+            color={colors.warning}
             name="lock-outline"
             size={18}
           />
-          <Text
-            style={[
-              styles.lockedBannerText,
-              { color: isDark ? '#FDE68A' : '#92400E' },
-            ]}
-          >
+          <Text style={[styles.lockedBannerText, { color: colors.warning }]}>
             {language === 'id'
               ? `Transaksi ini terkunci oleh klaim "${claimMembership.claimTitle}" (${claimMembership.claimStatus}).`
               : `This transaction is locked by claim "${claimMembership.claimTitle}" (${claimMembership.claimStatus}).`}

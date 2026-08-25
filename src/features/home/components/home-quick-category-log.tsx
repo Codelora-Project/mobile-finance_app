@@ -113,7 +113,7 @@ export const HomeQuickCategoryLog = memo(function HomeQuickCategoryLog({
                 ]}
               >
                 <MaterialCommunityIcons
-                  color={isDark ? '#94A3B8' : '#475569'}
+                  color={isDark ? colors.textSecondary : '#475569'}
                   name={meta.icon}
                   size={22}
                 />

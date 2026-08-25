@@ -71,7 +71,7 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
           ]}
         >
           <MaterialCommunityIcons
-            color="#94A3B8"
+            color={colors.textMuted}
             name="store-outline"
             size={20}
           />
@@ -87,7 +87,7 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
                 ? 'Nama toko / catatan (opsional)'
                 : 'Merchant / note (optional)'
             }
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={colors.textMuted}
             style={[styles.compactInput, { color: colors.textPrimary }]}
             value={counterparty}
           />
@@ -116,7 +116,7 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
             ]}
           >
             <MaterialCommunityIcons
-              color={receipt ? colors.primary : '#64748B'}
+              color={receipt ? colors.primary : colors.textSecondary}
               name={receipt ? 'image-check' : 'camera-plus-outline'}
               size={20}
             />
@@ -124,7 +124,9 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
               numberOfLines={1}
               style={[
                 styles.receiptActionChipText,
-                { color: receipt ? colors.primary : '#64748B' },
+                {
+                  color: receipt ? colors.primary : colors.textSecondary,
+                },
                 receipt ? styles.receiptActionChipTextActive : null,
               ]}
             >
