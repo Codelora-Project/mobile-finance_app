@@ -39,8 +39,8 @@ export function getCategoryMeta(
         (type === 'income' ? 'arrow-bottom-left' : 'tag-outline'));
 
   // Unified, monochromatic styling across all categories
-  const color = isDark ? '#94A3B8' : '#475569';
-  const backgroundColor = isDark ? '#1E293B' : '#F1F5F9';
+  const color = isDark ? '#A1A1AA' : '#475569';
+  const backgroundColor = isDark ? '#27272A' : '#F1F5F9';
 
   return {
     icon,

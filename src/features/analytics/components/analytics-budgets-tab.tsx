@@ -86,9 +86,7 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
                 {
                   backgroundColor:
                     overallSpentPercent > 100
-                      ? isDark
-                        ? '#7F1D1D'
-                        : '#FEE2E2'
+                      ? colors.expenseBackground
                       : isDark
                         ? colors.surfaceSecondary
                         : '#EFF6FF',
@@ -243,7 +241,7 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
                     ]}
                   >
                     <MaterialCommunityIcons
-                      color={isDark ? '#94A3B8' : '#475569'}
+                      color={isDark ? colors.textSecondary : '#475569'}
                       name={meta.icon}
                       size={18}
                     />

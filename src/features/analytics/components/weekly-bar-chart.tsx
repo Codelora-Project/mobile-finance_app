@@ -57,12 +57,8 @@ export function WeeklyBarChart({
             styles.trendBadge,
             {
               backgroundColor: isFrugal
-                ? isDark
-                  ? '#14532D'
-                  : '#DCFCE7'
-                : isDark
-                  ? '#7F1D1D'
-                  : '#FEE2E2',
+                ? colors.incomeBackground
+                : colors.expenseBackground,
             },
           ]}
         >
@@ -102,7 +98,7 @@ export function WeeklyBarChart({
           <View
             style={[
               styles.legendDot,
-              { backgroundColor: isDark ? '#64748B' : '#94A3B8' },
+              { backgroundColor: colors.textMuted },
             ]}
           />
           <Text style={[styles.legendLabel, { color: colors.textSecondary }]}>
@@ -134,7 +130,7 @@ export function WeeklyBarChart({
                   style={[
                     styles.barPill,
                     {
-                      backgroundColor: isDark ? '#475569' : '#CBD5E1',
+                      backgroundColor: isDark ? '#52525B' : '#CBD5E1',
                       height: `${lastWeekHeightPercent}%`,
                     },
                   ]}

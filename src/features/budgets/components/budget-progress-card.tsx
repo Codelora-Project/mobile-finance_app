@@ -31,8 +31,8 @@ export const BudgetProgressCard = memo(function BudgetProgressCard({
       case 'overbudget':
       case 'danger':
         return {
-          badgeBg: isDark ? '#7F1D1D' : '#FEE2E2',
-          badgeText: isDark ? '#FCA5A5' : '#DC2626',
+          badgeBg: colors.expenseBackground,
+          badgeText: colors.destructive,
           barColor: colors.destructive,
           label:
             budget.status === 'overbudget'
@@ -41,15 +41,15 @@ export const BudgetProgressCard = memo(function BudgetProgressCard({
         };
       case 'warning':
         return {
-          badgeBg: isDark ? '#78350F' : '#FEF3C7',
-          badgeText: isDark ? '#FCD34D' : '#D97706',
-          barColor: '#F59E0B',
+          badgeBg: colors.warningBackground,
+          badgeText: colors.warning,
+          barColor: colors.warning,
           label: t.budgets.statusWarning,
         };
       default:
         return {
-          badgeBg: isDark ? '#064E3B' : '#DCFCE7',
-          badgeText: isDark ? '#6EE7B7' : '#16A34A',
+          badgeBg: colors.incomeBackground,
+          badgeText: colors.positive,
           barColor: colors.positive,
           label: t.budgets.statusSafe,
         };
@@ -87,7 +87,7 @@ export const BudgetProgressCard = memo(function BudgetProgressCard({
             ]}
           >
             <MaterialCommunityIcons
-              color={isDark ? '#94A3B8' : '#475569'}
+              color={isDark ? colors.textSecondary : '#475569'}
               name={meta.icon}
               size={20}
             />
@@ -212,19 +212,24 @@ export const BudgetProgressCard = memo(function BudgetProgressCard({
             style={[
               styles.allowanceBannerOver,
               {
-                backgroundColor: isDark ? '#450A0A' : '#FEF2F2',
+                backgroundColor: isDark
+                  ? colors.expenseBackground
+                  : '#FEF2F2',
               },
             ]}
           >
             <MaterialCommunityIcons
-              color="#EF4444"
+              color={colors.destructive}
               name="alert-circle-outline"
               size={15}
             />
             <Text
               ellipsizeMode="tail"
               numberOfLines={1}
-              style={[styles.allowanceTextOver, { color: '#EF4444' }]}
+              style={[
+                styles.allowanceTextOver,
+                { color: colors.destructive },
+              ]}
             >
               {t.budgets.overbudgetNotice}
             </Text>

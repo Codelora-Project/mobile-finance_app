@@ -240,7 +240,7 @@ export const AnalyticsTrendsTab = memo(function AnalyticsTrendsTab({
                             backgroundColor: hasData
                               ? colors.positive
                               : isDark
-                                ? '#334155'
+                                ? colors.surfaceSecondary
                                 : '#E2E8F0',
                             height: `${incomeHeightPercent}%`,
                           },
@@ -257,7 +257,7 @@ export const AnalyticsTrendsTab = memo(function AnalyticsTrendsTab({
                             backgroundColor: hasData
                               ? colors.destructive
                               : isDark
-                                ? '#334155'
+                                ? colors.surfaceSecondary
                                 : '#E2E8F0',
                             height: `${expenseHeightPercent}%`,
                           },
@@ -369,7 +369,7 @@ export const AnalyticsTrendsTab = memo(function AnalyticsTrendsTab({
                             ? '#064E3B'
                             : '#DCFCE7'
                           : isDark
-                            ? '#7F1D1D'
+                            ? '#3A171B'
                             : '#FEE2E2',
                     },
                   ]}

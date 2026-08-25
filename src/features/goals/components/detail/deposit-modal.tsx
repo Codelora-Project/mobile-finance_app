@@ -83,17 +83,13 @@ export const GoalDetailModal = memo(function GoalDetailModal({
                 styles.modalIconCircle,
                 {
                   backgroundColor: isDeposit
-                    ? isDark
-                      ? '#14532D'
-                      : '#DCFCE7'
-                    : isDark
-                      ? '#7F1D1D'
-                      : '#FEE2E2',
+                    ? colors.incomeBackground
+                    : colors.expenseBackground,
                 },
               ]}
             >
               <MaterialCommunityIcons
-                color={isDeposit ? '#16A34A' : '#DC2626'}
+                color={isDeposit ? colors.positive : colors.destructive}
                 name={isDeposit ? 'arrow-down-left' : 'arrow-up-right'}
                 size={22}
               />

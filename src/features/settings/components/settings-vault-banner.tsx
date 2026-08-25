@@ -32,7 +32,7 @@ export const SettingsVaultBanner = memo(function SettingsVaultBanner({
         <View
           style={[
             styles.vaultIconCircle,
-            { backgroundColor: isDark ? '#14532D' : '#DCFCE7' },
+            { backgroundColor: colors.incomeBackground },
           ]}
         >
           <MaterialCommunityIcons

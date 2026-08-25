@@ -90,7 +90,7 @@ export const GoalDetailHeroCard = memo(function GoalDetailHeroCard({
           <View
             style={[
               styles.completedBadge,
-              { backgroundColor: isDark ? '#14532D' : '#DCFCE7' },
+              { backgroundColor: colors.incomeBackground },
             ]}
           >
             <MaterialCommunityIcons

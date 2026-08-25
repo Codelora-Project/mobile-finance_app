@@ -29,7 +29,7 @@ export const BackupVaultBanner = memo(function BackupVaultBanner({
         <View
           style={[
             styles.vaultIconCircle,
-            { backgroundColor: isDark ? '#14532D' : '#DCFCE7' },
+            { backgroundColor: colors.incomeBackground },
           ]}
         >
           <MaterialCommunityIcons

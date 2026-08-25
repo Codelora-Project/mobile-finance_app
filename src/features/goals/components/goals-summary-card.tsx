@@ -65,7 +65,7 @@ export const GoalsSummaryCard = memo(function GoalsSummaryCard({
           style={[
             styles.percentPill,
             {
-              backgroundColor: isDark ? '#14532D' : '#DCFCE7',
+              backgroundColor: colors.incomeBackground,
             },
           ]}
         >

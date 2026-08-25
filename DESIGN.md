@@ -22,10 +22,10 @@ Dokumen ini adalah panduan desain resmi (_Design System & UX Guidelines_) untuk 
 
 | Token              | Light Theme              | Dark Theme (OLED)     | Penggunaan                                     |
 | :----------------- | :----------------------- | :-------------------- | :--------------------------------------------- |
-| `background`       | `#F8FAFC`                | `#0B0F19`             | Latar belakang layar utama                     |
-| `surface`          | `#FFFFFF`                | `#1E293B`             | Kartu konten, popup modal, input wrap          |
-| `surfaceSecondary` | `#F1F5F9`                | `#334155`             | Chip shortcut, segmented toggle                |
-| `border`           | `#E2E8F0`                | `#334155`             | Garis batas kartu, divider                     |
+| `background`       | `#F8FAFC`                | `#09090B`             | Latar belakang layar utama                     |
+| `surface`          | `#FFFFFF`                | `#18181B`             | Kartu konten, popup modal, input wrap          |
+| `surfaceSecondary` | `#F1F5F9`                | `#27272A`             | Chip shortcut, segmented toggle                |
+| `border`           | `#E2E8F0`                | `#303034`             | Garis batas kartu, divider                     |
 | `borderSubtle`     | `#CBD5E1`                | `#475569`             | Garis pemisah kontras tinggi                   |
 | `overlayBackdrop`  | `rgba(15, 23, 42, 0.65)` | `rgba(0, 0, 0, 0.75)` | Latar belakang redup pada _Bottom Sheet Modal_ |
 
@@ -33,9 +33,9 @@ Dokumen ini adalah panduan desain resmi (_Design System & UX Guidelines_) untuk 
 
 | Token           | Light Theme | Dark Theme | Penggunaan                                    |
 | :-------------- | :---------- | :--------- | :-------------------------------------------- |
-| `textPrimary`   | `#0F172A`   | `#F8FAFC`  | Judul utama, nominal uang, teks tebal         |
-| `textSecondary` | `#64748B`   | `#94A3B8`  | Label subjudul, keterangan waktu, placeholder |
-| `textMuted`     | `#94A3B8`   | `#64748B`  | Ikon pasif, hint text                         |
+| `textPrimary`   | `#0F172A`   | `#FAFAFA`  | Judul utama, nominal uang, teks tebal         |
+| `textSecondary` | `#64748B`   | `#A1A1AA`  | Label subjudul, keterangan waktu, placeholder |
+| `textMuted`     | `#94A3B8`   | `#71717A`  | Ikon pasif, hint text                         |
 
 ### C. Brand & Semantic Colors
 
@@ -43,9 +43,9 @@ Dokumen ini adalah panduan desain resmi (_Design System & UX Guidelines_) untuk 
 | :------------- | :---------- | :--------- | :----------------------------------------------- |
 | `primary`      | `#2563EB`   | `#3B82F6`  | Tombol aksi utama, tab aktif (Electric Blue)     |
 | `primaryLight` | `#EFF6FF`   | `#1E3A8A`  | Latar belakang chip shortcut aktif               |
-| `positive`     | `#15803D`   | `#22C55E`  | Pemasukan (Income), saldo surplus, status sukses |
-| `destructive`  | `#B42318`   | `#EF4444`  | Pengeluaran (Expense), tombol hapus, badge error |
-| `warning`      | `#B54708`   | `#F59E0B`  | Status peringatan, klaim draft/pending           |
+| `positive`     | `#15803D`   | `#4ADE80`  | Pemasukan (Income), saldo surplus, status sukses |
+| `destructive`  | `#B42318`   | `#FB7185`  | Pengeluaran (Expense), tombol hapus, badge error |
+| `warning`      | `#B54708`   | `#FBBF24`  | Status peringatan, klaim draft/pending           |
 
 ### D. Category Pastel System (`category-meta.ts`)
 

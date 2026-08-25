@@ -58,17 +58,13 @@ export const GoalDetailTransactionRow = memo(function GoalDetailTransactionRow({
           styles.txIconCircle,
           {
             backgroundColor: isDeposit
-              ? isDark
-                ? '#14532D'
-                : '#DCFCE7'
-              : isDark
-                ? '#7F1D1D'
-                : '#FEE2E2',
+              ? colors.incomeBackground
+              : colors.expenseBackground,
           },
         ]}
       >
         <MaterialCommunityIcons
-          color={isDeposit ? '#16A34A' : '#DC2626'}
+          color={isDeposit ? colors.positive : colors.destructive}
           name={isDeposit ? 'arrow-down-left' : 'arrow-up-right'}
           size={16}
         />
@@ -94,7 +90,10 @@ export const GoalDetailTransactionRow = memo(function GoalDetailTransactionRow({
       </View>
 
       <Text
-        style={[styles.txAmount, { color: isDeposit ? '#16A34A' : '#DC2626' }]}
+        style={[
+          styles.txAmount,
+          { color: isDeposit ? colors.positive : colors.destructive },
+        ]}
       >
         {isDeposit ? '+' : '−'}
         {formatMoney(item.amountMinor, currencyCode)}

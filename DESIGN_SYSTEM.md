@@ -71,21 +71,21 @@ Gunakan warna berdasarkan fungsi, bukan berdasarkan nama hex atau selera layar t
 
 | Token               | Light     | Dark      | Penggunaan                                      |
 | ------------------- | --------- | --------- | ----------------------------------------------- |
-| `background`        | `#F8FAFC` | `#0B0F19` | Latar utama layar                               |
-| `surface`           | `#FFFFFF` | `#1E293B` | Kartu, input, dialog, dan tab aktif             |
-| `surfaceSecondary`  | `#F1F5F9` | `#334155` | Segmented control, chip, dan permukaan sekunder |
-| `card`              | `#FFFFFF` | `#1E293B` | Alias permukaan kartu                           |
-| `border`            | `#E2E8F0` | `#334155` | Border kontrol dan kartu                        |
-| `divider`           | `#E2E8F0` | `#334155` | Pemisah antarbaris                              |
-| `textPrimary`       | `#0F172A` | `#F8FAFC` | Judul, nominal utama, dan isi penting           |
-| `textSecondary`     | `#64748B` | `#94A3B8` | Label, deskripsi, dan metadata                  |
-| `textMuted`         | `#94A3B8` | `#64748B` | Placeholder dan ikon pasif                      |
-| `positive`          | `#15803D` | `#22C55E` | Pemasukan, surplus, dan sukses                  |
-| `destructive`       | `#B42318` | `#EF4444` | Pengeluaran, error, dan hapus                   |
-| `warning`           | `#B54708` | `#F59E0B` | Peringatan dan status yang perlu perhatian      |
-| `incomeBackground`  | `#DCFCE7` | `#14532D` | Latar badge pemasukan atau sukses               |
-| `expenseBackground` | `#FEE2E2` | `#7F1D1D` | Latar badge pengeluaran atau error              |
-| `warningBackground` | `#FEF3C7` | `#78350F` | Latar badge peringatan                          |
+| `background`        | `#F8FAFC` | `#09090B` | Latar utama layar                               |
+| `surface`           | `#FFFFFF` | `#18181B` | Kartu, input, dialog, dan tab aktif             |
+| `surfaceSecondary`  | `#F1F5F9` | `#27272A` | Segmented control, chip, dan permukaan sekunder |
+| `card`              | `#FFFFFF` | `#18181B` | Alias permukaan kartu                           |
+| `border`            | `#E2E8F0` | `#303034` | Border kontrol dan kartu                        |
+| `divider`           | `#E2E8F0` | `#303034` | Pemisah antarbaris                              |
+| `textPrimary`       | `#0F172A` | `#FAFAFA` | Judul, nominal utama, dan isi penting           |
+| `textSecondary`     | `#64748B` | `#A1A1AA` | Label, deskripsi, dan metadata                  |
+| `textMuted`         | `#94A3B8` | `#71717A` | Placeholder dan ikon pasif                      |
+| `positive`          | `#15803D` | `#4ADE80` | Pemasukan, surplus, dan sukses                  |
+| `destructive`       | `#B42318` | `#FB7185` | Pengeluaran, error, dan hapus                   |
+| `warning`           | `#B54708` | `#FBBF24` | Peringatan dan status yang perlu perhatian      |
+| `incomeBackground`  | `#DCFCE7` | `#12351F` | Latar badge pemasukan atau sukses               |
+| `expenseBackground` | `#FEE2E2` | `#3A171B` | Latar badge pengeluaran atau error              |
+| `warningBackground` | `#FEF3C7` | `#3A2A0F` | Latar badge peringatan                          |
 | `onPrimary`         | `#FFFFFF` | `#FFFFFF` | Konten di atas warna primary                    |
 | `shadow`            | `#000000` | `#000000` | Warna dasar bayangan                            |
 
