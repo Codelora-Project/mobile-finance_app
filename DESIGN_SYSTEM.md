@@ -517,8 +517,8 @@ Judul “Transactions” tidak ditampilkan ulang karena tab aktif sudah memberi 
 Urutan prioritas:
 
 1. navigasi bulan dan ekspor laporan;
-2. KPI Arus Bersih, Pemasukan, dan Pengeluaran;
-3. Ringkasan, Arus Kas, dan Anggaran;
+2. Ringkasan, Arus Kas, dan Anggaran;
+3. KPI Arus Bersih, Pemasukan, dan Pengeluaran;
 4. insight utama;
 5. grafik dan rincian pendukung.
 

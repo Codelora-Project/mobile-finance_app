@@ -330,7 +330,16 @@ export function AnalyticsScreen({
         </Pressable>
       ) : null}
 
-      {/* 2. Period context and primary KPIs stay visible across tabs. */}
+      {/* 2. Primary report sections sit directly below the period header. */}
+      <AnalyticsTabPills
+        activeTab={activeTab}
+        budgetsLabel={t.analytics.budgetsTab}
+        onSelectTab={setActiveTab}
+        overviewLabel={t.analytics.overviewTab}
+        trendsLabel={t.analytics.trendsTab}
+      />
+
+      {/* 3. Primary KPIs stay visible across report sections. */}
       {analytics ? (
         <View style={styles.summaryWrap}>
           <AnalyticsPeriodSummary
@@ -340,15 +349,6 @@ export function AnalyticsScreen({
           />
         </View>
       ) : null}
-
-      {/* 3. Segmented Tab Pills */}
-      <AnalyticsTabPills
-        activeTab={activeTab}
-        budgetsLabel={t.analytics.budgetsTab}
-        onSelectTab={setActiveTab}
-        overviewLabel={t.analytics.overviewTab}
-        trendsLabel={t.analytics.trendsTab}
-      />
 
       {/* 4. Tab Body Container */}
       <ScrollView
