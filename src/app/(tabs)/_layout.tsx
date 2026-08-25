@@ -1,5 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { Tabs, useRouter } from 'expo-router';
+import { Tabs, usePathname, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -288,6 +288,8 @@ function CustomFloatingTabBar({
 
 function MainTabLayoutContent() {
   const { language, t } = useLanguage();
+  const pathname = usePathname();
+  const showTransactionFab = pathname !== '/analytics';
 
   return (
     <View style={styles.rootContainer}>
@@ -357,13 +359,14 @@ function MainTabLayoutContent() {
         />
       </Tabs>
 
-      {/* Floating Action Button (FAB) aligned right with card */}
-      <FloatingActionButton
-        accessibilityLabel={
-          language === 'id' ? 'Catat transaksi' : 'Add transaction'
-        }
-        label={language === 'id' ? 'Catat' : 'Record'}
-      />
+      {showTransactionFab ? (
+        <FloatingActionButton
+          accessibilityLabel={
+            language === 'id' ? 'Catat transaksi' : 'Add transaction'
+          }
+          label={language === 'id' ? 'Catat' : 'Record'}
+        />
+      ) : null}
     </View>
   );
 }

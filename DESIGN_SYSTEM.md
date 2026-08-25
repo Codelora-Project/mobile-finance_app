@@ -516,11 +516,15 @@ Judul “Transactions” tidak ditampilkan ulang karena tab aktif sudah memberi 
 
 Urutan prioritas:
 
-1. konteks periode;
-2. KPI utama;
-3. tren;
-4. breakdown kategori;
-5. insight dan detail pendukung.
+1. navigasi bulan dan ekspor laporan;
+2. KPI Arus Bersih, Pemasukan, dan Pengeluaran;
+3. Ringkasan, Arus Kas, dan Anggaran;
+4. insight utama;
+5. grafik dan rincian pendukung.
+
+Judul “Laporan” atau “Financial Insights” tidak ditampilkan ulang karena tab aktif sudah memberi konteks halaman. Header memakai pemilih bulan bersama yang juga digunakan Riwayat Transaksi. FAB Catat disembunyikan pada halaman ini agar tidak menutupi visualisasi; tindakan kontekstual utamanya adalah ekspor laporan.
+
+Kartu KPI dibuat ringkas dan tidak mengulang periode yang sudah terlihat pada header. Grafik tren hanya ditampilkan jika tersedia data pada minimal dua bulan; jika belum, tampilkan empty state yang menjelaskan syarat data tersebut.
 
 Grafik selalu memiliki label atau ringkasan tekstual. Jangan menjadikan warna grafik sebagai satu-satunya pembeda seri.
 
@@ -802,7 +806,10 @@ Audit design system ketika:
 | Bottom navigation & FAB | `src/app/(tabs)/_layout.tsx`                                                    |
 | Category icon style     | `src/features/categories/category-meta.ts`                                      |
 | Header Riwayat          | `src/features/transactions/components/transaction-history-header.tsx`           |
-| Pemilih bulan           | `src/features/transactions/components/transaction-month-picker-modal.tsx`       |
+| Pemilih bulan bersama   | `src/components/ui/month-picker-modal.tsx`                                      |
 | Segmented period        | `src/features/transactions/components/transaction-period-segmented-control.tsx` |
 | Transaction row         | `src/features/transactions/components/transaction-row-item.tsx`                 |
+| Header Laporan          | `src/features/analytics/components/analytics-header.tsx`                        |
+| KPI Laporan             | `src/features/analytics/components/analytics-period-summary.tsx`                |
+| Insight Laporan         | `src/features/analytics/components/analytics-insights-card.tsx`                 |
 | Lokalisasi              | `src/lib/i18n/locales/id.ts` dan `src/lib/i18n/locales/en.ts`                   |

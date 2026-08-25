@@ -4,6 +4,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -14,6 +15,10 @@ import {
 
 import { Screen } from '@/components/ui/screen';
 import { AppButton } from '@/components/ui/app-button';
+import {
+  exportAnalyticsReportToCsv,
+  shareAnalyticsReportCsv,
+} from '@/features/analytics/analytics-export-service';
 import {
   getAnalyticsData,
   type AnalyticsData,
@@ -35,6 +40,7 @@ import {
 } from '@/features/budgets/budget-repository';
 import { SetBudgetModal } from '@/features/budgets/components/set-budget-modal';
 import { useCurrency } from '@/lib/currency/currency-context';
+import { getTimezoneOffsetMinutes, toLocalDate } from '@/lib/dates';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { useTabBarVisibility } from '@/lib/navigation/tab-bar-visibility-context';
 import { useTheme } from '@/lib/theme/theme-context';
@@ -46,6 +52,36 @@ export type AnalyticsScreenProps = {
   hideBackButton?: boolean;
 };
 
+type ReportPeriod = Readonly<{ month: number; year: number }>;
+
+function getCurrentReportPeriod() {
+  const localDate = toLocalDate(Date.now(), getTimezoneOffsetMinutes());
+  const [year, month] = localDate.split('-').map(Number);
+  return {
+    localDate,
+    period: { month: (month ?? 1) - 1, year: year ?? 2000 },
+  };
+}
+
+function buildReferenceDate(
+  period: ReportPeriod,
+  current: ReturnType<typeof getCurrentReportPeriod>,
+) {
+  if (
+    period.year === current.period.year &&
+    period.month === current.period.month
+  ) {
+    return current.localDate;
+  }
+
+  const lastDay = new Date(
+    Date.UTC(period.year, period.month + 1, 0),
+  ).getUTCDate();
+  return `${period.year}-${String(period.month + 1).padStart(2, '0')}-${String(
+    lastDay,
+  ).padStart(2, '0')}`;
+}
+
 export function AnalyticsScreen({
   hideBackButton = false,
 }: AnalyticsScreenProps = {}) {
@@ -56,13 +92,18 @@ export function AnalyticsScreen({
   const { currencyCode } = useCurrency();
   const { handleScroll } = useTabBarVisibility();
 
+  const [currentPeriod] = useState(getCurrentReportPeriod);
+  const [selectedPeriod, setSelectedPeriod] = useState<ReportPeriod>(
+    currentPeriod.period,
+  );
+
   const [activeTab, setActiveTab] = useState<AnalyticsTabMode>('overview');
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [budgets, setBudgets] = useState<readonly CategoryBudget[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
 
   // Set Budget Modal State
   const [selectedBudgetForEdit, setSelectedBudgetForEdit] =
@@ -70,6 +111,15 @@ export function AnalyticsScreen({
   const [editModalVisible, setEditModalVisible] = useState(false);
 
   const requestId = useRef(0);
+  const referenceDate = buildReferenceDate(selectedPeriod, currentPeriod);
+  const monthLabel = new Intl.DateTimeFormat(
+    language === 'id' ? 'id-ID' : 'en-US',
+    { month: 'long', year: 'numeric' },
+  ).format(new Date(selectedPeriod.year, selectedPeriod.month, 1));
+  const nextMonthDisabled =
+    selectedPeriod.year > currentPeriod.period.year ||
+    (selectedPeriod.year === currentPeriod.period.year &&
+      selectedPeriod.month >= currentPeriod.period.month);
 
   const loadData = useCallback(
     async (mode: 'focus' | 'refresh' = 'focus') => {
@@ -82,23 +132,18 @@ export function AnalyticsScreen({
 
       try {
         const [nextAnalytics, nextBudgets] = await Promise.all([
-          getAnalyticsData(database),
-          listCategoryBudgets(database),
+          getAnalyticsData(database, referenceDate),
+          listCategoryBudgets(database, referenceDate),
         ]);
 
         if (requestId.current === currentRequest) {
           setAnalytics(nextAnalytics);
           setBudgets(nextBudgets);
           setError(null);
-          setLastUpdatedAt(Date.now());
         }
       } catch (err) {
         if (requestId.current === currentRequest) {
-          setError(
-            language === 'id'
-              ? 'Analitik belum dapat dimuat. Periksa data lalu coba lagi.'
-              : 'Analytics could not be loaded. Check your data and try again.',
-          );
+          setError(t.analytics.loadFailed);
         }
         if (__DEV__) {
           console.warn('Failed to load analytics data', err);
@@ -110,7 +155,7 @@ export function AnalyticsScreen({
         }
       }
     },
-    [database, language],
+    [database, referenceDate, t.analytics.loadFailed],
   );
 
   useFocusEffect(
@@ -143,9 +188,67 @@ export function AnalyticsScreen({
     [database, loadData],
   );
 
+  const handlePreviousMonth = useCallback(() => {
+    setSelectedPeriod((period) => {
+      const date = new Date(period.year, period.month - 1, 1);
+      return { month: date.getMonth(), year: date.getFullYear() };
+    });
+  }, []);
+
+  const handleNextMonth = useCallback(() => {
+    if (nextMonthDisabled) return;
+    setSelectedPeriod((period) => {
+      const date = new Date(period.year, period.month + 1, 1);
+      return { month: date.getMonth(), year: date.getFullYear() };
+    });
+  }, [nextMonthDisabled]);
+
+  const handleSelectMonth = useCallback((year: number, month: number) => {
+    setSelectedPeriod({ month, year });
+  }, []);
+
+  const handleExport = useCallback(async () => {
+    if (!analytics || exporting) return;
+    setExporting(true);
+    try {
+      const report = await exportAnalyticsReportToCsv(
+        analytics,
+        currencyCode,
+        language,
+      );
+      await shareAnalyticsReportCsv(report.uri, t.analytics.exportShareTitle);
+    } catch (exportError) {
+      if (__DEV__)
+        console.warn('Failed to export analytics report', exportError);
+      Alert.alert(t.analytics.exportFailed);
+    } finally {
+      setExporting(false);
+    }
+  }, [
+    analytics,
+    currencyCode,
+    exporting,
+    language,
+    t.analytics.exportFailed,
+    t.analytics.exportShareTitle,
+  ]);
+
   if (loading && !analytics) {
     return (
       <Screen>
+        <AnalyticsHeader
+          backLabel={t.common.back}
+          language={language}
+          maximumValue={currentPeriod.period}
+          monthLabel={monthLabel}
+          nextMonthDisabled={nextMonthDisabled}
+          onBack={hideBackButton ? undefined : () => router.back()}
+          onNextMonth={handleNextMonth}
+          onPreviousMonth={handlePreviousMonth}
+          onSelectMonth={handleSelectMonth}
+          selectedMonth={selectedPeriod.month}
+          selectedYear={selectedPeriod.year}
+        />
         <View style={styles.centeredState}>
           <ActivityIndicator color={colors.primary} size="large" />
           <Text style={[styles.stateText, { color: colors.textSecondary }]}>
@@ -161,8 +264,16 @@ export function AnalyticsScreen({
       <Screen>
         <AnalyticsHeader
           backLabel={t.common.back}
+          language={language}
+          maximumValue={currentPeriod.period}
+          monthLabel={monthLabel}
+          nextMonthDisabled={nextMonthDisabled}
           onBack={hideBackButton ? undefined : () => router.back()}
-          title={t.analytics.title}
+          onNextMonth={handleNextMonth}
+          onPreviousMonth={handlePreviousMonth}
+          onSelectMonth={handleSelectMonth}
+          selectedMonth={selectedPeriod.month}
+          selectedYear={selectedPeriod.year}
         />
         <View style={styles.centeredState}>
           <MaterialCommunityIcons
@@ -187,8 +298,18 @@ export function AnalyticsScreen({
       {/* 1. Top Navigation Header */}
       <AnalyticsHeader
         backLabel={t.common.back}
+        exporting={exporting}
+        language={language}
+        maximumValue={currentPeriod.period}
+        monthLabel={monthLabel}
+        nextMonthDisabled={nextMonthDisabled}
         onBack={hideBackButton ? undefined : () => router.back()}
-        title={t.analytics.title}
+        onExport={() => void handleExport()}
+        onNextMonth={handleNextMonth}
+        onPreviousMonth={handlePreviousMonth}
+        onSelectMonth={handleSelectMonth}
+        selectedMonth={selectedPeriod.month}
+        selectedYear={selectedPeriod.year}
       />
 
       {error ? (
@@ -207,14 +328,6 @@ export function AnalyticsScreen({
             {error} {t.common.tryAgain}
           </Text>
         </Pressable>
-      ) : lastUpdatedAt ? (
-        <Text style={[styles.updatedText, { color: colors.textMuted }]}>
-          {language === 'id' ? 'Diperbarui' : 'Updated'}{' '}
-          {new Date(lastUpdatedAt).toLocaleTimeString(
-            language === 'id' ? 'id-ID' : 'en-US',
-            { hour: '2-digit', minute: '2-digit' },
-          )}
-        </Text>
       ) : null}
 
       {/* 2. Period context and primary KPIs stay visible across tabs. */}
@@ -223,7 +336,6 @@ export function AnalyticsScreen({
           <AnalyticsPeriodSummary
             analytics={analytics}
             currencyCode={currencyCode}
-            language={language}
             t={t}
           />
         </View>
@@ -256,6 +368,7 @@ export function AnalyticsScreen({
         {activeTab === 'overview' && analytics ? (
           <AnalyticsOverviewTab
             analytics={analytics}
+            budgets={budgets}
             currencyCode={currencyCode}
             t={t}
           />
@@ -275,6 +388,7 @@ export function AnalyticsScreen({
         {activeTab === 'trends' && analytics ? (
           <AnalyticsTrendsTab
             currencyCode={currencyCode}
+            language={language}
             monthlyCashFlow={analytics.monthlyCashFlow}
             t={t}
           />
@@ -329,10 +443,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
     width: '100%',
-  },
-  updatedText: {
-    ...typography.metadata,
-    paddingHorizontal: spacing.md,
-    textAlign: 'right',
   },
 });

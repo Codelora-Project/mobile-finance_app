@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 
-import { TransactionMonthPickerModal } from '@/features/transactions/components/transaction-month-picker-modal';
+import { MonthPickerModal } from '@/components/ui/month-picker-modal';
 import {
   TransactionPeriodSegmentedControl,
   type HistoryPeriod,
@@ -161,7 +161,7 @@ export const TransactionHistoryHeader = memo(function TransactionHistoryHeader({
         />
       </View>
 
-      <TransactionMonthPickerModal
+      <MonthPickerModal
         language={language}
         onClose={() => setMonthPickerVisible(false)}
         onSelectMonth={handleSelectMonth}

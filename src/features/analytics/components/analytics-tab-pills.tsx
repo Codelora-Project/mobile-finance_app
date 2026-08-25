@@ -24,53 +24,56 @@ export const AnalyticsTabPills = memo(function AnalyticsTabPills({
   overviewLabel,
   trendsLabel,
 }: AnalyticsTabPillsProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   const tabs: { key: AnalyticsTabMode; label: string }[] = [
     { key: 'overview', label: overviewLabel },
-    { key: 'budgets', label: budgetsLabel },
     { key: 'trends', label: trendsLabel },
+    { key: 'budgets', label: budgetsLabel },
   ];
 
   return (
-    <View style={styles.tabsContainer}>
-      {tabs.map((tab) => {
-        const isSelected = activeTab === tab.key;
-        return (
-          <Pressable
-            accessibilityRole="tab"
-            accessibilityState={{ selected: isSelected }}
-            key={tab.key}
-            onPress={() => onSelectTab(tab.key)}
-            style={({ pressed }) => [
-              styles.tabPill,
-              {
-                backgroundColor: isSelected
-                  ? colors.primary
-                  : isDark
-                    ? colors.surfaceSecondary
-                    : '#F1F5F9',
-              },
-              pressed ? styles.pressed : null,
-            ]}
-          >
-            <Text
-              adjustsFontSizeToFit
-              minimumFontScale={0.85}
-              numberOfLines={1}
-              style={[
-                styles.tabPillText,
+    <View style={styles.tabsOuter}>
+      <View
+        style={[
+          styles.tabsContainer,
+          { backgroundColor: colors.surfaceSecondary },
+        ]}
+      >
+        {tabs.map((tab) => {
+          const isSelected = activeTab === tab.key;
+          return (
+            <Pressable
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isSelected }}
+              key={tab.key}
+              onPress={() => onSelectTab(tab.key)}
+              style={({ pressed }) => [
+                styles.tabPill,
                 {
-                  color: isSelected ? '#FFFFFF' : colors.textSecondary,
-                  fontWeight: isSelected ? '800' : '600',
+                  backgroundColor: isSelected ? colors.primary : 'transparent',
                 },
+                pressed ? styles.pressed : null,
               ]}
             >
-              {tab.label}
-            </Text>
-          </Pressable>
-        );
-      })}
+              <Text
+                adjustsFontSizeToFit
+                minimumFontScale={0.85}
+                numberOfLines={1}
+                style={[
+                  styles.tabPillText,
+                  {
+                    color: isSelected ? colors.onPrimary : colors.textSecondary,
+                    fontWeight: isSelected ? '800' : '600',
+                  },
+                ]}
+              >
+                {tab.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 });
@@ -92,9 +95,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   tabsContainer: {
-    alignSelf: 'center',
+    borderRadius: radius.pill,
     flexDirection: 'row',
-    gap: spacing.xs,
+    gap: 3,
+    padding: 3,
+    width: '100%',
+  },
+  tabsOuter: {
+    alignSelf: 'center',
     maxWidth: contentMaxWidth,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,

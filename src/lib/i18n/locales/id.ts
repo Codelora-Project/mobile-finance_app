@@ -261,9 +261,9 @@ export const id = {
   analytics: {
     title: 'Wawasan Finansial',
     subtitle: 'Analisis pengeluaran, anggaran, dan tren arus kas',
-    overviewTab: 'Komposisi',
+    overviewTab: 'Ringkasan',
     budgetsTab: 'Anggaran',
-    trendsTab: 'Tren Arus Kas',
+    trendsTab: 'Arus Kas',
     totalExpense: 'Total Pengeluaran',
     totalIncome: 'Total Pemasukan',
     dailyAverage: 'Rata-rata Harian',
@@ -285,6 +285,30 @@ export const id = {
     incomePrefix: 'Masuk',
     expensePrefix: 'Keluar',
     loadingAnalytics: 'Memuat analisis finansial...',
+    netFlow: 'Arus Bersih',
+    comparedToPreviousMonth: '{amount} dibanding bulan sebelumnya',
+    noChangeFromPreviousMonth: 'Sama dengan bulan sebelumnya',
+    insightsTitle: 'Insight Utama',
+    expenseIncomeInsight:
+      'Pengeluaran menggunakan {percentage}% dari pemasukan.',
+    topExpenseInsight:
+      '{category} adalah kategori pengeluaran terbesar ({percentage}%).',
+    budgetAttentionInsight: '{count} anggaran mendekati atau melewati batas.',
+    budgetsHealthyInsight: 'Semua anggaran aktif masih dalam batas aman.',
+    notEnoughTrendTitle: 'Data tren belum cukup',
+    notEnoughTrendDesc:
+      'Tambahkan transaksi pada minimal dua bulan untuk melihat perbandingan arus kas.',
+    monthlyDetails: 'Rincian Bulanan',
+    activeBudgets: 'Anggaran Aktif ({count})',
+    otherCategories: 'Kategori Lainnya ({count})',
+    setupBudgetTitle: 'Atur Batas Anggaran Bulanan',
+    setupBudgetDesc:
+      'Pasang batas pengeluaran per kategori untuk menjaga arus kas tetap terkendali.',
+    setBudgetFor: 'Pasang anggaran {category}',
+    noTransactions: 'Belum ada transaksi',
+    loadFailed: 'Analitik belum dapat dimuat. Periksa data lalu coba lagi.',
+    exportFailed: 'Laporan belum dapat diekspor. Coba lagi.',
+    exportShareTitle: 'Ekspor Laporan Finansial',
     dayNames: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'],
   },
   // Budgets

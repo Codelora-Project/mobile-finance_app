@@ -262,7 +262,7 @@ export const en = {
   analytics: {
     title: 'Financial Insights',
     subtitle: 'Expense analytics, category budgets, and cash flow trends',
-    overviewTab: 'Breakdown',
+    overviewTab: 'Overview',
     budgetsTab: 'Budgets',
     trendsTab: 'Cash Flow',
     totalExpense: 'Total Expenses',
@@ -286,6 +286,31 @@ export const en = {
     incomePrefix: 'Income',
     expensePrefix: 'Expense',
     loadingAnalytics: 'Loading financial analytics...',
+    netFlow: 'Net Flow',
+    comparedToPreviousMonth: '{amount} compared with the previous month',
+    noChangeFromPreviousMonth: 'Unchanged from the previous month',
+    insightsTitle: 'Key Insights',
+    expenseIncomeInsight: 'Expenses use {percentage}% of income.',
+    topExpenseInsight:
+      '{category} is the largest expense category ({percentage}%).',
+    budgetAttentionInsight:
+      '{count} budgets are approaching or exceeding their limits.',
+    budgetsHealthyInsight:
+      'All active budgets remain within their safe limits.',
+    notEnoughTrendTitle: 'Not enough trend data',
+    notEnoughTrendDesc:
+      'Add transactions in at least two months to compare your cash flow.',
+    monthlyDetails: 'Monthly Details',
+    activeBudgets: 'Active Budgets ({count})',
+    otherCategories: 'Other Categories ({count})',
+    setupBudgetTitle: 'Set Monthly Budget Limits',
+    setupBudgetDesc:
+      'Set category spending limits to keep your cash flow under control.',
+    setBudgetFor: 'Set budget for {category}',
+    noTransactions: 'No transactions yet',
+    loadFailed: 'Analytics could not be loaded. Check your data and try again.',
+    exportFailed: 'The report could not be exported. Try again.',
+    exportShareTitle: 'Export Financial Report',
     dayNames: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
   },
   // Budgets

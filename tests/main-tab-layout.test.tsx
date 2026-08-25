@@ -6,6 +6,7 @@ import MainTabLayout from '@/app/(tabs)/_layout';
 import { LanguageProvider } from '@/lib/i18n/language-context';
 
 const mockRouter = { push: jest.fn() };
+let mockPathname = '/';
 
 jest.mock('expo-router', () => {
   const React = require('react');
@@ -35,6 +36,7 @@ jest.mock('expo-router', () => {
 
   return {
     Tabs: MockTabs,
+    usePathname: () => mockPathname,
     useRouter: () => mockRouter,
   };
 });
@@ -49,6 +51,7 @@ jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
 describe('main tab layout', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockPathname = '/';
   });
 
   it('renders the tab destinations and opens Add as an action in English', async () => {
@@ -105,5 +108,26 @@ describe('main tab layout', () => {
       screen.getByRole('button', { name: 'Catat transaksi' }),
     );
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/new');
+  });
+
+  it('hides the transaction FAB on Reports', async () => {
+    mockPathname = '/analytics';
+
+    await render(
+      <SafeAreaProvider
+        initialMetrics={{
+          frame: { height: 812, width: 375, x: 0, y: 0 },
+          insets: { bottom: 0, left: 0, right: 0, top: 0 },
+        }}
+      >
+        <LanguageProvider initialLanguage="en">
+          <MainTabLayout />
+        </LanguageProvider>
+      </SafeAreaProvider>,
+    );
+
+    expect(
+      screen.queryByRole('button', { name: 'Add transaction' }),
+    ).not.toBeOnTheScreen();
   });
 });

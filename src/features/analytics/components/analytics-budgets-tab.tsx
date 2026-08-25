@@ -139,7 +139,10 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
           <Text
             style={[styles.sectionHeaderTitle, { color: colors.textSecondary }]}
           >
-            ANGGARAN AKTIF ({budgetedCategories.length})
+            {t.analytics.activeBudgets.replace(
+              '{count}',
+              String(budgetedCategories.length),
+            )}
           </Text>
           <View style={styles.budgetList}>
             {budgetedCategories.map((budget) => (
@@ -177,13 +180,12 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
             />
           </View>
           <Text style={[styles.emptyHeroTitle, { color: colors.textPrimary }]}>
-            Atur Batas Anggaran Bulanan
+            {t.analytics.setupBudgetTitle}
           </Text>
           <Text
             style={[styles.emptyHeroSubtitle, { color: colors.textSecondary }]}
           >
-            Pasang batas pengeluaran pada kategori di bawah ini untuk mengontrol
-            arus kas dan mencegah pengeluaran berlebih.
+            {t.analytics.setupBudgetDesc}
           </Text>
         </View>
       )}
@@ -194,7 +196,10 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
           <Text
             style={[styles.sectionHeaderTitle, { color: colors.textSecondary }]}
           >
-            KATEGORI LAINNYA ({unbudgetedCategories.length})
+            {t.analytics.otherCategories.replace(
+              '{count}',
+              String(unbudgetedCategories.length),
+            )}
           </Text>
 
           <View
@@ -216,7 +221,10 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
 
               return (
                 <Pressable
-                  accessibilityLabel={`Pasang Anggaran ${budget.categoryName}`}
+                  accessibilityLabel={t.analytics.setBudgetFor.replace(
+                    '{category}',
+                    budget.categoryName,
+                  )}
                   accessibilityRole="button"
                   hitSlop={4}
                   key={budget.categoryId}
@@ -279,7 +287,7 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
                           </Text>
                         </>
                       ) : (
-                        'Belum ada transaksi'
+                        t.analytics.noTransactions
                       )}
                     </Text>
                   </View>

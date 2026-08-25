@@ -261,6 +261,26 @@ export type TranslationSchema = {
     incomePrefix: string;
     expensePrefix: string;
     loadingAnalytics: string;
+    netFlow: string;
+    comparedToPreviousMonth: string;
+    noChangeFromPreviousMonth: string;
+    insightsTitle: string;
+    expenseIncomeInsight: string;
+    topExpenseInsight: string;
+    budgetAttentionInsight: string;
+    budgetsHealthyInsight: string;
+    notEnoughTrendTitle: string;
+    notEnoughTrendDesc: string;
+    monthlyDetails: string;
+    activeBudgets: string;
+    otherCategories: string;
+    setupBudgetTitle: string;
+    setupBudgetDesc: string;
+    setBudgetFor: string;
+    noTransactions: string;
+    loadFailed: string;
+    exportFailed: string;
+    exportShareTitle: string;
     /** Short day names, index 0=Sun…6=Sat */
     dayNames: readonly [string, string, string, string, string, string, string];
   };

@@ -17,12 +17,23 @@ const mockRouter = {
   replace: jest.fn(),
 };
 const mockDatabase = {};
-const mockGetAnalyticsData = jest.fn<() => Promise<unknown>>();
-const mockListCategoryBudgets = jest.fn<() => Promise<unknown>>();
+const mockGetAnalyticsData =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockListCategoryBudgets =
+  jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockSetCategoryBudget =
   jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockDeleteCategoryBudget =
   jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockExportAnalyticsReportToCsv = jest
+  .fn<(...args: unknown[]) => Promise<{ fileName: string; uri: string }>>()
+  .mockResolvedValue({
+    fileName: 'financial_report_2026-08.csv',
+    uri: 'file:///cache/exports/financial_report_2026-08.csv',
+  });
+const mockShareAnalyticsReportCsv = jest
+  .fn<(...args: unknown[]) => Promise<void>>()
+  .mockResolvedValue();
 
 jest.mock('expo-router', () => {
   const React = require('react');
@@ -35,12 +46,18 @@ jest.mock('expo-sqlite', () => ({
   useSQLiteContext: () => mockDatabase,
 }));
 jest.mock('@/features/analytics/analytics-repository', () => ({
-  getAnalyticsData: () => mockGetAnalyticsData(),
+  getAnalyticsData: (...args: unknown[]) => mockGetAnalyticsData(...args),
+}));
+jest.mock('@/features/analytics/analytics-export-service', () => ({
+  exportAnalyticsReportToCsv: (...args: unknown[]) =>
+    mockExportAnalyticsReportToCsv(...args),
+  shareAnalyticsReportCsv: (...args: unknown[]) =>
+    mockShareAnalyticsReportCsv(...args),
 }));
 jest.mock('@/features/budgets/budget-repository', () => ({
   deleteCategoryBudget: (...args: unknown[]) =>
     mockDeleteCategoryBudget(...args),
-  listCategoryBudgets: () => mockListCategoryBudgets(),
+  listCategoryBudgets: (...args: unknown[]) => mockListCategoryBudgets(...args),
   setCategoryBudget: (...args: unknown[]) => mockSetCategoryBudget(...args),
 }));
 jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
@@ -73,6 +90,13 @@ describe('analytics screen', () => {
       ],
       monthStart: '2026-08-01',
       monthlyCashFlow: [
+        {
+          expenseMinor: 900_000,
+          incomeMinor: 2_500_000,
+          monthLabel: 'Jul 26',
+          monthStart: '2026-07-01',
+          netMinor: 1_600_000,
+        },
         {
           expenseMinor: 1_000_000,
           incomeMinor: 3_000_000,
@@ -146,13 +170,14 @@ describe('analytics screen', () => {
       </ThemeProvider>,
     );
 
-    expect(
-      await screen.findByRole('header', { name: 'Wawasan Finansial' }),
-    ).toBeOnTheScreen();
+    expect(await screen.findByText('Arus Bersih')).toBeOnTheScreen();
+    expect(screen.queryByText('Wawasan Finansial')).not.toBeOnTheScreen();
     expect(screen.getByText('Total Pengeluaran')).toBeOnTheScreen();
     expect(screen.getByText('Total Pemasukan')).toBeOnTheScreen();
-    expect(screen.getByText('Arus Bersih')).toBeOnTheScreen();
-    expect(screen.getByText('Agustus 2026')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: /Pilih bulan/i }),
+    ).toBeOnTheScreen();
+    expect(screen.getByText('Insight Utama')).toBeOnTheScreen();
     expect(screen.getAllByText('Food & Drink').length).toBeGreaterThanOrEqual(
       1,
     );
@@ -182,10 +207,62 @@ describe('analytics screen', () => {
     );
 
     // Switch to Trends Tab (testing positive/negative cash flows)
-    await fireEvent.press(screen.getByText('Tren Arus Kas'));
+    await fireEvent.press(screen.getByText('Arus Kas'));
     expect(screen.getByText('Tren Arus Kas Bulanan')).toBeOnTheScreen();
     expect(screen.getAllByText('+Rp 2.000.000').length).toBeGreaterThanOrEqual(
       1,
+    );
+  });
+
+  it('changes the reporting month and reloads report and budget data', async () => {
+    await render(
+      <ThemeProvider>
+        <LanguageProvider initialLanguage="id">
+          <AnalyticsScreen hideBackButton />
+        </LanguageProvider>
+      </ThemeProvider>,
+    );
+
+    await screen.findByText('Arus Bersih');
+    await fireEvent.press(screen.getByRole('button', { name: /Pilih bulan/i }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Juli 2026' }));
+
+    await waitFor(() =>
+      expect(mockGetAnalyticsData).toHaveBeenCalledWith(
+        mockDatabase,
+        '2026-07-31',
+      ),
+    );
+    expect(mockListCategoryBudgets).toHaveBeenCalledWith(
+      mockDatabase,
+      '2026-07-31',
+    );
+  });
+
+  it('exports the currently displayed financial report', async () => {
+    await render(
+      <ThemeProvider>
+        <LanguageProvider initialLanguage="en">
+          <AnalyticsScreen hideBackButton />
+        </LanguageProvider>
+      </ThemeProvider>,
+    );
+
+    await screen.findByText('Net Flow');
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Export report CSV' }),
+    );
+
+    await waitFor(() =>
+      expect(mockExportAnalyticsReportToCsv).toHaveBeenCalledWith(
+        expect.objectContaining({ monthStart: '2026-08-01' }),
+        'IDR',
+        'en',
+      ),
+    );
+    expect(mockShareAnalyticsReportCsv).toHaveBeenCalledWith(
+      'file:///cache/exports/financial_report_2026-08.csv',
+      'Export Financial Report',
     );
   });
 

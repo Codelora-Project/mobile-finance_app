@@ -3,8 +3,10 @@ import React, { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { AnalyticsData } from '@/features/analytics/analytics-repository';
+import { AnalyticsInsightsCard } from '@/features/analytics/components/analytics-insights-card';
 import { DonutBreakdownChart } from '@/features/analytics/components/donut-breakdown-chart';
 import { WeeklyBarChart } from '@/features/analytics/components/weekly-bar-chart';
+import type { CategoryBudget } from '@/features/budgets/budget-repository';
 import type { TranslationSchema } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -13,12 +15,14 @@ import { typography } from '@/theme/typography';
 
 export type AnalyticsOverviewTabProps = {
   analytics: AnalyticsData;
+  budgets: readonly CategoryBudget[];
   currencyCode: string;
   t: TranslationSchema;
 };
 
 export const AnalyticsOverviewTab = memo(function AnalyticsOverviewTab({
   analytics,
+  budgets,
   currencyCode,
   t,
 }: AnalyticsOverviewTabProps) {
@@ -26,6 +30,8 @@ export const AnalyticsOverviewTab = memo(function AnalyticsOverviewTab({
 
   return (
     <View style={styles.tabContent}>
+      <AnalyticsInsightsCard analytics={analytics} budgets={budgets} t={t} />
+
       {/* Donut / Segmented Breakdown Chart */}
       {analytics.totalExpenseMinor > 0 ? (
         <DonutBreakdownChart
