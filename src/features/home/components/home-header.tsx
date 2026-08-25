@@ -8,21 +8,21 @@ import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
 export type HomeHeaderProps = {
-  appTitle: string;
-  greeting: string;
   onPressSettings: () => void;
   settingsLabel: string;
   streakCount: number;
   streakDaysLabel: string;
+  subtitle?: string;
+  title: string;
 };
 
 export const HomeHeader = memo(function HomeHeader({
-  appTitle,
-  greeting,
   onPressSettings,
   settingsLabel,
   streakCount,
   streakDaysLabel,
+  subtitle,
+  title,
 }: HomeHeaderProps) {
   const { colors, isDark } = useTheme();
 
@@ -31,21 +31,25 @@ export const HomeHeader = memo(function HomeHeader({
       style={[
         styles.cleanHeader,
         {
-          backgroundColor: colors.surface,
-          borderBottomColor: colors.border,
+          backgroundColor: colors.background,
         },
       ]}
     >
       <View style={styles.headerLeft}>
-        <Text style={[styles.headerGreeting, { color: colors.textSecondary }]}>
-          {greeting}
-        </Text>
         <Text
           accessibilityRole="header"
           style={[styles.headerTitle, { color: colors.textPrimary }]}
         >
-          {appTitle}
+          {title}
         </Text>
+        {subtitle ? (
+          <Text
+            numberOfLines={1}
+            style={[styles.headerSubtitle, { color: colors.textSecondary }]}
+          >
+            {subtitle}
+          </Text>
+        ) : null}
       </View>
 
       <View style={styles.headerRightActions}>
@@ -79,7 +83,9 @@ export const HomeHeader = memo(function HomeHeader({
           style={({ pressed }) => [
             styles.settingsButton,
             {
-              backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+              backgroundColor: isDark
+                ? colors.surfaceSecondary
+                : colors.surface,
               borderColor: colors.border,
             },
             pressed && styles.pressed,
@@ -99,23 +105,14 @@ export const HomeHeader = memo(function HomeHeader({
 const styles = StyleSheet.create({
   cleanHeader: {
     alignItems: 'center',
-    borderBottomWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingBottom: spacing.sm + 4,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.xs,
-  },
-  headerGreeting: {
-    ...typography.metadata,
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-    textTransform: 'uppercase',
+    paddingVertical: spacing.sm + 2,
   },
   headerLeft: {
     flex: 1,
-    gap: 1,
+    gap: 2,
   },
   headerRightActions: {
     alignItems: 'center',
@@ -123,10 +120,15 @@ const styles = StyleSheet.create({
     gap: spacing.xs + 2,
   },
   headerTitle: {
-    ...typography.sectionTitle,
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: -0.3,
+    ...typography.pageTitle,
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+  },
+  headerSubtitle: {
+    ...typography.metadata,
+    fontSize: 12,
+    fontWeight: '600',
   },
   pressed: {
     opacity: 0.7,
@@ -134,11 +136,11 @@ const styles = StyleSheet.create({
   },
   settingsButton: {
     alignItems: 'center',
-    borderRadius: radius.pill,
+    borderRadius: radius.md,
     borderWidth: 1,
-    height: 38,
+    height: 40,
     justifyContent: 'center',
-    width: 38,
+    width: 40,
   },
   streakBadge: {
     alignItems: 'center',

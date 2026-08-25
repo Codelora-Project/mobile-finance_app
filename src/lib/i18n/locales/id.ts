@@ -15,7 +15,7 @@ export const id = {
   // Home Screen
   home: {
     greeting: 'RINGKASAN KEUANGAN',
-    appTitle: 'Personal Finance',
+    appTitle: 'Ringkasan',
     net: 'Arus Bersih',
     income: 'Uang Masuk',
     expensesThisMonth: 'Pengeluaran',

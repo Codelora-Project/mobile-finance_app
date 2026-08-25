@@ -412,14 +412,14 @@ export function HomeScreen() {
 
   return (
     <Screen>
-      {/* 1. Header with Greeting, Streak Badge & Settings Button */}
+      {/* 1. Compact content header with period context. */}
       <HomeHeader
-        appTitle={t.home.appTitle}
-        greeting={t.home.greeting}
         onPressSettings={handlePressSettings}
         settingsLabel={t.tabs.settings}
         streakCount={habitStats?.currentStreak ?? 0}
         streakDaysLabel={t.habits.streakDays}
+        subtitle={summary?.periodLabel}
+        title={t.home.appTitle}
       />
 
       {/* 2. Scrollable Dashboard Body */}

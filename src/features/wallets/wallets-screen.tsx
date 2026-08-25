@@ -161,8 +161,7 @@ export function WalletsScreen({
         style={[
           styles.headerBar,
           {
-            backgroundColor: colors.surface,
-            borderBottomColor: colors.border,
+            backgroundColor: colors.background,
           },
         ]}
       >
@@ -183,9 +182,7 @@ export function WalletsScreen({
               size={22}
             />
           </Pressable>
-        ) : (
-          <View style={styles.headerSpacer} />
-        )}
+        ) : null}
 
         <Text
           accessibilityRole="header"
@@ -208,7 +205,14 @@ export function WalletsScreen({
             pressed && styles.pressed,
           ]}
         >
-          <MaterialCommunityIcons color="#FFFFFF" name="plus" size={20} />
+          <MaterialCommunityIcons
+            color={colors.onPrimary}
+            name="plus"
+            size={18}
+          />
+          <Text style={[styles.addWalletLabel, { color: colors.onPrimary }]}>
+            {language === 'id' ? 'Tambah' : 'Add'}
+          </Text>
         </Pressable>
       </View>
 
@@ -341,10 +345,17 @@ export function WalletsScreen({
 const styles = StyleSheet.create({
   addWalletBtn: {
     alignItems: 'center',
-    borderRadius: radius.pill,
-    height: 36,
+    borderRadius: radius.md,
+    flexDirection: 'row',
+    gap: spacing.xs,
+    height: 40,
     justifyContent: 'center',
-    width: 36,
+    paddingHorizontal: spacing.sm + 2,
+  },
+  addWalletLabel: {
+    ...typography.metadata,
+    fontSize: 12,
+    fontWeight: '800',
   },
   backButton: {
     alignItems: 'center',
@@ -393,25 +404,24 @@ const styles = StyleSheet.create({
   },
   headerBar: {
     alignItems: 'center',
-    borderBottomWidth: 1,
+    alignSelf: 'center',
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: spacing.sm,
+    maxWidth: contentMaxWidth,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
+    width: '100%',
   },
   headerComponent: {
     gap: spacing.sm,
     marginBottom: spacing.xs,
   },
-  headerSpacer: {
-    width: 36,
-  },
   headerTitle: {
-    ...typography.sectionTitle,
+    ...typography.pageTitle,
     flex: 1,
-    fontSize: 16,
-    fontWeight: '700',
-    textAlign: 'center',
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: -0.5,
   },
   loadingText: {
     ...typography.metadata,

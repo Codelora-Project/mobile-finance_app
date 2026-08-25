@@ -245,7 +245,7 @@ describe('home screen', () => {
       </LanguageProvider>,
     );
 
-    expect(await screen.findByText('FINANCIAL OVERVIEW')).toBeOnTheScreen();
+    expect(await screen.findByText('Overview')).toBeOnTheScreen();
     expect(screen.getByText('Expenses')).toBeOnTheScreen();
     expect(screen.getByText(formatMoney(100_000, 'IDR'))).toBeOnTheScreen();
     expect(screen.getByText('Income')).toBeOnTheScreen();
@@ -288,7 +288,7 @@ describe('home screen', () => {
       </LanguageProvider>,
     );
 
-    expect(await screen.findByText('FINANCIAL OVERVIEW')).toBeOnTheScreen();
+    expect(await screen.findByText('Overview')).toBeOnTheScreen();
     expect(screen.getByText('No transactions yet')).toBeOnTheScreen();
   });
 
@@ -366,7 +366,7 @@ describe('home screen', () => {
       </LanguageProvider>,
     );
 
-    expect(await screen.findByText('RINGKASAN KEUANGAN')).toBeOnTheScreen();
+    expect(await screen.findByText('Ringkasan')).toBeOnTheScreen();
     expect(screen.getByText('Pengeluaran')).toBeOnTheScreen();
     expect(screen.getByText('Uang Masuk')).toBeOnTheScreen();
     expect(screen.getByText(/Arus Bersih/i)).toBeOnTheScreen();

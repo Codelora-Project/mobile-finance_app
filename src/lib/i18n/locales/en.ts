@@ -15,7 +15,7 @@ export const en = {
   // Home Screen
   home: {
     greeting: 'FINANCIAL OVERVIEW',
-    appTitle: 'Personal Finance',
+    appTitle: 'Overview',
     net: 'Net flow',
     income: 'Income',
     expensesThisMonth: 'Expenses',

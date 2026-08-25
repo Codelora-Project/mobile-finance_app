@@ -11,12 +11,10 @@ import {
 import { Screen } from '@/components/ui/screen';
 import { UndoToastBanner } from '@/components/ui/undo-toast-banner';
 import { TransactionDateGroupHeader } from '@/features/transactions/components/transaction-date-group-header';
-import { TransactionDateNavigator } from '@/features/transactions/components/transaction-date-navigator';
 import { TransactionHistoryEmptyState } from '@/features/transactions/components/transaction-history-empty-state';
 import { TransactionHistoryHeader } from '@/features/transactions/components/transaction-history-header';
 import { TransactionHistorySearchToolbar } from '@/features/transactions/components/transaction-history-search-toolbar';
 import { TransactionHistorySummaryBar } from '@/features/transactions/components/transaction-history-summary-bar';
-import { TransactionPeriodSegmentedControl } from '@/features/transactions/components/transaction-period-segmented-control';
 import { TransactionRowItem } from '@/features/transactions/components/transaction-row-item';
 import {
   useTransactionHistoryViewModel,
@@ -75,46 +73,22 @@ export function TransactionHistoryScreen() {
 
   return (
     <Screen>
-      {/* 1. Screen title and low-frequency export action */}
+      {/* 1. Month navigation and period tabs provide the page context. */}
       <TransactionHistoryHeader
-        activeFiltersCount={state.activeFiltersCount}
+        activePeriod={state.period}
         exporting={state.exporting}
-        onClearSearch={() => actions.setSearchQuery('')}
+        language={state.language}
+        monthLabel={state.monthYearLabel}
+        onChangePeriod={actions.handleChangePeriod}
         onExport={() => void actions.handleExport()}
-        onOpenFilter={() => actions.setFilterModalVisible(true)}
-        onSearchChange={actions.setSearchQuery}
-        searchQuery={state.searchQuery}
-        showSearchAndFilter={false}
-        t={state.t}
+        onNextMonth={actions.handleNextMonth}
+        onPrevMonth={actions.handlePrevMonth}
+        onSelectMonth={actions.handleSelectMonth}
+        selectedMonth={state.selectedMonth}
+        selectedYear={state.selectedYear}
       />
 
-      {/* 2. Period and date form one decision area. */}
-      <View
-        style={[
-          styles.periodPanel,
-          { backgroundColor: colors.surface, borderColor: colors.border },
-        ]}
-      >
-        <TransactionPeriodSegmentedControl
-          activePeriod={state.period}
-          embedded
-          language={state.language}
-          onChangePeriod={actions.handleChangePeriod}
-        />
-        <TransactionDateNavigator
-          embedded
-          isAllTime={state.isAllTime}
-          language={state.language}
-          onNextPeriod={actions.handleNextPeriod}
-          onPrevPeriod={actions.handlePrevPeriod}
-          onToggleAllTime={actions.handleToggleAllTime}
-          period={state.period}
-          primaryLabel={state.primaryLabel}
-          secondaryLabel={state.secondaryLabel}
-        />
-      </View>
-
-      {/* 3. Cash-flow summary doubles as a type filter. */}
+      {/* 2. Cash-flow summary doubles as a type filter. */}
       {!initialLoading ? (
         <TransactionHistorySummaryBar
           activeTypeFilter={state.filters.type}
@@ -128,7 +102,7 @@ export function TransactionHistoryScreen() {
         />
       ) : null}
 
-      {/* 4. Search and advanced filters support the list below. */}
+      {/* 3. Search and advanced filters support the list below. */}
       <TransactionHistorySearchToolbar
         activeFiltersCount={state.activeFiltersCount}
         language={state.language}
@@ -139,7 +113,7 @@ export function TransactionHistoryScreen() {
         t={state.t}
       />
 
-      {/* 5. Main Infinite Scroll Transaction Feed */}
+      {/* 4. Main Infinite Scroll Transaction Feed */}
       <FlatList
         contentContainerStyle={styles.listContent}
         data={state.dateGroups}
@@ -185,7 +159,7 @@ export function TransactionHistoryScreen() {
         scrollEventThrottle={16}
       />
 
-      {/* 6. Comprehensive Filter Modal Sheet */}
+      {/* 5. Comprehensive Filter Modal Sheet */}
       <TransactionFilterModal
         filters={state.filters}
         onApply={(f) => {
@@ -240,16 +214,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: spacing.md,
-  },
-  periodPanel: {
-    alignSelf: 'center',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-    maxWidth: contentMaxWidth - spacing.md * 2,
-    padding: spacing.sm,
-    width: '92%',
   },
   timelineItemsWrap: {
     paddingVertical: spacing.xs,

@@ -260,7 +260,7 @@ describe('transaction history screen', () => {
     });
   });
 
-  it('navigates months and toggles all time with Month Selector', async () => {
+  it('navigates months and selects a month from the month picker', async () => {
     mockListTransactions.mockResolvedValue({
       hasMore: false,
       items: [transaction],
@@ -270,20 +270,41 @@ describe('transaction history screen', () => {
     await render(<TransactionHistoryScreen />);
     await screen.findByRole('button', { name: /Coffee Shop/ });
 
-    // Press Previous Month button
-    const prevBtn = screen.getByRole('button', { name: 'Bulan Sebelumnya' });
+    const previousMonth = new Date();
+    previousMonth.setDate(1);
+    previousMonth.setMonth(previousMonth.getMonth() - 1);
+    const pickerYear = previousMonth.getFullYear();
+
+    const prevBtn = screen.getByRole('button', { name: 'Bulan sebelumnya' });
     await fireEvent.press(prevBtn);
 
     await waitFor(() => {
       expect(mockListTransactions).toHaveBeenCalledTimes(2);
     });
 
-    // Press Toggle All Time
-    const toggleAllTimeBtn = screen.getByText(/Semua waktu/i);
-    await fireEvent.press(toggleAllTimeBtn);
+    await fireEvent.press(screen.getByRole('button', { name: /Pilih bulan/ }));
+    expect(
+      screen.getByRole('button', { name: 'Tahun sebelumnya' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Tahun berikutnya' }),
+    ).toBeOnTheScreen();
+
+    await fireEvent.press(
+      screen.getByRole('button', { name: `Januari ${pickerYear}` }),
+    );
 
     await waitFor(() => {
       expect(mockListTransactions).toHaveBeenCalledTimes(3);
+      expect(mockListTransactions).toHaveBeenLastCalledWith(
+        mockDatabase,
+        expect.objectContaining({
+          filters: expect.objectContaining({
+            dateFrom: `${pickerYear}-01-01`,
+            dateTo: `${pickerYear}-01-31`,
+          }),
+        }),
+      );
     });
   });
 

@@ -71,6 +71,17 @@ function formatDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+function moveDateToMonth(date: Date, year: number, month: number): Date {
+  const normalizedMonth = new Date(year, month, 1);
+  const targetYear = normalizedMonth.getFullYear();
+  const targetMonth = normalizedMonth.getMonth();
+  const lastDay = new Date(targetYear, targetMonth + 1, 0).getDate();
+  const next = new Date(date);
+  next.setDate(1);
+  next.setFullYear(targetYear, targetMonth, Math.min(date.getDate(), lastDay));
+  return next;
+}
+
 export function useTransactionHistoryViewModel() {
   const database = useSQLiteContext();
   const router = useRouter();
@@ -93,6 +104,17 @@ export function useTransactionHistoryViewModel() {
   const [isAllTime, setIsAllTime] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [exporting, setExporting] = useState(false);
+
+  const selectedMonth = selectedDate.getMonth();
+  const selectedYear = selectedDate.getFullYear();
+  const monthYearLabel = useMemo(
+    () =>
+      new Intl.DateTimeFormat(language === 'id' ? 'id-ID' : 'en-US', {
+        month: 'short',
+        year: 'numeric',
+      }).format(selectedDate),
+    [language, selectedDate],
+  );
 
   const fetchIdRef = useRef(0);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -231,6 +253,26 @@ export function useTransactionHistoryViewModel() {
   const handleChangePeriod = useCallback((newPeriod: HistoryPeriod) => {
     setPeriod(newPeriod);
     setIsAllTime(false);
+  }, []);
+
+  const handlePrevMonth = useCallback(() => {
+    setIsAllTime(false);
+    setSelectedDate((current) =>
+      moveDateToMonth(current, current.getFullYear(), current.getMonth() - 1),
+    );
+  }, []);
+
+  const handleNextMonth = useCallback(() => {
+    setIsAllTime(false);
+    setSelectedDate((current) =>
+      moveDateToMonth(current, current.getFullYear(), current.getMonth() + 1),
+    );
+  }, []);
+
+  const handleSelectMonth = useCallback((year: number, month: number) => {
+    if (!Number.isInteger(year) || month < 0 || month > 11) return;
+    setIsAllTime(false);
+    setSelectedDate((current) => moveDateToMonth(current, year, month));
   }, []);
 
   // Debounce search input
@@ -519,12 +561,15 @@ export function useTransactionHistoryViewModel() {
       handleEndReached,
       handleExport,
       handleLongPressTransaction,
+      handleNextMonth,
       handleNextPeriod,
       handleOpenDetail,
+      handlePrevMonth,
       handlePrevPeriod,
       handleRefresh,
       handleResetFilters,
       handleSelectTypeFilter,
+      handleSelectMonth,
       handleToggleAllTime,
       setFilterModalVisible,
       setFilters,
@@ -545,10 +590,13 @@ export function useTransactionHistoryViewModel() {
       language,
       loading,
       loadingMore,
+      monthYearLabel,
       period,
       primaryLabel,
       refreshing,
       searchQuery,
+      selectedMonth,
+      selectedYear,
       secondaryLabel,
       t,
       totalExpenseMinor,
