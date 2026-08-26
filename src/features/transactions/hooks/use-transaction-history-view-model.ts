@@ -14,7 +14,8 @@ import {
   type TransactionFilters,
   type TransactionListItem,
 } from '@/features/transactions/transaction-repository';
-import { useUndoTransaction } from '@/features/transactions/hooks/use-undo-transaction';
+import { getTransactionErrorMessage } from '@/features/transactions/transaction-error-messages';
+import { useTransactionMutations } from '@/features/transactions/transaction-mutation-context';
 import { useCurrency } from '@/lib/currency/currency-context';
 import { formatGroupDate } from '@/lib/dates';
 import { mapError } from '@/lib/errors';
@@ -87,6 +88,7 @@ export function useTransactionHistoryViewModel() {
   const router = useRouter();
   const { language, t } = useLanguage();
   const { currencyCode } = useCurrency();
+  const transactionMutations = useTransactionMutations();
 
   const [transactions, setTransactions] = useState<TransactionListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -335,18 +337,19 @@ export function useTransactionHistoryViewModel() {
     [database],
   );
 
-  const undo = useUndoTransaction({
-    onSuccess: () =>
-      void loadTransactions(effectiveFilters, debouncedSearch, 0, false),
-  });
-
   useFocusEffect(
     useCallback(() => {
+      void transactionMutations.revision;
       void loadTransactions(effectiveFilters, debouncedSearch, 0, false);
       return () => {
         fetchIdRef.current += 1;
       };
-    }, [debouncedSearch, effectiveFilters, loadTransactions]),
+    }, [
+      debouncedSearch,
+      effectiveFilters,
+      loadTransactions,
+      transactionMutations.revision,
+    ]),
   );
 
   const handleRefresh = useCallback(async () => {
@@ -431,16 +434,15 @@ export function useTransactionHistoryViewModel() {
         setTransactions((current) =>
           current.filter((item) => item.id !== tx.id),
         );
-        undo.showDeletedTransactionUndo(
-          snapshot,
-          language === 'id' ? 'Transaksi dihapus' : 'Transaction deleted',
-        );
+        transactionMutations.notifyDeleted(snapshot);
       } catch (delErr) {
-        const mapped = mapError(delErr, 'DATABASE_WRITE_FAILED');
-        Alert.alert('Error', mapped.message);
+        Alert.alert(
+          t.transactions.title,
+          getTransactionErrorMessage(delErr, t),
+        );
       }
     },
-    [database, language, undo],
+    [database, t, transactionMutations],
   );
 
   const handleLongPressTransaction = useCallback(
@@ -574,8 +576,6 @@ export function useTransactionHistoryViewModel() {
       setFilterModalVisible,
       setFilters,
       setSearchQuery,
-      undo: undo.handleUndo,
-      dismissUndo: undo.dismissToast,
     },
     state: {
       activeFiltersCount,
@@ -602,10 +602,6 @@ export function useTransactionHistoryViewModel() {
       totalExpenseMinor,
       totalIncomeMinor,
       transactions,
-      undoCanUndo: undo.canUndo,
-      undoIsRunning: undo.isUndoing,
-      undoMessage: undo.toastMessage,
-      undoVisible: undo.toastVisible,
     },
   };
 }

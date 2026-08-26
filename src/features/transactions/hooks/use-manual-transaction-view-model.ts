@@ -1,8 +1,10 @@
+import { useNavigation, usePreventRemove } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, type TextInput } from 'react-native';
+import { Alert, Animated, Easing, type TextInput } from 'react-native';
 
+import { isTransactionType } from '@/domain/transaction';
 import { getWallets, type Wallet } from '@/features/wallets';
 import {
   listCategories,
@@ -24,8 +26,7 @@ import {
   buildSaveInput,
   createDefaultForm,
   formFromTransaction,
-  INITIAL_CATEGORIES,
-  INITIAL_PAYMENT_METHODS,
+  getFormDirtySignature,
   type FormErrors,
   type FormState,
 } from '@/features/transactions/manual-transaction-form';
@@ -40,8 +41,9 @@ import {
   type TransactionType,
   updateTransaction,
 } from '@/features/transactions/transaction-repository';
+import { getTransactionErrorMessage } from '@/features/transactions/transaction-error-messages';
+import { useTransactionMutations } from '@/features/transactions/transaction-mutation-context';
 import { useCurrency } from '@/lib/currency/currency-context';
-import { isCodedError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoneyInput, parseMoneyInput } from '@/lib/money';
 
@@ -59,15 +61,6 @@ export type PickerState =
   | 'transferFeeCategory'
   | null;
 
-function getOperationMessage(error: unknown) {
-  if (isCodedError(error)) {
-    return error.message;
-  }
-  return error instanceof Error
-    ? error.message
-    : 'An unexpected error occurred.';
-}
-
 export type ManualTransactionScreenProps = {
   transactionId?: number;
 };
@@ -81,8 +74,10 @@ export function useManualTransactionViewModel({
 }: UseManualTransactionViewModelOptions = {}) {
   const database = useSQLiteContext();
   const router = useRouter();
+  const navigation = useNavigation();
   const { language, t } = useLanguage();
   const { currencyCode, currencySymbol } = useCurrency();
+  const transactionMutations = useTransactionMutations();
 
   const params = useLocalSearchParams<{
     categoryId?: string;
@@ -91,33 +86,48 @@ export function useManualTransactionViewModel({
     type?: TransactionType;
   }>();
 
+  const routeTransactionId = params.id ? Number(params.id) : null;
   const transactionId =
-    propTransactionId && propTransactionId > 0
-      ? propTransactionId
-      : params.id
-        ? Number(params.id)
+    Number.isSafeInteger(propTransactionId) && (propTransactionId ?? 0) > 0
+      ? propTransactionId!
+      : Number.isSafeInteger(routeTransactionId) && (routeTransactionId ?? 0) > 0
+        ? routeTransactionId
         : null;
   const isEditMode = transactionId !== null;
 
   const initialCategoryParam = useMemo(() => {
-    if (params.categoryId && params.categoryName) {
+    const categoryId = Number(params.categoryId);
+    if (
+      Number.isSafeInteger(categoryId) &&
+      categoryId > 0 &&
+      params.categoryName
+    ) {
       return {
-        id: Number(params.categoryId),
+        id: categoryId,
         name: params.categoryName,
       };
     }
     return null;
   }, [params.categoryId, params.categoryName]);
 
-  const [form, setForm] = useState<FormState>(() =>
-    createDefaultForm(initialCategoryParam, params.type),
-  );
-  const [categoriesList, setCategoriesList] =
-    useState<Category[]>(INITIAL_CATEGORIES);
+  const initialFormRef = useRef<FormState | null>(null);
+  if (!initialFormRef.current) {
+    initialFormRef.current = createDefaultForm(
+      initialCategoryParam,
+      isTransactionType(params.type) ? params.type : undefined,
+    );
+  }
+  const [form, setForm] = useState<FormState>(initialFormRef.current);
+  const baselineFormRef = useRef<FormState>(initialFormRef.current);
+  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
   const [paymentMethodsList, setPaymentMethodsList] = useState<PaymentMethod[]>(
-    INITIAL_PAYMENT_METHODS,
+    [],
   );
   const [walletsList, setWalletsList] = useState<Wallet[]>([]);
+  const [referenceStatus, setReferenceStatus] = useState<
+    'loading' | 'ready' | 'error'
+  >('loading');
+  const [referenceLoadAttempt, setReferenceLoadAttempt] = useState(0);
 
   const displayedCategories = useMemo(() => {
     const targetType = form.type === 'income' ? 'income' : 'expense';
@@ -142,9 +152,51 @@ export function useManualTransactionViewModel({
 
   const savingRef = useRef(false);
   const deletingRef = useRef(false);
+  const paymentMethodTouchedRef = useRef(false);
   const amountInputRef = useRef<TextInput | null>(null);
   const slideAnim = useRef(new Animated.Value(450)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [exitTarget, setExitTarget] = useState<'origin' | 'transactions' | null>(
+    null,
+  );
+
+  const isDirty = useMemo(
+    () =>
+      getFormDirtySignature(form) !==
+      getFormDirtySignature(baselineFormRef.current),
+    [form],
+  );
+
+  usePreventRemove(
+    exitTarget === null && (isDirty || saving || deleting),
+    ({ data }) => {
+      if (saving || deleting) return;
+      Alert.alert(t.transactions.discardTitle, t.transactions.discardDesc, [
+        {
+          style: 'cancel',
+          text: t.transactions.continueEditing,
+        },
+        {
+          onPress: () => navigation.dispatch(data.action),
+          style: 'destructive',
+          text: t.transactions.discardChanges,
+        },
+      ]);
+    },
+  );
+
+  useEffect(() => {
+    if (!exitTarget) return;
+    if (exitTarget === 'transactions') {
+      router.dismissTo('/transactions');
+      return;
+    }
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/transactions');
+    }
+  }, [exitTarget, router]);
 
   useEffect(() => {
     Animated.parallel([
@@ -165,6 +217,7 @@ export function useManualTransactionViewModel({
   useEffect(() => {
     let active = true;
     async function loadData() {
+      setReferenceStatus('loading');
       try {
         const [cats, pms, wallets, shortcuts] = await Promise.all([
           listCategories(database),
@@ -172,38 +225,63 @@ export function useManualTransactionViewModel({
           getWallets(database),
           getQuickShortcuts(database),
         ]);
-        if (active) {
-          setCategoriesList(cats);
-          setPaymentMethodsList(pms);
-          setWalletsList(wallets);
-          if (shortcuts && shortcuts.length > 0) {
-            setQuickShortcuts(shortcuts);
-          }
-          if (!isEditMode) {
-            setForm((current) => {
-              if (!current.paymentMethod && pms.length > 0) {
-                const defaultMethod = pms.find((p) => p.isDefault) ?? pms[0];
-                return {
-                  ...current,
-                  paymentMethod: {
-                    id: defaultMethod.id,
-                    name: defaultMethod.name,
-                  },
-                };
-              }
-              return current;
-            });
-          }
+        if (!active) return;
+        setCategoriesList(cats);
+        setPaymentMethodsList(pms);
+        setWalletsList(wallets);
+        if (shortcuts && shortcuts.length > 0) {
+          setQuickShortcuts(shortcuts);
         }
+        if (!isEditMode) {
+          const defaultMethod = pms.find((p) => p.isDefault) ?? pms[0];
+          setForm((current) => {
+            const targetCategoryType =
+              current.type === 'income' ? 'income' : 'expense';
+            const matchingCategory = current.category
+              ? cats.find(
+                  (category) =>
+                    category.id === current.category?.id &&
+                    category.type === targetCategoryType,
+                )
+              : null;
+            const paymentMethod =
+              !paymentMethodTouchedRef.current && !current.paymentMethod
+                ? defaultMethod
+                  ? { id: defaultMethod.id, name: defaultMethod.name }
+                  : null
+                : current.paymentMethod;
+            const next = {
+              ...current,
+              category: matchingCategory
+                ? { id: matchingCategory.id, name: matchingCategory.name }
+                : null,
+              paymentMethod,
+            };
+            baselineFormRef.current = {
+              ...baselineFormRef.current,
+              category: matchingCategory
+                ? { id: matchingCategory.id, name: matchingCategory.name }
+                : null,
+              paymentMethod:
+                !paymentMethodTouchedRef.current &&
+                !baselineFormRef.current.paymentMethod
+                  ? paymentMethod
+                  : baselineFormRef.current.paymentMethod,
+            };
+            return next;
+          });
+        }
+        setReferenceStatus('ready');
       } catch (err) {
         if (__DEV__) console.warn('Could not load categories/methods', err);
+        if (active) setReferenceStatus('error');
       }
     }
     void loadData();
     return () => {
       active = false;
     };
-  }, [database, isEditMode]);
+  }, [database, isEditMode, referenceLoadAttempt]);
 
   useEffect(() => {
     if (!isEditMode) return;
@@ -215,7 +293,9 @@ export function useManualTransactionViewModel({
           getTransactionClaimMembership(database, transactionId!),
         ]);
         if (active && tx) {
-          setForm(formFromTransaction(tx));
+          const loadedForm = formFromTransaction(tx);
+          baselineFormRef.current = loadedForm;
+          setForm(loadedForm);
           setEditingTransaction(tx);
           setClaimMembership(claim);
         }
@@ -243,6 +323,7 @@ export function useManualTransactionViewModel({
   }, []);
 
   const handleSelectPaymentMethod = useCallback((pm: PaymentMethod) => {
+    paymentMethodTouchedRef.current = true;
     setForm((current) => ({
       ...current,
       paymentMethod:
@@ -253,6 +334,7 @@ export function useManualTransactionViewModel({
   }, []);
 
   const handleSelectTransferSource = useCallback((wallet: Wallet | null) => {
+    paymentMethodTouchedRef.current = true;
     setForm((current) => ({
       ...current,
       paymentMethod: wallet ? { id: wallet.id, name: wallet.name } : null,
@@ -342,16 +424,26 @@ export function useManualTransactionViewModel({
       } catch (error) {
         setErrors((c) => ({
           ...c,
-          receipt: getOperationMessage(error),
+          receipt: getTransactionErrorMessage(error, t),
         }));
       }
     },
-    [],
+    [t],
   );
 
   const handleClose = useCallback(() => {
-    router.back();
+    if (savingRef.current || deletingRef.current) return;
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/transactions');
+    }
   }, [router]);
+
+  const retryReferenceData = useCallback(() => {
+    setErrors((current) => ({ ...current, submit: undefined }));
+    setReferenceLoadAttempt((current) => current + 1);
+  }, []);
 
   const persistTransaction = useCallback(
     async (input: SaveTransactionInput) => {
@@ -363,39 +455,28 @@ export function useManualTransactionViewModel({
       try {
         if (isEditMode) {
           await updateTransaction(database, transactionId!, input);
-          router.dismissTo({
-            params: {
-              feedback:
-                language === 'id'
-                  ? 'Transaksi berhasil diperbarui'
-                  : 'Transaction updated successfully',
-            },
-            pathname: '/transactions',
-          });
+          transactionMutations.notifyUpdated();
+          setExitTarget('origin');
         } else {
           const result = await createTransaction(database, input);
-          router.dismissTo({
-            params: {
-              feedback:
-                language === 'id'
-                  ? 'Transaksi berhasil dicatat'
-                  : 'Transaction recorded successfully',
-              undoCreatedId: String(result.id),
-            },
-            pathname: '/',
-          });
+          transactionMutations.notifyCreated(result.id);
+          setExitTarget('origin');
         }
       } catch (error) {
-        setErrors({ submit: getOperationMessage(error) });
+        setErrors({ submit: getTransactionErrorMessage(error, t) });
         savingRef.current = false;
         setSaving(false);
       }
     },
-    [database, isEditMode, language, router, transactionId],
+    [database, isEditMode, t, transactionId, transactionMutations],
   );
 
   const handleSave = useCallback(async () => {
     if (savingRef.current || deletingRef.current) return;
+    if (referenceStatus !== 'ready') {
+      setErrors({ submit: t.transactions.referenceLoadFailed });
+      return;
+    }
     const fallbackCategory = displayedCategories[0]?.id ?? 1;
     const { errors: validationErrors, input } = buildSaveInput(
       form,
@@ -413,7 +494,15 @@ export function useManualTransactionViewModel({
       return;
     }
     await persistTransaction(input);
-  }, [currencyCode, displayedCategories, form, language, persistTransaction]);
+  }, [
+    currencyCode,
+    displayedCategories,
+    form,
+    language,
+    persistTransaction,
+    referenceStatus,
+    t.transactions.referenceLoadFailed,
+  ]);
 
   const handleCancelTransferReview = useCallback(() => {
     setPendingTransferInput(null);
@@ -434,22 +523,14 @@ export function useManualTransactionViewModel({
 
     try {
       const snapshot = await deleteTransactionForUndo(database, transactionId);
-      router.dismissTo({
-        params: {
-          feedback:
-            language === 'id'
-              ? 'Transaksi telah dihapus'
-              : 'Transaction deleted',
-          undoPayload: JSON.stringify(snapshot),
-        },
-        pathname: '/transactions',
-      });
+      transactionMutations.notifyDeleted(snapshot);
+      setExitTarget('transactions');
     } catch (error) {
-      setErrors({ submit: getOperationMessage(error) });
+      setErrors({ submit: getTransactionErrorMessage(error, t) });
       deletingRef.current = false;
       setDeleting(false);
     }
-  }, [database, language, router, transactionId]);
+  }, [database, t, transactionId, transactionMutations]);
 
   const isExpense = form.type === 'expense';
   const parsedAmountMinor = useMemo(() => {
@@ -485,6 +566,7 @@ export function useManualTransactionViewModel({
       handleSelectTransferSource,
       handleSwapWallets,
       handleToggleTransferFee,
+      retryReferenceData,
       setErrors,
       setForm,
       setPicker,
@@ -506,6 +588,7 @@ export function useManualTransactionViewModel({
       errors,
       form,
       isEditMode,
+      isDirty,
       isExpense,
       language,
       loading,
@@ -514,6 +597,7 @@ export function useManualTransactionViewModel({
       pendingTransferInput,
       picker,
       quickShortcuts,
+      referenceStatus,
       receiptMenuVisible,
       saving,
       screenTitle,

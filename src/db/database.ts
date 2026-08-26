@@ -2,6 +2,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { migrateDatabase } from '@/db/migrations';
 import { seedDefaults } from '@/db/seeds';
+import { maintainReceiptStorage } from '@/features/receipts/receipt-maintenance';
 
 export const databaseName = 'personal-finance.db';
 
@@ -15,6 +16,7 @@ type JournalModeRow = {
 
 export async function initializeDatabase(database: SQLiteDatabase) {
   await database.execAsync('PRAGMA foreign_keys = ON');
+  await database.execAsync('PRAGMA busy_timeout = 3000');
   await database.execAsync('PRAGMA journal_mode = WAL');
   await database.execAsync('PRAGMA synchronous = NORMAL');
   await database.execAsync('PRAGMA cache_size = -2000');
@@ -36,4 +38,5 @@ export async function initializeDatabase(database: SQLiteDatabase) {
 
   await migrateDatabase(database);
   await seedDefaults(database);
+  await maintainReceiptStorage(database);
 }

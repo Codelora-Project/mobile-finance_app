@@ -54,12 +54,18 @@ type PreparedReceipt = {
   mimeType: ReceiptMimeType;
 } | null;
 
-async function normalizeInputForWrite(
-  database: SQLiteDatabase,
+function normalizeInputForWrite(
   input: SaveTransactionInput,
   now: number,
 ) {
-  const normalized = normalizeTransactionInput(input, now);
+  return normalizeTransactionInput(input, now);
+}
+
+async function resolveSystemCategoryForWrite(
+  database: SQLiteDatabase,
+  normalized: NormalizedTransactionInput,
+  now: number,
+) {
   if (normalized.type !== 'transfer') return normalized;
 
   const categoryId = await ensureSystemCategory(
@@ -163,19 +169,58 @@ function cleanupReceiptFile(storageKey: string | null) {
   }
 }
 
+function mapTransactionWriteError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.includes('transaction_transfer_wallets_invalid')) {
+    return createCodedError(
+      'VALIDATION_FAILED',
+      'Source and destination wallet must be different.',
+    );
+  }
+  if (message.includes('transaction_non_transfer_fields_invalid')) {
+    return createCodedError(
+      'VALIDATION_FAILED',
+      'Transfer details are only valid for transfers.',
+    );
+  }
+  if (message.includes('transaction_category_type_invalid')) {
+    return createCodedError(
+      'VALIDATION_FAILED',
+      'Choose a category that matches the transaction type.',
+    );
+  }
+  if (message.includes('transaction_transfer_fee_category_invalid')) {
+    return createCodedError(
+      'VALIDATION_FAILED',
+      'Choose an expense category for the transfer fee.',
+    );
+  }
+  if (message.includes('receipt_transaction_type_invalid')) {
+    return createCodedError(
+      'VALIDATION_FAILED',
+      'Receipts can only be attached to expenses.',
+    );
+  }
+  return error;
+}
+
 export async function createTransaction(
   database: SQLiteDatabase,
   input: SaveTransactionInput,
   now = Date.now(),
 ) {
-  const normalized = await normalizeInputForWrite(database, input, now);
-  await validateTransactionReferences(database, normalized);
+  const normalized = normalizeInputForWrite(input, now);
   const prepared = await prepareReceipt(normalized.receipt);
   let createdId: number | null = null;
 
   try {
     await withIntegrityCheckedTransaction(database, async (transaction) => {
-      await validateTransactionReferences(transaction, normalized);
+      const writeInput = await resolveSystemCategoryForWrite(
+        transaction,
+        normalized,
+        now,
+      );
+      await validateTransactionReferences(transaction, writeInput);
       const timestamp = Date.now();
       const result = await transaction.runAsync(
         `INSERT INTO transactions (
@@ -197,21 +242,21 @@ export async function createTransaction(
         created_at,
         updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        normalized.type,
-        normalized.amountMinor,
-        normalized.currencyCode,
-        normalized.categoryId,
-        normalized.paymentMethodId,
-        normalized.transferToPaymentMethodId,
-        normalized.transferFeeMinor,
-        normalized.transferFeeCategoryId,
-        normalized.transferFeeNote,
-        normalized.counterparty,
-        normalized.note,
-        normalized.occurredAt,
-        normalized.timezoneOffsetMinutes,
-        normalized.localDate,
-        normalized.isReimbursable ? 1 : 0,
+        writeInput.type,
+        writeInput.amountMinor,
+        writeInput.currencyCode,
+        writeInput.categoryId,
+        writeInput.paymentMethodId,
+        writeInput.transferToPaymentMethodId,
+        writeInput.transferFeeMinor,
+        writeInput.transferFeeCategoryId,
+        writeInput.transferFeeNote,
+        writeInput.counterparty,
+        writeInput.note,
+        writeInput.occurredAt,
+        writeInput.timezoneOffsetMinutes,
+        writeInput.localDate,
+        writeInput.isReimbursable ? 1 : 0,
         timestamp,
         timestamp,
       );
@@ -225,7 +270,7 @@ export async function createTransaction(
     });
   } catch (error) {
     cleanupReceiptFile(prepared.copiedStorageKey);
-    throw error;
+    throw mapTransactionWriteError(error);
   }
 
   const saved =
@@ -245,7 +290,7 @@ export async function updateTransaction(
   input: SaveTransactionInput,
   now = Date.now(),
 ) {
-  const normalized = await normalizeInputForWrite(database, input, now);
+  const normalized = normalizeInputForWrite(input, now);
   const existing = await database.getFirstAsync<{
     id: number;
     payment_method_id: number | null;
@@ -278,11 +323,6 @@ export async function updateTransaction(
       'Remove this transaction from its Draft claim before making it ineligible.',
     );
   }
-  await validateTransactionReferences(database, normalized, {
-    allowedArchivedPaymentMethodId: existing.payment_method_id,
-    allowedArchivedTransferDestinationId:
-      existing.transfer_to_payment_method_id,
-  });
   const oldReceipt = await database.getFirstAsync<{ storage_key: string }>(
     'SELECT storage_key FROM receipts WHERE transaction_id = ?',
     id,
@@ -291,6 +331,11 @@ export async function updateTransaction(
 
   try {
     await withIntegrityCheckedTransaction(database, async (transaction) => {
+      const writeInput = await resolveSystemCategoryForWrite(
+        transaction,
+        normalized,
+        now,
+      );
       const transactionStillExists = await transaction.getFirstAsync<{
         id: number;
         payment_method_id: number | null;
@@ -340,7 +385,7 @@ export async function updateTransaction(
           );
         }
       }
-      await validateTransactionReferences(transaction, normalized, {
+      await validateTransactionReferences(transaction, writeInput, {
         allowedArchivedPaymentMethodId:
           transactionStillExists.payment_method_id,
         allowedArchivedTransferDestinationId:
@@ -356,21 +401,21 @@ export async function updateTransaction(
            timezone_offset_minutes = ?, local_date = ?, is_reimbursable = ?,
            updated_at = ?
        WHERE id = ?`,
-        normalized.type,
-        normalized.amountMinor,
-        normalized.currencyCode,
-        normalized.categoryId,
-        normalized.paymentMethodId,
-        normalized.transferToPaymentMethodId,
-        normalized.transferFeeMinor,
-        normalized.transferFeeCategoryId,
-        normalized.transferFeeNote,
-        normalized.counterparty,
-        normalized.note,
-        normalized.occurredAt,
-        normalized.timezoneOffsetMinutes,
-        normalized.localDate,
-        normalized.isReimbursable ? 1 : 0,
+        writeInput.type,
+        writeInput.amountMinor,
+        writeInput.currencyCode,
+        writeInput.categoryId,
+        writeInput.paymentMethodId,
+        writeInput.transferToPaymentMethodId,
+        writeInput.transferFeeMinor,
+        writeInput.transferFeeCategoryId,
+        writeInput.transferFeeNote,
+        writeInput.counterparty,
+        writeInput.note,
+        writeInput.occurredAt,
+        writeInput.timezoneOffsetMinutes,
+        writeInput.localDate,
+        writeInput.isReimbursable ? 1 : 0,
         timestamp,
         id,
       );
@@ -385,7 +430,7 @@ export async function updateTransaction(
     });
   } catch (error) {
     cleanupReceiptFile(prepared.copiedStorageKey);
-    throw error;
+    throw mapTransactionWriteError(error);
   }
 
   if (oldReceipt && oldReceipt.storage_key !== prepared.receipt?.storageKey) {

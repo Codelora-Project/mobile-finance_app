@@ -151,12 +151,15 @@ describe('settings repository', () => {
         ['language', 'id'],
       ]),
     );
-    expect(database.executedSql[0]).toContain('DELETE FROM goal_transactions');
-    expect(database.executedSql[0]).toContain('DELETE FROM savings_goals');
-    expect(database.executedSql[0]).toContain('DELETE FROM category_budgets');
-    expect(database.executedSql[0]).toContain('DELETE FROM claim_items');
-    expect(database.executedSql[0]).toContain('DELETE FROM payment_methods');
-    expect(database.executedSql[0]).toContain('DELETE FROM categories');
+    const clearSql = database.executedSql.find((source) =>
+      source.includes('DELETE FROM goal_transactions'),
+    );
+    expect(clearSql).toContain('DELETE FROM goal_transactions');
+    expect(clearSql).toContain('DELETE FROM savings_goals');
+    expect(clearSql).toContain('DELETE FROM category_budgets');
+    expect(clearSql).toContain('DELETE FROM claim_items');
+    expect(clearSql).toContain('DELETE FROM payment_methods');
+    expect(clearSql).toContain('DELETE FROM categories');
     expect(mockRemoveAllReceiptFiles).toHaveBeenCalledTimes(1);
     expect(mockRemoveCachedClaimPdfs).toHaveBeenCalledTimes(1);
   });

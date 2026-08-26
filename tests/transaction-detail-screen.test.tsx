@@ -23,6 +23,7 @@ const mockGetTransactionClaimMembership =
   jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockShareAsync = jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockIsSharingAvailable = jest.fn<() => Promise<boolean>>();
+const mockNotifyDeleted = jest.fn();
 
 jest.mock('expo-router', () => {
   const React = require('react');
@@ -36,6 +37,20 @@ jest.mock('expo-router', () => {
 jest.mock('expo-sqlite', () => ({
   useSQLiteContext: () => mockDatabase,
 }));
+
+jest.mock(
+  '@/features/transactions/transaction-mutation-context',
+  () => ({
+    useTransactionMutations: () => ({
+      dismissNotice: jest.fn(),
+      notifyCreated: jest.fn(),
+      notifyDeleted: mockNotifyDeleted,
+      notifyUpdated: jest.fn(),
+      revision: 0,
+      undo: jest.fn(),
+    }),
+  }),
+);
 
 jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
   const ReactNative = require('react-native');
@@ -127,7 +142,7 @@ describe('transaction detail screen', () => {
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/42/receipt');
   });
 
-  it('deletes immediately and routes to history with undo data', async () => {
+  it('deletes immediately, registers global Undo, and routes to history', async () => {
     await render(<TransactionDetailScreen transactionId={42} />);
     await screen.findAllByText('Coffee Shop');
 
@@ -143,10 +158,11 @@ describe('transaction detail screen', () => {
       ),
     );
     await waitFor(() =>
-      expect(mockRouter.dismissTo).toHaveBeenCalledWith(
-        expect.objectContaining({ pathname: '/transactions' }),
+      expect(mockNotifyDeleted).toHaveBeenCalledWith(
+        expect.objectContaining({ claimId: null }),
       ),
     );
+    expect(mockRouter.dismissTo).toHaveBeenCalledWith('/transactions');
   });
 
   it('locks edit and delete while the transaction is in a submitted claim', async () => {

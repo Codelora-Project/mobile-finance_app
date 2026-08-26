@@ -1,6 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { withIntegrityCheckedTransaction } from '@/db/transactions';
+import { runSerializedDatabaseWrite } from '@/db/write-coordinator';
 import { createCodedError } from '@/lib/errors';
 import { getCurrencyFractionDigits } from '@/lib/money';
 import type { ThemeSetting } from '@/lib/theme/theme-context';
@@ -283,12 +284,14 @@ export async function setBrandThemeSetting(
   brandTheme: BrandTheme,
 ) {
   const timestamp = Date.now();
-  await database.runAsync(
-    `INSERT INTO app_settings (key, value, updated_at)
+  await runSerializedDatabaseWrite(database, () =>
+    database.runAsync(
+      `INSERT INTO app_settings (key, value, updated_at)
      VALUES ('brand_theme', ?, ?)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-    brandTheme,
-    timestamp,
+      brandTheme,
+      timestamp,
+    ),
   );
 }
 
@@ -347,12 +350,14 @@ export async function setLanguageSetting(
   language: 'id' | 'en',
 ) {
   const timestamp = Date.now();
-  await database.runAsync(
-    `INSERT INTO app_settings (key, value, updated_at)
+  await runSerializedDatabaseWrite(database, () =>
+    database.runAsync(
+      `INSERT INTO app_settings (key, value, updated_at)
      VALUES ('language', ?, ?)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-    language,
-    timestamp,
+      language,
+      timestamp,
+    ),
   );
 }
 
@@ -361,12 +366,14 @@ export async function setThemeSetting(
   theme: ThemeSetting,
 ) {
   const timestamp = Date.now();
-  await database.runAsync(
-    `INSERT INTO app_settings (key, value, updated_at)
+  await runSerializedDatabaseWrite(database, () =>
+    database.runAsync(
+      `INSERT INTO app_settings (key, value, updated_at)
      VALUES ('theme', ?, ?)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-    theme,
-    timestamp,
+      theme,
+      timestamp,
+    ),
   );
 }
 
@@ -401,11 +408,13 @@ export async function setQuickShortcutsSetting(
   const jsonValue = JSON.stringify(validShortcuts);
   const timestamp = Date.now();
 
-  await database.runAsync(
-    `INSERT INTO app_settings (key, value, updated_at)
+  await runSerializedDatabaseWrite(database, () =>
+    database.runAsync(
+      `INSERT INTO app_settings (key, value, updated_at)
      VALUES ('quick_shortcuts', ?, ?)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-    jsonValue,
-    timestamp,
+      jsonValue,
+      timestamp,
+    ),
   );
 }

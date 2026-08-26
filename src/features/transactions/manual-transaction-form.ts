@@ -83,7 +83,6 @@ export function createDefaultForm(
 ): FormState {
   const now = Date.now();
   const dateTime = toLocalDateTimeInput(now, getTimezoneOffsetMinutes(now));
-  const defaultMethod = INITIAL_PAYMENT_METHODS[0];
   return {
     amount: '',
     category: initialCategory ?? null,
@@ -92,11 +91,7 @@ export function createDefaultForm(
     hasTransferFee: false,
     isReimbursable: false,
     note: '',
-    paymentMethod:
-      initialPaymentMethod ??
-      (defaultMethod
-        ? { id: defaultMethod.id, name: defaultMethod.name }
-        : null),
+    paymentMethod: initialPaymentMethod ?? null,
     receipt: null,
     time: dateTime.time,
     transferFeeAmount: '',
@@ -105,6 +100,27 @@ export function createDefaultForm(
     transferToPaymentMethod: null,
     type: initialType ?? 'expense',
   };
+}
+
+export function getFormDirtySignature(form: FormState) {
+  return JSON.stringify({
+    amount: form.amount,
+    categoryId: form.category?.id ?? null,
+    counterparty: form.counterparty,
+    date: form.date,
+    hasTransferFee: form.hasTransferFee,
+    isReimbursable: form.isReimbursable,
+    note: form.note,
+    paymentMethodId: form.paymentMethod?.id ?? null,
+    receiptMimeType: form.receipt?.mimeType ?? null,
+    receiptSource: form.receipt?.sourceImageUri ?? null,
+    time: form.time,
+    transferFeeAmount: form.transferFeeAmount,
+    transferFeeCategoryId: form.transferFeeCategory?.id ?? null,
+    transferFeeNote: form.transferFeeNote,
+    transferToPaymentMethodId: form.transferToPaymentMethod?.id ?? null,
+    type: form.type,
+  });
 }
 
 function getReceiptDisplayName(storageKey: string) {

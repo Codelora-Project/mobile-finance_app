@@ -1,6 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { withIntegrityCheckedTransaction } from '@/db/transactions';
+import { runSerializedDatabaseWrite } from '@/db/write-coordinator';
 import { SYSTEM_CATEGORIES } from '@/domain/system-categories';
 import { ensureSystemCategory } from '@/features/categories/system-category-repository';
 import type {
@@ -162,8 +163,9 @@ export async function createWallet(
   );
   const nextOrder = (maxOrder?.max_order ?? 0) + 1;
 
-  const result = await database.runAsync(
-    `INSERT INTO payment_methods (
+  const result = await runSerializedDatabaseWrite(database, () =>
+    database.runAsync(
+      `INSERT INTO payment_methods (
       name,
       account_type,
       account_number,
@@ -178,7 +180,7 @@ export async function createWallet(
       created_at,
       updated_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?);`,
-    [
+      [
       trimmedName,
       input.accountType,
       normalizeOptionalText(input.accountNumber),
@@ -190,7 +192,8 @@ export async function createWallet(
       nextOrder,
       now,
       now,
-    ],
+      ],
+    ),
   );
 
   const created = await getWalletById(database, result.lastInsertRowId);
@@ -241,8 +244,9 @@ export async function updateWallet(
   }
 
   const now = Date.now();
-  await database.runAsync(
-    `UPDATE payment_methods SET
+  await runSerializedDatabaseWrite(database, () =>
+    database.runAsync(
+      `UPDATE payment_methods SET
       name = ?,
       account_type = ?,
       account_number = ?,
@@ -255,7 +259,7 @@ export async function updateWallet(
       sort_order = ?,
       updated_at = ?
     WHERE id = ?;`,
-    [
+      [
       name,
       input.accountType ?? existing.accountType,
       input.accountNumber !== undefined
@@ -288,7 +292,8 @@ export async function updateWallet(
       input.sortOrder ?? existing.sortOrder,
       now,
       id,
-    ],
+      ],
+    ),
   );
 
   const updated = await getWalletById(database, id);
@@ -316,9 +321,11 @@ export async function archiveWallet(
     );
   }
 
-  await database.runAsync(
-    'UPDATE payment_methods SET is_archived = 1, updated_at = ? WHERE id = ?;',
-    [Date.now(), id],
+  await runSerializedDatabaseWrite(database, () =>
+    database.runAsync(
+      'UPDATE payment_methods SET is_archived = 1, updated_at = ? WHERE id = ?;',
+      [Date.now(), id],
+    ),
   );
 }
 
@@ -330,9 +337,11 @@ export async function unarchiveWallet(
   if (!existing) {
     throw createCodedError('VALIDATION_FAILED', 'Dompet tidak ditemukan.');
   }
-  await database.runAsync(
-    'UPDATE payment_methods SET is_archived = 0, updated_at = ? WHERE id = ?;',
-    [Date.now(), id],
+  await runSerializedDatabaseWrite(database, () =>
+    database.runAsync(
+      'UPDATE payment_methods SET is_archived = 0, updated_at = ? WHERE id = ?;',
+      [Date.now(), id],
+    ),
   );
 }
 

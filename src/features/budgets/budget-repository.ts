@@ -1,5 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { runSerializedDatabaseWrite } from '@/db/write-coordinator';
 import { getTimezoneOffsetMinutes, toLocalDate } from '@/lib/dates';
 import { createCodedError } from '@/lib/errors';
 
@@ -153,14 +154,16 @@ export async function setCategoryBudget(
   }
 
   const now = Date.now();
-  await database.runAsync(
-    `INSERT INTO category_budgets (
+  await runSerializedDatabaseWrite(database, () =>
+    database.runAsync(
+      `INSERT INTO category_budgets (
       category_id, monthly_limit_minor, created_at, updated_at
     ) VALUES (?, ?, ?, ?)
     ON CONFLICT (category_id) DO UPDATE SET
       monthly_limit_minor = excluded.monthly_limit_minor,
       updated_at = excluded.updated_at`,
-    [categoryId, monthlyLimitMinor, now, now],
+      [categoryId, monthlyLimitMinor, now, now],
+    ),
   );
 }
 
@@ -168,9 +171,10 @@ export async function deleteCategoryBudget(
   database: SQLiteDatabase,
   categoryId: number,
 ): Promise<void> {
-  await database.runAsync(
-    `DELETE FROM category_budgets WHERE category_id = ?`,
-    [categoryId],
+  await runSerializedDatabaseWrite(database, () =>
+    database.runAsync(`DELETE FROM category_budgets WHERE category_id = ?`, [
+      categoryId,
+    ]),
   );
 }
 

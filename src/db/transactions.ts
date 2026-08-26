@@ -1,5 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { runSerializedDatabaseWrite } from '@/db/write-coordinator';
+
 type ForeignKeyViolation = {
   table: string;
   rowid: number | null;
@@ -20,28 +22,38 @@ export async function withIntegrityCheckedTransaction<T>(
   database: SQLiteDatabase,
   task: (transaction: SQLiteDatabase) => Promise<T>,
 ): Promise<T> {
-  let result: T | undefined;
+  return runSerializedDatabaseWrite(database, async () => {
+    let result: T | undefined;
 
-  await database.withExclusiveTransactionAsync(async (transaction) => {
-    result = await task(transaction);
-    // Some repository unit tests use deliberately minimal SQLite fakes. The
-    // real Expo transaction always exposes getAllAsync.
-    if (typeof transaction.getAllAsync !== 'function') {
-      return;
-    }
-    const rows = await transaction.getAllAsync<ForeignKeyViolation>(
-      'PRAGMA foreign_key_check',
-    );
-    const violation = rows.find(
-      (row) =>
-        typeof row?.table === 'string' && typeof row?.parent === 'string',
-    );
-    if (violation) {
-      throw new Error(
-        `Database foreign-key integrity check failed for table ${violation.table}.`,
+    await database.withExclusiveTransactionAsync(async (transaction) => {
+      // Expo uses a separate connection for an exclusive transaction, so the
+      // connection-scoped timeout is applied again before its first write.
+      if (typeof transaction.execAsync === 'function') {
+        await transaction.execAsync('PRAGMA busy_timeout = 3000');
+      }
+      result = await task(transaction);
+      // Some repository unit tests use deliberately minimal SQLite fakes. The
+      // real Expo transaction always exposes getAllAsync.
+      if (typeof transaction.getAllAsync !== 'function') {
+        return;
+      }
+      const rows = await transaction.getAllAsync<ForeignKeyViolation>(
+        'PRAGMA foreign_key_check',
       );
-    }
-  });
+      if (!Array.isArray(rows)) {
+        return;
+      }
+      const violation = rows.find(
+        (row) =>
+          typeof row?.table === 'string' && typeof row?.parent === 'string',
+      );
+      if (violation) {
+        throw new Error(
+          `Database foreign-key integrity check failed for table ${violation.table}.`,
+        );
+      }
+    });
 
-  return result as T;
+    return result as T;
+  });
 }

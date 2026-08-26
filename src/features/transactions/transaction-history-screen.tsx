@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
-import { UndoToastBanner } from '@/components/ui/undo-toast-banner';
 import { TransactionDateGroupHeader } from '@/features/transactions/components/transaction-date-group-header';
 import { TransactionHistoryEmptyState } from '@/features/transactions/components/transaction-history-empty-state';
 import { TransactionHistoryHeader } from '@/features/transactions/components/transaction-history-header';
@@ -170,14 +169,6 @@ export function TransactionHistoryScreen() {
         visible={state.filterModalVisible}
       />
 
-      <UndoToastBanner
-        canUndo={state.undoCanUndo}
-        isUndoing={state.undoIsRunning}
-        message={state.undoMessage}
-        onClose={actions.dismissUndo}
-        onUndo={() => void actions.undo()}
-        visible={state.undoVisible}
-      />
     </Screen>
   );
 }

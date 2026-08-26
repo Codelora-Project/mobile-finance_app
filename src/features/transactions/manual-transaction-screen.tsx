@@ -117,6 +117,56 @@ export function ManualTransactionScreen({
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {state.referenceStatus !== 'ready' ? (
+            <View
+              accessibilityLiveRegion="polite"
+              style={styles.referenceStatusBanner}
+            >
+              {state.referenceStatus === 'loading' ? (
+                <>
+                  <ActivityIndicator color={colors.primary} size="small" />
+                  <Text
+                    style={[
+                      styles.referenceStatusText,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {state.t.transactions.referenceLoading}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text
+                    style={[
+                      styles.referenceStatusText,
+                      { color: colors.destructive },
+                    ]}
+                  >
+                    {state.t.transactions.referenceLoadFailed}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={actions.retryReferenceData}
+                    style={({ pressed }) => [
+                      styles.referenceRetryButton,
+                      { borderColor: colors.primary },
+                      pressed ? { opacity: 0.75 } : null,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.referenceRetryText,
+                        { color: colors.primary },
+                      ]}
+                    >
+                      {state.t.transactions.retryReferenceLoad}
+                    </Text>
+                  </Pressable>
+                </>
+              )}
+            </View>
+          ) : null}
+
           {/* Type Toggle: Expense / Income / Transfer */}
           <ManualTypeToggle
             onChangeType={(type) => {
@@ -272,9 +322,16 @@ export function ManualTransactionScreen({
               accessibilityRole="button"
               accessibilityState={{
                 busy: state.saving,
-                disabled: state.saving,
+                disabled:
+                  state.saving ||
+                  state.deleting ||
+                  state.referenceStatus !== 'ready',
               }}
-              disabled={state.saving}
+              disabled={
+                state.saving ||
+                state.deleting ||
+                state.referenceStatus !== 'ready'
+              }
               onPress={() => void actions.handleSave()}
               style={({ pressed }) => [
                 styles.saveBigButton,
@@ -282,7 +339,11 @@ export function ManualTransactionScreen({
                   backgroundColor: colors.primary,
                   shadowColor: colors.primary,
                 },
-                state.saving ? styles.saveBigButtonDisabled : null,
+                state.saving ||
+                state.deleting ||
+                state.referenceStatus !== 'ready'
+                  ? styles.saveBigButtonDisabled
+                  : null,
                 pressed
                   ? { opacity: 0.85, transform: [{ scale: 0.98 }] }
                   : null,
@@ -622,6 +683,28 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     flex: 1,
     justifyContent: 'flex-end',
+  },
+  referenceRetryButton: {
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  referenceRetryText: {
+    ...typography.metadata,
+    fontWeight: '700',
+  },
+  referenceStatusBanner: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'center',
+    minHeight: 40,
+  },
+  referenceStatusText: {
+    ...typography.metadata,
+    flexShrink: 1,
+    fontWeight: '600',
   },
   modalScreenHeader: {
     alignItems: 'center',

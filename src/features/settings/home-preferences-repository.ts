@@ -1,6 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { withIntegrityCheckedTransaction } from '@/db/transactions';
+import { runSerializedDatabaseWrite } from '@/db/write-coordinator';
 import { createCodedError } from '@/lib/errors';
 
 function isValidQuickLogCategoryIds(value: unknown): value is number[] {
@@ -58,12 +59,14 @@ export async function setQuickLogCategoryIds(
     );
   }
   const value = JSON.stringify(categoryIds);
-  await database.runAsync(
-    `INSERT INTO app_settings (key, value, updated_at)
+  await runSerializedDatabaseWrite(database, () =>
+    database.runAsync(
+      `INSERT INTO app_settings (key, value, updated_at)
      VALUES ('quick_log_category_ids', ?, ?)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-    value,
-    now,
+      value,
+      now,
+    ),
   );
 }
 

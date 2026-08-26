@@ -1,5 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { withIntegrityCheckedTransaction } from '@/db/transactions';
 import { createCodedError } from '@/lib/errors';
 import { normalizeSearchText, normalizeText } from '@/lib/strings';
 
@@ -132,7 +133,7 @@ export async function createPaymentMethod(
   const name = validatePaymentMethodName(input.name);
   let createdId: number | null = null;
 
-  await database.withExclusiveTransactionAsync(async (transaction) => {
+  await withIntegrityCheckedTransaction(database, async (transaction) => {
     await assertUniquePaymentMethodName(transaction, name);
     const sortOrderRow = await transaction.getFirstAsync<{
       next_sort_order: number;
@@ -177,7 +178,7 @@ export async function updatePaymentMethod(
 ) {
   const name = validatePaymentMethodName(input.name);
 
-  await database.withExclusiveTransactionAsync(async (transaction) => {
+  await withIntegrityCheckedTransaction(database, async (transaction) => {
     const paymentMethod = await requirePaymentMethod(transaction, id);
     if (paymentMethod.is_default === 1) {
       throw createCodedError(
@@ -210,7 +211,7 @@ export async function deletePaymentMethod(
 ) {
   let reassignedTransactions = 0;
 
-  await database.withExclusiveTransactionAsync(async (transaction) => {
+  await withIntegrityCheckedTransaction(database, async (transaction) => {
     const paymentMethod = await requirePaymentMethod(transaction, id);
     if (paymentMethod.is_fallback === 1) {
       throw createCodedError(

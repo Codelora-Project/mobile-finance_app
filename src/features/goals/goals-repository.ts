@@ -1,6 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { withIntegrityCheckedTransaction } from '@/db/transactions';
+import { runSerializedDatabaseWrite } from '@/db/write-coordinator';
 import { createCodedError } from '@/lib/errors';
 import { normalizeOptionalText } from '@/lib/strings';
 
@@ -267,8 +268,9 @@ export async function updateSavingsGoal(
   const now = Date.now();
   const isCompleted = existing.current_amount_minor >= targetAmount ? 1 : 0;
 
-  await database.runAsync(
-    `UPDATE savings_goals SET
+  await runSerializedDatabaseWrite(database, () =>
+    database.runAsync(
+      `UPDATE savings_goals SET
       name = ?,
       target_amount_minor = ?,
       icon_key = ?,
@@ -277,7 +279,8 @@ export async function updateSavingsGoal(
       is_completed = ?,
       updated_at = ?
     WHERE id = ?`,
-    [name, targetAmount, iconKey, colorKey, targetDate, isCompleted, now, id],
+      [name, targetAmount, iconKey, colorKey, targetDate, isCompleted, now, id],
+    ),
   );
 
   const updated = await getSavingsGoal(database, id);
@@ -305,7 +308,9 @@ export async function deleteSavingsGoal(
     );
   }
 
-  await database.runAsync(`DELETE FROM savings_goals WHERE id = ?`, [id]);
+  await runSerializedDatabaseWrite(database, () =>
+    database.runAsync(`DELETE FROM savings_goals WHERE id = ?`, [id]),
+  );
 }
 
 export async function addGoalTransaction(

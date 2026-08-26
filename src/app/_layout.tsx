@@ -14,6 +14,7 @@ import {
   setThemeSetting,
   type SupportedCurrencyCode,
 } from '@/features/settings/settings-repository';
+import { TransactionMutationProvider } from '@/features/transactions/transaction-mutation-context';
 import { CurrencyProvider } from '@/lib/currency/currency-context';
 import { LanguageProvider } from '@/lib/i18n/language-context';
 import type { Language } from '@/lib/i18n/translations';
@@ -127,7 +128,9 @@ function AppWithProviders() {
           }}
         >
           <AppErrorBoundary>
-            <AppNavigation />
+            <TransactionMutationProvider>
+              <AppNavigation />
+            </TransactionMutationProvider>
           </AppErrorBoundary>
         </CurrencyProvider>
       </LanguageProvider>

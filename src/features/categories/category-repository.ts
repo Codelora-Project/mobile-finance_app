@@ -152,7 +152,7 @@ export async function createCategory(
   const name = validateCategoryName(input.name);
   let createdId: number | null = null;
 
-  await database.withExclusiveTransactionAsync(async (transaction) => {
+  await withIntegrityCheckedTransaction(database, async (transaction) => {
     await assertUniqueCategoryName(transaction, name, input.type);
     const sortOrderRow = await transaction.getFirstAsync<{
       next_sort_order: number;
@@ -202,7 +202,7 @@ export async function updateCategory(
 ) {
   const name = validateCategoryName(input.name);
 
-  await database.withExclusiveTransactionAsync(async (transaction) => {
+  await withIntegrityCheckedTransaction(database, async (transaction) => {
     const category = await requireCategory(transaction, id);
     if (category.is_default === 1) {
       throw createCodedError(

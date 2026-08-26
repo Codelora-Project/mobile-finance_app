@@ -17,6 +17,7 @@ const mockRouter = {
   push: jest.fn(),
 };
 const mockDatabase = {};
+const mockNotifyDeleted = jest.fn();
 const mockListTransactions =
   jest.fn<(...args: unknown[]) => Promise<unknown>>();
 let mockFocusedEffect: (() => void | (() => void)) | null = null;
@@ -36,6 +37,20 @@ jest.mock('expo-router', () => {
 jest.mock('expo-sqlite', () => ({
   useSQLiteContext: () => mockDatabase,
 }));
+
+jest.mock(
+  '@/features/transactions/transaction-mutation-context',
+  () => ({
+    useTransactionMutations: () => ({
+      dismissNotice: jest.fn(),
+      notifyCreated: jest.fn(),
+      notifyDeleted: mockNotifyDeleted,
+      notifyUpdated: jest.fn(),
+      revision: 0,
+      undo: jest.fn(),
+    }),
+  }),
+);
 
 jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
   const ReactNative = require('react-native');
@@ -401,6 +416,8 @@ describe('transaction history screen', () => {
         42,
       ),
     );
-    expect(await screen.findByText('Transaksi dihapus')).toBeOnTheScreen();
+    expect(mockNotifyDeleted).toHaveBeenCalledWith(
+      expect.objectContaining({ claimId: null }),
+    );
   });
 });

@@ -17,6 +17,20 @@ const mockRouter = {
   replace: jest.fn(),
 };
 
+jest.mock(
+  '@/features/transactions/transaction-mutation-context',
+  () => ({
+    useTransactionMutations: () => ({
+      dismissNotice: jest.fn(),
+      notifyCreated: jest.fn(),
+      notifyDeleted: jest.fn(),
+      notifyUpdated: jest.fn(),
+      revision: 0,
+      undo: jest.fn(),
+    }),
+  }),
+);
+
 jest.mock('expo-router', () => {
   const React = require('react');
   return {

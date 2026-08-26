@@ -1,5 +1,6 @@
 import type { SQLiteBindValue, SQLiteDatabase } from 'expo-sqlite';
 
+import { withIntegrityCheckedTransaction } from '@/db/transactions';
 import type { ReceiptMimeType } from '@/features/receipts/receipt-types';
 import { isLocalDate } from '@/lib/dates';
 import { createCodedError } from '@/lib/errors';
@@ -412,7 +413,7 @@ export async function createClaim(
 ) {
   const normalized = normalizeClaimInput(input);
   let claimId: number | null = null;
-  await database.withExclusiveTransactionAsync(async (transaction) => {
+  await withIntegrityCheckedTransaction(database, async (transaction) => {
     const expenses = await loadSelectedExpenses(
       transaction,
       normalized.transactionIds,
@@ -462,7 +463,7 @@ export async function updateDraftClaim(
 ) {
   requireId(id, 'Claim');
   const normalized = normalizeClaimInput(input);
-  await database.withExclusiveTransactionAsync(async (transaction) => {
+  await withIntegrityCheckedTransaction(database, async (transaction) => {
     const claim = await transaction.getFirstAsync<{ status: ClaimStatus }>(
       'SELECT status FROM claims WHERE id = ?',
       id,
@@ -528,7 +529,7 @@ export async function transitionClaimStatus(
   now = Date.now(),
 ) {
   requireId(id, 'Claim');
-  await database.withExclusiveTransactionAsync(async (transaction) => {
+  await withIntegrityCheckedTransaction(database, async (transaction) => {
     const claim = await transaction.getFirstAsync<{ status: ClaimStatus }>(
       'SELECT status FROM claims WHERE id = ?',
       id,
@@ -583,7 +584,7 @@ export async function transitionClaimStatus(
 
 export async function deleteDraftClaim(database: SQLiteDatabase, id: number) {
   requireId(id, 'Claim');
-  await database.withExclusiveTransactionAsync(async (transaction) => {
+  await withIntegrityCheckedTransaction(database, async (transaction) => {
     const claim = await transaction.getFirstAsync<{ status: ClaimStatus }>(
       'SELECT status FROM claims WHERE id = ?',
       id,

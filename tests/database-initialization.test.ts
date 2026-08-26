@@ -136,8 +136,9 @@ describe('database initialization', () => {
 
     expect(database.foreignKeys).toBe(1);
     expect(database.journalMode).toBe('wal');
-    expect(database.executedSql.slice(0, 2)).toEqual([
+    expect(database.executedSql.slice(0, 3)).toEqual([
       'PRAGMA foreign_keys = ON',
+      'PRAGMA busy_timeout = 3000',
       'PRAGMA journal_mode = WAL',
     ]);
   });

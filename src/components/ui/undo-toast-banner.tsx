@@ -14,6 +14,7 @@ export type UndoToastBannerProps = {
   message: string | null;
   onClose: () => void;
   onUndo: () => void;
+  topOffset?: number;
   visible: boolean;
 };
 
@@ -23,6 +24,7 @@ export const UndoToastBanner = memo(function UndoToastBanner({
   message,
   onClose,
   onUndo,
+  topOffset,
   visible,
 }: UndoToastBannerProps) {
   const { colors } = useTheme();
@@ -38,6 +40,7 @@ export const UndoToastBanner = memo(function UndoToastBanner({
           backgroundColor: colors.surface,
           borderColor: colors.border,
           shadowColor: colors.textPrimary,
+          top: topOffset,
         },
       ]}
     >

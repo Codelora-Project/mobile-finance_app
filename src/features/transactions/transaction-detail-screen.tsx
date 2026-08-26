@@ -21,6 +21,7 @@ import {
   DetailTransferFlow,
 } from '@/features/transactions/components/detail';
 import { useTransactionShare } from '@/features/transactions/hooks/use-transaction-share';
+import { getTransactionErrorMessage } from '@/features/transactions/transaction-error-messages';
 import {
   deleteTransactionForUndo,
   getTransaction,
@@ -28,8 +29,8 @@ import {
   type Transaction,
   type TransactionClaimMembership,
 } from '@/features/transactions/transaction-repository';
+import { useTransactionMutations } from '@/features/transactions/transaction-mutation-context';
 import { getTimezoneOffsetMinutes, toLocalDateTimeInput } from '@/lib/dates';
-import { isCodedError, mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -49,6 +50,7 @@ export function TransactionDetailScreen({
   const router = useRouter();
   const { language, t } = useLanguage();
   const { colors } = useTheme();
+  const transactionMutations = useTransactionMutations();
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deletingRef = useRef(false);
   const loadRequestRef = useRef(0);
@@ -86,22 +88,23 @@ export function TransactionDetailScreen({
       setClaimMembership(nextMembership);
     } catch (loadError) {
       if (requestId === loadRequestRef.current) {
-        setError(mapError(loadError, 'DATABASE_WRITE_FAILED').message);
+        setError(getTransactionErrorMessage(loadError, t, 'load'));
       }
     } finally {
       if (requestId === loadRequestRef.current) {
         setLoading(false);
       }
     }
-  }, [database, t.transactions.notFoundDesc, transactionId]);
+  }, [database, t, transactionId]);
 
   useFocusEffect(
     useCallback(() => {
+      void transactionMutations.revision;
       void load();
       return () => {
         loadRequestRef.current += 1;
       };
-    }, [load]),
+    }, [load, transactionMutations.revision]),
   );
 
   useEffect(
@@ -117,22 +120,11 @@ export function TransactionDetailScreen({
     setDeleting(true);
     deleteTransactionForUndo(database, transactionId)
       .then((snapshot) => {
-        router.dismissTo({
-          params: {
-            feedback:
-              language === 'id'
-                ? 'Transaksi telah dihapus'
-                : 'Transaction deleted',
-            undoPayload: JSON.stringify(snapshot),
-          },
-          pathname: '/transactions',
-        });
+        transactionMutations.notifyDeleted(snapshot);
+        router.dismissTo('/transactions');
       })
       .catch((deleteError) => {
-        const message = isCodedError(deleteError)
-          ? deleteError.message
-          : mapError(deleteError, 'DATABASE_WRITE_FAILED').message;
-        setError(message);
+        setError(getTransactionErrorMessage(deleteError, t));
       })
       .finally(() => {
         deletingRef.current = false;

@@ -7,6 +7,7 @@ import { queryOptimizationIndexesMigration } from '@/db/migrations/004-query-opt
 import { multiWalletsAndTransfersMigration } from '@/db/migrations/005-multi-wallets-and-transfers';
 import { cleanUnusedDefaultWalletsMigration } from '@/db/migrations/006-clean-unused-default-wallets';
 import { normalizeWalletTransferCategoryMigration } from '@/db/migrations/007-normalize-wallet-transfer-category';
+import { enforceTransactionShapeMigration } from '@/db/migrations/008-enforce-transaction-shape';
 
 const migrations = [
   initialMigration,
@@ -16,6 +17,7 @@ const migrations = [
   multiWalletsAndTransfersMigration,
   cleanUnusedDefaultWalletsMigration,
   normalizeWalletTransferCategoryMigration,
+  enforceTransactionShapeMigration,
 ] as const;
 
 export const latestDatabaseVersion = migrations.at(-1)?.version ?? 0;

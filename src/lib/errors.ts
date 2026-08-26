@@ -1,6 +1,7 @@
 export const appErrorCodes = [
   'VALIDATION_FAILED',
   'DATABASE_WRITE_FAILED',
+  'DATABASE_BUSY',
   'FILE_OPERATION_FAILED',
   'CLAIM_LOCKED',
   'CLAIM_CURRENCY_MISMATCH',
@@ -25,6 +26,10 @@ const errorDefinitions: Record<AppErrorCode, Omit<UserFacingError, 'code'>> = {
   DATABASE_WRITE_FAILED: {
     title: 'Changes not saved',
     message: "We couldn't save your changes. Try again.",
+  },
+  DATABASE_BUSY: {
+    title: 'Database busy',
+    message: 'The database is busy. Try again in a moment.',
   },
   FILE_OPERATION_FAILED: {
     title: 'File unavailable',

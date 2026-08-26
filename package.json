@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
+    "@react-navigation/native": "^7.3.17",
     "expo": "~57.0.13",
     "expo-camera": "~57.0.3",
     "expo-constants": "~57.0.11",

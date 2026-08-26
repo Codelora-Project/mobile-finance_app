@@ -47,6 +47,7 @@ import {
   setQuickLogCategoryIds,
 } from '@/features/settings/settings-repository';
 import type { TransactionListItem } from '@/features/transactions/transaction-repository';
+import { useTransactionMutations } from '@/features/transactions/transaction-mutation-context';
 import { formatGroupDate } from '@/lib/dates';
 import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
@@ -65,6 +66,7 @@ export function HomeScreen() {
   const { language, t } = useLanguage();
   const { colors } = useTheme();
   const { handleScroll } = useTabBarVisibility();
+  const transactionMutations = useTransactionMutations();
 
   const [period, setPeriod] = useState<HomePeriod>('monthly');
   const [referenceDate] = useState<Date>(() => new Date());
@@ -175,6 +177,7 @@ export function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      void transactionMutations.revision;
       void loadSummary(
         periodRef.current,
         referenceDate,
@@ -184,7 +187,7 @@ export function HomeScreen() {
       return () => {
         requestId.current += 1;
       };
-    }, [loadSummary, referenceDate]),
+    }, [loadSummary, referenceDate, transactionMutations.revision]),
   );
 
   const handlePeriodChange = useCallback(

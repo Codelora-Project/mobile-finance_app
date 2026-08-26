@@ -14,12 +14,87 @@ import { LanguageProvider } from '@/lib/i18n/language-context';
 
 const mockRouter = {
   back: jest.fn(),
+  canGoBack: jest.fn(() => true),
   dismissTo: jest.fn(),
+  replace: jest.fn(),
 };
+const mockNavigation = { dispatch: jest.fn() };
+const mockDatabase = {};
+const mockNotifyCreated = jest.fn();
+const mockNotifyDeleted = jest.fn();
+const mockNotifyUpdated = jest.fn();
 const mockCreateTransaction =
   jest.fn<(...args: unknown[]) => Promise<unknown>>();
 const mockPickManualReceipt =
   jest.fn<(...args: unknown[]) => Promise<unknown>>();
+const mockListCategories = jest.fn<() => Promise<unknown[]>>();
+const mockListPaymentMethods = jest.fn<() => Promise<unknown[]>>();
+let mockPreventRemoveEnabled = false;
+let mockPreventRemoveCallback:
+  | ((event: { data: { action: { type: string } } }) => void)
+  | null = null;
+
+const categories = [
+  {
+    createdAt: 0,
+    iconKey: null,
+    id: 1,
+    isDefault: true,
+    isFallback: false,
+    name: 'Food & Drink',
+    sortOrder: 1,
+    systemKey: 'expense_food_drink',
+    type: 'expense',
+    updatedAt: 0,
+  },
+  {
+    createdAt: 0,
+    iconKey: null,
+    id: 2,
+    isDefault: true,
+    isFallback: false,
+    name: 'Transportation',
+    sortOrder: 2,
+    systemKey: 'expense_transportation',
+    type: 'expense',
+    updatedAt: 0,
+  },
+  {
+    createdAt: 0,
+    iconKey: null,
+    id: 3,
+    isDefault: true,
+    isFallback: false,
+    name: 'Salary',
+    sortOrder: 3,
+    systemKey: 'income_salary',
+    type: 'income',
+    updatedAt: 0,
+  },
+];
+
+const paymentMethods = [
+  {
+    createdAt: 0,
+    id: 1,
+    isDefault: true,
+    isFallback: false,
+    name: 'Cash',
+    sortOrder: 1,
+    systemKey: 'cash',
+    updatedAt: 0,
+  },
+  {
+    createdAt: 0,
+    id: 2,
+    isDefault: false,
+    isFallback: false,
+    name: 'QRIS',
+    sortOrder: 2,
+    systemKey: 'qris',
+    updatedAt: 0,
+  },
+];
 
 let mockParams: Record<string, string> = {};
 
@@ -28,8 +103,33 @@ jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
 }));
 
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => mockNavigation,
+  usePreventRemove: (
+    enabled: boolean,
+    callback: (event: { data: { action: { type: string } } }) => void,
+  ) => {
+    mockPreventRemoveEnabled = enabled;
+    mockPreventRemoveCallback = callback;
+  },
+}));
+
+jest.mock(
+  '@/features/transactions/transaction-mutation-context',
+  () => ({
+    useTransactionMutations: () => ({
+      dismissNotice: jest.fn(),
+      notifyCreated: mockNotifyCreated,
+      notifyDeleted: mockNotifyDeleted,
+      notifyUpdated: mockNotifyUpdated,
+      revision: 0,
+      undo: jest.fn(),
+    }),
+  }),
+);
+
 jest.mock('expo-sqlite', () => ({
-  useSQLiteContext: () => ({}),
+  useSQLiteContext: () => mockDatabase,
 }));
 
 jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
@@ -73,69 +173,11 @@ jest.mock('@/features/settings/settings-repository', () => ({
 }));
 
 jest.mock('@/features/categories/category-repository', () => ({
-  listCategories: jest.fn<() => Promise<unknown[]>>().mockResolvedValue([
-    {
-      createdAt: 0,
-      iconKey: null,
-      id: 1,
-      isDefault: true,
-      isFallback: false,
-      name: 'Food & Drink',
-      sortOrder: 1,
-      systemKey: 'expense_food_drink',
-      type: 'expense',
-      updatedAt: 0,
-    },
-    {
-      createdAt: 0,
-      iconKey: null,
-      id: 2,
-      isDefault: true,
-      isFallback: false,
-      name: 'Transportation',
-      sortOrder: 2,
-      systemKey: 'expense_transportation',
-      type: 'expense',
-      updatedAt: 0,
-    },
-    {
-      createdAt: 0,
-      iconKey: null,
-      id: 3,
-      isDefault: true,
-      isFallback: false,
-      name: 'Salary',
-      sortOrder: 3,
-      systemKey: 'income_salary',
-      type: 'income',
-      updatedAt: 0,
-    },
-  ]),
+  listCategories: () => mockListCategories(),
 }));
 
 jest.mock('@/features/payment-methods/payment-method-repository', () => ({
-  listPaymentMethods: jest.fn<() => Promise<unknown[]>>().mockResolvedValue([
-    {
-      createdAt: 0,
-      id: 1,
-      isDefault: true,
-      isFallback: false,
-      name: 'Cash',
-      sortOrder: 1,
-      systemKey: 'cash',
-      updatedAt: 0,
-    },
-    {
-      createdAt: 0,
-      id: 2,
-      isDefault: true,
-      isFallback: false,
-      name: 'QRIS',
-      sortOrder: 2,
-      systemKey: 'qris',
-      updatedAt: 0,
-    },
-  ]),
+  listPaymentMethods: () => mockListPaymentMethods(),
 }));
 
 jest.mock('@/features/wallets/wallet-repository', () => ({
@@ -214,6 +256,11 @@ describe('manual transaction form', () => {
     mockParams = {};
     mockCreateTransaction.mockReset();
     mockPickManualReceipt.mockReset();
+    mockListCategories.mockReset().mockResolvedValue(categories);
+    mockListPaymentMethods.mockReset().mockResolvedValue(paymentMethods);
+    mockPreventRemoveEnabled = false;
+    mockPreventRemoveCallback = null;
+    mockRouter.canGoBack.mockReturnValue(true);
   });
 
   it('defaults to Expense and removes expense-only controls for Income', async () => {
@@ -346,6 +393,81 @@ describe('manual transaction form', () => {
     expect(mockCreateTransaction).not.toHaveBeenCalled();
   });
 
+  it('hydrates the active database default payment method instead of a seed id', async () => {
+    mockListPaymentMethods.mockResolvedValueOnce([
+      { ...paymentMethods[0], id: 7, isDefault: false, name: 'Cash' },
+      { ...paymentMethods[1], id: 9, isDefault: true, name: 'Primary Bank' },
+    ]);
+    mockCreateTransaction.mockResolvedValueOnce({ id: 200, type: 'expense' });
+    await render(
+      <LanguageProvider initialLanguage="en">
+        <ManualTransactionScreen />
+      </LanguageProvider>,
+    );
+
+    await screen.findByText('Primary Bank');
+    expect(mockPreventRemoveEnabled).toBe(false);
+    await fireEvent.changeText(screen.getByLabelText('Amount *'), '35000');
+    await fireEvent.press(screen.getByText('Food & Drink'));
+    await fireEvent.press(screen.getByTestId('save-transaction'));
+
+    await waitFor(() =>
+      expect(mockCreateTransaction).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ paymentMethodId: 9 }),
+      ),
+    );
+  });
+
+  it('blocks saving after reference loading fails and retries successfully', async () => {
+    const warningSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    mockListCategories
+      .mockRejectedValueOnce(new Error('closed database'))
+      .mockResolvedValueOnce(categories);
+    await render(
+      <LanguageProvider initialLanguage="en">
+        <ManualTransactionScreen />
+      </LanguageProvider>,
+    );
+
+    expect(
+      await screen.findByText('Categories and wallets could not be loaded.'),
+    ).toBeOnTheScreen();
+    expect(screen.getByTestId('save-transaction').props.accessibilityState).toEqual(
+      expect.objectContaining({ disabled: true }),
+    );
+    await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByText('Food & Drink')).toBeOnTheScreen();
+    warningSpy.mockRestore();
+  });
+
+  it('asks before discarding a dirty form and dispatches the blocked action', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    await render(
+      <LanguageProvider initialLanguage="en">
+        <ManualTransactionScreen />
+      </LanguageProvider>,
+    );
+    await screen.findByText('Food & Drink');
+    await fireEvent.changeText(screen.getByLabelText('Amount *'), '1000');
+    await waitFor(() => expect(mockPreventRemoveEnabled).toBe(true));
+
+    const action = { type: 'GO_BACK' };
+    await act(async () => {
+      mockPreventRemoveCallback?.({ data: { action } });
+    });
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Discard changes?',
+      'Unsaved transaction changes will be lost.',
+      expect.any(Array),
+    );
+    const buttons = alertSpy.mock.calls[0]?.[2] ?? [];
+    const discard = buttons.find((button) => button.text === 'Discard changes');
+    discard?.onPress?.();
+    expect(mockNavigation.dispatch).toHaveBeenCalledWith(action);
+    alertSpy.mockRestore();
+  });
+
   it('prevents a double save while the first write is pending', async () => {
     let resolveSave: ((value: unknown) => void) | null = null;
     mockCreateTransaction.mockImplementationOnce(
@@ -380,10 +502,31 @@ describe('manual transaction form', () => {
     await act(async () => {
       resolveSave?.({ id: 123, type: 'expense' });
     });
-    await waitFor(() => expect(mockRouter.dismissTo).toHaveBeenCalled());
+    await waitFor(() => expect(mockNotifyCreated).toHaveBeenCalledWith(123));
+    await waitFor(() => expect(mockRouter.back).toHaveBeenCalled());
   });
 
-  it('dismisses cleanly without blocking alert when Close modal is pressed', async () => {
+  it('falls back to transaction history after saving without a back stack', async () => {
+    mockRouter.canGoBack.mockReturnValue(false);
+    mockCreateTransaction.mockResolvedValueOnce({ id: 124, type: 'expense' });
+    await render(
+      <LanguageProvider initialLanguage="en">
+        <ManualTransactionScreen />
+      </LanguageProvider>,
+    );
+
+    await fireEvent.changeText(screen.getByLabelText('Amount *'), '35000');
+    await fireEvent.press(screen.getByText('Food & Drink'));
+    await fireEvent.press(screen.getByTestId('save-transaction'));
+
+    await waitFor(() => expect(mockNotifyCreated).toHaveBeenCalledWith(124));
+    await waitFor(() =>
+      expect(mockRouter.replace).toHaveBeenCalledWith('/transactions'),
+    );
+    expect(mockRouter.back).not.toHaveBeenCalled();
+  });
+
+  it('requests navigation when Close form is pressed', async () => {
     await render(
       <LanguageProvider initialLanguage="en">
         <ManualTransactionScreen />
@@ -495,7 +638,8 @@ describe('manual transaction form', () => {
     await act(async () => {
       resolveTransfer?.({ id: 99, type: 'transfer' });
     });
-    await waitFor(() => expect(mockRouter.dismissTo).toHaveBeenCalled());
+    await waitFor(() => expect(mockNotifyCreated).toHaveBeenCalledWith(99));
+    await waitFor(() => expect(mockRouter.back).toHaveBeenCalled());
   });
 
   it('filters category grid by income type when Income tab is selected', async () => {
