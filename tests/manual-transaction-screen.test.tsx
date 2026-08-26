@@ -103,7 +103,7 @@ jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
 }));
 
-jest.mock('@react-navigation/native', () => ({
+jest.mock('expo-router/react-navigation', () => ({
   useNavigation: () => mockNavigation,
   usePreventRemove: (
     enabled: boolean,
