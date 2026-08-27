@@ -1,8 +1,10 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   Platform,
   Pressable,
   ScrollView,
@@ -21,11 +23,12 @@ import { typography } from '@/theme/typography';
 
 /**
  * THESIS: A high-trust, privacy-first personal finance authentication screen
- * featuring a live floating dashboard card stack preview that demonstrates
+ * featuring an animated floating dashboard card stack preview that demonstrates
  * speed, clarity, and offline-first peace of mind before signing in.
  *
- * OWN-WORLD: Clean vector micro-icons, floating interactive mockup cards, category pastel tokens,
- * tactile Google Sign-In, dynamic Dark/Light surface contrast, and full a11y.
+ * OWN-WORLD: Gentle 60fps levitating physics on floating transaction chips,
+ * clean vector micro-icons, category pastel tokens, tactile Google Sign-In,
+ * dynamic Dark/Light surface contrast, and full a11y.
  */
 export function LoginScreen() {
   const { clearError, error, isBusy, signInWithGoogle, status } = useAuth();
@@ -33,6 +36,121 @@ export function LoginScreen() {
   const { t } = useLanguage();
   const authCopy = t.auth;
   const previewCopy = authCopy.preview;
+
+  // Gentle, organic floating animation values (Native Driver powered)
+  const floatAnimTop = useMemo(() => new Animated.Value(0), []);
+  const floatAnimBottom = useMemo(() => new Animated.Value(0), []);
+  const floatAnimMain = useMemo(() => new Animated.Value(0), []);
+
+  useEffect(() => {
+    // Top chip: 2.6s floating cycle
+    const animTop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnimTop, {
+          duration: 2600,
+          easing: Easing.inOut(Easing.sin),
+          toValue: 1,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnimTop, {
+          duration: 2600,
+          easing: Easing.inOut(Easing.sin),
+          toValue: 0,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    // Bottom chip: 3.2s counter-phase floating cycle
+    const animBottom = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnimBottom, {
+          duration: 3200,
+          easing: Easing.inOut(Easing.sin),
+          toValue: 1,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnimBottom, {
+          duration: 3200,
+          easing: Easing.inOut(Easing.sin),
+          toValue: 0,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    // Main card: subtle 4.0s breathing levitation
+    const animMain = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnimMain, {
+          duration: 4000,
+          easing: Easing.inOut(Easing.sin),
+          toValue: 1,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnimMain, {
+          duration: 4000,
+          easing: Easing.inOut(Easing.sin),
+          toValue: 0,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    animTop.start();
+    animBottom.start();
+    animMain.start();
+
+    return () => {
+      animTop.stop();
+      animBottom.stop();
+      animMain.stop();
+    };
+  }, [floatAnimBottom, floatAnimMain, floatAnimTop]);
+
+  // Interpolations for natural floating physics
+  const topTranslateY = useMemo(
+    () =>
+      floatAnimTop.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-4, 4],
+      }),
+    [floatAnimTop],
+  );
+  const topRotate = useMemo(
+    () =>
+      floatAnimTop.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['-1deg', '1.5deg'],
+      }),
+    [floatAnimTop],
+  );
+
+  const bottomTranslateY = useMemo(
+    () =>
+      floatAnimBottom.interpolate({
+        inputRange: [0, 1],
+        outputRange: [4, -4],
+      }),
+    [floatAnimBottom],
+  );
+  const bottomRotate = useMemo(
+    () =>
+      floatAnimBottom.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['1.5deg', '-1deg'],
+      }),
+    [floatAnimBottom],
+  );
+
+  const mainTranslateY = useMemo(
+    () =>
+      floatAnimMain.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-2, 2],
+      }),
+    [floatAnimMain],
+  );
 
   const errorMessage = error
     ? error.code === 'UNKNOWN'
@@ -107,14 +225,18 @@ export function LoginScreen() {
                 ]}
               />
 
-              {/* Top Floating Micro-Chip */}
-              <View
+              {/* Animated Top Floating Micro-Chip */}
+              <Animated.View
                 style={[
                   styles.floatingChipTop,
                   {
                     backgroundColor: colors.surface,
                     borderColor: isDark ? '#303034' : '#E2E8F0',
                     shadowColor: colors.shadow,
+                    transform: [
+                      { translateY: topTranslateY },
+                      { rotate: topRotate },
+                    ],
                   },
                 ]}
               >
@@ -147,16 +269,17 @@ export function LoginScreen() {
                 >
                   {previewCopy.tx1Amount}
                 </Text>
-              </View>
+              </Animated.View>
 
-              {/* Main Floating Dashboard Card */}
-              <View
+              {/* Animated Main Floating Dashboard Card */}
+              <Animated.View
                 style={[
                   styles.mainCard,
                   {
                     backgroundColor: colors.surface,
                     borderColor: isDark ? '#303034' : '#E2E8F0',
                     shadowColor: colors.shadow,
+                    transform: [{ translateY: mainTranslateY }],
                   },
                 ]}
               >
@@ -275,16 +398,20 @@ export function LoginScreen() {
                     </Text>
                   </View>
                 </View>
-              </View>
+              </Animated.View>
 
-              {/* Bottom Floating Micro-Chip */}
-              <View
+              {/* Animated Bottom Floating Micro-Chip */}
+              <Animated.View
                 style={[
                   styles.floatingChipBottom,
                   {
                     backgroundColor: colors.surface,
                     borderColor: isDark ? '#303034' : '#E2E8F0',
                     shadowColor: colors.shadow,
+                    transform: [
+                      { translateY: bottomTranslateY },
+                      { rotate: bottomRotate },
+                    ],
                   },
                 ]}
               >
@@ -314,7 +441,7 @@ export function LoginScreen() {
                 >
                   {previewCopy.tx2Amount}
                 </Text>
-              </View>
+              </Animated.View>
             </View>
           </View>
 
