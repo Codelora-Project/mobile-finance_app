@@ -27,7 +27,7 @@ import { contentMaxWidth } from '@/theme/layout';
 import { spacing } from '@/theme/spacing';
 
 export function TransactionHistoryScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { handleScroll } = useTabBarVisibility();
   const { actions, state } = useTransactionHistoryViewModel();
   const initialLoading = state.loading && state.dateGroups.length === 0;
@@ -39,8 +39,8 @@ export function TransactionHistoryScreen() {
           styles.dateGroupCard,
           {
             backgroundColor: colors.surface,
-            borderColor: colors.border,
-            shadowColor: colors.textPrimary,
+            borderColor: isDark ? '#27272A' : '#E2E8F0',
+            shadowColor: colors.shadow,
           },
         ]}
       >
@@ -67,50 +67,52 @@ export function TransactionHistoryScreen() {
         </View>
       </View>
     ),
-    [actions, colors, state.t],
+    [actions, colors, isDark, state.t],
   );
 
   return (
     <Screen>
-      {/* 1. Month navigation and period tabs provide the page context. */}
-      <TransactionHistoryHeader
-        activePeriod={state.period}
-        exporting={state.exporting}
-        language={state.language}
-        monthLabel={state.monthYearLabel}
-        onChangePeriod={actions.handleChangePeriod}
-        onExport={() => void actions.handleExport()}
-        onNextMonth={actions.handleNextMonth}
-        onPrevMonth={actions.handlePrevMonth}
-        onSelectMonth={actions.handleSelectMonth}
-        selectedMonth={state.selectedMonth}
-        selectedYear={state.selectedYear}
-      />
-
-      {/* 2. Cash-flow summary doubles as a type filter. */}
-      {!initialLoading ? (
-        <TransactionHistorySummaryBar
-          activeTypeFilter={state.filters.type}
-          currencyCode={state.currencyCode}
-          expenseLabel={state.t.transactions.expense}
-          incomeLabel={state.t.transactions.income}
-          netLabel={state.language === 'id' ? 'Arus Bersih' : 'Net Flow'}
-          onSelectTypeFilter={actions.handleSelectTypeFilter}
-          totalExpenseMinor={state.totalExpenseMinor}
-          totalIncomeMinor={state.totalIncomeMinor}
+      <View style={styles.topControlsStack}>
+        {/* 1. Month navigation and period tabs */}
+        <TransactionHistoryHeader
+          activePeriod={state.period}
+          exporting={state.exporting}
+          language={state.language}
+          monthLabel={state.monthYearLabel}
+          onChangePeriod={actions.handleChangePeriod}
+          onExport={() => void actions.handleExport()}
+          onNextMonth={actions.handleNextMonth}
+          onPrevMonth={actions.handlePrevMonth}
+          onSelectMonth={actions.handleSelectMonth}
+          selectedMonth={state.selectedMonth}
+          selectedYear={state.selectedYear}
         />
-      ) : null}
 
-      {/* 3. Search and advanced filters support the list below. */}
-      <TransactionHistorySearchToolbar
-        activeFiltersCount={state.activeFiltersCount}
-        language={state.language}
-        onClearSearch={() => actions.setSearchQuery('')}
-        onOpenFilter={() => actions.setFilterModalVisible(true)}
-        onSearchChange={actions.setSearchQuery}
-        searchQuery={state.searchQuery}
-        t={state.t}
-      />
+        {/* 2. Cash-flow summary bar */}
+        {!initialLoading ? (
+          <TransactionHistorySummaryBar
+            activeTypeFilter={state.filters.type}
+            currencyCode={state.currencyCode}
+            expenseLabel={state.t.transactions.expense}
+            incomeLabel={state.t.transactions.income}
+            netLabel={state.language === 'id' ? 'Arus Bersih' : 'Net Flow'}
+            onSelectTypeFilter={actions.handleSelectTypeFilter}
+            totalExpenseMinor={state.totalExpenseMinor}
+            totalIncomeMinor={state.totalIncomeMinor}
+          />
+        ) : null}
+
+        {/* 3. Search and advanced filters */}
+        <TransactionHistorySearchToolbar
+          activeFiltersCount={state.activeFiltersCount}
+          language={state.language}
+          onClearSearch={() => actions.setSearchQuery('')}
+          onOpenFilter={() => actions.setFilterModalVisible(true)}
+          onSearchChange={actions.setSearchQuery}
+          searchQuery={state.searchQuery}
+          t={state.t}
+        />
+      </View>
 
       {/* 4. Main Infinite Scroll Transaction Feed */}
       <FlatList
@@ -168,20 +170,19 @@ export function TransactionHistoryScreen() {
         onClose={() => actions.setFilterModalVisible(false)}
         visible={state.filterModalVisible}
       />
-
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   dateGroupCard: {
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1,
     elevation: 2,
     overflow: 'hidden',
-    shadowOffset: { height: 2, width: 0 },
+    shadowOffset: { height: 4, width: 0 },
     shadowOpacity: 0.04,
-    shadowRadius: 6,
+    shadowRadius: 10,
   },
   listContent: {
     alignSelf: 'center',
@@ -189,8 +190,13 @@ const styles = StyleSheet.create({
     maxWidth: contentMaxWidth,
     paddingBottom: spacing.xxl + 40,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.xs,
+    paddingTop: spacing.md,
     width: '100%',
+  },
+  loadingMoreContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
   },
   loadingState: {
     alignItems: 'center',
@@ -201,12 +207,11 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 14,
   },
-  loadingMoreContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.md,
-  },
   timelineItemsWrap: {
     paddingVertical: spacing.xs,
+  },
+  topControlsStack: {
+    gap: spacing.sm + 2,
+    paddingBottom: 2,
   },
 });

@@ -37,17 +37,16 @@ export const TransactionHistorySearchToolbar = memo(
           style={[
             styles.searchWrap,
             {
-              backgroundColor: isDark
-                ? colors.surfaceSecondary
-                : colors.surface,
-              borderColor: colors.border,
+              backgroundColor: colors.surface,
+              borderColor: isDark ? '#27272A' : '#E2E8F0',
+              shadowColor: colors.shadow,
             },
           ]}
         >
           <MaterialCommunityIcons
-            color={colors.textMuted}
+            color={colors.textSecondary}
             name="magnify"
-            size={19}
+            size={20}
           />
           <TextInput
             accessibilityLabel={
@@ -70,7 +69,7 @@ export const TransactionHistorySearchToolbar = memo(
               style={({ pressed }) => pressed && styles.pressed}
             >
               <MaterialCommunityIcons
-                color={colors.textMuted}
+                color={colors.textSecondary}
                 name="close-circle"
                 size={18}
               />
@@ -92,9 +91,16 @@ export const TransactionHistorySearchToolbar = memo(
             styles.filterButton,
             {
               backgroundColor:
-                activeFiltersCount > 0 ? colors.primary : colors.surface,
+                activeFiltersCount > 0
+                  ? colors.primary
+                  : colors.surface,
               borderColor:
-                activeFiltersCount > 0 ? colors.primary : colors.border,
+                activeFiltersCount > 0
+                  ? colors.primary
+                  : isDark
+                    ? '#27272A'
+                    : '#E2E8F0',
+              shadowColor: colors.shadow,
             },
             pressed && styles.pressed,
           ]}
@@ -104,7 +110,7 @@ export const TransactionHistorySearchToolbar = memo(
               activeFiltersCount > 0 ? colors.onPrimary : colors.textSecondary
             }
             name="tune-variant"
-            size={19}
+            size={18}
           />
           <Text
             style={[
@@ -131,42 +137,52 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexDirection: 'row',
     gap: spacing.sm,
-    maxWidth: contentMaxWidth - spacing.md * 2,
-    paddingTop: spacing.xs,
-    width: '92%',
+    maxWidth: contentMaxWidth,
+    paddingHorizontal: spacing.md,
+    width: '100%',
   },
   filterButton: {
     alignItems: 'center',
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
+    elevation: 2,
     flexDirection: 'row',
-    gap: spacing.xs,
+    gap: 6,
     height: 44,
     justifyContent: 'center',
-    paddingHorizontal: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
   },
   filterText: {
     ...typography.metadata,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   pressed: {
-    opacity: 0.72,
+    opacity: 0.75,
+    transform: [{ scale: 0.98 }],
   },
   searchInput: {
     ...typography.body,
     flex: 1,
     fontSize: 13,
+    fontWeight: '600',
     paddingVertical: 0,
   },
   searchWrap: {
     alignItems: 'center',
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
+    elevation: 2,
     flex: 1,
     flexDirection: 'row',
     gap: spacing.sm,
     height: 44,
-    paddingHorizontal: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
   },
 });

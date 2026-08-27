@@ -26,7 +26,7 @@ export const TransactionHistorySummaryBar = memo(
     currencyCode,
     expenseLabel,
     incomeLabel,
-    netLabel = 'Saldo',
+    netLabel = 'Arus Bersih',
     onSelectTypeFilter,
     totalExpenseMinor,
     totalIncomeMinor,
@@ -37,180 +37,183 @@ export const TransactionHistorySummaryBar = memo(
     const isNetPositive = netMinor >= 0;
 
     return (
-      <View
-        style={[
-          styles.summaryBarRoot,
-          {
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          },
-        ]}
-      >
-        {/* 1. Expense Stat (Keluar) */}
-        <Pressable
-          accessibilityLabel={`${expenseLabel}: -${formatMoney(totalExpenseMinor, currencyCode)}`}
-          accessibilityRole="button"
-          onPress={() =>
-            onSelectTypeFilter?.(
-              activeTypeFilter === 'expense' ? undefined : 'expense',
-            )
-          }
-          style={({ pressed }) => [
-            styles.statCol,
-            activeTypeFilter === 'expense' && {
-              backgroundColor: isDark ? 'rgba(239, 68, 68, 0.16)' : '#FEE2E2',
-              borderRadius: radius.md,
-            },
-            pressed ? { opacity: 0.75 } : null,
-          ]}
-        >
-          <View
-            style={[
-              styles.iconCircle,
-              {
-                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2',
-              },
-            ]}
-          >
-            <MaterialCommunityIcons
-              color={colors.destructive}
-              name="arrow-up"
-              size={15}
-            />
-          </View>
-          <View style={styles.textWrap}>
-            <Text
-              numberOfLines={1}
-              style={[styles.statLabel, { color: colors.textSecondary }]}
-            >
-              {expenseLabel}
-            </Text>
-            <Text
-              adjustsFontSizeToFit
-              minimumFontScale={0.75}
-              numberOfLines={1}
-              style={[styles.statAmountText, { color: colors.destructive }]}
-            >
-              -{formatMoney(totalExpenseMinor, currencyCode)}
-            </Text>
-          </View>
-        </Pressable>
-
+      <View style={styles.outerContainer}>
         <View
           style={[
-            styles.verticalDivider,
+            styles.summaryBarRoot,
             {
-              backgroundColor: isDark
-                ? 'rgba(255, 255, 255, 0.08)'
-                : 'rgba(0, 0, 0, 0.06)',
+              backgroundColor: colors.surface,
+              borderColor: isDark ? '#27272A' : '#E2E8F0',
+              shadowColor: colors.shadow,
             },
-          ]}
-        />
-
-        {/* 2. Income Stat (Masuk) */}
-        <Pressable
-          accessibilityLabel={`${incomeLabel}: +${formatMoney(totalIncomeMinor, currencyCode)}`}
-          accessibilityRole="button"
-          onPress={() =>
-            onSelectTypeFilter?.(
-              activeTypeFilter === 'income' ? undefined : 'income',
-            )
-          }
-          style={({ pressed }) => [
-            styles.statCol,
-            activeTypeFilter === 'income' && {
-              backgroundColor: isDark ? 'rgba(34, 197, 94, 0.16)' : '#DCFCE7',
-              borderRadius: radius.md,
-            },
-            pressed ? { opacity: 0.75 } : null,
           ]}
         >
-          <View
-            style={[
-              styles.iconCircle,
-              {
-                backgroundColor: isDark ? 'rgba(34, 197, 94, 0.15)' : '#DCFCE7',
-              },
-            ]}
-          >
-            <MaterialCommunityIcons
-              color={colors.positive}
-              name="arrow-down"
-              size={15}
-            />
-          </View>
-          <View style={styles.textWrap}>
-            <Text
-              numberOfLines={1}
-              style={[styles.statLabel, { color: colors.textSecondary }]}
-            >
-              {incomeLabel}
-            </Text>
-            <Text
-              adjustsFontSizeToFit
-              minimumFontScale={0.75}
-              numberOfLines={1}
-              style={[styles.statAmountText, { color: colors.positive }]}
-            >
-              +{formatMoney(totalIncomeMinor, currencyCode)}
-            </Text>
-          </View>
-        </Pressable>
-
-        <View
-          style={[
-            styles.verticalDivider,
-            {
-              backgroundColor: isDark
-                ? 'rgba(255, 255, 255, 0.08)'
-                : 'rgba(0, 0, 0, 0.06)',
-            },
-          ]}
-        />
-
-        {/* 3. Saldo / Arus Kas Stat */}
-        <View style={styles.statCol}>
-          <View
-            style={[
-              styles.iconCircle,
-              {
+          {/* 1. Expense Stat (Keluar) */}
+          <Pressable
+            accessibilityLabel={`${expenseLabel}: -${formatMoney(totalExpenseMinor, currencyCode)}`}
+            accessibilityRole="button"
+            onPress={() =>
+              onSelectTypeFilter?.(
+                activeTypeFilter === 'expense' ? undefined : 'expense',
+              )
+            }
+            style={({ pressed }) => [
+              styles.statCol,
+              activeTypeFilter === 'expense' && {
                 backgroundColor: isDark
-                  ? isNetPositive
-                    ? 'rgba(34, 197, 94, 0.15)'
-                    : 'rgba(239, 68, 68, 0.15)'
-                  : isNetPositive
-                    ? '#DCFCE7'
-                    : '#FEE2E2',
+                  ? 'rgba(251, 113, 133, 0.14)'
+                  : '#FEE2E2',
+                borderRadius: radius.md,
               },
+              pressed ? { opacity: 0.75 } : null,
             ]}
           >
-            <MaterialCommunityIcons
-              color={isNetPositive ? colors.positive : colors.destructive}
-              name={isNetPositive ? 'trending-up' : 'trending-down'}
-              size={15}
-            />
-          </View>
-          <View style={styles.textWrap}>
-            <Text
-              numberOfLines={1}
-              style={[styles.statLabel, { color: colors.textSecondary }]}
-            >
-              {netLabel}
-            </Text>
-            <Text
-              adjustsFontSizeToFit
-              minimumFontScale={0.75}
-              numberOfLines={1}
+            <View
               style={[
-                styles.statAmountText,
+                styles.iconCircle,
                 {
-                  color: isNetPositive ? colors.positive : colors.destructive,
+                  backgroundColor: isDark
+                    ? 'rgba(251, 113, 133, 0.16)'
+                    : '#FEE2E2',
                 },
               ]}
             >
-              {isNetPositive ? '+' : '−'}
-              {formatMoney(Math.abs(netMinor), currencyCode)}
-            </Text>
+              <MaterialCommunityIcons
+                color={colors.destructive}
+                name="arrow-up"
+                size={14}
+              />
+            </View>
+            <View style={styles.textWrap}>
+              <Text
+                numberOfLines={1}
+                style={[styles.statLabel, { color: colors.textSecondary }]}
+              >
+                {expenseLabel}
+              </Text>
+              <Text
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+                numberOfLines={1}
+                style={[styles.statAmountText, { color: colors.destructive }]}
+              >
+                -{formatMoney(totalExpenseMinor, currencyCode)}
+              </Text>
+            </View>
+          </Pressable>
+
+          <View
+            style={[
+              styles.verticalDivider,
+              { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
+            ]}
+          />
+
+          {/* 2. Income Stat (Masuk) */}
+          <Pressable
+            accessibilityLabel={`${incomeLabel}: +${formatMoney(totalIncomeMinor, currencyCode)}`}
+            accessibilityRole="button"
+            onPress={() =>
+              onSelectTypeFilter?.(
+                activeTypeFilter === 'income' ? undefined : 'income',
+              )
+            }
+            style={({ pressed }) => [
+              styles.statCol,
+              activeTypeFilter === 'income' && {
+                backgroundColor: isDark
+                  ? 'rgba(74, 222, 128, 0.14)'
+                  : '#DCFCE7',
+                borderRadius: radius.md,
+              },
+              pressed ? { opacity: 0.75 } : null,
+            ]}
+          >
+            <View
+              style={[
+                styles.iconCircle,
+                {
+                  backgroundColor: isDark
+                    ? 'rgba(74, 222, 128, 0.16)'
+                    : '#DCFCE7',
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                color={colors.positive}
+                name="arrow-down"
+                size={14}
+              />
+            </View>
+            <View style={styles.textWrap}>
+              <Text
+                numberOfLines={1}
+                style={[styles.statLabel, { color: colors.textSecondary }]}
+              >
+                {incomeLabel}
+              </Text>
+              <Text
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+                numberOfLines={1}
+                style={[styles.statAmountText, { color: colors.positive }]}
+              >
+                +{formatMoney(totalIncomeMinor, currencyCode)}
+              </Text>
+            </View>
+          </Pressable>
+
+          <View
+            style={[
+              styles.verticalDivider,
+              { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
+            ]}
+          />
+
+          {/* 3. Net Flow Stat */}
+          <View style={styles.statCol}>
+            <View
+              style={[
+                styles.iconCircle,
+                {
+                  backgroundColor: isDark
+                    ? isNetPositive
+                      ? 'rgba(74, 222, 128, 0.16)'
+                      : 'rgba(251, 113, 133, 0.16)'
+                    : isNetPositive
+                      ? '#DCFCE7'
+                      : '#FEE2E2',
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                color={isNetPositive ? colors.positive : colors.destructive}
+                name={isNetPositive ? 'trending-up' : 'trending-down'}
+                size={14}
+              />
+            </View>
+            <View style={styles.textWrap}>
+              <Text
+                numberOfLines={1}
+                style={[styles.statLabel, { color: colors.textSecondary }]}
+              >
+                {netLabel}
+              </Text>
+              <Text
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+                numberOfLines={1}
+                style={[
+                  styles.statAmountText,
+                  {
+                    color: isNetPositive ? colors.positive : colors.destructive,
+                  },
+                ]}
+              >
+                {isNetPositive ? '+' : '−'}
+                {formatMoney(Math.abs(netMinor), currencyCode)}
+              </Text>
+            </View>
           </View>
         </View>
       </View>
@@ -222,15 +225,22 @@ const styles = StyleSheet.create({
   iconCircle: {
     alignItems: 'center',
     borderRadius: radius.pill,
-    height: 28,
+    height: 26,
     justifyContent: 'center',
-    width: 28,
+    width: 26,
+  },
+  outerContainer: {
+    alignSelf: 'center',
+    maxWidth: contentMaxWidth,
+    paddingHorizontal: spacing.md,
+    width: '100%',
   },
   statAmountText: {
     ...typography.body,
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '800',
     letterSpacing: -0.2,
+    marginTop: 1,
   },
   statCol: {
     alignItems: 'center',
@@ -238,30 +248,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
     justifyContent: 'center',
+    minWidth: 0,
     paddingHorizontal: 4,
-    paddingVertical: 5,
+    paddingVertical: spacing.xs + 2,
   },
   statLabel: {
     ...typography.metadata,
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   summaryBarRoot: {
-    alignSelf: 'center',
     alignItems: 'center',
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1,
+    elevation: 2,
     flexDirection: 'row',
-    marginTop: spacing.xs,
-    maxWidth: contentMaxWidth - spacing.md * 2,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 9,
-    width: '92%',
+    paddingHorizontal: spacing.xs + 2,
+    paddingVertical: spacing.sm + 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    width: '100%',
   },
   textWrap: {
     flex: 1,
     gap: 1,
     justifyContent: 'center',
+    minWidth: 0,
   },
   verticalDivider: {
     alignSelf: 'center',

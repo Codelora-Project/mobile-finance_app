@@ -227,7 +227,9 @@ export const TransactionRowItem = memo(function TransactionRowItem({
           styles.animatedRow,
           {
             backgroundColor: colors.surface,
-            borderBottomColor: colors.border,
+            borderBottomColor: isDark
+              ? 'rgba(255, 255, 255, 0.06)'
+              : 'rgba(0, 0, 0, 0.05)',
             borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth,
             transform: [{ translateX }],
           },
@@ -253,7 +255,7 @@ export const TransactionRowItem = memo(function TransactionRowItem({
             pressed ? { opacity: 0.7 } : null,
           ]}
         >
-          {/* Category Icon Badge (Unified Monochromatic) */}
+          {/* Category Icon Badge */}
           <View
             style={[
               styles.iconBadge,
@@ -265,7 +267,7 @@ export const TransactionRowItem = memo(function TransactionRowItem({
             <MaterialCommunityIcons
               color={meta.color}
               name={meta.icon}
-              size={19}
+              size={20}
             />
           </View>
 
@@ -401,6 +403,7 @@ const styles = StyleSheet.create({
     ...typography.metadata,
     flexShrink: 1,
     fontSize: 12,
+    fontWeight: '500',
   },
   contentCol: {
     flex: 1,
@@ -410,22 +413,23 @@ const styles = StyleSheet.create({
   },
   iconBadge: {
     alignItems: 'center',
-    borderRadius: radius.md,
-    height: 38,
+    borderRadius: 14,
+    height: 42,
     justifyContent: 'center',
-    width: 38,
+    width: 42,
   },
   itemAmount: {
     ...typography.body,
     flexShrink: 0,
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.2,
   },
   itemTitle: {
     ...typography.body,
     flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 14.5,
+    fontWeight: '700',
     marginRight: spacing.sm,
     minWidth: 0,
   },
@@ -462,9 +466,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.sm + 2,
-    minHeight: 62,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
+    minHeight: 64,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
   },
   swipeActionButton: {
     alignItems: 'center',
