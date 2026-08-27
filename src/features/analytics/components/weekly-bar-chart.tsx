@@ -1,4 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { WeeklyComparison } from '@/features/analytics/analytics-repository';
@@ -7,6 +8,7 @@ import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
+import { typography } from '@/theme/typography';
 
 type WeeklyBarChartProps = {
   weeklyData: WeeklyComparison;
@@ -36,17 +38,24 @@ export function WeeklyBarChart({
         styles.container,
         {
           backgroundColor: colors.surface,
-          borderColor: colors.border,
-          shadowColor: colors.textPrimary,
+          borderColor: isDark ? '#27272A' : '#E2E8F0',
+          shadowColor: colors.shadow,
         },
       ]}
     >
-      {/* Header with Trend Badge */}
+      {/* 1. Header with Trend Badge */}
       <View style={styles.headerRow}>
         <View style={styles.headerTitles}>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>
-            {t.analytics.weeklyComparison}
-          </Text>
+          <View style={styles.titleRow}>
+            <MaterialCommunityIcons
+              color={colors.primary}
+              name="chart-bar"
+              size={18}
+            />
+            <Text style={[styles.title, { color: colors.textPrimary }]}>
+              {t.analytics.weeklyComparison}
+            </Text>
+          </View>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             {t.analytics.last7DaysVsPrevious}
           </Text>
@@ -57,15 +66,19 @@ export function WeeklyBarChart({
             styles.trendBadge,
             {
               backgroundColor: isFrugal
-                ? colors.incomeBackground
-                : colors.expenseBackground,
+                ? isDark
+                  ? 'rgba(74, 222, 128, 0.14)'
+                  : '#DCFCE7'
+                : isDark
+                  ? 'rgba(251, 113, 133, 0.14)'
+                  : '#FEE2E2',
             },
           ]}
         >
           <MaterialCommunityIcons
             color={isFrugal ? colors.positive : colors.destructive}
             name={isFrugal ? 'trending-down' : 'trending-up'}
-            size={16}
+            size={15}
           />
           <Text
             style={[
@@ -80,7 +93,7 @@ export function WeeklyBarChart({
         </View>
       </View>
 
-      {/* Legend & Summary Values */}
+      {/* 2. Legend & Summary Values */}
       <View style={styles.legendRow}>
         <View style={styles.legendItem}>
           <View
@@ -96,7 +109,10 @@ export function WeeklyBarChart({
 
         <View style={styles.legendItem}>
           <View
-            style={[styles.legendDot, { backgroundColor: colors.textMuted }]}
+            style={[
+              styles.legendDot,
+              { backgroundColor: isDark ? '#52525B' : '#CBD5E1' },
+            ]}
           />
           <Text style={[styles.legendLabel, { color: colors.textSecondary }]}>
             {t.analytics.lastWeek}:{' '}
@@ -107,15 +123,15 @@ export function WeeklyBarChart({
         </View>
       </View>
 
-      {/* 7-Day Dual Column Chart */}
+      {/* 3. 7-Day Dual Column Chart */}
       <View style={styles.chartArea}>
         {weeklyData.dailyBreakdown.map((day) => {
           const thisWeekHeightPercent = Math.max(
-            4,
+            5,
             Math.round((day.thisWeekMinor / maxAmount) * 100),
           );
           const lastWeekHeightPercent = Math.max(
-            4,
+            5,
             Math.round((day.lastWeekMinor / maxAmount) * 100),
           );
 
@@ -127,7 +143,7 @@ export function WeeklyBarChart({
                   style={[
                     styles.barPill,
                     {
-                      backgroundColor: isDark ? '#52525B' : '#CBD5E1',
+                      backgroundColor: isDark ? '#3F3F46' : '#CBD5E1',
                       height: `${lastWeekHeightPercent}%`,
                     },
                   ]}
@@ -159,7 +175,7 @@ export function WeeklyBarChart({
 const styles = StyleSheet.create({
   barPill: {
     borderRadius: radius.pill,
-    width: 8,
+    width: 9,
   },
   barsTrack: {
     alignItems: 'flex-end',
@@ -183,17 +199,18 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   container: {
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    elevation: 1,
+    elevation: 2,
     padding: spacing.md + 2,
-    shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
   },
   dayLabel: {
+    ...typography.metadata,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   headerRow: {
     alignItems: 'flex-start',
@@ -215,6 +232,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   legendLabel: {
+    ...typography.metadata,
     fontSize: 12,
   },
   legendRow: {
@@ -224,16 +242,22 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   legendValue: {
-    fontWeight: '700',
+    fontWeight: '800',
   },
   subtitle: {
+    ...typography.metadata,
     fontSize: 12,
-    fontWeight: '500',
   },
   title: {
-    fontSize: 16,
-    fontWeight: '800',
+    ...typography.sectionTitle,
+    fontSize: 15,
+    fontWeight: '900',
     letterSpacing: -0.2,
+  },
+  titleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
   },
   trendBadge: {
     alignItems: 'center',
@@ -244,6 +268,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   trendBadgeText: {
+    ...typography.metadata,
     fontSize: 11,
     fontWeight: '800',
   },

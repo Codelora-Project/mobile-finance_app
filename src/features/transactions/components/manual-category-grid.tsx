@@ -7,7 +7,6 @@ import type { Category } from '@/features/categories/category-repository';
 import type { TransactionType } from '@/features/transactions/transaction-repository';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
-import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 

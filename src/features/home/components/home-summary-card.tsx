@@ -79,14 +79,6 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
             : t.home.lowerThanPrevious
         } ${t.home.comparedToPrevious}`;
 
-  // Calculate visual cashflow ratio
-  const totalFlow = summary.incomeMinor + summary.expenseMinor;
-  const incomeRatio =
-    totalFlow > 0
-      ? Math.max(8, Math.min(92, (summary.incomeMinor / totalFlow) * 100))
-      : 50;
-  const expenseRatio = 100 - incomeRatio;
-
   return (
     <View
       style={[
@@ -100,73 +92,6 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
     >
       {/* 1. Header: Period Switcher & Display Settings */}
       <View style={styles.topRow}>
-        {/* Period Selector Pill */}
-        <Pressable
-          accessibilityLabel={`${t.home.changePeriod}: ${getPeriodLabel(period)}`}
-          accessibilityRole="button"
-          onPress={handleCyclePeriod}
-          style={({ pressed }) => [
-            styles.periodDropdownPill,
-            {
-              backgroundColor: isDark
-                ? 'rgba(59, 130, 246, 0.14)'
-                : colors.primaryLight,
-              borderColor: isDark
-                ? 'rgba(59, 130, 246, 0.28)'
-                : 'rgba(37, 99, 235, 0.2)',
-            },
-            pressed ? styles.pillPressed : null,
-          ]}
-        >
-          <MaterialCommunityIcons
-            color={colors.primary}
-            name="calendar-month-outline"
-            size={13}
-          />
-          <Text style={[styles.periodDropdownText, { color: colors.primary }]}>
-            {getPeriodLabel(period)}
-          </Text>
-          <MaterialCommunityIcons
-            color={colors.primary}
-            name="chevron-down"
-            size={14}
-          />
-        </Pressable>
-
-        {/* Display Settings Button */}
-        {onOpenDisplaySettings ? (
-          <Pressable
-            accessibilityLabel={t.home.displaySettings}
-            accessibilityRole="button"
-            hitSlop={8}
-            onPress={onOpenDisplaySettings}
-            style={({ pressed }) => [
-              styles.settingsBtn,
-              {
-                backgroundColor: isDark
-                  ? colors.surfaceSecondary
-                  : '#F1F5F9',
-                borderColor: isDark ? '#3F3F46' : '#E2E8F0',
-              },
-              pressed ? styles.pillPressed : null,
-            ]}
-          >
-            <MaterialCommunityIcons
-              color={colors.textSecondary}
-              name="tune-variant"
-              size={14}
-            />
-            <Text
-              style={[styles.settingsText, { color: colors.textSecondary }]}
-            >
-              {t.home.displaySettings}
-            </Text>
-          </Pressable>
-        ) : null}
-      </View>
-
-      {/* 2. Hero Net Balance Section */}
-      <View style={styles.mainAmountSection}>
         <Text
           numberOfLines={1}
           style={[styles.cardTitleLabel, { color: colors.textSecondary }]}
@@ -174,6 +99,67 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
           {t.home.net.toUpperCase()} · {summary.periodLabel.toUpperCase()}
         </Text>
 
+        <View style={styles.topRightControls}>
+          {/* Period Selector Pill */}
+          <Pressable
+            accessibilityLabel={`${t.home.changePeriod}: ${getPeriodLabel(period)}`}
+            accessibilityRole="button"
+            onPress={handleCyclePeriod}
+            style={({ pressed }) => [
+              styles.periodDropdownPill,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(59, 130, 246, 0.14)'
+                  : colors.primaryLight,
+                borderColor: isDark
+                  ? 'rgba(59, 130, 246, 0.28)'
+                  : 'rgba(37, 99, 235, 0.2)',
+              },
+              pressed ? styles.pillPressed : null,
+            ]}
+          >
+            <Text
+              style={[styles.periodDropdownText, { color: colors.primary }]}
+            >
+              {getPeriodLabel(period)}
+            </Text>
+            <MaterialCommunityIcons
+              color={colors.primary}
+              name="chevron-down"
+              size={14}
+            />
+          </Pressable>
+
+          {/* Display Settings Button */}
+          {onOpenDisplaySettings ? (
+            <Pressable
+              accessibilityLabel={t.home.displaySettings}
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={onOpenDisplaySettings}
+              style={({ pressed }) => [
+                styles.settingsBtn,
+                {
+                  backgroundColor: isDark
+                    ? colors.surfaceSecondary
+                    : '#F1F5F9',
+                  borderColor: isDark ? '#3F3F46' : '#E2E8F0',
+                },
+                pressed ? styles.pillPressed : null,
+              ]}
+            >
+              <MaterialCommunityIcons
+                color={colors.textSecondary}
+                name="tune-variant"
+                size={14}
+              />
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
+
+      {/* 2. Hero Net Balance Section */}
+      <View style={styles.mainAmountSection}>
         <View style={styles.amountRow}>
           <Text
             adjustsFontSizeToFit
@@ -221,25 +207,9 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
           ) : null}
         </View>
 
-        {/* Comparison Badge */}
+        {/* Comparison Line (Clean Minimalist) */}
         {!hideBalance ? (
-          <View
-            style={[
-              styles.comparisonRow,
-              {
-                backgroundColor:
-                  netDeltaMinor > 0
-                    ? isDark
-                      ? 'rgba(74, 222, 128, 0.12)'
-                      : '#DCFCE7'
-                    : netDeltaMinor < 0
-                      ? isDark
-                        ? 'rgba(251, 113, 133, 0.12)'
-                        : '#FEE2E2'
-                      : colors.surfaceSecondary,
-              },
-            ]}
-          >
+          <View style={styles.comparisonRow}>
             <MaterialCommunityIcons
               color={
                 netDeltaMinor > 0
@@ -255,19 +225,14 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
                     ? 'trending-down'
                     : 'minus'
               }
-              size={14}
+              size={15}
             />
             <Text
               numberOfLines={2}
               style={[
                 styles.comparisonText,
                 {
-                  color:
-                    netDeltaMinor > 0
-                      ? colors.positive
-                      : netDeltaMinor < 0
-                        ? colors.destructive
-                        : colors.textSecondary,
+                  color: colors.textSecondary,
                 },
               ]}
             >
@@ -277,70 +242,22 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
         ) : null}
       </View>
 
-      {/* 3. Visual Cashflow Health Ratio Bar */}
-      {!hideBalance && totalFlow > 0 ? (
-        <View style={styles.cashflowBarContainer}>
-          <View
-            style={[
-              styles.cashflowBarTrack,
-              { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
-            ]}
-          >
-            <View
-              style={[
-                styles.cashflowIncomeFill,
-                {
-                  backgroundColor: colors.positive,
-                  width: `${incomeRatio}%`,
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.cashflowExpenseFill,
-                {
-                  backgroundColor: colors.destructive,
-                  width: `${expenseRatio}%`,
-                },
-              ]}
-            />
-          </View>
-        </View>
-      ) : null}
+      {/* 3. Sleek Horizontal Divider */}
+      <View
+        style={[
+          styles.divider,
+          { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
+        ]}
+      />
 
-      {/* 4. Income & Expense Split Micro-Cards */}
+      {/* 4. Bottom Split Metrics with Clean White Text & Subtle Color Dots */}
       <View style={styles.metricsRow}>
-        {/* Income Card */}
-        <View
-          style={[
-            styles.metricCard,
-            {
-              backgroundColor: isDark
-                ? 'rgba(74, 222, 128, 0.08)'
-                : '#F0FDF4',
-              borderColor: isDark
-                ? 'rgba(74, 222, 128, 0.2)'
-                : '#BBF7D0',
-            },
-          ]}
-        >
+        {/* Income Column */}
+        <View style={styles.metricCol}>
           <View style={styles.metricHeader}>
             <View
-              style={[
-                styles.iconCircle,
-                {
-                  backgroundColor: isDark
-                    ? 'rgba(74, 222, 128, 0.2)'
-                    : '#DCFCE7',
-                },
-              ]}
-            >
-              <MaterialCommunityIcons
-                color={colors.positive}
-                name="arrow-down-left"
-                size={13}
-              />
-            </View>
+              style={[styles.metricDot, { backgroundColor: colors.positive }]}
+            />
             <Text
               numberOfLines={1}
               style={[styles.metricLabel, { color: colors.textSecondary }]}
@@ -352,43 +269,29 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
             adjustsFontSizeToFit
             minimumFontScale={0.75}
             numberOfLines={1}
-            style={[styles.metricValue, { color: colors.positive }]}
+            style={[styles.metricValue, { color: colors.textPrimary }]}
           >
             {formattedIncome}
           </Text>
         </View>
 
-        {/* Expense Card */}
+        {/* Center Vertical Divider */}
         <View
           style={[
-            styles.metricCard,
-            {
-              backgroundColor: isDark
-                ? 'rgba(251, 113, 133, 0.08)'
-                : '#FEF2F2',
-              borderColor: isDark
-                ? 'rgba(251, 113, 133, 0.2)'
-                : '#FECACA',
-            },
+            styles.verticalDivider,
+            { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
           ]}
-        >
+        />
+
+        {/* Expense Column */}
+        <View style={styles.metricCol}>
           <View style={styles.metricHeader}>
             <View
               style={[
-                styles.iconCircle,
-                {
-                  backgroundColor: isDark
-                    ? 'rgba(251, 113, 133, 0.2)'
-                    : '#FEE2E2',
-                },
+                styles.metricDot,
+                { backgroundColor: colors.destructive },
               ]}
-            >
-              <MaterialCommunityIcons
-                color={colors.destructive}
-                name="arrow-up-right"
-                size={13}
-              />
-            </View>
+            />
             <Text
               numberOfLines={1}
               style={[styles.metricLabel, { color: colors.textSecondary }]}
@@ -400,7 +303,7 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
             adjustsFontSizeToFit
             minimumFontScale={0.75}
             numberOfLines={1}
-            style={[styles.metricValue, { color: colors.destructive }]}
+            style={[styles.metricValue, { color: colors.textPrimary }]}
           >
             {formattedExpense}
           </Text>
@@ -424,38 +327,20 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.6,
   },
-  cashflowBarContainer: {
-    marginBottom: spacing.xs,
-    marginTop: 2,
-    width: '100%',
-  },
-  cashflowBarTrack: {
-    borderRadius: 3,
-    flexDirection: 'row',
-    height: 5,
-    overflow: 'hidden',
-    width: '100%',
-  },
-  cashflowExpenseFill: {
-    height: '100%',
-  },
-  cashflowIncomeFill: {
-    height: '100%',
-  },
   comparisonRow: {
     alignItems: 'center',
-    borderRadius: radius.pill,
     flexDirection: 'row',
-    gap: 5,
+    gap: 6,
     marginTop: 2,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 4,
   },
   comparisonText: {
     ...typography.metadata,
-    fontSize: 11,
-    fontWeight: '700',
-    lineHeight: 15,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  divider: {
+    height: 1,
+    marginVertical: spacing.sm + 2,
   },
   eyeBtn: {
     alignItems: 'center',
@@ -465,33 +350,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 36,
   },
-  iconCircle: {
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    height: 22,
-    justifyContent: 'center',
-    width: 22,
-  },
   mainAmountSection: {
     alignItems: 'flex-start',
     gap: 4,
-    marginVertical: spacing.xs + 2,
+    marginVertical: spacing.xs,
   },
   mainAmountValue: {
     ...typography.displayAmount,
     flex: 1,
-    fontSize: 30,
+    fontSize: 32,
     fontWeight: '900',
     letterSpacing: -0.5,
-    lineHeight: 38,
+    lineHeight: 40,
   },
-  metricCard: {
-    borderRadius: radius.md,
-    borderWidth: 1,
+  metricCol: {
     flex: 1,
     gap: 4,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
+    minWidth: 0,
+  },
+  metricDot: {
+    borderRadius: radius.pill,
+    height: 7,
+    width: 7,
   },
   metricHeader: {
     alignItems: 'center',
@@ -501,19 +381,18 @@ const styles = StyleSheet.create({
   metricLabel: {
     ...typography.metadata,
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   metricValue: {
     ...typography.sectionTitle,
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '900',
     letterSpacing: -0.2,
   },
   metricsRow: {
+    alignItems: 'center',
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-    width: '100%',
+    gap: spacing.md,
   },
   periodDropdownPill: {
     alignItems: 'center',
@@ -521,9 +400,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: 'row',
     gap: 4,
-    minHeight: 34,
+    minHeight: 32,
     paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 4,
+    paddingVertical: 3,
   },
   periodDropdownText: {
     ...typography.metadata,
@@ -538,32 +417,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: radius.pill,
     borderWidth: 1,
-    flexDirection: 'row',
-    gap: 4,
+    height: 32,
     justifyContent: 'center',
-    minHeight: 34,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 4,
-  },
-  settingsText: {
-    ...typography.metadata,
-    fontSize: 11,
-    fontWeight: '700',
+    width: 32,
   },
   summaryCard: {
     borderRadius: radius.xl,
     borderWidth: 1,
     elevation: 2,
-    gap: spacing.sm,
+    gap: 4,
     padding: spacing.md + 2,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 10,
+  },
+  topRightControls: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.xs + 2,
   },
   topRow: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 2,
+  },
+  verticalDivider: {
+    alignSelf: 'stretch',
+    width: 1,
   },
 });

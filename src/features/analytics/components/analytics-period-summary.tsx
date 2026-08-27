@@ -21,7 +21,7 @@ export const AnalyticsPeriodSummary = memo(function AnalyticsPeriodSummary({
   currencyCode,
   t,
 }: AnalyticsPeriodSummaryProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const netFlowMinor = analytics.totalIncomeMinor - analytics.totalExpenseMinor;
   const previousFlow = analytics.monthlyCashFlow.at(-2);
   const currentFlow = analytics.monthlyCashFlow.at(-1);
@@ -42,19 +42,26 @@ export const AnalyticsPeriodSummary = memo(function AnalyticsPeriodSummary({
     <View
       style={[
         styles.card,
-        { backgroundColor: colors.surface, borderColor: colors.border },
+        {
+          backgroundColor: colors.surface,
+          borderColor: isDark ? '#27272A' : '#E2E8F0',
+          shadowColor: colors.shadow,
+        },
       ]}
     >
+      {/* 1. Header Label */}
       <Text style={[styles.netLabel, { color: colors.textSecondary }]}>
         {t.analytics.netFlow}
       </Text>
+
+      {/* 2. Hero Net Value (Highlighted with Positive/Destructive Color) */}
       <Text
         adjustsFontSizeToFit
         accessibilityLabel={`${t.analytics.netFlow}: ${formatSignedMoney(
           netFlowMinor,
           currencyCode,
         )}`}
-        minimumFontScale={0.75}
+        minimumFontScale={0.7}
         numberOfLines={1}
         style={[
           styles.netValue,
@@ -66,13 +73,16 @@ export const AnalyticsPeriodSummary = memo(function AnalyticsPeriodSummary({
         {formatSignedMoney(netFlowMinor, currencyCode)}
       </Text>
 
+      {/* 3. Inline Comparison (Clean Minimalist Text) */}
       {comparisonLabel ? (
         <View style={styles.comparisonRow}>
           <MaterialCommunityIcons
             color={
-              comparisonMinor !== null && comparisonMinor >= 0
+              comparisonMinor !== null && comparisonMinor > 0
                 ? colors.positive
-                : colors.destructive
+                : comparisonMinor !== null && comparisonMinor < 0
+                  ? colors.destructive
+                  : colors.textMuted
             }
             name={
               comparisonMinor === 0
@@ -92,10 +102,18 @@ export const AnalyticsPeriodSummary = memo(function AnalyticsPeriodSummary({
         </View>
       ) : null}
 
-      <View style={[styles.divider, { backgroundColor: colors.border }]} />
+      {/* 4. Sleek Horizontal Divider */}
+      <View
+        style={[
+          styles.divider,
+          { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
+        ]}
+      />
 
+      {/* 5. Bottom Split Metrics with Clean Monochromatic Values & Subtle Color Dots */}
       <View style={styles.metricsRow}>
-        <View style={styles.metric}>
+        {/* Income Column */}
+        <View style={styles.metricCol}>
           <View style={styles.metricLabelRow}>
             <View
               style={[styles.metricDot, { backgroundColor: colors.positive }]}
@@ -106,7 +124,7 @@ export const AnalyticsPeriodSummary = memo(function AnalyticsPeriodSummary({
           </View>
           <Text
             adjustsFontSizeToFit
-            minimumFontScale={0.72}
+            minimumFontScale={0.75}
             numberOfLines={1}
             style={[styles.metricValue, { color: colors.textPrimary }]}
           >
@@ -114,17 +132,19 @@ export const AnalyticsPeriodSummary = memo(function AnalyticsPeriodSummary({
           </Text>
         </View>
 
+        {/* Center Vertical Hairline Divider */}
         <View
-          style={[styles.metricDivider, { backgroundColor: colors.border }]}
+          style={[
+            styles.verticalDivider,
+            { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
+          ]}
         />
 
-        <View style={styles.metric}>
+        {/* Expense Column */}
+        <View style={styles.metricCol}>
           <View style={styles.metricLabelRow}>
             <View
-              style={[
-                styles.metricDot,
-                { backgroundColor: colors.destructive },
-              ]}
+              style={[styles.metricDot, { backgroundColor: colors.destructive }]}
             />
             <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>
               {t.analytics.totalExpense}
@@ -132,7 +152,7 @@ export const AnalyticsPeriodSummary = memo(function AnalyticsPeriodSummary({
           </View>
           <Text
             adjustsFontSizeToFit
-            minimumFontScale={0.72}
+            minimumFontScale={0.75}
             numberOfLines={1}
             style={[styles.metricValue, { color: colors.textPrimary }]}
           >
@@ -146,15 +166,20 @@ export const AnalyticsPeriodSummary = memo(function AnalyticsPeriodSummary({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    padding: spacing.md,
+    elevation: 2,
+    gap: 4,
+    padding: spacing.md + 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
   },
   comparisonRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
+    gap: 6,
+    marginTop: 2,
   },
   comparisonText: {
     ...typography.metadata,
@@ -164,16 +189,12 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    marginVertical: spacing.sm,
+    marginVertical: spacing.sm + 2,
   },
-  metric: {
+  metricCol: {
     flex: 1,
-    gap: 3,
+    gap: 4,
     minWidth: 0,
-  },
-  metricDivider: {
-    alignSelf: 'stretch',
-    width: 1,
   },
   metricDot: {
     borderRadius: radius.pill,
@@ -188,16 +209,18 @@ const styles = StyleSheet.create({
   metricLabelRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  metricsRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
+    gap: 6,
   },
   metricValue: {
-    ...typography.body,
-    fontSize: 16,
-    fontWeight: '800',
+    ...typography.sectionTitle,
+    fontSize: 17,
+    fontWeight: '900',
+    letterSpacing: -0.2,
+  },
+  metricsRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
   },
   netLabel: {
     ...typography.metadata,
@@ -206,8 +229,14 @@ const styles = StyleSheet.create({
   },
   netValue: {
     ...typography.displayAmount,
-    fontSize: 30,
+    fontSize: 32,
     fontWeight: '900',
+    letterSpacing: -0.5,
+    lineHeight: 40,
     marginTop: 2,
+  },
+  verticalDivider: {
+    alignSelf: 'stretch',
+    width: 1,
   },
 });

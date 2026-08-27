@@ -1,5 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { CategoryBreakdownItem } from '@/features/analytics/analytics-repository';
@@ -9,6 +9,7 @@ import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
+import { typography } from '@/theme/typography';
 
 type DonutBreakdownChartProps = {
   items: readonly CategoryBreakdownItem[];
@@ -45,21 +46,26 @@ export function DonutBreakdownChart({
         styles.container,
         {
           backgroundColor: colors.surface,
-          borderColor: colors.border,
-          shadowColor: colors.textPrimary,
+          borderColor: isDark ? '#27272A' : '#E2E8F0',
+          shadowColor: colors.shadow,
         },
       ]}
     >
-      {/* Hero Center Display */}
+      {/* 1. Hero Center Focus Card */}
       <View style={styles.heroCenter}>
         <View
           style={[
             styles.selectedIconCircle,
-            { backgroundColor: selectedMeta.backgroundColor },
+            {
+              backgroundColor: isDark
+                ? 'rgba(59, 130, 246, 0.16)'
+                : selectedMeta.backgroundColor,
+              borderColor: isDark ? '#3F3F46' : '#E2E8F0',
+            },
           ]}
         >
           <MaterialCommunityIcons
-            color={selectedMeta.color}
+            color={isDark ? colors.primary : selectedMeta.color}
             name={selectedMeta.icon}
             size={28}
           />
@@ -80,8 +86,12 @@ export function DonutBreakdownChart({
           style={[
             styles.percentagePill,
             {
-              backgroundColor: isDark ? colors.surfaceSecondary : '#EFF6FF',
-              borderColor: isDark ? colors.border : '#DBEAFE',
+              backgroundColor: isDark
+                ? 'rgba(59, 130, 246, 0.16)'
+                : colors.primaryLight,
+              borderColor: isDark
+                ? 'rgba(59, 130, 246, 0.28)'
+                : 'rgba(37, 99, 235, 0.2)',
             },
           ]}
         >
@@ -91,7 +101,7 @@ export function DonutBreakdownChart({
         </View>
       </View>
 
-      {/* Proportional Segmented Bar */}
+      {/* 2. Proportional Multi-Segmented Bar */}
       <View
         style={[
           styles.segmentedBarTrack,
@@ -103,7 +113,7 @@ export function DonutBreakdownChart({
         {items.map((item) => {
           const meta = getCategoryMeta(item.categoryName, 'expense', isDark);
           const isSelected = item.categoryId === selectedCategoryId;
-          const minPercent = Math.max(item.percentage, 3);
+          const minPercent = Math.max(item.percentage, 4);
 
           return (
             <Pressable
@@ -120,7 +130,7 @@ export function DonutBreakdownChart({
                 styles.segmentSlice,
                 {
                   backgroundColor: meta.color,
-                  opacity: isSelected ? 1 : 0.65,
+                  opacity: isSelected ? 1 : 0.45,
                   width: `${minPercent}%`,
                 },
               ]}
@@ -129,7 +139,7 @@ export function DonutBreakdownChart({
         })}
       </View>
 
-      {/* Category Breakdown List */}
+      {/* 3. Category Breakdown List */}
       <View style={styles.breakdownList}>
         {items.map((item) => {
           const meta = getCategoryMeta(item.categoryName, 'expense', isDark);
@@ -150,25 +160,44 @@ export function DonutBreakdownChart({
                 {
                   backgroundColor: isSelected
                     ? isDark
+                      ? 'rgba(59, 130, 246, 0.12)'
+                      : '#F0F7FF'
+                    : isDark
                       ? colors.surfaceSecondary
-                      : '#F8FAFC'
-                    : 'transparent',
-                  borderColor: isSelected ? colors.primary : 'transparent',
+                      : '#F8FAFC',
+                  borderColor: isSelected
+                    ? colors.primary
+                    : isDark
+                      ? '#27272A'
+                      : '#F1F5F9',
                 },
                 pressed ? styles.pressed : null,
               ]}
             >
               <View style={styles.breakdownLeft}>
                 <View
-                  style={[styles.colorDot, { backgroundColor: meta.color }]}
-                />
+                  style={[
+                    styles.rowIconBadge,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(255, 255, 255, 0.06)'
+                        : meta.backgroundColor,
+                    },
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    color={meta.color}
+                    name={meta.icon}
+                    size={16}
+                  />
+                </View>
                 <Text
                   numberOfLines={1}
                   style={[
                     styles.categoryRowName,
                     {
                       color: isSelected ? colors.primary : colors.textPrimary,
-                      fontWeight: isSelected ? '800' : '600',
+                      fontWeight: isSelected ? '800' : '700',
                     },
                   ]}
                 >
@@ -189,16 +218,24 @@ export function DonutBreakdownChart({
                   style={[
                     styles.percentBadge,
                     {
-                      backgroundColor: isDark
-                        ? colors.surfaceSecondary
-                        : '#F1F5F9',
+                      backgroundColor: isSelected
+                        ? isDark
+                          ? 'rgba(59, 130, 246, 0.2)'
+                          : colors.primaryLight
+                        : isDark
+                          ? colors.surface
+                          : '#E2E8F0',
                     },
                   ]}
                 >
                   <Text
                     style={[
                       styles.percentBadgeText,
-                      { color: colors.textSecondary },
+                      {
+                        color: isSelected
+                          ? colors.primary
+                          : colors.textSecondary,
+                      },
                     ]}
                   >
                     {item.percentage}%
@@ -223,8 +260,8 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   breakdownList: {
-    gap: 4,
-    marginTop: spacing.sm,
+    gap: 6,
+    marginTop: spacing.xs,
   },
   breakdownRight: {
     alignItems: 'center',
@@ -234,35 +271,33 @@ const styles = StyleSheet.create({
   },
   breakdownRow: {
     alignItems: 'center',
-    borderRadius: 14,
+    borderRadius: radius.md,
     borderWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   categoryRowAmount: {
+    ...typography.metadata,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: -0.2,
   },
   categoryRowName: {
+    ...typography.body,
     flex: 1,
     flexShrink: 1,
     fontSize: 13,
   },
-  colorDot: {
-    borderRadius: radius.pill,
-    height: 10,
-    width: 10,
-  },
   container: {
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    elevation: 1,
+    elevation: 2,
     padding: spacing.md + 2,
-    shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
   },
   heroCenter: {
     alignItems: 'center',
@@ -271,13 +306,14 @@ const styles = StyleSheet.create({
   },
   percentBadge: {
     borderRadius: radius.pill,
-    minWidth: 36,
-    paddingHorizontal: 6,
+    minWidth: 38,
+    paddingHorizontal: 7,
     paddingVertical: 2,
   },
   percentBadgeText: {
+    ...typography.metadata,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
     textAlign: 'center',
   },
   percentagePill: {
@@ -288,18 +324,26 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   percentageText: {
+    ...typography.metadata,
     fontSize: 12,
     fontWeight: '800',
   },
   pressed: {
-    opacity: 0.75,
+    opacity: 0.8,
+  },
+  rowIconBadge: {
+    alignItems: 'center',
+    borderRadius: radius.sm,
+    height: 28,
+    justifyContent: 'center',
+    width: 28,
   },
   segmentedBarTrack: {
     borderRadius: radius.pill,
     flexDirection: 'row',
     gap: 2,
-    height: 14,
-    marginVertical: spacing.md,
+    height: 12,
+    marginVertical: spacing.sm + 2,
     overflow: 'hidden',
     padding: 2,
     width: '100%',
@@ -309,20 +353,24 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   selectedAmount: {
-    fontSize: 24,
+    ...typography.displayAmount,
+    fontSize: 26,
     fontWeight: '900',
     letterSpacing: -0.5,
+    lineHeight: 32,
   },
   selectedCategoryName: {
+    ...typography.sectionTitle,
     fontSize: 15,
     fontWeight: '700',
   },
   selectedIconCircle: {
     alignItems: 'center',
-    borderRadius: radius.pill,
-    height: 48,
+    borderRadius: 18,
+    borderWidth: 1,
+    height: 54,
     justifyContent: 'center',
-    marginBottom: 2,
-    width: 48,
+    marginBottom: 4,
+    width: 54,
   },
 });
