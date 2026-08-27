@@ -446,10 +446,26 @@ export type TranslationSchema = {
     googleButtonLoading: string;
     googleButtonHint: string;
     privacyNote: string;
-    speedSequenceLabel: string;
+    speedSequenceLabel?: string;
     dismissErrorLabel: string;
     reauthTitle: string;
     reauthDescription: string;
+    preview: {
+      totalBalanceLabel: string;
+      totalBalanceValue: string;
+      incomeLabel: string;
+      incomeValue: string;
+      expenseLabel: string;
+      expenseValue: string;
+      tx1Title: string;
+      tx1Amount: string;
+      tx2Title: string;
+      tx2Amount: string;
+      speedBadge: string;
+      tagOffline: string;
+      tagNoAds: string;
+      tagPrivate: string;
+    };
     pillars: {
       offlineTitle: string;
       offlineDesc: string;

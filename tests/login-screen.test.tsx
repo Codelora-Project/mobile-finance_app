@@ -43,17 +43,23 @@ describe('LoginScreen', () => {
     });
   });
 
-  it('renders the quick-record story and Google sign-in CTA in Indonesian', async () => {
+  it('renders brand hero, floating dashboard preview, tags, and Google sign-in CTA in Indonesian', async () => {
     await renderLoginScreen('id');
 
-    expect(screen.getByText('Mulai mencatat tanpa ribet')).toBeOnTheScreen();
-    expect(screen.getByText('Rp 25.000')).toBeOnTheScreen();
-    expect(screen.getByText('Makanan')).toBeOnTheScreen();
-    expect(screen.getByText('Tersimpan')).toBeOnTheScreen();
+    expect(
+      screen.getByText('Kendali Finansial Penuh, Sepenuhnya Privat'),
+    ).toBeOnTheScreen();
+    expect(screen.getByText('Total Saldo Aktif')).toBeOnTheScreen();
+    expect(screen.getByText('Rp 14.850.000')).toBeOnTheScreen();
+    expect(screen.getByText('Kopi & Sarapan')).toBeOnTheScreen();
+    expect(screen.getByText('Bonus Project')).toBeOnTheScreen();
+    expect(screen.getByText('Offline-First')).toBeOnTheScreen();
+    expect(screen.getByText('Bebas Iklan')).toBeOnTheScreen();
+    expect(screen.getByText('100% Privat')).toBeOnTheScreen();
     expect(screen.getByText('Lanjutkan dengan Google')).toBeOnTheScreen();
     expect(
       screen.getByText(
-        'Data keuangan tetap tersimpan lokal dan tidak disinkronkan ke cloud.',
+        'Data keuangan Anda tersimpan lokal di perangkat dan tidak disinkronkan ke cloud.',
       ),
     ).toBeOnTheScreen();
   });
@@ -62,10 +68,11 @@ describe('LoginScreen', () => {
     await renderLoginScreen('en');
 
     expect(
-      screen.getByText('Start tracking without the busywork'),
+      screen.getByText('Full Financial Control, 100% Private'),
     ).toBeOnTheScreen();
-    expect(screen.getByText('Food')).toBeOnTheScreen();
-    expect(screen.getByText('Saved')).toBeOnTheScreen();
+    expect(screen.getByText('Active Total Balance')).toBeOnTheScreen();
+    expect(screen.getByText('Coffee & Breakfast')).toBeOnTheScreen();
+    expect(screen.getByText('Project Bonus')).toBeOnTheScreen();
     expect(screen.getByText('Continue with Google')).toBeOnTheScreen();
   });
 

@@ -489,19 +489,34 @@ export const en = {
   auth: {
     appName: 'Personal Finance',
     appTagline: 'Private & Offline-First',
-    heroTitle: 'Start tracking without the busywork',
+    heroTitle: 'Full Financial Control, 100% Private',
     heroDescription:
-      'Sign in with Google to keep each account’s data separate on this device.',
+      'Track daily expenses in seconds, monitor budgets with clarity, and keep all your financial data secure on your device.',
     googleButton: 'Continue with Google',
     googleButtonLoading: 'Connecting to Google...',
     googleButtonHint: 'Sign in with Google to start tracking.',
-    privacyNote: 'Financial data stays local and is not synced to the cloud.',
-    speedSequenceLabel:
-      'Quick tracking flow: enter an amount, choose a category, then save.',
+    privacyNote:
+      'Your financial data is stored locally on this device and never synced to the cloud.',
     dismissErrorLabel: 'Dismiss error message',
     reauthTitle: 'Session Expired',
     reauthDescription:
       'Your Google session has expired. Please sign in again to access this account data.',
+    preview: {
+      totalBalanceLabel: 'Active Total Balance',
+      totalBalanceValue: 'Rp 14,850,000',
+      incomeLabel: 'Income',
+      incomeValue: '+Rp 8,500,000',
+      expenseLabel: 'Expenses',
+      expenseValue: '-Rp 2,150,000',
+      tx1Title: 'Coffee & Breakfast',
+      tx1Amount: '-Rp 28,000',
+      tx2Title: 'Project Bonus',
+      tx2Amount: '+Rp 1,500,000',
+      speedBadge: 'Instant entry',
+      tagOffline: 'Offline-First',
+      tagNoAds: 'Ad-Free',
+      tagPrivate: '100% Private',
+    },
     pillars: {
       offlineTitle: '100% Private & Local',
       offlineDesc:

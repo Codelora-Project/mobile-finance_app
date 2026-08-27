@@ -487,20 +487,34 @@ export const id = {
   auth: {
     appName: 'Personal Finance',
     appTagline: 'Privat & Offline-First',
-    heroTitle: 'Mulai mencatat tanpa ribet',
+    heroTitle: 'Kendali Finansial Penuh, Sepenuhnya Privat',
     heroDescription:
-      'Masuk dengan Google untuk memisahkan data Anda di perangkat ini.',
+      'Catat pengeluaran secepat kilat, pantau anggaran dengan rapi, dan simpan seluruh data aman di perangkat Anda.',
     googleButton: 'Lanjutkan dengan Google',
     googleButtonLoading: 'Menghubungkan ke Google...',
     googleButtonHint: 'Masuk dengan akun Google untuk mulai mencatat.',
     privacyNote:
-      'Data keuangan tetap tersimpan lokal dan tidak disinkronkan ke cloud.',
-    speedSequenceLabel:
-      'Alur pencatatan cepat: masukkan nominal, pilih kategori, lalu simpan.',
+      'Data keuangan Anda tersimpan lokal di perangkat dan tidak disinkronkan ke cloud.',
     dismissErrorLabel: 'Tutup pesan kesalahan',
     reauthTitle: 'Sesi Berakhir',
     reauthDescription:
       'Sesi Google Anda telah berakhir. Silakan login kembali untuk mengakses data akun.',
+    preview: {
+      totalBalanceLabel: 'Total Saldo Aktif',
+      totalBalanceValue: 'Rp 14.850.000',
+      incomeLabel: 'Pemasukan',
+      incomeValue: '+Rp 8.500.000',
+      expenseLabel: 'Pengeluaran',
+      expenseValue: '-Rp 2.150.000',
+      tx1Title: 'Kopi & Sarapan',
+      tx1Amount: '-Rp 28.000',
+      tx2Title: 'Bonus Project',
+      tx2Amount: '+Rp 1.500.000',
+      speedBadge: 'Tercatat instan',
+      tagOffline: 'Offline-First',
+      tagNoAds: 'Bebas Iklan',
+      tagPrivate: '100% Privat',
+    },
     pillars: {
       offlineTitle: '100% Privat & Lokal',
       offlineDesc:
