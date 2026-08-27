@@ -9,6 +9,7 @@ import React, {
   useState,
   type PropsWithChildren,
 } from 'react';
+import { AppState } from 'react-native';
 
 import {
   deleteAuthSession,
@@ -32,6 +33,7 @@ import {
 import { clearSensitiveCache } from '@/lib/storage/sensitive-cache';
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const NETWORK_REVALIDATION_INTERVAL_MS = 15_000;
 
 function clearSensitiveCacheSafely() {
   try {
@@ -56,6 +58,64 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [error, setError] = useState<AuthErrorState | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const operationId = useRef(0);
+  const sessionRef = useRef<AuthSession | null>(null);
+  const validationInFlight = useRef(false);
+
+  const requireReauthentication = useCallback(
+    async (expectedOperation: number) => {
+      await deleteAuthSession().catch(() => undefined);
+      if (operationId.current !== expectedOperation) return;
+      clearSensitiveCacheSafely();
+      sessionRef.current = null;
+      setSession(null);
+      setStatus('reauth_required');
+    },
+    [],
+  );
+
+  const validateGoogleSession = useCallback(
+    async (storedSession: AuthSession) => {
+      if (validationInFlight.current) return;
+      validationInFlight.current = true;
+      const expectedOperation = operationId.current;
+      try {
+        const result = await silentlyValidateGoogleSession();
+        if (
+          operationId.current !== expectedOperation ||
+          sessionRef.current?.user.id !== storedSession.user.id
+        ) {
+          return;
+        }
+        if (
+          result.kind === 'no_saved_credential' ||
+          result.session.user.id !== storedSession.user.id
+        ) {
+          await requireReauthentication(expectedOperation);
+          return;
+        }
+        await writeAuthSession(result.session);
+        if (
+          operationId.current !== expectedOperation ||
+          sessionRef.current?.user.id !== storedSession.user.id
+        ) {
+          return;
+        }
+        sessionRef.current = result.session;
+        setSession(result.session);
+      } catch (validationError) {
+        if (
+          validationError instanceof GoogleAuthError &&
+          validationError.authCode === 'REAUTH_REQUIRED'
+        ) {
+          await requireReauthentication(expectedOperation);
+        }
+        // Network and other transient errors must preserve the offline session.
+      } finally {
+        validationInFlight.current = false;
+      }
+    },
+    [requireReauthentication],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -70,49 +130,19 @@ export function AuthProvider({ children }: PropsWithChildren) {
         return;
       }
 
+      sessionRef.current = storedSession;
       setSession(storedSession);
       setStatus('signed_in');
 
       if (!(await canReachInternet())) return;
-      try {
-        const result = await silentlyValidateGoogleSession();
-        if (!mounted || operationId.current !== currentOperation) return;
-        if (result.kind === 'no_saved_credential') {
-          await deleteAuthSession();
-          clearSensitiveCacheSafely();
-          if (!mounted) return;
-          setSession(null);
-          setStatus('reauth_required');
-          return;
-        }
-        if (result.session.user.id !== storedSession.user.id) {
-          await deleteAuthSession();
-          clearSensitiveCacheSafely();
-          if (!mounted) return;
-          setSession(null);
-          setStatus('reauth_required');
-          return;
-        }
-        await writeAuthSession(result.session);
-        if (!mounted) return;
-        setSession(result.session);
-      } catch (validationError) {
-        if (
-          validationError instanceof GoogleAuthError &&
-          validationError.authCode === 'REAUTH_REQUIRED'
-        ) {
-          await deleteAuthSession();
-          clearSensitiveCacheSafely();
-          if (!mounted) return;
-          setSession(null);
-          setStatus('reauth_required');
-        }
-      }
+      if (!mounted || operationId.current !== currentOperation) return;
+      await validateGoogleSession(storedSession);
     }
 
     void restore().catch(async (restoreError) => {
       await deleteAuthSession().catch(() => undefined);
       if (!mounted) return;
+      sessionRef.current = null;
       setSession(null);
       setError(toAuthErrorState(restoreError));
       setStatus('signed_out');
@@ -121,7 +151,55 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [validateGoogleSession]);
+
+  useEffect(() => {
+    let lastReachable: boolean | undefined;
+
+    async function checkForReconnectedNetwork() {
+      const state = await Network.getNetworkStateAsync().catch(() => null);
+      if (!state) return;
+      const reachable =
+        state.isConnected === true && state.isInternetReachable !== false;
+      const becameReachable = reachable && lastReachable !== true;
+      lastReachable = reachable;
+      const currentSession = sessionRef.current;
+      if (becameReachable && currentSession) {
+        void validateGoogleSession(currentSession);
+      }
+    }
+
+    // expo-network 57.0.1 exposes a native change event, but some SDK 57
+    // development runtimes do not provide its EventEmitter. Polling avoids a
+    // startup crash while still validating shortly after connectivity returns.
+    const networkPoll = setInterval(
+      () => void checkForReconnectedNetwork(),
+      NETWORK_REVALIDATION_INTERVAL_MS,
+    );
+    void checkForReconnectedNetwork();
+
+    const appStateSubscription = AppState.addEventListener(
+      'change',
+      (nextState) => {
+        if (nextState !== 'active') return;
+        const currentSession = sessionRef.current;
+        if (!currentSession) return;
+        void canReachInternet().then((reachable) => {
+          if (
+            reachable &&
+            sessionRef.current?.user.id === currentSession.user.id
+          ) {
+            void validateGoogleSession(currentSession);
+          }
+        });
+      },
+    );
+
+    return () => {
+      clearInterval(networkPoll);
+      appStateSubscription.remove();
+    };
+  }, [validateGoogleSession]);
 
   const clearError = useCallback(() => setError(null), []);
 
@@ -142,6 +220,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       if (result.kind === 'cancelled') return;
       await writeAuthSession(result.session);
       if (operationId.current !== currentOperation) return;
+      sessionRef.current = result.session;
       setSession(result.session);
       setStatus('signed_in');
     } catch (signInError) {
@@ -159,6 +238,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setError(null);
     ++operationId.current;
     await deleteAuthSession().catch(() => undefined);
+    sessionRef.current = null;
     setSession(null);
     setStatus('signed_out');
     clearSensitiveCacheSafely();
