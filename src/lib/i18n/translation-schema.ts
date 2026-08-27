@@ -436,6 +436,10 @@ export type TranslationSchema = {
     demoWalletLabel: string;
     demoWallet: string;
     demoTodaySpending: string;
+    walletsTitle?: string;
+    walletsDescription?: string;
+    demoWalletsTotal?: string;
+    demoOfflineBadge?: string;
   };
   auth: {
     appName: string;

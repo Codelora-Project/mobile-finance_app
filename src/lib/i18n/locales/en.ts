@@ -466,7 +466,7 @@ export const en = {
     next: 'Next',
     start: 'Get started',
     done: 'Done',
-    progress: (step) => `Step ${step} of 2`,
+    progress: (step) => `Step ${step} of 3`,
     recordTitle: 'Record in seconds',
     recordDescription:
       'Enter an amount, choose a category, and save. No long forms.',
@@ -484,6 +484,11 @@ export const en = {
     demoWalletLabel: 'Wallet',
     demoWallet: 'Cash',
     demoTodaySpending: "Today's spending",
+    walletsTitle: 'Multi-Wallet & 100% Private',
+    walletsDescription:
+      'Manage cash, bank accounts, and digital wallets all in one place. Secured offline on your device.',
+    demoWalletsTotal: 'Total Net Worth',
+    demoOfflineBadge: '100% Offline & Private',
   },
   // Authentication & Login
   auth: {

@@ -464,7 +464,7 @@ export const id = {
     next: 'Lanjut',
     start: 'Mulai',
     done: 'Selesai',
-    progress: (step) => `Langkah ${step} dari 2`,
+    progress: (step) => `Langkah ${step} dari 3`,
     recordTitle: 'Catat dalam hitungan detik',
     recordDescription:
       'Masukkan nominal, pilih kategori, lalu simpan. Tidak ada formulir panjang.',
@@ -482,6 +482,11 @@ export const id = {
     demoWalletLabel: 'Dompet',
     demoWallet: 'Tunai',
     demoTodaySpending: 'Pengeluaran hari ini',
+    walletsTitle: 'Multi-Rekening & 100% Privat',
+    walletsDescription:
+      'Kelola uang tunai, bank, dan dompet digital dalam satu tempat. Aman tersimpan di perangkat Anda.',
+    demoWalletsTotal: 'Total Kekayaan Bersih',
+    demoOfflineBadge: '100% Offline & Privat',
   },
   // Autentikasi & Login
   auth: {

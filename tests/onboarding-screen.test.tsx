@@ -32,7 +32,7 @@ describe('OnboardingScreen', () => {
     jest.clearAllMocks();
   });
 
-  it('shows the record-to-impact story and completes from the second page', async () => {
+  it('shows the 3-step record-impact-wallets story and completes on finish', async () => {
     const onFinish = jest
       .fn<() => Promise<void>>()
       .mockResolvedValue(undefined);
@@ -40,13 +40,22 @@ describe('OnboardingScreen', () => {
 
     expect(screen.getByText('Catat dalam hitungan detik')).toBeOnTheScreen();
     expect(screen.getAllByText('Rp 25.000')).not.toHaveLength(0);
-    expect(screen.getByLabelText('Langkah 1 dari 2')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Langkah 1 dari 3')).toBeOnTheScreen();
 
+    // Step 1 -> Step 2
     await fireEvent.press(screen.getByRole('button', { name: 'Lanjut' }));
 
-    expect(screen.getByLabelText('Langkah 2 dari 2')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Langkah 2 dari 3')).toBeOnTheScreen();
     expect(
       screen.getByText('Satu catatan, gambaran lebih jelas'),
+    ).toBeOnTheScreen();
+
+    // Step 2 -> Step 3
+    await fireEvent.press(screen.getByRole('button', { name: 'Lanjut' }));
+
+    expect(screen.getByLabelText('Langkah 3 dari 3')).toBeOnTheScreen();
+    expect(
+      screen.getByText('Multi-Rekening & 100% Privat'),
     ).toBeOnTheScreen();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Mulai' }));

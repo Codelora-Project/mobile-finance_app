@@ -5,6 +5,7 @@ import {
   AccessibilityInfo,
   Animated,
   BackHandler,
+  Easing,
   FlatList,
   Platform,
   Pressable,
@@ -32,27 +33,17 @@ type OnboardingScreenProps = Readonly<{
   onFinish(): Promise<void> | void;
 }>;
 
-type PageId = 'record' | 'impact';
+type PageId = 'record' | 'impact' | 'wallets';
 
-const PAGES: readonly PageId[] = ['record', 'impact'];
+const PAGES: readonly PageId[] = ['record', 'impact', 'wallets'];
 
-/**
- * THESIS: One quick entry visibly becomes useful financial understanding; this
- * refuses the generic feature-carousel onboarding pattern.
- * OWN-WORLD: Material-native blue actions, quiet ledger surfaces, and finance
- * data rendered as the illustration itself.
- * STORY: See a transaction captured, see its effect, then sign in and do it.
- * FIRST VIEWPORT: A working-example stage leads; concise copy and the primary
- * action sit below, with progress and Skip always clear.
- * FORM: Input → Impact, selected grounded structure; seed 2a6c145b.
- * FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
- */
 export function OnboardingScreen({ mode, onFinish }: OnboardingScreenProps) {
   const { width } = useWindowDimensions();
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();
   const listRef = useRef<FlatList<PageId>>(null);
   const [reveal] = useState(() => new Animated.Value(1));
+  const [floatingAnim] = useState(() => new Animated.Value(0));
   const [activeIndex, setActiveIndex] = useState(0);
   const [finishing, setFinishing] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -72,6 +63,28 @@ export function OnboardingScreen({ mode, onFinish }: OnboardingScreenProps) {
       subscription.remove();
     };
   }, []);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    const floatLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatingAnim, {
+          duration: 2600,
+          easing: Easing.inOut(Easing.sin),
+          toValue: 1,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatingAnim, {
+          duration: 2600,
+          easing: Easing.inOut(Easing.sin),
+          toValue: 0,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    floatLoop.start();
+    return () => floatLoop.stop();
+  }, [floatingAnim, reduceMotion]);
 
   useEffect(() => {
     if (reduceMotion) {
@@ -135,6 +148,11 @@ export function OnboardingScreen({ mode, onFinish }: OnboardingScreenProps) {
     [pageWidth],
   );
 
+  const floatTranslateY = floatingAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-3, 3],
+  });
+
   const renderPage = useCallback(
     ({ item }: { item: PageId }) => (
       <ScrollView
@@ -159,14 +177,34 @@ export function OnboardingScreen({ mode, onFinish }: OnboardingScreenProps) {
           ]}
         >
           {item === 'record' ? (
-            <RecordPage colors={colors} isDark={isDark} t={t.onboarding} />
+            <RecordPage
+              colors={colors}
+              floatTranslateY={floatTranslateY}
+              isDark={isDark}
+              reduceMotion={reduceMotion}
+              t={t.onboarding}
+            />
+          ) : item === 'impact' ? (
+            <ImpactPage
+              colors={colors}
+              floatTranslateY={floatTranslateY}
+              isDark={isDark}
+              reduceMotion={reduceMotion}
+              t={t.onboarding}
+            />
           ) : (
-            <ImpactPage colors={colors} isDark={isDark} t={t.onboarding} />
+            <WalletsPage
+              colors={colors}
+              floatTranslateY={floatTranslateY}
+              isDark={isDark}
+              reduceMotion={reduceMotion}
+              t={t.onboarding}
+            />
           )}
         </Animated.View>
       </ScrollView>
     ),
-    [colors, isDark, pageWidth, reveal, t.onboarding],
+    [colors, floatTranslateY, isDark, pageWidth, reduceMotion, reveal, t.onboarding],
   );
 
   const finalLabel = mode === 'replay' ? t.onboarding.done : t.onboarding.start;
@@ -240,7 +278,7 @@ export function OnboardingScreen({ mode, onFinish }: OnboardingScreenProps) {
                 {
                   backgroundColor:
                     index === activeIndex ? colors.primary : colors.border,
-                  width: index === activeIndex ? 24 : 8,
+                  width: index === activeIndex ? 26 : 8,
                 },
               ]}
             />
@@ -281,17 +319,67 @@ export function OnboardingScreen({ mode, onFinish }: OnboardingScreenProps) {
 
 type PageProps = {
   colors: ColorPalette;
+  floatTranslateY: Animated.AnimatedInterpolation<number>;
   isDark: boolean;
+  reduceMotion: boolean;
   t: ReturnType<typeof useLanguage>['t']['onboarding'];
 };
 
-function RecordPage({ colors, isDark, t }: PageProps) {
+// ==========================================
+// 1. SLIDE 1: RECORD (Catat Kilat)
+// ==========================================
+function RecordPage({
+  colors,
+  floatTranslateY,
+  isDark,
+  reduceMotion,
+  t,
+}: PageProps) {
+  const [amountAnim] = useState(() => new Animated.Value(reduceMotion ? 1 : 0.7));
+  const [categoryAnim] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
+  const [walletAnim] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
+  const [badgeAnim] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    Animated.parallel([
+      Animated.spring(amountAnim, {
+        bounciness: 8,
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+      Animated.timing(categoryAnim, {
+        delay: 100,
+        duration: 300,
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+      Animated.timing(walletAnim, {
+        delay: 220,
+        duration: 300,
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+      Animated.spring(badgeAnim, {
+        bounciness: 12,
+        delay: 360,
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [amountAnim, badgeAnim, categoryAnim, reduceMotion, walletAnim]);
+
   return (
     <>
-      <View
+      <Animated.View
         style={[
           styles.demoStage,
-          { backgroundColor: colors.surface, borderColor: colors.border },
+          {
+            backgroundColor: colors.surface,
+            borderColor: isDark ? '#27272A' : '#E2E8F0',
+            shadowColor: colors.shadow,
+            transform: [{ translateY: floatTranslateY }],
+          },
         ]}
       >
         <View style={styles.demoHeader}>
@@ -300,13 +388,23 @@ function RecordPage({ colors, isDark, t }: PageProps) {
               {t.demoExpense}
             </Text>
             <Text style={[styles.demoMeta, { color: colors.textSecondary }]}>
-              {t.demoToday}
+              {t.demoToday} · 19:30
             </Text>
           </View>
-          <View
+
+          {/* Animated Saved Badge */}
+          <Animated.View
             style={[
               styles.savedBadge,
-              { backgroundColor: colors.incomeBackground },
+              {
+                backgroundColor: isDark
+                  ? 'rgba(74, 222, 128, 0.16)'
+                  : colors.incomeBackground,
+                borderColor: isDark
+                  ? 'rgba(74, 222, 128, 0.3)'
+                  : 'rgba(34, 197, 94, 0.2)',
+                transform: [{ scale: badgeAnim }],
+              },
             ]}
           >
             <MaterialCommunityIcons
@@ -317,31 +415,80 @@ function RecordPage({ colors, isDark, t }: PageProps) {
             <Text style={[styles.savedText, { color: colors.positive }]}>
               {t.demoSaved}
             </Text>
-          </View>
+          </Animated.View>
         </View>
-        <Text style={[styles.demoAmount, { color: colors.textPrimary }]}>
+
+        {/* Animated Big Amount */}
+        <Animated.Text
+          style={[
+            styles.demoAmount,
+            {
+              color: colors.textPrimary,
+              transform: [{ scale: amountAnim }],
+            },
+          ]}
+        >
           Rp 25.000
-        </Text>
-        <DemoField
-          colors={colors}
-          icon="food-fork-drink"
-          iconBackground={isDark ? '#3A2416' : '#FFEDD5'}
-          iconColor={isDark ? '#FB923C' : '#EA580C'}
-          label={t.demoCategoryLabel}
-          value={t.demoCategory}
-        />
+        </Animated.Text>
+
+        {/* Animated Category Row */}
+        <Animated.View
+          style={{
+            opacity: categoryAnim,
+            transform: [
+              {
+                translateY: categoryAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [12, 0],
+                }),
+              },
+            ],
+          }}
+        >
+          <DemoField
+            colors={colors}
+            icon="food-fork-drink"
+            iconBackground={isDark ? '#3A2416' : '#FFEDD5'}
+            iconColor={isDark ? '#FB923C' : '#EA580C'}
+            label={t.demoCategoryLabel}
+            value={t.demoCategory}
+          />
+        </Animated.View>
+
         <View
-          style={[styles.demoDivider, { backgroundColor: colors.divider }]}
+          style={[
+            styles.demoDivider,
+            { backgroundColor: isDark ? '#27272A' : '#F1F5F9' },
+          ]}
         />
-        <DemoField
-          colors={colors}
-          icon="cash"
-          iconBackground={colors.primaryLight}
-          iconColor={colors.primary}
-          label={t.demoWalletLabel}
-          value={t.demoWallet}
-        />
-      </View>
+
+        {/* Animated Wallet Row */}
+        <Animated.View
+          style={{
+            opacity: walletAnim,
+            transform: [
+              {
+                translateY: walletAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [12, 0],
+                }),
+              },
+            ],
+          }}
+        >
+          <DemoField
+            colors={colors}
+            icon="cash"
+            iconBackground={
+              isDark ? 'rgba(16, 185, 129, 0.16)' : '#DCFCE7'
+            }
+            iconColor="#10B981"
+            label={t.demoWalletLabel}
+            value={t.demoWallet}
+          />
+        </Animated.View>
+      </Animated.View>
+
       <PageCopy
         colors={colors}
         description={t.recordDescription}
@@ -351,13 +498,45 @@ function RecordPage({ colors, isDark, t }: PageProps) {
   );
 }
 
-function ImpactPage({ colors, isDark, t }: PageProps) {
+// ==========================================
+// 2. SLIDE 2: IMPACT (Pantau Anggaran & Arus Kas)
+// ==========================================
+function ImpactPage({
+  colors,
+  floatTranslateY,
+  isDark,
+  reduceMotion,
+  t,
+}: PageProps) {
+  const [progressAnim] = useState(() => new Animated.Value(reduceMotion ? 0.65 : 0));
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    Animated.timing(progressAnim, {
+      delay: 150,
+      duration: 800,
+      easing: Easing.out(Easing.cubic),
+      toValue: 0.65,
+      useNativeDriver: false,
+    }).start();
+  }, [progressAnim, reduceMotion]);
+
+  const progressPercent = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  });
+
   return (
     <>
-      <View
+      <Animated.View
         style={[
           styles.demoStage,
-          { backgroundColor: colors.surface, borderColor: colors.border },
+          {
+            backgroundColor: colors.surface,
+            borderColor: isDark ? '#27272A' : '#E2E8F0',
+            shadowColor: colors.shadow,
+            transform: [{ translateY: floatTranslateY }],
+          },
         ]}
       >
         <View style={styles.impactTopRow}>
@@ -372,87 +551,259 @@ function ImpactPage({ colors, isDark, t }: PageProps) {
           <View
             style={[
               styles.impactIcon,
-              { backgroundColor: colors.expenseBackground },
+              {
+                backgroundColor: isDark
+                  ? 'rgba(59, 130, 246, 0.16)'
+                  : colors.primaryLight,
+              },
             ]}
           >
             <MaterialCommunityIcons
-              color={colors.destructive}
+              color={colors.primary}
               name="chart-timeline-variant"
-              size={24}
-            />
-          </View>
-        </View>
-        <View style={[styles.impactTrack, { backgroundColor: colors.border }]}>
-          <View
-            style={[
-              styles.impactTrackValue,
-              { backgroundColor: colors.primary },
-            ]}
-          />
-        </View>
-        <View style={[styles.transactionRow, { borderColor: colors.divider }]}>
-          <View
-            style={[
-              styles.categoryIcon,
-              { backgroundColor: isDark ? '#3A2416' : '#FFEDD5' },
-            ]}
-          >
-            <MaterialCommunityIcons
-              color={isDark ? '#FB923C' : '#EA580C'}
-              name="food-fork-drink"
               size={22}
             />
           </View>
-          <View style={styles.demoFieldCopy}>
+        </View>
+
+        {/* Animated Budget Bar */}
+        <View style={styles.budgetTrackWrap}>
+          <View style={styles.budgetMetaRow}>
             <Text
-              style={[styles.demoFieldValue, { color: colors.textPrimary }]}
+              style={[styles.budgetLabel, { color: colors.textSecondary }]}
             >
-              {t.demoCategory}
+              Anggaran Bulanan
             </Text>
-            <Text style={[styles.demoMeta, { color: colors.textSecondary }]}>
-              {t.demoWallet} · {t.demoToday}
+            <Text style={[styles.budgetValue, { color: colors.positive }]}>
+              Sisa 65% (Aman)
             </Text>
           </View>
-          <Text
-            style={[styles.transactionAmount, { color: colors.destructive }]}
+          <View
+            style={[
+              styles.progressBarTrack,
+              { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
+            ]}
           >
-            − Rp 25.000
-          </Text>
+            <Animated.View
+              style={[
+                styles.progressBarFill,
+                {
+                  backgroundColor: colors.positive,
+                  width: progressPercent,
+                },
+              ]}
+            />
+          </View>
         </View>
+
         <View
           style={[
-            styles.localAssurance,
-            { backgroundColor: colors.surfaceSecondary },
+            styles.demoDivider,
+            { backgroundColor: isDark ? '#27272A' : '#F1F5F9' },
           ]}
-        >
-          <MaterialCommunityIcons
-            color={colors.primary}
-            name="cellphone-lock"
-            size={18}
+        />
+
+        {/* Mini Arus Kas Summary */}
+        <View style={styles.impactCashflowRow}>
+          <View style={styles.impactStatCol}>
+            <Text style={[styles.statTitle, { color: colors.textSecondary }]}>
+              Pemasukan
+            </Text>
+            <Text style={[styles.statValue, { color: colors.positive }]}>
+              +Rp 1.200.000
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.verticalDivider,
+              { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
+            ]}
           />
-          <Text
-            style={[styles.localAssuranceText, { color: colors.textPrimary }]}
-          >
-            {t.localAssurance}
-          </Text>
+          <View style={styles.impactStatCol}>
+            <Text style={[styles.statTitle, { color: colors.textSecondary }]}>
+              Pengeluaran
+            </Text>
+            <Text style={[styles.statValue, { color: colors.destructive }]}>
+              -Rp 420.000
+            </Text>
+          </View>
         </View>
-      </View>
+      </Animated.View>
+
       <PageCopy
         colors={colors}
         description={t.impactDescription}
         title={t.impactTitle}
+      />
+    </>
+  );
+}
+
+// ==========================================
+// 3. SLIDE 3: WALLETS (Multi-Rekening & 100% Privat)
+// ==========================================
+function WalletsPage({
+  colors,
+  floatTranslateY,
+  isDark,
+  reduceMotion,
+  t,
+}: PageProps) {
+  const [row1Anim] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
+  const [row2Anim] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
+  const [row3Anim] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    Animated.stagger(120, [
+      Animated.spring(row1Anim, {
+        bounciness: 6,
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+      Animated.spring(row2Anim, {
+        bounciness: 6,
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+      Animated.spring(row3Anim, {
+        bounciness: 6,
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [reduceMotion, row1Anim, row2Anim, row3Anim]);
+
+  return (
+    <>
+      <Animated.View
+        style={[
+          styles.demoStage,
+          {
+            backgroundColor: colors.surface,
+            borderColor: isDark ? '#27272A' : '#E2E8F0',
+            shadowColor: colors.shadow,
+            transform: [{ translateY: floatTranslateY }],
+          },
+        ]}
       >
-        <View style={styles.identityNote}>
-          <MaterialCommunityIcons
-            color={colors.textMuted}
-            name="google"
-            size={15}
-          />
-          <Text style={[styles.identityNoteText, { color: colors.textMuted }]}>
-            {t.identityNote}
-          </Text>
+        <View style={styles.demoHeader}>
+          <View>
+            <Text style={[styles.demoTitle, { color: colors.textPrimary }]}>
+              {t.demoWalletsTotal || 'Total Kekayaan Bersih'}
+            </Text>
+            <Text style={[styles.impactAmount, { color: colors.textPrimary }]}>
+              Rp 10.575.000
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.savedBadge,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(59, 130, 246, 0.16)'
+                  : colors.primaryLight,
+                borderColor: isDark
+                  ? 'rgba(59, 130, 246, 0.3)'
+                  : 'rgba(37, 99, 235, 0.2)',
+              },
+            ]}
+          >
+            <MaterialCommunityIcons
+              color={colors.primary}
+              name="shield-check"
+              size={15}
+            />
+            <Text style={[styles.savedText, { color: colors.primary }]}>
+              Privat
+            </Text>
+          </View>
         </View>
-      </PageCopy>
+
+        {/* Wallet 1: BCA */}
+        <Animated.View
+          style={{
+            opacity: row1Anim,
+            transform: [
+              {
+                translateY: row1Anim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [10, 0],
+                }),
+              },
+            ],
+          }}
+        >
+          <DemoWalletItem
+            amount="Rp 10.000.000"
+            colors={colors}
+            icon="bank"
+            iconColor="#0066AE"
+            isDark={isDark}
+            name="Bank BCA"
+            subtitle="Rekening Operasional"
+          />
+        </Animated.View>
+
+        {/* Wallet 2: GoPay */}
+        <Animated.View
+          style={{
+            opacity: row2Anim,
+            transform: [
+              {
+                translateY: row2Anim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [10, 0],
+                }),
+              },
+            ],
+          }}
+        >
+          <DemoWalletItem
+            amount="Rp 450.000"
+            colors={colors}
+            icon="cellphone"
+            iconColor="#00AED6"
+            isDark={isDark}
+            name="GoPay"
+            subtitle="Dompet Digital"
+          />
+        </Animated.View>
+
+        {/* Wallet 3: Tunai */}
+        <Animated.View
+          style={{
+            opacity: row3Anim,
+            transform: [
+              {
+                translateY: row3Anim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [10, 0],
+                }),
+              },
+            ],
+          }}
+        >
+          <DemoWalletItem
+            amount="Rp 125.000"
+            colors={colors}
+            icon="cash"
+            iconColor="#10B981"
+            isDark={isDark}
+            name="Dompet Tunai"
+            subtitle="Uang Fisik"
+          />
+        </Animated.View>
+      </Animated.View>
+
+      <PageCopy
+        colors={colors}
+        description={
+          t.walletsDescription ||
+          'Kelola uang tunai, bank, dan dompet digital dalam satu tempat. Aman tersimpan di perangkat Anda.'
+        }
+        title={t.walletsTitle || 'Multi-Rekening & 100% Privat'}
+      />
     </>
   );
 }
@@ -466,22 +817,22 @@ function DemoField({
   value,
 }: {
   colors: ColorPalette;
-  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
   iconBackground: string;
   iconColor: string;
   label: string;
   value: string;
 }) {
   return (
-    <View style={styles.demoFieldRow}>
-      <View style={[styles.categoryIcon, { backgroundColor: iconBackground }]}>
-        <MaterialCommunityIcons color={iconColor} name={icon} size={22} />
+    <View style={styles.demoField}>
+      <View style={[styles.fieldIconBox, { backgroundColor: iconBackground }]}>
+        <MaterialCommunityIcons color={iconColor} name={icon} size={20} />
       </View>
-      <View style={styles.demoFieldCopy}>
-        <Text style={[styles.demoFieldLabel, { color: colors.textMuted }]}>
+      <View style={styles.fieldTextCol}>
+        <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
           {label}
         </Text>
-        <Text style={[styles.demoFieldValue, { color: colors.textPrimary }]}>
+        <Text style={[styles.fieldValue, { color: colors.textPrimary }]}>
           {value}
         </Text>
       </View>
@@ -489,28 +840,71 @@ function DemoField({
   );
 }
 
+function DemoWalletItem({
+  amount,
+  colors,
+  icon,
+  iconColor,
+  isDark,
+  name,
+  subtitle,
+}: {
+  amount: string;
+  colors: ColorPalette;
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  iconColor: string;
+  isDark: boolean;
+  name: string;
+  subtitle: string;
+}) {
+  return (
+    <View style={styles.demoWalletRow}>
+      <View
+        style={[
+          styles.fieldIconBox,
+          {
+            backgroundColor: isDark
+              ? `${iconColor}22`
+              : `${iconColor}14`,
+            borderColor: isDark ? `${iconColor}44` : `${iconColor}28`,
+            borderWidth: 1,
+          },
+        ]}
+      >
+        <MaterialCommunityIcons color={iconColor} name={icon} size={19} />
+      </View>
+      <View style={styles.fieldTextCol}>
+        <Text style={[styles.fieldValue, { color: colors.textPrimary }]}>
+          {name}
+        </Text>
+        <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
+          {subtitle}
+        </Text>
+      </View>
+      <Text style={[styles.walletAmountText, { color: colors.textPrimary }]}>
+        {amount}
+      </Text>
+    </View>
+  );
+}
+
 function PageCopy({
-  children,
   colors,
   description,
   title,
-}: React.PropsWithChildren<{
+}: {
   colors: ColorPalette;
   description: string;
   title: string;
-}>) {
+}) {
   return (
     <View style={styles.copyBlock}>
-      <Text
-        accessibilityRole="header"
-        style={[styles.pageTitle, { color: colors.textPrimary }]}
-      >
+      <Text style={[styles.copyTitle, { color: colors.textPrimary }]}>
         {title}
       </Text>
-      <Text style={[styles.pageDescription, { color: colors.textSecondary }]}>
+      <Text style={[styles.copyDescription, { color: colors.textSecondary }]}>
         {description}
       </Text>
-      {children}
     </View>
   );
 }
@@ -518,208 +912,283 @@ function PageCopy({
 const styles = StyleSheet.create({
   brandMark: {
     alignItems: 'center',
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     height: 32,
     justifyContent: 'center',
     width: 32,
   },
-  brandName: { ...typography.secondary, fontWeight: '800' },
+  brandName: {
+    ...typography.sectionTitle,
+    fontSize: 16,
+    fontWeight: '800',
+  },
   brandRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.xs + 2,
   },
-  categoryIcon: {
+  budgetLabel: {
+    ...typography.metadata,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  budgetMetaRow: {
     alignItems: 'center',
-    borderRadius: radius.md,
-    height: 42,
-    justifyContent: 'center',
-    width: 42,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  budgetTrackWrap: {
+    gap: 6,
+    marginTop: spacing.xs,
+  },
+  budgetValue: {
+    ...typography.metadata,
+    fontSize: 12,
+    fontWeight: '800',
   },
   copyBlock: {
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.sm,
+    gap: spacing.xs + 2,
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.lg,
+  },
+  copyDescription: {
+    ...typography.body,
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: 'center',
+  },
+  copyTitle: {
+    ...typography.pageTitle,
+    fontSize: 23,
+    fontWeight: '900',
+    letterSpacing: -0.4,
+    textAlign: 'center',
   },
   demoAmount: {
     ...typography.displayAmount,
-    fontSize: 36,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '800',
-    lineHeight: 44,
+    fontSize: 34,
+    fontWeight: '900',
+    letterSpacing: -0.6,
+    marginVertical: spacing.xs,
   },
-  demoDivider: { height: StyleSheet.hairlineWidth },
-  demoFieldCopy: { flex: 1, gap: 1 },
-  demoFieldLabel: { ...typography.metadata, fontSize: 11 },
-  demoFieldRow: {
+  demoDivider: {
+    height: 1,
+    marginVertical: spacing.xs + 2,
+  },
+  demoField: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.sm + 2,
+    paddingVertical: spacing.xs,
   },
-  demoFieldValue: { ...typography.secondary, fontWeight: '700' },
   demoHeader: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  demoMeta: { ...typography.metadata },
+  demoMeta: {
+    ...typography.metadata,
+    fontSize: 12,
+    marginTop: 1,
+  },
   demoStage: {
-    borderRadius: radius.lg,
+    borderRadius: 24,
     borderWidth: 1,
-    gap: spacing.md,
+    elevation: 4,
+    gap: spacing.xs,
     padding: spacing.lg,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
     width: '100%',
   },
-  demoTitle: { ...typography.secondary, fontWeight: '800' },
-  disabled: { opacity: 0.65 },
+  demoTitle: {
+    ...typography.sectionTitle,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  demoWalletRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm + 2,
+    paddingVertical: 5,
+  },
+  disabled: {
+    opacity: 0.5,
+  },
+  fieldIconBox: {
+    alignItems: 'center',
+    borderRadius: 14,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
+  fieldLabel: {
+    ...typography.metadata,
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  fieldTextCol: {
+    flex: 1,
+    gap: 1,
+  },
+  fieldValue: {
+    ...typography.body,
+    fontSize: 14,
+    fontWeight: '700',
+  },
   footer: {
     alignSelf: 'center',
     gap: spacing.md,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.lg,
     paddingHorizontal: spacing.lg,
     width: '100%',
   },
-  identityNote: {
+  impactAmount: {
+    ...typography.sectionTitle,
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: -0.3,
+    marginTop: 2,
+  },
+  impactCashflowRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: spacing.xs,
-    justifyContent: 'center',
-    marginTop: spacing.xs,
-  },
-  identityNoteText: {
-    ...typography.metadata,
-    flexShrink: 1,
-    textAlign: 'center',
-  },
-  impactAmount: {
-    ...typography.pageTitle,
-    fontSize: 28,
-    fontVariant: ['tabular-nums'],
-    fontWeight: '800',
-    lineHeight: 34,
-    marginTop: 2,
+    paddingTop: spacing.xs,
   },
   impactIcon: {
     alignItems: 'center',
-    borderRadius: radius.md,
-    height: 48,
+    borderRadius: 14,
+    height: 44,
     justifyContent: 'center',
-    width: 48,
+    width: 44,
+  },
+  impactStatCol: {
+    flex: 1,
+    gap: 2,
   },
   impactTopRow: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  impactTrack: {
+  page: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    width: '100%',
+  },
+  pageScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+  },
+  pager: {
+    alignSelf: 'center',
+    flex: 1,
+  },
+  pressed: {
+    opacity: 0.7,
+  },
+  primaryButton: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    flexDirection: 'row',
+    gap: spacing.xs,
+    height: 52,
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+  },
+  primaryLabel: {
+    ...typography.body,
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  primaryPressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.985 }],
+  },
+  progressBarFill: {
+    borderRadius: radius.pill,
+    height: '100%',
+  },
+  progressBarTrack: {
     borderRadius: radius.pill,
     height: 8,
     overflow: 'hidden',
+    width: '100%',
   },
-  impactTrackValue: {
+  progressDot: {
     borderRadius: radius.pill,
-    height: '100%',
-    width: '34%',
+    height: 8,
   },
-  localAssurance: {
-    alignItems: 'center',
-    borderRadius: radius.md,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
-  },
-  localAssuranceText: {
-    ...typography.metadata,
-    flex: 1,
-    fontWeight: '700',
-  },
-  page: { gap: spacing.lg, maxWidth: 472, width: '100%' },
-  pageDescription: {
-    ...typography.body,
-    fontSize: 15,
-    lineHeight: 22,
-    maxWidth: 390,
-    textAlign: 'center',
-  },
-  pageScrollContent: {
-    alignItems: 'center',
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  pageTitle: {
-    ...typography.pageTitle,
-    fontSize: 27,
-    fontWeight: '900',
-    lineHeight: 33,
-    maxWidth: 400,
-    textAlign: 'center',
-  },
-  pager: { alignSelf: 'center', flex: 1 },
-  pressed: { opacity: 0.65 },
-  primaryButton: {
-    alignItems: 'center',
-    borderRadius: radius.lg,
-    elevation: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    justifyContent: 'center',
-    minHeight: 56,
-    paddingHorizontal: spacing.lg,
-  },
-  primaryLabel: { ...typography.body, fontWeight: '800' },
-  primaryPressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
-  progressDot: { borderRadius: radius.pill, height: 8 },
   progressRow: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.xs + 2,
     justifyContent: 'center',
-    minHeight: 16,
   },
   progressText: {
     ...typography.metadata,
     fontSize: 11,
-    fontVariant: ['tabular-nums'],
     fontWeight: '700',
-    marginLeft: spacing.xs,
+    marginLeft: 4,
   },
-  safeArea: { flex: 1 },
+  safeArea: {
+    flex: 1,
+  },
   savedBadge: {
     alignItems: 'center',
     borderRadius: radius.pill,
+    borderWidth: 1,
     flexDirection: 'row',
-    gap: spacing.xs,
-    minHeight: 32,
-    paddingHorizontal: spacing.sm + 2,
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
-  savedText: { ...typography.metadata, fontWeight: '800' },
+  savedText: {
+    ...typography.metadata,
+    fontSize: 11,
+    fontWeight: '800',
+  },
   skipButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 48,
-    minWidth: 56,
     paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
-  skipText: { ...typography.secondary, fontWeight: '700' },
+  skipText: {
+    ...typography.metadata,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  statTitle: {
+    ...typography.metadata,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  statValue: {
+    ...typography.body,
+    fontSize: 14,
+    fontWeight: '800',
+  },
   topBar: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
   },
-  transactionAmount: {
-    ...typography.secondary,
-    fontVariant: ['tabular-nums'],
+  verticalDivider: {
+    alignSelf: 'stretch',
+    marginHorizontal: spacing.md,
+    width: 1,
+  },
+  walletAmountText: {
+    ...typography.sectionTitle,
+    fontSize: 14,
     fontWeight: '800',
-  },
-  transactionRow: {
-    alignItems: 'center',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    gap: spacing.sm + 2,
-    paddingTop: spacing.md,
   },
 });
