@@ -3,7 +3,7 @@ import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Wallet } from '@/features/wallets/wallet-types';
-import { getWalletIconName } from '@/features/wallets/wallet-icons';
+import { getWalletBrandColor, getWalletIconName } from '@/features/wallets/wallet-icons';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -12,55 +12,89 @@ import { typography } from '@/theme/typography';
 
 export type WalletRowItemProps = {
   currencyCode: string;
+  hideBalance?: boolean;
   isLast?: boolean;
   language: 'id' | 'en';
-  onArchive: (wallet: Wallet) => void;
-  onEdit: (wallet: Wallet) => void;
-  onReconcile: (wallet: Wallet) => void;
+  onArchive?: (wallet: Wallet) => void;
+  onEdit?: (wallet: Wallet) => void;
+  onPress?: (wallet: Wallet) => void;
+  onReconcile?: (wallet: Wallet) => void;
   wallet: Wallet;
 };
 
 export const WalletRowItem = memo(function WalletRowItem({
   currencyCode,
+  hideBalance = false,
   isLast = false,
   language,
-  onArchive,
-  onEdit,
-  onReconcile,
+  onPress,
   wallet,
 }: WalletRowItemProps) {
   const { colors, isDark } = useTheme();
+  const brandColor = getWalletBrandColor(wallet);
+
+  const formattedBalance = hideBalance
+    ? '••••••'
+    : formatMoney(wallet.currentBalanceMinor, currencyCode);
+
+  function getAccountTypeLabel() {
+    if (wallet.accountNumber) {
+      return `•••• ${wallet.accountNumber.slice(-4)}`;
+    }
+    switch (wallet.accountType) {
+      case 'bank':
+        return language === 'id' ? 'Rekening Bank' : 'Bank Account';
+      case 'cash':
+        return language === 'id' ? 'Uang Tunai' : 'Cash Wallet';
+      case 'ewallet':
+        return language === 'id' ? 'Dompet Digital' : 'E-Wallet';
+      case 'investment':
+        return language === 'id' ? 'Portofolio Investasi' : 'Investment';
+      case 'credit_card':
+        return language === 'id' ? 'Kartu Kredit' : 'Credit Card';
+      default:
+        return language === 'id' ? 'Akun Finansial' : 'Financial Account';
+    }
+  }
 
   return (
-    <View
-      style={[
+    <Pressable
+      accessibilityLabel={`${wallet.name}, ${formattedBalance}`}
+      accessibilityRole="button"
+      onPress={() => onPress?.(wallet)}
+      style={({ pressed }) => [
         styles.walletCard,
         {
           backgroundColor: colors.surface,
-          borderColor: colors.border,
+          borderColor: isDark ? '#27272A' : '#E2E8F0',
+          shadowColor: colors.shadow,
         },
+        pressed ? styles.cardPressed : null,
       ]}
     >
       <View style={styles.cardMainRow}>
-        {/* Wallet Icon */}
+        {/* Wallet Squircle Icon with Brand Accent */}
         <View
           style={[
             styles.walletIconBox,
             {
               backgroundColor: isDark
-                ? `${wallet.color || colors.primary}22`
-                : `${wallet.color || colors.primary}15`,
+                ? `${brandColor}24`
+                : `${brandColor}14`,
+              borderColor: isDark
+                ? `${brandColor}44`
+                : `${brandColor}28`,
             },
           ]}
         >
           <MaterialCommunityIcons
-            color={wallet.color || colors.primary}
+            color={brandColor}
             name={getWalletIconName(wallet)}
-            size={22}
+            size={24}
           />
         </View>
 
-        {/* Name & Type */}
+        {/* Name & Subtitle */}
         <View style={styles.walletMetaCol}>
           <View style={styles.nameRow}>
             <Text
@@ -69,7 +103,25 @@ export const WalletRowItem = memo(function WalletRowItem({
             >
               {wallet.name}
             </Text>
-            {!wallet.includeInCashflow ? (
+            {wallet.isDefault ? (
+              <View
+                style={[
+                  styles.badgePill,
+                  {
+                    backgroundColor: isDark
+                      ? 'rgba(59, 130, 246, 0.16)'
+                      : colors.primaryLight,
+                    borderColor: isDark
+                      ? 'rgba(59, 130, 246, 0.3)'
+                      : 'rgba(37, 99, 235, 0.2)',
+                  },
+                ]}
+              >
+                <Text style={[styles.badgeText, { color: colors.primary }]}>
+                  {language === 'id' ? 'Utama' : 'Default'}
+                </Text>
+              </View>
+            ) : !wallet.includeInCashflow ? (
               <View
                 style={[
                   styles.badgePill,
@@ -77,6 +129,7 @@ export const WalletRowItem = memo(function WalletRowItem({
                     backgroundColor: isDark
                       ? 'rgba(255, 255, 255, 0.08)'
                       : '#F1F5F9',
+                    borderColor: isDark ? '#3F3F46' : '#E2E8F0',
                   },
                 ]}
               >
@@ -89,120 +142,52 @@ export const WalletRowItem = memo(function WalletRowItem({
             ) : null}
           </View>
 
-          <Text style={[styles.walletBalance, { color: colors.textPrimary }]}>
-            {formatMoney(wallet.currentBalanceMinor, currencyCode)}
+          <Text
+            numberOfLines={1}
+            style={[styles.walletSubtitle, { color: colors.textSecondary }]}
+          >
+            {getAccountTypeLabel()}
           </Text>
         </View>
+
+        {/* Balance & Subtle Chevron */}
+        <View style={styles.rightCol}>
+          <Text style={[styles.walletBalance, { color: colors.textPrimary }]}>
+            {formattedBalance}
+          </Text>
+          <MaterialCommunityIcons
+            color={colors.textMuted}
+            name="chevron-right"
+            size={18}
+          />
+        </View>
       </View>
-
-      {/* Action Buttons Row */}
-      <View
-        style={[
-          styles.actionButtonsRow,
-          {
-            borderTopColor: isDark
-              ? 'rgba(255, 255, 255, 0.06)'
-              : 'rgba(0, 0, 0, 0.05)',
-          },
-        ]}
-      >
-        <Pressable
-          accessibilityLabel={
-            language === 'id'
-              ? `Rekonsiliasi saldo ${wallet.name}`
-              : `Reconcile balance ${wallet.name}`
-          }
-          accessibilityRole="button"
-          onPress={() => onReconcile(wallet)}
-          style={({ pressed }) => [styles.actionBtn, pressed && styles.pressed]}
-        >
-          <MaterialCommunityIcons
-            color={colors.primary}
-            name="tune-vertical"
-            size={16}
-          />
-          <Text style={[styles.actionBtnText, { color: colors.primary }]}>
-            {language === 'id' ? 'Sesuaikan Saldo' : 'Reconcile'}
-          </Text>
-        </Pressable>
-
-        <View style={styles.actionDivider} />
-
-        <Pressable
-          accessibilityLabel={language === 'id' ? 'Ubah' : 'Edit'}
-          accessibilityRole="button"
-          onPress={() => onEdit(wallet)}
-          style={({ pressed }) => [styles.actionBtn, pressed && styles.pressed]}
-        >
-          <MaterialCommunityIcons
-            color={colors.textSecondary}
-            name="pencil-outline"
-            size={16}
-          />
-          <Text style={[styles.actionBtnText, { color: colors.textSecondary }]}>
-            {language === 'id' ? 'Ubah' : 'Edit'}
-          </Text>
-        </Pressable>
-
-        <View style={styles.actionDivider} />
-
-        <Pressable
-          accessibilityLabel={language === 'id' ? 'Arsipkan' : 'Archive'}
-          accessibilityRole="button"
-          onPress={() => onArchive(wallet)}
-          style={({ pressed }) => [styles.actionBtn, pressed && styles.pressed]}
-        >
-          <MaterialCommunityIcons
-            color={colors.destructive}
-            name="archive-outline"
-            size={16}
-          />
-          <Text style={[styles.actionBtnText, { color: colors.destructive }]}>
-            {language === 'id' ? 'Arsipkan' : 'Archive'}
-          </Text>
-        </Pressable>
-      </View>
-    </View>
+    </Pressable>
   );
 });
 
 const styles = StyleSheet.create({
-  actionBtn: {
-    alignItems: 'center',
-    flex: 1,
-    flexDirection: 'row',
-    gap: 4,
-    justifyContent: 'center',
-    paddingVertical: 9,
-  },
-  actionBtnText: {
-    ...typography.metadata,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  actionButtonsRow: {
-    borderTopWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  actionDivider: {
-    width: 1,
-  },
   badgePill: {
     borderRadius: radius.pill,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+    borderWidth: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
   },
   badgeText: {
     ...typography.metadata,
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   cardMainRow: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.sm + 2,
-    padding: spacing.md,
+    paddingHorizontal: spacing.md + 2,
+    paddingVertical: spacing.md,
+  },
+  cardPressed: {
+    opacity: 0.82,
+    transform: [{ scale: 0.985 }],
   },
   nameRow: {
     alignItems: 'center',
@@ -210,34 +195,47 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 6,
   },
-  pressed: {
-    opacity: 0.75,
-    transform: [{ scale: 0.98 }],
+  rightCol: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexShrink: 0,
+    gap: 4,
   },
   walletBalance: {
-    ...typography.body,
-    fontSize: 15,
-    fontWeight: '700',
-    marginTop: 2,
+    ...typography.sectionTitle,
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: -0.3,
   },
   walletCard: {
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    overflow: 'hidden',
+    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
   },
   walletIconBox: {
     alignItems: 'center',
-    borderRadius: radius.md,
-    height: 44,
+    borderRadius: 15,
+    borderWidth: 1,
+    height: 48,
     justifyContent: 'center',
-    width: 44,
+    width: 48,
   },
   walletMetaCol: {
     flex: 1,
+    gap: 2,
+    minWidth: 0,
   },
   walletName: {
     ...typography.sectionTitle,
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
+  },
+  walletSubtitle: {
+    ...typography.metadata,
+    fontSize: 12,
+    fontWeight: '500',
   },
 });

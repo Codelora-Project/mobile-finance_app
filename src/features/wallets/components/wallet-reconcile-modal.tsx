@@ -100,6 +100,9 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
       onSuccess();
       onClose();
     } catch (caughtError) {
+      if (__DEV__) {
+        console.error('Reconciliation save error:', caughtError);
+      }
       const mapped = mapError(caughtError, 'DATABASE_WRITE_FAILED');
       setError(mapped.message);
     } finally {
@@ -125,12 +128,17 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
             styles.sheetContainer,
             {
               backgroundColor: colors.surface,
-              borderColor: colors.border,
+              borderColor: isDark ? '#27272A' : '#E2E8F0',
             },
           ]}
         >
           {/* Header */}
-          <View style={styles.sheetHeader}>
+          <View
+            style={[
+              styles.sheetHeader,
+              { borderBottomColor: isDark ? '#27272A' : '#F1F5F9' },
+            ]}
+          >
             <View style={styles.headerLeft}>
               <View
                 style={[
@@ -139,23 +147,24 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
                     backgroundColor: isDark
                       ? `${walletColor}25`
                       : `${walletColor}15`,
+                    borderColor: isDark ? `${walletColor}44` : `${walletColor}33`,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
                   color={walletColor}
                   name="scale-balance"
-                  size={22}
+                  size={20}
                 />
               </View>
-              <View>
+              <View style={styles.titleCol}>
                 <Text
                   style={[styles.sheetTitle, { color: colors.textPrimary }]}
                 >
                   {t.wallets.reconcileTitle}
                 </Text>
                 <Text
-                  style={[styles.sheetSubtitle, { color: colors.textMuted }]}
+                  style={[styles.sheetSubtitle, { color: colors.textSecondary }]}
                 >
                   {wallet.name}
                 </Text>
@@ -173,7 +182,7 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
               style={styles.closeBtn}
             >
               <MaterialCommunityIcons
-                color={colors.textMuted}
+                color={colors.textSecondary}
                 name="close"
                 size={22}
               />
@@ -195,12 +204,12 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
                 styles.balanceCard,
                 {
                   backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
-                  borderColor: colors.border,
+                  borderColor: isDark ? '#27272A' : '#E2E8F0',
                 },
               ]}
             >
               <Text
-                style={[styles.balanceCardLabel, { color: colors.textMuted }]}
+                style={[styles.balanceCardLabel, { color: colors.textSecondary }]}
               >
                 {t.wallets.recordedBalance}
               </Text>
@@ -213,7 +222,7 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
 
             {/* 2. Actual Balance Input */}
             <View style={styles.inputSection}>
-              <Text style={[styles.fieldLabel, { color: colors.textPrimary }]}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
                 {t.wallets.actualBalanceLabel}
               </Text>
               <View
@@ -221,12 +230,12 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
                   styles.inputRow,
                   {
                     backgroundColor: colors.surface,
-                    borderColor: colors.border,
+                    borderColor: isDark ? '#27272A' : '#CBD5E1',
                   },
                 ]}
               >
                 <Text
-                  style={[styles.currencyPrefix, { color: colors.textMuted }]}
+                  style={[styles.currencyPrefix, { color: colors.primary }]}
                 >
                   {currencySymbol}
                 </Text>
@@ -250,20 +259,24 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
                   backgroundColor:
                     difference > 0
                       ? isDark
-                        ? 'rgba(16, 185, 129, 0.15)'
+                        ? 'rgba(74, 222, 128, 0.12)'
                         : '#DCFCE7'
                       : difference < 0
                         ? isDark
-                          ? 'rgba(239, 68, 68, 0.15)'
+                          ? 'rgba(251, 113, 133, 0.12)'
                           : '#FEE2E2'
                         : isDark
                           ? colors.surfaceSecondary
                           : '#EFF6FF',
                   borderColor:
                     difference > 0
-                      ? '#10B981'
+                      ? isDark
+                        ? 'rgba(74, 222, 128, 0.3)'
+                        : '#86EFAC'
                       : difference < 0
-                        ? '#EF4444'
+                        ? isDark
+                          ? 'rgba(251, 113, 133, 0.3)'
+                          : '#FCA5A5'
                         : colors.primary,
                 },
               ]}
@@ -272,9 +285,9 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
                 <MaterialCommunityIcons
                   color={
                     difference > 0
-                      ? '#10B981'
+                      ? colors.positive
                       : difference < 0
-                        ? '#EF4444'
+                        ? colors.destructive
                         : colors.primary
                   }
                   name={
@@ -284,7 +297,7 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
                         ? 'arrow-down-circle-outline'
                         : 'check-circle-outline'
                   }
-                  size={20}
+                  size={18}
                 />
                 <Text
                   style={[
@@ -292,9 +305,9 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
                     {
                       color:
                         difference > 0
-                          ? '#10B981'
+                          ? colors.positive
                           : difference < 0
-                            ? '#EF4444'
+                            ? colors.destructive
                             : colors.primary,
                     },
                   ]}
@@ -308,9 +321,9 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
                   {
                     color:
                       difference > 0
-                        ? '#10B981'
+                        ? colors.positive
                         : difference < 0
-                          ? '#EF4444'
+                          ? colors.destructive
                           : colors.primary,
                   },
                 ]}
@@ -333,7 +346,7 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
 
             {/* 4. Note Input */}
             <View style={styles.inputSection}>
-              <Text style={[styles.fieldLabel, { color: colors.textPrimary }]}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
                 {t.wallets.reconcileNoteLabel}
               </Text>
               <TextInput
@@ -347,7 +360,7 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
                       : '#F8FAFC',
-                    borderColor: colors.border,
+                    borderColor: isDark ? '#27272A' : '#E2E8F0',
                     color: colors.textPrimary,
                   },
                 ]}
@@ -356,9 +369,16 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
             </View>
 
             {error ? (
-              <Text style={[styles.errorText, { color: colors.destructive }]}>
-                {error}
-              </Text>
+              <View style={styles.errorRow}>
+                <MaterialCommunityIcons
+                  color={colors.destructive}
+                  name="alert-circle-outline"
+                  size={16}
+                />
+                <Text style={[styles.errorText, { color: colors.destructive }]}>
+                  {error}
+                </Text>
+              </View>
             ) : null}
 
             {/* Submit Action */}
@@ -379,13 +399,14 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
 
 const styles = StyleSheet.create({
   actionRow: {
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
   },
   amountInput: {
     ...typography.body,
     flex: 1,
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '900',
+    letterSpacing: -0.3,
     paddingVertical: spacing.xs,
   },
   backdrop: {
@@ -394,19 +415,21 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   balanceCard: {
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
+    gap: 2,
     padding: spacing.md,
   },
   balanceCardLabel: {
     ...typography.metadata,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
   },
   balanceCardValue: {
     ...typography.sectionTitle,
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: '900',
+    letterSpacing: -0.3,
     marginTop: 2,
   },
   closeBtn: {
@@ -415,7 +438,7 @@ const styles = StyleSheet.create({
   currencyPrefix: {
     ...typography.body,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   descBanner: {
     ...typography.secondary,
@@ -423,7 +446,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   diffCard: {
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     gap: 4,
     padding: spacing.md,
@@ -435,8 +458,9 @@ const styles = StyleSheet.create({
   },
   diffTitle: {
     ...typography.metadata,
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   diffValue: {
@@ -444,41 +468,51 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
   },
+  errorRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
+  },
   errorText: {
     ...typography.metadata,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
   },
   fieldLabel: {
-    ...typography.secondary,
-    fontSize: 13,
-    fontWeight: '700',
+    ...typography.metadata,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
     marginBottom: 6,
   },
   headerLeft: {
     alignItems: 'center',
+    flex: 1,
     flexDirection: 'row',
     gap: spacing.sm,
   },
   iconBadge: {
     alignItems: 'center',
-    borderRadius: radius.md,
-    height: 40,
+    borderRadius: 14,
+    borderWidth: 1,
+    height: 42,
     justifyContent: 'center',
-    width: 40,
+    width: 42,
   },
   inputRow: {
     alignItems: 'center',
     borderRadius: radius.md,
     borderWidth: 1.5,
     flexDirection: 'row',
-    gap: spacing.xs,
+    gap: spacing.xs + 2,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },
   inputSection: {
-    marginTop: spacing.xs,
+    marginTop: 2,
   },
   noteInput: {
     ...typography.secondary,
@@ -494,15 +528,14 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   sheetContainer: {
-    borderTopLeftRadius: radius.lg + 4,
-    borderTopRightRadius: radius.lg + 4,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
     borderTopWidth: 1,
     maxHeight: '90%',
   },
   sheetHeader: {
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderColor: 'rgba(150, 150, 150, 0.15)',
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
@@ -517,5 +550,9 @@ const styles = StyleSheet.create({
     ...typography.body,
     fontSize: 16,
     fontWeight: '800',
+  },
+  titleCol: {
+    flex: 1,
+    gap: 2,
   },
 });

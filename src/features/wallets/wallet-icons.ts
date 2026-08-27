@@ -34,3 +34,35 @@ export function getWalletIconName(
     SUPPORTED_WALLET_ICONS,
   );
 }
+
+export function getWalletBrandColor(wallet: Pick<Wallet, 'color' | 'name' | 'accountType'>): string {
+  if (wallet.color) return wallet.color;
+  const name = wallet.name.toLowerCase();
+  if (name.includes('bca')) return '#0066AE';
+  if (name.includes('mandiri')) return '#003D79';
+  if (name.includes('bni')) return '#F15A24';
+  if (name.includes('bri')) return '#00529C';
+  if (name.includes('jago')) return '#FF6B00';
+  if (name.includes('jenius')) return '#00A3E0';
+  if (name.includes('gopay')) return '#00AED6';
+  if (name.includes('ovo')) return '#4C2A86';
+  if (name.includes('dana')) return '#118EEA';
+  if (name.includes('shopee')) return '#EE4D2D';
+  if (name.includes('tunai') || name.includes('cash')) return '#10B981';
+  if (name.includes('bibit') || name.includes('reksa') || name.includes('saham')) return '#8B5CF6';
+
+  switch (wallet.accountType) {
+    case 'cash':
+      return '#10B981';
+    case 'bank':
+      return '#2563EB';
+    case 'ewallet':
+      return '#06B6D4';
+    case 'credit_card':
+      return '#EC4899';
+    case 'investment':
+      return '#8B5CF6';
+    default:
+      return '#64748B';
+  }
+}

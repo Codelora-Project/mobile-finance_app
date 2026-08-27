@@ -243,7 +243,8 @@ describe('Wallet & Account Management Screen', () => {
       expect(screen.getAllByText('Bank BCA').length).toBeGreaterThanOrEqual(1),
     );
 
-    const reconcileBtn = screen.getByLabelText('Rekonsiliasi saldo Bank BCA');
+    await fireEvent.press(screen.getAllByText('Bank BCA')[0]);
+    const reconcileBtn = await screen.findByLabelText('Rekonsiliasi saldo Bank BCA');
     await fireEvent.press(reconcileBtn);
 
     await waitFor(() =>
@@ -292,8 +293,10 @@ describe('Wallet & Account Management Screen', () => {
     mockReconcileWalletBalance.mockResolvedValue({ id: 99, type: 'income' });
 
     await renderScreen('en', 'USD');
-    await screen.findByText('Bank BCA');
-    await fireEvent.press(screen.getByLabelText('Reconcile balance Bank BCA'));
+    const bcaCard = await screen.findByText('Bank BCA');
+    await fireEvent.press(bcaCard);
+    const reconcileBtn = await screen.findByLabelText('Reconcile balance Bank BCA');
+    await fireEvent.press(reconcileBtn);
     await fireEvent.changeText(
       screen.getByLabelText('Actual Balance *'),
       '12.50',

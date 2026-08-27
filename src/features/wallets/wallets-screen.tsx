@@ -15,6 +15,7 @@ import {
 import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
 import {
+  WalletActionSheet,
   WalletArchivedSection,
   WalletEditorModal,
   WalletNetWorthCard,
@@ -46,7 +47,7 @@ export function WalletsScreen({
 }: WalletsScreenProps = {}) {
   const database = useSQLiteContext();
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { currencyCode, currencySymbol } = useCurrency();
   const { language, t } = useLanguage();
 
@@ -56,9 +57,13 @@ export function WalletsScreen({
   const [archivedWallets, setArchivedWallets] = useState<readonly Wallet[]>([]);
   const [loading, setLoading] = useState(true);
   const [screenError, setScreenError] = useState<string | null>(null);
+  const [hideBalance, setHideBalance] = useState(false);
   const loadRequestRef = useRef(0);
 
   // Modal States
+  const [actionSheetTarget, setActionSheetTarget] = useState<Wallet | null>(
+    null,
+  );
   const [editorTarget, setEditorTarget] = useState<Wallet | 'new' | null>(null);
   const [reconcileTarget, setReconcileTarget] = useState<Wallet | null>(null);
 
@@ -136,6 +141,16 @@ export function WalletsScreen({
     }
   }
 
+  function handleQuickTransfer(sourceWallet?: Wallet) {
+    router.push({
+      pathname: '/(app)/transactions/new',
+      params: {
+        type: 'transfer',
+        ...(sourceWallet ? { sourceWalletId: String(sourceWallet.id) } : {}),
+      },
+    });
+  }
+
   if (loading && !walletSummary) {
     return (
       <Screen>
@@ -192,28 +207,66 @@ export function WalletsScreen({
           {language === 'id' ? 'Dompet & Rekening' : 'Wallets & Accounts'}
         </Text>
 
-        <Pressable
-          accessibilityLabel={
-            language === 'id' ? 'Tambah Dompet Baru' : 'Add New Wallet'
-          }
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={() => setEditorTarget('new')}
-          style={({ pressed }) => [
-            styles.addWalletBtn,
-            { backgroundColor: colors.primary },
-            pressed && styles.pressed,
-          ]}
-        >
-          <MaterialCommunityIcons
-            color={colors.onPrimary}
-            name="plus"
-            size={18}
-          />
-          <Text style={[styles.addWalletLabel, { color: colors.onPrimary }]}>
-            {language === 'id' ? 'Tambah' : 'Add'}
-          </Text>
-        </Pressable>
+        <View style={styles.headerRightActions}>
+          {/* Quick Transfer Button */}
+          {activeWallets.length >= 2 ? (
+            <Pressable
+              accessibilityLabel={
+                language === 'id'
+                  ? 'Transfer Antar Dompet'
+                  : 'Transfer Between Wallets'
+              }
+              accessibilityRole="button"
+              hitSlop={6}
+              onPress={() => handleQuickTransfer()}
+              style={({ pressed }) => [
+                styles.transferBtn,
+                {
+                  backgroundColor: isDark
+                    ? 'rgba(59, 130, 246, 0.16)'
+                    : colors.primaryLight,
+                  borderColor: isDark
+                    ? 'rgba(59, 130, 246, 0.3)'
+                    : 'rgba(37, 99, 235, 0.2)',
+                },
+                pressed && styles.pressed,
+              ]}
+            >
+              <MaterialCommunityIcons
+                color={colors.primary}
+                name="swap-horizontal"
+                size={16}
+              />
+              <Text style={[styles.transferLabel, { color: colors.primary }]}>
+                {language === 'id' ? 'Transfer' : 'Transfer'}
+              </Text>
+            </Pressable>
+          ) : null}
+
+          {/* Add Wallet Button */}
+          <Pressable
+            accessibilityLabel={
+              language === 'id' ? 'Tambah Dompet Baru' : 'Add New Wallet'
+            }
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => setEditorTarget('new')}
+            style={({ pressed }) => [
+              styles.addWalletBtn,
+              { backgroundColor: colors.primary },
+              pressed && styles.pressed,
+            ]}
+          >
+            <MaterialCommunityIcons
+              color={colors.onPrimary}
+              name="plus"
+              size={18}
+            />
+            <Text style={[styles.addWalletLabel, { color: colors.onPrimary }]}>
+              {language === 'id' ? 'Tambah' : 'Add'}
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       <FlatList
@@ -257,10 +310,12 @@ export function WalletsScreen({
         }
         ListHeaderComponent={
           <View style={styles.headerComponent}>
-            {/* 1. Net Worth Summary Card */}
+            {/* 1. Net Worth Summary Card with Privacy Eye Toggle */}
             <WalletNetWorthCard
               currencyCode={currencyCode}
+              hideBalance={hideBalance}
               language={language}
+              onToggleHideBalance={() => setHideBalance((prev) => !prev)}
               operationalCash={operationalCash}
               totalNetWorth={totalNetWorth}
               trackingAssets={trackingAssets}
@@ -303,14 +358,38 @@ export function WalletsScreen({
         renderItem={({ index, item }) => (
           <WalletRowItem
             currencyCode={currencyCode}
+            hideBalance={hideBalance}
             isLast={index === activeWallets.length - 1}
             language={language}
-            onArchive={handleConfirmArchive}
-            onEdit={(w) => setEditorTarget(w)}
-            onReconcile={(w) => setReconcileTarget(w)}
+            onPress={(w) => setActionSheetTarget(w)}
             wallet={item}
           />
         )}
+      />
+
+      {/* Wallet Action Sheet (Tap on Card) */}
+      <WalletActionSheet
+        currencyCode={currencyCode}
+        language={language}
+        onArchive={(w) => {
+          setActionSheetTarget(null);
+          handleConfirmArchive(w);
+        }}
+        onClose={() => setActionSheetTarget(null)}
+        onEdit={(w) => {
+          setActionSheetTarget(null);
+          setEditorTarget(w);
+        }}
+        onReconcile={(w) => {
+          setActionSheetTarget(null);
+          setReconcileTarget(w);
+        }}
+        onTransfer={(w) => {
+          setActionSheetTarget(null);
+          handleQuickTransfer(w);
+        }}
+        visible={Boolean(actionSheetTarget)}
+        wallet={actionSheetTarget}
       />
 
       {/* Wallet Editor Modal (Create / Edit) */}
@@ -345,12 +424,12 @@ export function WalletsScreen({
 const styles = StyleSheet.create({
   addWalletBtn: {
     alignItems: 'center',
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     flexDirection: 'row',
-    gap: spacing.xs,
-    height: 40,
+    gap: 4,
+    minHeight: 34,
     justifyContent: 'center',
-    paddingHorizontal: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
   },
   addWalletLabel: {
     ...typography.metadata,
@@ -416,12 +495,17 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.xs,
   },
+  headerRightActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.xs + 2,
+  },
   headerTitle: {
     ...typography.pageTitle,
     flex: 1,
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '900',
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
   },
   loadingText: {
     ...typography.metadata,
@@ -433,7 +517,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     alignSelf: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
     maxWidth: contentMaxWidth,
     padding: spacing.md,
     paddingBottom: spacing.xxl + 40,
@@ -444,10 +528,25 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...typography.metadata,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.6,
     paddingHorizontal: spacing.xs,
     textTransform: 'uppercase',
+  },
+  transferBtn: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 4,
+    minHeight: 34,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm + 2,
+  },
+  transferLabel: {
+    ...typography.metadata,
+    fontSize: 12,
+    fontWeight: '800',
   },
 });

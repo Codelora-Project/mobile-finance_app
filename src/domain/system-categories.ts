@@ -14,6 +14,20 @@ export const SYSTEM_CATEGORIES = {
     systemKey: 'balance_reconciliation',
     type: 'expense',
   },
+  balanceReconciliationExpense: {
+    defaultName: 'Penyesuaian Saldo',
+    iconKey: 'tune-vertical',
+    sortOrder: 999,
+    systemKey: 'balance_reconciliation',
+    type: 'expense',
+  },
+  balanceReconciliationIncome: {
+    defaultName: 'Penyesuaian Saldo',
+    iconKey: 'tune-vertical',
+    sortOrder: 999,
+    systemKey: 'balance_reconciliation_income',
+    type: 'income',
+  },
   walletTransfer: {
     defaultName: 'Transfer Antar Dompet',
     iconKey: 'swap-horizontal',

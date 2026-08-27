@@ -361,7 +361,6 @@ export async function reconcileWalletBalance(
   }
 
   return withIntegrityCheckedTransaction(database, async (transaction) => {
-    const definition = SYSTEM_CATEGORIES.balanceReconciliation;
     const wallet = await getWalletById(transaction, walletId);
     if (!wallet) {
       throw createCodedError('VALIDATION_FAILED', 'Dompet tidak ditemukan.');
@@ -381,6 +380,10 @@ export async function reconcileWalletBalance(
     const localDate = toLocalDate(now, timezoneOffsetMinutes);
     const type = diffMinor > 0 ? 'income' : 'expense';
     const amountMinor = Math.abs(diffMinor);
+    const definition =
+      type === 'income'
+        ? SYSTEM_CATEGORIES.balanceReconciliationIncome
+        : SYSTEM_CATEGORIES.balanceReconciliationExpense;
     const categoryId = await ensureSystemCategory(transaction, definition, now);
 
     const result = await transaction.runAsync(

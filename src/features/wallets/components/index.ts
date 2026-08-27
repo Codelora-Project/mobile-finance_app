@@ -4,3 +4,4 @@ export * from './wallet-archived-section';
 export * from './wallet-editor-modal';
 export * from './wallet-reconcile-modal';
 export * from './wallet-picker';
+export * from './wallet-action-sheet';
