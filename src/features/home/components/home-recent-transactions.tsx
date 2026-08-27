@@ -1,6 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { memo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '@/components/ui/app-button';
 import { getCategoryMeta } from '@/features/categories/category-meta';
@@ -22,8 +22,8 @@ export type GroupedTimelineItem = {
 export type HomeRecentTransactionsProps = {
   currencyCode: string;
   groupedTimeline: readonly GroupedTimelineItem[];
-  onPressTransaction: (id: number) => void;
   onAddFirstTransaction: () => void;
+  onPressTransaction: (id: number) => void;
   onViewAll: () => void;
   selectedWalletId?: number | null;
   t: TranslationSchema;
@@ -32,8 +32,8 @@ export type HomeRecentTransactionsProps = {
 export const HomeRecentTransactions = memo(function HomeRecentTransactions({
   currencyCode,
   groupedTimeline,
-  onPressTransaction,
   onAddFirstTransaction,
+  onPressTransaction,
   onViewAll,
   selectedWalletId = null,
   t,
@@ -46,18 +46,27 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
         styles.integratedCard,
         {
           backgroundColor: colors.surface,
-          borderColor: colors.border,
-          shadowColor: colors.textPrimary,
+          borderColor: isDark ? '#27272A' : '#E2E8F0',
+          shadowColor: colors.shadow,
         },
       ]}
     >
+      {/* 1. Header Row */}
       <View style={styles.integratedCardHeader}>
-        <Text
-          numberOfLines={1}
-          style={[styles.integratedCardTitle, { color: colors.textPrimary }]}
-        >
-          {t.home.recentTransactions}
-        </Text>
+        <View style={styles.headerTitleGroup}>
+          <MaterialCommunityIcons
+            color={colors.primary}
+            name="history"
+            size={18}
+          />
+          <Text
+            numberOfLines={1}
+            style={[styles.integratedCardTitle, { color: colors.textPrimary }]}
+          >
+            {t.home.recentTransactions}
+          </Text>
+        </View>
+
         <Pressable
           accessibilityLabel={t.home.viewAll}
           accessibilityRole="button"
@@ -74,16 +83,33 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
           >
             {t.home.viewAll}
           </Text>
+          <MaterialCommunityIcons
+            color={colors.primary}
+            name="chevron-right"
+            size={16}
+          />
         </Pressable>
       </View>
 
+      {/* 2. Content */}
       {groupedTimeline.length === 0 ? (
         <View style={styles.emptyTransactionsWrap}>
-          <MaterialCommunityIcons
-            color={colors.textSecondary}
-            name="receipt-text-plus-outline"
-            size={38}
-          />
+          <View
+            style={[
+              styles.emptyIconCircle,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(59, 130, 246, 0.12)'
+                  : colors.primaryLight,
+              },
+            ]}
+          >
+            <MaterialCommunityIcons
+              color={colors.primary}
+              name="receipt-text-plus-outline"
+              size={32}
+            />
+          </View>
           <Text style={[styles.emptyStateTitle, { color: colors.textPrimary }]}>
             {t.home.noTransactionsYet}
           </Text>
@@ -106,7 +132,17 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
           {groupedTimeline.map((group) => (
             <View key={group.date} style={styles.timelineDateGroup}>
               {/* Date Header Row */}
-              <View style={styles.timelineDateHeaderRow}>
+              <View
+                style={[
+                  styles.timelineDateHeaderRow,
+                  {
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : '#F8FAFC',
+                    borderColor: isDark ? '#27272A' : '#F1F5F9',
+                  },
+                ]}
+              >
                 <Text
                   style={[
                     styles.timelineDateLabel,
@@ -132,7 +168,7 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
                 </Text>
               </View>
 
-              {/* Transaction Items with Connected Timeline Dots */}
+              {/* Transaction Items */}
               <View style={styles.timelineItemsWrap}>
                 {group.items.map((item, idx) => {
                   const isLast = idx === group.items.length - 1;
@@ -173,99 +209,139 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
                         : colors.textPrimary;
 
                   return (
-                    <Pressable
-                      accessibilityLabel={`${title}, ${formatMoney(
-                        item.amountMinor,
-                        item.currencyCode,
-                      )}`}
-                      accessibilityRole="button"
-                      key={item.id}
-                      onPress={() => onPressTransaction(item.id)}
-                      style={({ pressed }) => [
-                        styles.timelineRow,
-                        pressed && styles.pressed,
-                      ]}
-                    >
-                      {/* Timeline Dot & Line */}
-                      <View style={styles.timelineTrackCol}>
+                    <View key={item.id}>
+                      <Pressable
+                        accessibilityLabel={`${title}, ${formatMoney(
+                          item.amountMinor,
+                          item.currencyCode,
+                        )}`}
+                        accessibilityRole="button"
+                        android_ripple={{
+                          borderless: false,
+                          color: isDark
+                            ? 'rgba(255, 255, 255, 0.08)'
+                            : 'rgba(0, 0, 0, 0.04)',
+                        }}
+                        onPress={() => onPressTransaction(item.id)}
+                        style={({ pressed }) => [
+                          styles.transactionRow,
+                          pressed && Platform.OS === 'ios'
+                            ? styles.pressed
+                            : null,
+                        ]}
+                      >
+                        {/* Category Avatar */}
                         <View
                           style={[
-                            styles.timelineDot,
-                            { backgroundColor: meta.color },
+                            styles.categoryAvatar,
+                            {
+                              backgroundColor:
+                                item.type === 'income'
+                                  ? isDark
+                                    ? 'rgba(74, 222, 128, 0.16)'
+                                    : '#DCFCE7'
+                                  : item.type === 'transfer'
+                                    ? isDark
+                                      ? 'rgba(59, 130, 246, 0.16)'
+                                      : '#DBEAFE'
+                                    : meta.backgroundColor,
+                            },
                           ]}
-                        />
-                        {!isLast ? (
-                          <View
-                            style={[
-                              styles.timelineLine,
-                              { backgroundColor: colors.border },
-                            ]}
+                        >
+                          <MaterialCommunityIcons
+                            color={
+                              item.type === 'income'
+                                ? colors.positive
+                                : item.type === 'transfer'
+                                  ? colors.primary
+                                  : meta.color
+                            }
+                            name={meta.icon}
+                            size={20}
                           />
-                        ) : null}
-                      </View>
-
-                      {/* Content */}
-                      <View style={styles.timelineContentCol}>
-                        <View style={styles.timelineMainRow}>
-                          <Text
-                            numberOfLines={1}
-                            style={[
-                              styles.timelineItemTitle,
-                              { color: colors.textPrimary },
-                            ]}
-                          >
-                            {title}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.timelineAmount,
-                              {
-                                color: amountColor,
-                              },
-                            ]}
-                          >
-                            {amountPrefix}
-                            {formatMoney(item.amountMinor, item.currencyCode)}
-                          </Text>
                         </View>
 
-                        <View style={styles.timelineMetaRow}>
-                          <Text
-                            numberOfLines={1}
-                            style={[
-                              styles.timelineCategoryName,
-                              { color: colors.textSecondary },
-                            ]}
-                          >
-                            {isTransfer
-                              ? t.transactions.transfer
-                              : item.categoryName}
-                          </Text>
-                          {item.hasReceipt ? (
-                            <View
+                        {/* Content Body */}
+                        <View style={styles.transactionBody}>
+                          <View style={styles.transactionMainRow}>
+                            <Text
+                              numberOfLines={1}
                               style={[
-                                styles.receiptPill,
+                                styles.transactionTitle,
+                                { color: colors.textPrimary },
+                              ]}
+                            >
+                              {title}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.transactionAmount,
                                 {
-                                  backgroundColor: isDark
-                                    ? '#312E81'
-                                    : '#EDE9FE',
-                                  borderColor: isDark ? '#4338CA' : '#DDD6FE',
+                                  color: amountColor,
                                 },
                               ]}
                             >
-                              <MaterialCommunityIcons
-                                color="#7C3AED"
-                                name="receipt-outline"
-                                size={10}
-                              />
-                              <Text style={styles.receiptPillText}>
-                                {t.home.receiptBadge}
-                              </Text>
-                            </View>
-                          ) : null}
+                              {amountPrefix}
+                              {formatMoney(item.amountMinor, item.currencyCode)}
+                            </Text>
+                          </View>
+
+                          <View style={styles.transactionMetaRow}>
+                            <Text
+                              numberOfLines={1}
+                              style={[
+                                styles.transactionSubtitle,
+                                { color: colors.textSecondary },
+                              ]}
+                            >
+                              {isTransfer
+                                ? t.transactions.transfer
+                                : item.paymentMethodName
+                                  ? `${item.categoryName} • ${item.paymentMethodName}`
+                                  : item.categoryName}
+                            </Text>
+
+                            {item.hasReceipt ? (
+                              <View
+                                style={[
+                                  styles.receiptPill,
+                                  {
+                                    backgroundColor: isDark
+                                      ? 'rgba(124, 58, 237, 0.18)'
+                                      : '#EDE9FE',
+                                    borderColor: isDark
+                                      ? 'rgba(124, 58, 237, 0.3)'
+                                      : '#DDD6FE',
+                                  },
+                                ]}
+                              >
+                                <MaterialCommunityIcons
+                                  color="#7C3AED"
+                                  name="receipt-outline"
+                                  size={10}
+                                />
+                                <Text style={styles.receiptPillText}>
+                                  {t.home.receiptBadge}
+                                </Text>
+                              </View>
+                            ) : null}
+                          </View>
                         </View>
-                      </View>
-                    </Pressable>
+                      </Pressable>
+
+                      {!isLast ? (
+                        <View
+                          style={[
+                            styles.rowDivider,
+                            {
+                              backgroundColor: isDark
+                                ? '#27272A'
+                                : '#F1F5F9',
+                            },
+                          ]}
+                        />
+                      ) : null}
+                    </View>
                   );
                 })}
               </View>
@@ -279,36 +355,63 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
 
 const styles = StyleSheet.create({
   cardHeaderLink: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 2,
     paddingHorizontal: 4,
     paddingVertical: 2,
   },
+  categoryAvatar: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 42,
+    justifyContent: 'center',
+    marginRight: spacing.sm + 2,
+    width: 42,
+  },
+  emptyIconCircle: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 60,
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+    width: 60,
+  },
   emptyStateSubtitle: {
     ...typography.metadata,
+    fontSize: 12,
+    lineHeight: 18,
     maxWidth: 240,
     textAlign: 'center',
   },
   emptyStateTitle: {
     ...typography.body,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
   },
   emptyTransactionsWrap: {
     alignItems: 'center',
     gap: spacing.xs,
-    paddingVertical: spacing.xl,
+    paddingVertical: spacing.lg,
   },
   firstTransactionAction: {
     marginTop: spacing.sm,
     minWidth: 220,
   },
+  headerTitleGroup: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.xs + 2,
+  },
   integratedCard: {
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1,
     elevation: 2,
     gap: spacing.md,
-    padding: spacing.md,
-    shadowOffset: { width: 0, height: 2 },
+    padding: spacing.md + 2,
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowRadius: 10,
   },
   integratedCardHeader: {
     alignItems: 'center',
@@ -318,15 +421,17 @@ const styles = StyleSheet.create({
   integratedCardTitle: {
     ...typography.sectionTitle,
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: '900',
+    letterSpacing: -0.2,
   },
   linkText: {
     ...typography.metadata,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '800',
   },
   pressed: {
     opacity: 0.7,
-    transform: [{ scale: 0.96 }],
+    transform: [{ scale: 0.985 }],
   },
   receiptPill: {
     alignItems: 'center',
@@ -341,83 +446,81 @@ const styles = StyleSheet.create({
     ...typography.metadata,
     color: '#7C3AED',
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '700',
     lineHeight: 12,
   },
-  timelineAmount: {
-    ...typography.body,
-    fontWeight: '700',
+  rowDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginLeft: 42 + spacing.sm + 2,
+    marginVertical: 1,
   },
-  timelineCategoryName: {
+  timelineDailyNet: {
     ...typography.metadata,
-    flexShrink: 1,
-  },
-  timelineContentCol: {
-    flex: 1,
-    gap: 2,
+    fontSize: 11,
+    fontWeight: '800',
   },
   timelineDateGroup: {
     gap: spacing.xs,
   },
   timelineDateHeaderRow: {
     alignItems: 'center',
+    borderRadius: radius.sm,
+    borderWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingBottom: 2,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
   },
   timelineDateLabel: {
     ...typography.metadata,
     fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.3,
+    fontWeight: '800',
+    letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
-  timelineDailyNet: {
-    ...typography.metadata,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  timelineDot: {
-    borderRadius: radius.pill,
-    height: 10,
-    marginTop: 4,
-    width: 10,
-  },
-  timelineItemTitle: {
-    ...typography.body,
-    flex: 1,
-    fontWeight: '600',
-    marginRight: spacing.sm,
-  },
   timelineItemsWrap: {
-    gap: spacing.xs,
-  },
-  timelineLine: {
-    bottom: -spacing.xs,
-    position: 'absolute',
-    top: 16,
-    width: 2,
+    gap: 1,
   },
   timelineListContainer: {
     gap: spacing.md,
   },
-  timelineMainRow: {
+  transactionAmount: {
+    ...typography.body,
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  transactionBody: {
+    flex: 1,
+    gap: 2,
+    justifyContent: 'center',
+  },
+  transactionMainRow: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  timelineMetaRow: {
+  transactionMetaRow: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.xs,
   },
-  timelineRow: {
-    flexDirection: 'row',
-    paddingVertical: 4,
-  },
-  timelineTrackCol: {
+  transactionRow: {
     alignItems: 'center',
+    borderRadius: radius.md,
+    flexDirection: 'row',
+    paddingVertical: spacing.xs + 2,
+  },
+  transactionSubtitle: {
+    ...typography.metadata,
+    flexShrink: 1,
+    fontSize: 12,
+  },
+  transactionTitle: {
+    ...typography.body,
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
     marginRight: spacing.sm,
-    width: 16,
   },
 });
