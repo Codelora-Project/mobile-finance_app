@@ -53,7 +53,7 @@ export const ManualPaymentMethodsStrip = memo(
                 accessibilityRole="button"
                 key={pm.id}
                 onPress={() => onSelectPaymentMethod(pm)}
-                style={[
+                style={({ pressed }) => [
                   styles.paymentMethodChip,
                   {
                     backgroundColor: isSelected
@@ -61,9 +61,14 @@ export const ManualPaymentMethodsStrip = memo(
                       : isDark
                         ? colors.surfaceSecondary
                         : '#F1F5F9',
-                    borderColor: isSelected ? colors.primary : colors.border,
+                    borderColor: isSelected
+                      ? colors.primary
+                      : isDark
+                        ? '#27272A'
+                        : '#E2E8F0',
                   },
                   isSelected ? styles.paymentMethodChipSelected : null,
+                  pressed ? styles.chipPressed : null,
                 ]}
               >
                 <MaterialCommunityIcons
@@ -111,40 +116,46 @@ export const ManualPaymentMethodsStrip = memo(
 );
 
 const styles = StyleSheet.create({
+  chipPressed: {
+    opacity: 0.75,
+    transform: [{ scale: 0.97 }],
+  },
   paymentMethodChip: {
     alignItems: 'center',
     borderRadius: radius.pill,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 6,
+    minHeight: 38,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 3,
+    paddingVertical: spacing.xs + 2,
   },
   paymentMethodChipSelected: {
     elevation: 2,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
   },
   paymentMethodChipText: {
     ...typography.metadata,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   paymentMethodChipTextSelected: {
     fontWeight: '800',
   },
   paymentMethodsList: {
-    gap: spacing.xs,
+    gap: spacing.xs + 2,
     paddingVertical: 2,
   },
   sectionContainer: {
     gap: spacing.xs,
+    marginTop: spacing.xs,
   },
   sectionLabel: {
     ...typography.metadata,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
   },
 });

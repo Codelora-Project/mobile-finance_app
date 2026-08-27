@@ -28,7 +28,7 @@ export const ManualTypeToggle = memo(function ManualTypeToggle({
         styles.typeToggleTrack,
         {
           backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
-          borderColor: colors.border,
+          borderColor: isDark ? '#27272A' : '#E2E8F0',
         },
       ]}
     >
@@ -38,13 +38,28 @@ export const ManualTypeToggle = memo(function ManualTypeToggle({
         accessibilityRole="tab"
         accessibilityState={{ selected: selectedType === 'expense' }}
         onPress={() => onChangeType('expense')}
-        style={[
+        style={({ pressed }) => [
           styles.typeTab,
-          selectedType === 'expense' ? styles.typeTabActiveExpense : null,
+          selectedType === 'expense'
+            ? [
+                styles.typeTabActiveExpense,
+                {
+                  backgroundColor: colors.destructive,
+                  shadowColor: colors.destructive,
+                },
+              ]
+            : null,
+          pressed ? styles.tabPressed : null,
         ]}
       >
         <MaterialCommunityIcons
-          color={selectedType === 'expense' ? '#FFFFFF' : '#64748B'}
+          color={
+            selectedType === 'expense'
+              ? '#FFFFFF'
+              : isDark
+                ? colors.textSecondary
+                : '#64748B'
+          }
           name="arrow-down-bold-circle-outline"
           size={16}
         />
@@ -52,6 +67,14 @@ export const ManualTypeToggle = memo(function ManualTypeToggle({
           numberOfLines={1}
           style={[
             styles.typeTabText,
+            {
+              color:
+                selectedType === 'expense'
+                  ? '#FFFFFF'
+                  : isDark
+                    ? colors.textSecondary
+                    : '#64748B',
+            },
             selectedType === 'expense' ? styles.typeTabTextActive : null,
           ]}
         >
@@ -65,13 +88,28 @@ export const ManualTypeToggle = memo(function ManualTypeToggle({
         accessibilityRole="tab"
         accessibilityState={{ selected: selectedType === 'income' }}
         onPress={() => onChangeType('income')}
-        style={[
+        style={({ pressed }) => [
           styles.typeTab,
-          selectedType === 'income' ? styles.typeTabActiveIncome : null,
+          selectedType === 'income'
+            ? [
+                styles.typeTabActiveIncome,
+                {
+                  backgroundColor: colors.positive,
+                  shadowColor: colors.positive,
+                },
+              ]
+            : null,
+          pressed ? styles.tabPressed : null,
         ]}
       >
         <MaterialCommunityIcons
-          color={selectedType === 'income' ? '#FFFFFF' : '#64748B'}
+          color={
+            selectedType === 'income'
+              ? '#FFFFFF'
+              : isDark
+                ? colors.textSecondary
+                : '#64748B'
+          }
           name="arrow-up-bold-circle-outline"
           size={16}
         />
@@ -79,6 +117,14 @@ export const ManualTypeToggle = memo(function ManualTypeToggle({
           numberOfLines={1}
           style={[
             styles.typeTabText,
+            {
+              color:
+                selectedType === 'income'
+                  ? '#FFFFFF'
+                  : isDark
+                    ? colors.textSecondary
+                    : '#64748B',
+            },
             selectedType === 'income' ? styles.typeTabTextActive : null,
           ]}
         >
@@ -92,20 +138,43 @@ export const ManualTypeToggle = memo(function ManualTypeToggle({
         accessibilityRole="tab"
         accessibilityState={{ selected: selectedType === 'transfer' }}
         onPress={() => onChangeType('transfer')}
-        style={[
+        style={({ pressed }) => [
           styles.typeTab,
-          selectedType === 'transfer' ? styles.typeTabActiveTransfer : null,
+          selectedType === 'transfer'
+            ? [
+                styles.typeTabActiveTransfer,
+                {
+                  backgroundColor: colors.primary,
+                  shadowColor: colors.primary,
+                },
+              ]
+            : null,
+          pressed ? styles.tabPressed : null,
         ]}
       >
         <MaterialCommunityIcons
-          color={selectedType === 'transfer' ? '#FFFFFF' : '#64748B'}
+          color={
+            selectedType === 'transfer'
+              ? '#FFFFFF'
+              : isDark
+                ? colors.textSecondary
+                : '#64748B'
+          }
           name="swap-horizontal"
-          size={18}
+          size={17}
         />
         <Text
           numberOfLines={1}
           style={[
             styles.typeTabText,
+            {
+              color:
+                selectedType === 'transfer'
+                  ? '#FFFFFF'
+                  : isDark
+                    ? colors.textSecondary
+                    : '#64748B',
+            },
             selectedType === 'transfer' ? styles.typeTabTextActive : null,
           ]}
         >
@@ -117,6 +186,10 @@ export const ManualTypeToggle = memo(function ManualTypeToggle({
 });
 
 const styles = StyleSheet.create({
+  tabPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.98 }],
+  },
   typeTab: {
     alignItems: 'center',
     borderRadius: radius.pill,
@@ -124,48 +197,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 4,
     justifyContent: 'center',
+    minHeight: 38,
     paddingHorizontal: spacing.xs,
-    paddingVertical: spacing.sm + 2,
+    paddingVertical: spacing.xs + 2,
   },
   typeTabActiveExpense: {
-    backgroundColor: '#EF4444',
     elevation: 3,
-    shadowColor: '#EF4444',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.25,
     shadowRadius: 4,
   },
   typeTabActiveIncome: {
-    backgroundColor: '#10B981',
     elevation: 3,
-    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.25,
     shadowRadius: 4,
   },
   typeTabActiveTransfer: {
-    backgroundColor: '#2563EB',
     elevation: 3,
-    shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.25,
     shadowRadius: 4,
   },
   typeTabText: {
     ...typography.body,
-    color: '#64748B',
     fontSize: 13,
     fontWeight: '700',
   },
   typeTabTextActive: {
-    color: '#FFFFFF',
     fontWeight: '800',
   },
   typeToggleTrack: {
     borderRadius: radius.pill,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 4,
-    padding: 4,
+    gap: 3,
+    padding: 3,
   },
 });

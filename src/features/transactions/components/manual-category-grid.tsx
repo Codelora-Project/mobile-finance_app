@@ -40,8 +40,12 @@ export const ManualCategoryGrid = memo(function ManualCategoryGrid({
         <Pressable
           accessibilityLabel="Category *"
           accessibilityRole="button"
+          hitSlop={8}
           onPress={onOpenMoreCategories}
-          style={styles.moreCategoriesBtn}
+          style={({ pressed }) => [
+            styles.moreCategoriesBtn,
+            pressed ? styles.btnPressed : null,
+          ]}
         >
           <Text style={[styles.moreCategoriesText, { color: colors.primary }]}>
             {language === 'id' ? '+ Kategori Lain' : '+ More'}
@@ -60,23 +64,23 @@ export const ManualCategoryGrid = memo(function ManualCategoryGrid({
 
           const badgeBg = isSelected
             ? isDark
-              ? colors.primaryLight
+              ? 'rgba(59, 130, 246, 0.2)'
               : colors.primaryLight
             : isDark
               ? colors.surfaceSecondary
-              : '#F1F5F9';
+              : meta.backgroundColor;
 
           const badgeBorder = isSelected
             ? colors.primary
             : isDark
-              ? colors.border
+              ? '#27272A'
               : '#E2E8F0';
 
           const iconColor = isSelected
             ? colors.primary
             : isDark
               ? colors.textSecondary
-              : '#475569';
+              : meta.color;
 
           const textColor = isSelected ? colors.primary : colors.textPrimary;
 
@@ -86,9 +90,10 @@ export const ManualCategoryGrid = memo(function ManualCategoryGrid({
               accessibilityRole="button"
               key={cat.id}
               onPress={() => onSelectCategory(cat)}
-              style={[
+              style={({ pressed }) => [
                 styles.categoryCard,
                 isSelected ? styles.categoryCardSelected : null,
+                pressed ? styles.btnPressed : null,
               ]}
             >
               <View
@@ -122,19 +127,33 @@ export const ManualCategoryGrid = memo(function ManualCategoryGrid({
         })}
       </ScrollView>
 
-      {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
+      {error ? (
+        <View style={styles.errorRow}>
+          <MaterialCommunityIcons
+            color={colors.destructive}
+            name="alert-circle-outline"
+            size={14}
+          />
+          <Text style={[styles.errorBanner, { color: colors.destructive }]}>
+            {error}
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 });
 
 const styles = StyleSheet.create({
+  btnPressed: {
+    opacity: 0.75,
+  },
   categoryCard: {
     alignItems: 'center',
     gap: 6,
     width: 68,
   },
   categoryCardSelected: {
-    transform: [{ scale: 1.05 }],
+    transform: [{ scale: 1.04 }],
   },
   categoryGrid: {
     flexDirection: 'row',
@@ -143,17 +162,17 @@ const styles = StyleSheet.create({
   },
   categoryIconBadge: {
     alignItems: 'center',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    height: 52,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    height: 54,
     justifyContent: 'center',
-    width: 52,
+    width: 54,
   },
   categoryIconBadgeSelected: {
     borderWidth: 2,
     elevation: 3,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
   },
   categoryNameText: {
@@ -167,9 +186,13 @@ const styles = StyleSheet.create({
   },
   errorBanner: {
     ...typography.metadata,
-    color: '#EF4444',
     fontSize: 12,
     fontWeight: '600',
+  },
+  errorRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
     marginTop: 2,
   },
   moreCategoriesBtn: {
@@ -182,6 +205,7 @@ const styles = StyleSheet.create({
   },
   sectionContainer: {
     gap: spacing.xs,
+    marginTop: spacing.xs,
   },
   sectionHeaderRow: {
     alignItems: 'center',
@@ -190,8 +214,8 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     ...typography.metadata,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
   },
 });

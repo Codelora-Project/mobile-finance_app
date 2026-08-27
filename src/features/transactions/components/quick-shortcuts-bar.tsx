@@ -42,8 +42,10 @@ export const QuickShortcutsBar = memo(function QuickShortcutsBar({
               style={({ pressed }) => [
                 styles.shortcutChip,
                 {
-                  backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
-                  borderColor: isDark ? colors.border : '#E2E8F0',
+                  backgroundColor: isDark
+                    ? colors.surfaceSecondary
+                    : '#F8FAFC',
+                  borderColor: isDark ? '#27272A' : '#E2E8F0',
                 },
                 pressed && styles.shortcutChipPressed,
               ]}
@@ -70,7 +72,7 @@ export const QuickShortcutsBar = memo(function QuickShortcutsBar({
             styles.shortcutChipClear,
             {
               backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
-              borderColor: colors.border,
+              borderColor: isDark ? '#27272A' : '#CBD5E1',
             },
             pressed && styles.shortcutChipPressed,
           ]}
@@ -92,21 +94,24 @@ export const QuickShortcutsBar = memo(function QuickShortcutsBar({
 const styles = StyleSheet.create({
   quickShortcutsRow: {
     marginHorizontal: -spacing.md,
-    marginTop: spacing.sm,
-  },
-  shortcutsList: {
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 2,
+    marginTop: spacing.xs + 2,
   },
   shortcutChip: {
     alignItems: 'center',
     borderRadius: radius.pill,
     borderWidth: 1,
     justifyContent: 'center',
-    minHeight: 44,
-    paddingHorizontal: spacing.sm + 2,
+    minHeight: 38,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs + 2,
+  },
+  shortcutChipClear: {
+    paddingHorizontal: spacing.sm + 2,
+  },
+  shortcutChipClearText: {
+    ...typography.metadata,
+    fontSize: 12,
+    fontWeight: '700',
   },
   shortcutChipPressed: {
     opacity: 0.75,
@@ -114,13 +119,13 @@ const styles = StyleSheet.create({
   },
   shortcutChipText: {
     ...typography.metadata,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
-  shortcutChipClear: {
-    paddingHorizontal: spacing.sm,
-  },
-  shortcutChipClearText: {
-    ...typography.metadata,
-    fontWeight: '600',
+  shortcutsList: {
+    gap: spacing.xs + 2,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 2,
   },
 });

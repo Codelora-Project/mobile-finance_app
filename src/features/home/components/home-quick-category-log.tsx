@@ -31,8 +31,8 @@ export const HomeQuickCategoryLog = memo(function HomeQuickCategoryLog({
         styles.quickLogCard,
         {
           backgroundColor: colors.surface,
-          borderColor: colors.border,
-          shadowColor: colors.textPrimary,
+          borderColor: isDark ? '#27272A' : '#E2E8F0',
+          shadowColor: colors.shadow,
         },
       ]}
     >
@@ -65,7 +65,7 @@ export const HomeQuickCategoryLog = memo(function HomeQuickCategoryLog({
             styles.customizeQuickLogBtn,
             {
               backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
-              borderColor: colors.border,
+              borderColor: isDark ? '#3F3F46' : '#E2E8F0',
             },
             pressed && styles.pressed,
           ]}
@@ -107,13 +107,13 @@ export const HomeQuickCategoryLog = memo(function HomeQuickCategoryLog({
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
-                      : '#F1F5F9',
+                      : meta.backgroundColor,
                     borderColor: isDark ? colors.border : '#E2E8F0',
                   },
                 ]}
               >
                 <MaterialCommunityIcons
-                  color={isDark ? colors.textSecondary : '#475569'}
+                  color={isDark ? colors.textSecondary : meta.color}
                   name={meta.icon}
                   size={22}
                 />
@@ -142,7 +142,7 @@ export const HomeQuickCategoryLog = memo(function HomeQuickCategoryLog({
             style={[
               styles.quickLogIconCircle,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+                backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
                 borderColor: isDark ? colors.border : '#CBD5E1',
                 borderStyle: 'dashed',
                 borderWidth: 1.5,
@@ -177,8 +177,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: 'row',
     gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
+    minHeight: 34,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 4,
   },
   customizeQuickLogText: {
     ...typography.metadata,
@@ -190,43 +191,43 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.96 }],
   },
   quickLogCard: {
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1,
     elevation: 2,
     gap: spacing.sm,
     paddingVertical: spacing.md,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowRadius: 10,
   },
   quickLogHeader: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.md + 2,
   },
   quickLogIconCircle: {
     alignItems: 'center',
-    borderRadius: radius.pill,
+    borderRadius: 16,
     borderWidth: 1,
-    height: 48,
+    height: 52,
     justifyContent: 'center',
-    width: 48,
+    width: 52,
   },
   quickLogItem: {
     alignItems: 'center',
     gap: 6,
-    width: 64,
+    width: 66,
   },
   quickLogLabel: {
     ...typography.metadata,
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
   },
   quickLogList: {
     gap: spacing.sm,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.md + 2,
     paddingTop: spacing.xs,
   },
   quickLogSubtitle: {

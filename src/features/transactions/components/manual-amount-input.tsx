@@ -1,9 +1,10 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { QuickShortcutsBar } from '@/features/transactions/components/quick-shortcuts-bar';
-import { useTheme } from '@/lib/theme/theme-context';
 import { useLanguage } from '@/lib/i18n/language-context';
+import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -31,7 +32,7 @@ export const ManualAmountInput = memo(function ManualAmountInput({
   onResetAmount,
   quickShortcuts,
 }: ManualAmountInputProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { language } = useLanguage();
 
   return (
@@ -42,12 +43,16 @@ export const ManualAmountInput = memo(function ManualAmountInput({
           styles.amountHeroCard,
           {
             backgroundColor: colors.surface,
-            borderColor: error ? colors.destructive : colors.border,
-            shadowColor: colors.textPrimary,
+            borderColor: error
+              ? colors.destructive
+              : isDark
+                ? '#27272A'
+                : '#E2E8F0',
+            shadowColor: colors.shadow,
           },
         ]}
       >
-        <Text style={[styles.currencyPrefix, { color: colors.textSecondary }]}>
+        <Text style={[styles.currencyPrefix, { color: colors.primary }]}>
           {currencySymbol}
         </Text>
         <TextInput
@@ -62,9 +67,41 @@ export const ManualAmountInput = memo(function ManualAmountInput({
           style={[styles.amountHeroInput, { color: colors.textPrimary }]}
           value={amount}
         />
+
+        {amount ? (
+          <Pressable
+            accessibilityLabel={
+              language === 'id' ? 'Hapus nominal' : 'Clear amount'
+            }
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={onResetAmount}
+            style={({ pressed }) => [
+              styles.clearAmountBtn,
+              pressed ? styles.btnPressed : null,
+            ]}
+          >
+            <MaterialCommunityIcons
+              color={colors.textSecondary}
+              name="close-circle"
+              size={20}
+            />
+          </Pressable>
+        ) : null}
       </Pressable>
 
-      {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
+      {error ? (
+        <View style={styles.errorRow}>
+          <MaterialCommunityIcons
+            color={colors.destructive}
+            name="alert-circle-outline"
+            size={14}
+          />
+          <Text style={[styles.errorBanner, { color: colors.destructive }]}>
+            {error}
+          </Text>
+        </View>
+      ) : null}
 
       {/* Quick Cash Shortcuts */}
       <QuickShortcutsBar
@@ -80,7 +117,7 @@ export const ManualAmountInput = memo(function ManualAmountInput({
 const styles = StyleSheet.create({
   amountHeroCard: {
     alignItems: 'center',
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1.5,
     elevation: 2,
     flexDirection: 'row',
@@ -88,9 +125,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
   },
   amountHeroInput: {
     ...typography.displayAmount,
@@ -100,6 +137,12 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     minHeight: 48,
     padding: 0,
+  },
+  btnPressed: {
+    opacity: 0.7,
+  },
+  clearAmountBtn: {
+    padding: 2,
   },
   container: {
     gap: spacing.xs,
@@ -111,9 +154,13 @@ const styles = StyleSheet.create({
   },
   errorBanner: {
     ...typography.metadata,
-    color: '#EF4444',
     fontSize: 12,
     fontWeight: '600',
+  },
+  errorRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
     marginTop: 2,
     paddingHorizontal: spacing.xs,
   },
