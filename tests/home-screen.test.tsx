@@ -17,19 +17,16 @@ const mockRouter = {
   replace: jest.fn(),
 };
 
-jest.mock(
-  '@/features/transactions/transaction-mutation-context',
-  () => ({
-    useTransactionMutations: () => ({
-      dismissNotice: jest.fn(),
-      notifyCreated: jest.fn(),
-      notifyDeleted: jest.fn(),
-      notifyUpdated: jest.fn(),
-      revision: 0,
-      undo: jest.fn(),
-    }),
+jest.mock('@/features/transactions/transaction-mutation-context', () => ({
+  useTransactionMutations: () => ({
+    dismissNotice: jest.fn(),
+    notifyCreated: jest.fn(),
+    notifyDeleted: jest.fn(),
+    notifyUpdated: jest.fn(),
+    revision: 0,
+    undo: jest.fn(),
   }),
-);
+}));
 
 jest.mock('expo-router', () => {
   const React = require('react');
@@ -304,6 +301,10 @@ describe('home screen', () => {
 
     expect(await screen.findByText('Overview')).toBeOnTheScreen();
     expect(screen.getByText('No transactions yet')).toBeOnTheScreen();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Add your first transaction' }),
+    );
+    expect(mockRouter.push).toHaveBeenCalledWith('/transactions/new');
   });
 
   it('renders wallet transfers as neutral movements instead of income categories', async () => {

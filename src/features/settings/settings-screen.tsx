@@ -327,6 +327,10 @@ export function SettingsScreen() {
     router.push('/settings/backup');
   }, [router]);
 
+  const handleReplayIntroduction = useCallback(() => {
+    router.push('/settings/onboarding');
+  }, [router]);
+
   const handleSelectCurrency = useCallback(
     (selected: SupportedCurrencyCode) => {
       const current = overview?.currencyCode ?? currencyCode;
@@ -706,6 +710,8 @@ export function SettingsScreen() {
             {/* SECTION 5: ABOUT */}
             <SettingsAboutFooter
               aboutDesc={t.settings.aboutDesc}
+              onReplayIntroduction={handleReplayIntroduction}
+              replayIntroductionLabel={t.settings.viewIntroduction}
               version={Constants.expoConfig?.version ?? '1.0.0'}
               versionLabel={t.settings.version}
             />

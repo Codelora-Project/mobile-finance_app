@@ -166,6 +166,7 @@ export type TranslationSchema = {
     aboutSection: string;
     version: string;
     aboutDesc: string;
+    viewIntroduction: string;
     deleteDialogTitle: string;
     deleteDialogDesc: string;
     permanentDeleteTitle: string;
@@ -412,5 +413,58 @@ export type TranslationSchema = {
     noArchivedWallets: string;
     saveWalletSuccess: string;
     reconcileSuccess: string;
+  };
+  onboarding: {
+    skip: string;
+    close: string;
+    next: string;
+    start: string;
+    done: string;
+    progress(step: number): string;
+    recordTitle: string;
+    recordDescription: string;
+    impactTitle: string;
+    impactDescription: string;
+    localAssurance: string;
+    identityNote: string;
+    demoExpense: string;
+    demoToday: string;
+    demoSaved: string;
+    demoCategoryLabel: string;
+    demoCategory: string;
+    demoCategoryShort: string;
+    demoWalletLabel: string;
+    demoWallet: string;
+    demoTodaySpending: string;
+  };
+  auth: {
+    appName: string;
+    appTagline: string;
+    heroTitle: string;
+    heroDescription: string;
+    googleButton: string;
+    googleButtonLoading: string;
+    googleButtonHint: string;
+    privacyNote: string;
+    speedSequenceLabel: string;
+    dismissErrorLabel: string;
+    reauthTitle: string;
+    reauthDescription: string;
+    pillars: {
+      offlineTitle: string;
+      offlineDesc: string;
+      speedTitle: string;
+      speedDesc: string;
+      privacyTitle: string;
+      privacyDesc: string;
+    };
+    errors: {
+      CONFIGURATION: string;
+      IN_PROGRESS: string;
+      OFFLINE: string;
+      PLAY_SERVICES: string;
+      REAUTH_REQUIRED: string;
+      UNKNOWN: string;
+    };
   };
 };

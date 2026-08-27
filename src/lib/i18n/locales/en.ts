@@ -186,6 +186,7 @@ export const en = {
     version: 'Version',
     aboutDesc:
       'Offline-first Android personal finance app with instant speed logging and receipt photo attachments.',
+    viewIntroduction: 'View app introduction',
     deleteDialogTitle: 'Delete all data?',
     deleteDialogDesc:
       'Transactions, receipts, claims, custom categories, custom payment methods, and generated PDFs will be deleted.',
@@ -458,5 +459,67 @@ export const en = {
     noArchivedWallets: 'No archived wallets.',
     saveWalletSuccess: 'Wallet saved successfully!',
     reconcileSuccess: 'Balance reconciliation recorded successfully!',
+  },
+  onboarding: {
+    skip: 'Skip',
+    close: 'Close',
+    next: 'Next',
+    start: 'Get started',
+    done: 'Done',
+    progress: (step) => `Step ${step} of 2`,
+    recordTitle: 'Record in seconds',
+    recordDescription:
+      'Enter an amount, choose a category, and save. No long forms.',
+    impactTitle: 'One entry, a clearer picture',
+    impactDescription:
+      'Every transaction instantly shapes an overview that is easy to understand.',
+    localAssurance: 'Stored on this device • Ready offline',
+    identityNote: 'Google is used only for account identity.',
+    demoExpense: 'Record expense',
+    demoToday: 'Today',
+    demoSaved: 'Saved',
+    demoCategoryLabel: 'Category',
+    demoCategory: 'Food & Drinks',
+    demoCategoryShort: 'Food',
+    demoWalletLabel: 'Wallet',
+    demoWallet: 'Cash',
+    demoTodaySpending: "Today's spending",
+  },
+  // Authentication & Login
+  auth: {
+    appName: 'Personal Finance',
+    appTagline: 'Private & Offline-First',
+    heroTitle: 'Start tracking without the busywork',
+    heroDescription:
+      'Sign in with Google to keep each account’s data separate on this device.',
+    googleButton: 'Continue with Google',
+    googleButtonLoading: 'Connecting to Google...',
+    googleButtonHint: 'Sign in with Google to start tracking.',
+    privacyNote: 'Financial data stays local and is not synced to the cloud.',
+    speedSequenceLabel:
+      'Quick tracking flow: enter an amount, choose a category, then save.',
+    dismissErrorLabel: 'Dismiss error message',
+    reauthTitle: 'Session Expired',
+    reauthDescription:
+      'Your Google session has expired. Please sign in again to access this account data.',
+    pillars: {
+      offlineTitle: '100% Private & Local',
+      offlineDesc:
+        'Data stays stored on this device and works completely offline.',
+      speedTitle: 'Fast & Lightweight',
+      speedDesc: 'Record transactions and check budgets in under 3 seconds.',
+      privacyTitle: 'Ad-Free & Secure',
+      privacyDesc:
+        'No invasive trackers, no hidden subscriptions, total control.',
+    },
+    errors: {
+      CONFIGURATION:
+        'Google configuration is incomplete. Check the app Web Client ID.',
+      IN_PROGRESS: 'Google sign-in is already in progress.',
+      OFFLINE: 'Internet connection is required for first-time Google sign-in.',
+      PLAY_SERVICES: 'Google Play Services is unavailable or needs an update.',
+      REAUTH_REQUIRED: 'Your Google session needs to be verified again.',
+      UNKNOWN: 'An unexpected error occurred. Please try again in a moment.',
+    },
   },
 } satisfies TranslationSchema;

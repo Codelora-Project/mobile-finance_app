@@ -527,6 +527,7 @@ export function HomeScreen() {
             <HomeRecentTransactions
               currencyCode={summary.currencyCode}
               groupedTimeline={groupedTimeline}
+              onAddFirstTransaction={() => router.push('/transactions/new')}
               onPressTransaction={handlePressTransaction}
               onViewAll={handleViewAllTransactions}
               selectedWalletId={selectedWalletId}

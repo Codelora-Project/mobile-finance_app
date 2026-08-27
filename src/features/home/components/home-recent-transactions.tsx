@@ -2,6 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { AppButton } from '@/components/ui/app-button';
 import { getCategoryMeta } from '@/features/categories/category-meta';
 import type { TransactionListItem } from '@/features/transactions/transaction-repository';
 import type { TranslationSchema } from '@/lib/i18n/translations';
@@ -22,6 +23,7 @@ export type HomeRecentTransactionsProps = {
   currencyCode: string;
   groupedTimeline: readonly GroupedTimelineItem[];
   onPressTransaction: (id: number) => void;
+  onAddFirstTransaction: () => void;
   onViewAll: () => void;
   selectedWalletId?: number | null;
   t: TranslationSchema;
@@ -31,6 +33,7 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
   currencyCode,
   groupedTimeline,
   onPressTransaction,
+  onAddFirstTransaction,
   onViewAll,
   selectedWalletId = null,
   t,
@@ -89,6 +92,14 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
           >
             {t.home.noTransactionsDesc}
           </Text>
+          {selectedWalletId === null ? (
+            <View style={styles.firstTransactionAction}>
+              <AppButton
+                label={t.home.addFirstTransaction}
+                onPress={onAddFirstTransaction}
+              />
+            </View>
+          ) : null}
         </View>
       ) : (
         <View style={styles.timelineListContainer}>
@@ -284,6 +295,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     paddingVertical: spacing.xl,
+  },
+  firstTransactionAction: {
+    marginTop: spacing.sm,
+    minWidth: 220,
   },
   integratedCard: {
     borderRadius: radius.lg,

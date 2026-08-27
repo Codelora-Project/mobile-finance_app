@@ -155,6 +155,10 @@ describe('settings screen', () => {
       screen.getByText(/Google is used only for account identity/),
     ).toBeOnTheScreen();
     expect(screen.getByText(/Version 1.0.0/)).toBeOnTheScreen();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'View app introduction' }),
+    );
+    expect(mockRouter.push).toHaveBeenCalledWith('/settings/onboarding');
 
     await fireEvent.press(screen.getByRole('button', { name: 'Categories' }));
     expect(mockRouter.push).toHaveBeenCalledWith('/categories');

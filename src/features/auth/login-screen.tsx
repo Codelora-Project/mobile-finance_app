@@ -3,215 +3,396 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  useColorScheme,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/features/auth/auth-context';
-import { darkColors, lightColors } from '@/theme/colors';
+import { useLanguage } from '@/lib/i18n/language-context';
+import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
-function isIndonesianLocale() {
-  try {
-    return Intl.DateTimeFormat()
-      .resolvedOptions()
-      .locale.toLowerCase()
-      .startsWith('id');
-  } catch {
-    return true;
-  }
-}
-
+/**
+ * The login continues onboarding's Input → Impact story without replaying it:
+ * one quick-record sequence, one Google action, and one calm local-data promise.
+ */
 export function LoginScreen() {
   const { clearError, error, isBusy, signInWithGoogle, status } = useAuth();
-  const isDark = useColorScheme() === 'dark';
-  const colors = isDark ? darkColors : lightColors;
-  const isId = isIndonesianLocale();
-  const copy = isId
-    ? {
-        button: 'Lanjutkan dengan Google',
-        description:
-          'Masuk sekali dengan Google. Catatan keuangan tetap tersimpan lokal dan dapat digunakan tanpa internet.',
-        privacy:
-          'Google hanya digunakan untuk identitas akun. Data keuangan tidak dikirim ke Google atau cloud.',
-        reauth:
-          'Sesi Google berakhir. Silakan login kembali untuk membuka data akun.',
-        errors: {
-          CONFIGURATION:
-            'Konfigurasi Google belum lengkap. Periksa Web Client ID aplikasi.',
-          IN_PROGRESS: 'Proses login Google sedang berjalan.',
-          OFFLINE: 'Internet diperlukan untuk login Google pertama kali.',
-          PLAY_SERVICES:
-            'Google Play Services tidak tersedia atau perlu diperbarui.',
-          REAUTH_REQUIRED: 'Sesi Google perlu diverifikasi kembali.',
-        },
-        title: 'Keuangan pribadi, tetap privat',
-      }
-    : {
-        button: 'Continue with Google',
-        description:
-          'Sign in once with Google. Your financial records stay local and remain available offline.',
-        privacy:
-          'Google is used only for account identity. Financial data is not sent to Google or the cloud.',
-        reauth:
-          'Your Google session ended. Sign in again to open this account data.',
-        errors: {
-          CONFIGURATION:
-            'Google configuration is incomplete. Check the app Web Client ID.',
-          IN_PROGRESS: 'Google sign-in is already in progress.',
-          OFFLINE: 'Internet is required for the first Google sign-in.',
-          PLAY_SERVICES:
-            'Google Play Services is unavailable or needs an update.',
-          REAUTH_REQUIRED: 'Your Google session needs to be verified again.',
-        },
-        title: 'Personal finance, kept private',
-      };
+  const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
+  const authCopy = t.auth;
 
   const errorMessage = error
     ? error.code === 'UNKNOWN'
-      ? error.message
-      : copy.errors[error.code]
+      ? error.message || authCopy.errors.UNKNOWN
+      : authCopy.errors[error.code] || authCopy.errors.UNKNOWN
     : null;
 
   return (
     <SafeAreaView
+      edges={['top', 'bottom', 'left', 'right']}
       style={[styles.safeArea, { backgroundColor: colors.background }]}
     >
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.hero}>
-          <View style={[styles.logo, { backgroundColor: colors.primaryLight }]}>
-            <MaterialCommunityIcons
-              color={colors.primary}
-              name="wallet-bifold-outline"
-              size={42}
-            />
-          </View>
-          <Text style={[styles.appName, { color: colors.primary }]}>
-            Personal Finance
-          </Text>
-          <Text
-            accessibilityRole="header"
-            style={[styles.title, { color: colors.textPrimary }]}
-          >
-            {copy.title}
-          </Text>
-          <Text style={[styles.description, { color: colors.textSecondary }]}>
-            {copy.description}
-          </Text>
-        </View>
-
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-        >
-          {status === 'reauth_required' ? (
-            <Text style={[styles.reauth, { color: colors.warning }]}>
-              {copy.reauth}
+        <View style={styles.container}>
+          <View style={styles.brandRow}>
+            <View
+              style={[styles.brandMark, { backgroundColor: colors.primary }]}
+            >
+              <MaterialCommunityIcons
+                color={colors.onPrimary}
+                name="wallet-outline"
+                size={20}
+              />
+            </View>
+            <Text style={[styles.brandName, { color: colors.textPrimary }]}>
+              {authCopy.appName}
             </Text>
-          ) : null}
-          {errorMessage ? (
-            <Pressable accessibilityRole="button" onPress={clearError}>
-              <Text
-                accessibilityLiveRegion="assertive"
-                style={[styles.error, { color: colors.destructive }]}
-              >
-                {errorMessage}
-              </Text>
-            </Pressable>
-          ) : null}
-          <Pressable
-            accessibilityLabel={copy.button}
-            accessibilityRole="button"
-            accessibilityState={{ busy: isBusy, disabled: isBusy }}
-            disabled={isBusy}
-            onPress={() => void signInWithGoogle()}
-            style={({ pressed }) => [
-              styles.googleButton,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-              pressed ? styles.pressed : null,
-              isBusy ? styles.disabled : null,
+          </View>
+
+          <View
+            accessibilityLabel={authCopy.speedSequenceLabel}
+            style={[
+              styles.quickSequence,
+              {
+                backgroundColor: colors.primaryLight,
+                borderColor: isDark ? colors.primary : colors.border,
+              },
             ]}
           >
-            {isBusy ? (
-              <ActivityIndicator color={colors.primary} />
-            ) : (
-              <>
+            <QuickStep
+              color={colors.primary}
+              icon="cash-fast"
+              label="Rp 25.000"
+              textColor={colors.textPrimary}
+            />
+            <MaterialCommunityIcons
+              color={colors.textMuted}
+              name="chevron-right"
+              size={18}
+            />
+            <QuickStep
+              color={isDark ? '#FB923C' : '#EA580C'}
+              icon="food-fork-drink"
+              label={t.onboarding.demoCategoryShort}
+              textColor={colors.textPrimary}
+            />
+            <MaterialCommunityIcons
+              color={colors.textMuted}
+              name="chevron-right"
+              size={18}
+            />
+            <QuickStep
+              color={colors.positive}
+              icon="check-circle-outline"
+              label={t.onboarding.demoSaved}
+              textColor={colors.textPrimary}
+            />
+          </View>
+
+          <View style={styles.copyBlock}>
+            <Text
+              accessibilityRole="header"
+              style={[styles.heroTitle, { color: colors.textPrimary }]}
+            >
+              {authCopy.heroTitle}
+            </Text>
+            <Text
+              style={[styles.heroDescription, { color: colors.textSecondary }]}
+            >
+              {authCopy.heroDescription}
+            </Text>
+          </View>
+
+          <View style={styles.actionSection}>
+            {status === 'reauth_required' ? (
+              <View
+                accessibilityRole="alert"
+                style={[
+                  styles.alertBanner,
+                  {
+                    backgroundColor: colors.warningBackground,
+                    borderColor: isDark ? '#78350F' : '#FDE68A',
+                  },
+                ]}
+              >
                 <MaterialCommunityIcons
-                  color="#4285F4"
-                  name="google"
-                  size={22}
+                  color={colors.warning}
+                  name="alert-circle-outline"
+                  size={20}
+                />
+                <View style={styles.alertCopy}>
+                  <Text style={[styles.alertTitle, { color: colors.warning }]}>
+                    {authCopy.reauthTitle}
+                  </Text>
+                  <Text
+                    style={[styles.alertMessage, { color: colors.textPrimary }]}
+                  >
+                    {authCopy.reauthDescription}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+
+            {errorMessage ? (
+              <Pressable
+                accessibilityLabel={authCopy.dismissErrorLabel}
+                accessibilityRole="button"
+                onPress={clearError}
+                style={[
+                  styles.alertBanner,
+                  {
+                    backgroundColor: colors.expenseBackground,
+                    borderColor: isDark ? '#7F1D1D' : '#FECACA',
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  color={colors.destructive}
+                  name="alert-circle-outline"
+                  size={20}
                 />
                 <Text
-                  style={[styles.buttonLabel, { color: colors.textPrimary }]}
+                  accessibilityLiveRegion="assertive"
+                  style={[
+                    styles.alertMessage,
+                    styles.alertCopy,
+                    { color: colors.destructive },
+                  ]}
                 >
-                  {copy.button}
+                  {errorMessage}
                 </Text>
-              </>
-            )}
-          </Pressable>
-          <Text style={[styles.privacy, { color: colors.textMuted }]}>
-            {copy.privacy}
-          </Text>
+                <MaterialCommunityIcons
+                  color={colors.destructive}
+                  name="close"
+                  size={18}
+                />
+              </Pressable>
+            ) : null}
+
+            <Pressable
+              accessibilityHint={authCopy.googleButtonHint}
+              accessibilityLabel={
+                isBusy ? authCopy.googleButtonLoading : authCopy.googleButton
+              }
+              accessibilityRole="button"
+              accessibilityState={{ busy: isBusy, disabled: isBusy }}
+              android_ripple={{
+                borderless: false,
+                color: isDark
+                  ? 'rgba(255, 255, 255, 0.1)'
+                  : 'rgba(0, 0, 0, 0.06)',
+              }}
+              disabled={isBusy}
+              onPress={() => void signInWithGoogle()}
+              style={({ pressed }) => [
+                styles.googleButton,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: isDark ? '#3F3F46' : '#CBD5E1',
+                  shadowColor: colors.shadow,
+                },
+                pressed && Platform.OS === 'ios' ? styles.buttonPressed : null,
+                isBusy ? styles.buttonDisabled : null,
+              ]}
+            >
+              {isBusy ? (
+                <>
+                  <ActivityIndicator color={colors.primary} size="small" />
+                  <Text
+                    style={[
+                      styles.googleButtonText,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {authCopy.googleButtonLoading}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <MaterialCommunityIcons
+                    color="#4285F4"
+                    name="google"
+                    size={22}
+                  />
+                  <Text
+                    style={[
+                      styles.googleButtonText,
+                      { color: colors.textPrimary },
+                    ]}
+                  >
+                    {authCopy.googleButton}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+
+            <View style={styles.privacyRow}>
+              <MaterialCommunityIcons
+                color={colors.textMuted}
+                name="cellphone-lock"
+                size={16}
+              />
+              <Text style={[styles.privacyNote, { color: colors.textMuted }]}>
+                {authCopy.privacyNote}
+              </Text>
+            </View>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
+function QuickStep({
+  color,
+  icon,
+  label,
+  textColor,
+}: {
+  color: string;
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  label: string;
+  textColor: string;
+}) {
+  return (
+    <View style={styles.quickStep}>
+      <MaterialCommunityIcons color={color} name={icon} size={23} />
+      <Text
+        numberOfLines={1}
+        style={[styles.quickStepLabel, { color: textColor }]}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  appName: { ...typography.secondary, fontWeight: '800', letterSpacing: 0.4 },
-  buttonLabel: { ...typography.body, fontWeight: '700' },
-  card: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.md,
-    padding: spacing.lg,
-    width: '100%',
-  },
-  content: {
-    alignItems: 'center',
-    flexGrow: 1,
-    gap: spacing.xl,
-    justifyContent: 'center',
-    padding: spacing.lg,
-  },
-  description: { ...typography.body, maxWidth: 420, textAlign: 'center' },
-  disabled: { opacity: 0.55 },
-  error: { ...typography.secondary, fontWeight: '600', textAlign: 'center' },
-  googleButton: {
+  actionSection: { gap: spacing.md, width: '100%' },
+  alertBanner: {
     alignItems: 'center',
     borderRadius: radius.md,
     borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.sm,
-    justifyContent: 'center',
     minHeight: 52,
     paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    width: '100%',
   },
-  hero: { alignItems: 'center', gap: spacing.md },
-  logo: {
+  alertCopy: { flex: 1 },
+  alertMessage: { ...typography.secondary, fontSize: 13, lineHeight: 18 },
+  alertTitle: { ...typography.secondary, fontWeight: '800' },
+  brandMark: {
     alignItems: 'center',
-    borderRadius: 28,
-    height: 72,
+    borderRadius: radius.sm,
+    height: 36,
     justifyContent: 'center',
-    width: 72,
+    width: 36,
   },
-  pressed: { opacity: 0.72 },
-  privacy: { ...typography.metadata, textAlign: 'center' },
-  reauth: { ...typography.secondary, fontWeight: '600', textAlign: 'center' },
+  brandName: { ...typography.secondary, fontWeight: '800' },
+  brandRow: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  buttonDisabled: { opacity: 0.65 },
+  buttonPressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
+  container: {
+    alignItems: 'center',
+    gap: spacing.xl,
+    maxWidth: 480,
+    width: '100%',
+  },
+  copyBlock: { alignItems: 'center', gap: spacing.sm },
+  googleButton: {
+    alignItems: 'center',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    elevation: 2,
+    flexDirection: 'row',
+    gap: spacing.sm + 2,
+    justifyContent: 'center',
+    minHeight: 56,
+    paddingHorizontal: spacing.lg,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.09,
+    shadowRadius: 8,
+    width: '100%',
+  },
+  googleButtonText: { ...typography.body, fontWeight: '800' },
+  heroDescription: {
+    ...typography.body,
+    fontSize: 15,
+    lineHeight: 22,
+    maxWidth: 390,
+    textAlign: 'center',
+  },
+  heroTitle: {
+    ...typography.pageTitle,
+    fontSize: 29,
+    fontWeight: '900',
+    lineHeight: 35,
+    maxWidth: 390,
+    textAlign: 'center',
+  },
+  privacyNote: {
+    ...typography.metadata,
+    flexShrink: 1,
+    fontSize: 11,
+    lineHeight: 16,
+    textAlign: 'center',
+  },
+  privacyRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.xs + 2,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  quickSequence: {
+    alignItems: 'center',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.lg,
+    width: '100%',
+  },
+  quickStep: {
+    alignItems: 'center',
+    flex: 1,
+    gap: spacing.xs + 2,
+    minWidth: 0,
+  },
+  quickStepLabel: {
+    ...typography.metadata,
+    fontSize: 11,
+    fontWeight: '800',
+    maxWidth: '100%',
+    textAlign: 'center',
+  },
   safeArea: { flex: 1 },
-  title: { ...typography.pageTitle, maxWidth: 420, textAlign: 'center' },
+  scrollContent: {
+    alignItems: 'center',
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
+  },
 });

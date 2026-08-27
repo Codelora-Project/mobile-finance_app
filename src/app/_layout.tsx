@@ -4,19 +4,36 @@ import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '@/features/auth/auth-context';
+import {
+  OnboardingProvider,
+  useOnboarding,
+} from '@/features/onboarding/onboarding-context';
 
 void SplashScreen.preventAutoHideAsync();
 
 function AuthenticatedNavigation() {
   const { status, user } = useAuth();
+  const { completeOnboarding, status: onboardingStatus } = useOnboarding();
+
+  const isRestoring =
+    status === 'restoring' || onboardingStatus === 'restoring';
 
   useEffect(() => {
-    if (status !== 'restoring') {
+    if (
+      onboardingStatus === 'pending' &&
+      (status === 'signed_in' || status === 'reauth_required')
+    ) {
+      void completeOnboarding();
+    }
+  }, [completeOnboarding, onboardingStatus, status]);
+
+  useEffect(() => {
+    if (!isRestoring) {
       void SplashScreen.hideAsync();
     }
-  }, [status]);
+  }, [isRestoring]);
 
-  if (status === 'restoring') return null;
+  if (isRestoring) return null;
 
   const isSignedIn = status === 'signed_in' && user !== null;
 
@@ -35,9 +52,11 @@ function AuthenticatedNavigation() {
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <AuthenticatedNavigation />
-      </AuthProvider>
+      <OnboardingProvider>
+        <AuthProvider>
+          <AuthenticatedNavigation />
+        </AuthProvider>
+      </OnboardingProvider>
     </SafeAreaProvider>
   );
 }

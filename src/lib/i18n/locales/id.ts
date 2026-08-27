@@ -185,6 +185,7 @@ export const id = {
     version: 'Versi',
     aboutDesc:
       'Aplikasi keuangan pribadi offline untuk Android dengan pencatatan instan dan lampiran foto struk langsung di perangkat.',
+    viewIntroduction: 'Lihat pengenalan aplikasi',
     deleteDialogTitle: 'Hapus semua data?',
     deleteDialogDesc:
       'Transaksi, tanda terima, klaim, kategori kustom, metode pembayaran kustom, dan PDF yang dibuat akan dihapus.',
@@ -456,5 +457,69 @@ export const id = {
     noArchivedWallets: 'Tidak ada dompet yang diarsipkan.',
     saveWalletSuccess: 'Data dompet berhasil disimpan!',
     reconcileSuccess: 'Rekonsiliasi saldo berhasil dicatat!',
+  },
+  onboarding: {
+    skip: 'Lewati',
+    close: 'Tutup',
+    next: 'Lanjut',
+    start: 'Mulai',
+    done: 'Selesai',
+    progress: (step) => `Langkah ${step} dari 2`,
+    recordTitle: 'Catat dalam hitungan detik',
+    recordDescription:
+      'Masukkan nominal, pilih kategori, lalu simpan. Tidak ada formulir panjang.',
+    impactTitle: 'Satu catatan, gambaran lebih jelas',
+    impactDescription:
+      'Setiap transaksi langsung membentuk ringkasan yang mudah dipahami.',
+    localAssurance: 'Tersimpan di perangkat • Siap dipakai offline',
+    identityNote: 'Google hanya digunakan untuk identitas akun.',
+    demoExpense: 'Catat pengeluaran',
+    demoToday: 'Hari ini',
+    demoSaved: 'Tersimpan',
+    demoCategoryLabel: 'Kategori',
+    demoCategory: 'Makanan & Minuman',
+    demoCategoryShort: 'Makanan',
+    demoWalletLabel: 'Dompet',
+    demoWallet: 'Tunai',
+    demoTodaySpending: 'Pengeluaran hari ini',
+  },
+  // Autentikasi & Login
+  auth: {
+    appName: 'Personal Finance',
+    appTagline: 'Privat & Offline-First',
+    heroTitle: 'Mulai mencatat tanpa ribet',
+    heroDescription:
+      'Masuk dengan Google untuk memisahkan data Anda di perangkat ini.',
+    googleButton: 'Lanjutkan dengan Google',
+    googleButtonLoading: 'Menghubungkan ke Google...',
+    googleButtonHint: 'Masuk dengan akun Google untuk mulai mencatat.',
+    privacyNote:
+      'Data keuangan tetap tersimpan lokal dan tidak disinkronkan ke cloud.',
+    speedSequenceLabel:
+      'Alur pencatatan cepat: masukkan nominal, pilih kategori, lalu simpan.',
+    dismissErrorLabel: 'Tutup pesan kesalahan',
+    reauthTitle: 'Sesi Berakhir',
+    reauthDescription:
+      'Sesi Google Anda telah berakhir. Silakan login kembali untuk mengakses data akun.',
+    pillars: {
+      offlineTitle: '100% Privat & Lokal',
+      offlineDesc:
+        'Data tersimpan di perangkat ini dan dapat digunakan tanpa internet.',
+      speedTitle: 'Cepat & Ringan',
+      speedDesc: 'Catat transaksi dan pantau anggaran dalam hitungan detik.',
+      privacyTitle: 'Bebas Iklan & Aman',
+      privacyDesc:
+        'Tanpa pelacak analitik privasi, tanpa biaya langganan tersembunyi.',
+    },
+    errors: {
+      CONFIGURATION:
+        'Konfigurasi Google belum lengkap. Periksa Web Client ID aplikasi.',
+      IN_PROGRESS: 'Proses login Google sedang berjalan.',
+      OFFLINE: 'Koneksi internet diperlukan untuk login Google pertama kali.',
+      PLAY_SERVICES:
+        'Google Play Services tidak tersedia atau perlu diperbarui.',
+      REAUTH_REQUIRED: 'Sesi Google perlu diverifikasi kembali.',
+      UNKNOWN: 'Terjadi kesalahan saat masuk. Silakan coba beberapa saat lagi.',
+    },
   },
 } satisfies TranslationSchema;
