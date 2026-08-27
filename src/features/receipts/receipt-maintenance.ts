@@ -1,8 +1,12 @@
-import { Directory, File, Paths } from 'expo-file-system';
+import { File } from 'expo-file-system';
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import {
+  legacyReceiptStorage,
+  type ReceiptStorage,
+} from '@/features/receipts/receipt-storage';
+
 const ACTIVE_RECEIPT_DIRECTORY = 'receipts';
-const QUARANTINE_DIRECTORY = 'receipt-quarantine';
 const ORPHAN_GRACE_PERIOD_MS = 24 * 60 * 60 * 1000;
 const QUARANTINE_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -33,6 +37,7 @@ function reportMaintenanceFailure(message: string, error: unknown) {
 export async function maintainReceiptStorage(
   database: SQLiteDatabase,
   now = Date.now(),
+  storage: ReceiptStorage = legacyReceiptStorage,
 ) {
   try {
     if (typeof database.getAllAsync !== 'function') return;
@@ -40,8 +45,8 @@ export async function maintainReceiptStorage(
       'SELECT storage_key FROM receipts',
     );
     const referencedStorageKeys = new Set(rows.map((row) => row.storage_key));
-    const activeDirectory = new Directory(Paths.document, ACTIVE_RECEIPT_DIRECTORY);
-    const quarantineDirectory = new Directory(Paths.document, QUARANTINE_DIRECTORY);
+    const activeDirectory = storage.directory;
+    const quarantineDirectory = storage.quarantineDirectory;
 
     if (activeDirectory.exists) {
       for (const entry of activeDirectory.list()) {
@@ -55,7 +60,9 @@ export async function maintainReceiptStorage(
         }
         try {
           quarantineDirectory.create({ idempotent: true, intermediates: true });
-          await entry.move(new File(quarantineDirectory, `${now}-${entry.name}`));
+          await entry.move(
+            new File(quarantineDirectory, `${now}-${entry.name}`),
+          );
         } catch (error) {
           reportMaintenanceFailure('Receipt quarantine move failed.', error);
         }

@@ -38,19 +38,16 @@ jest.mock('expo-sqlite', () => ({
   useSQLiteContext: () => mockDatabase,
 }));
 
-jest.mock(
-  '@/features/transactions/transaction-mutation-context',
-  () => ({
-    useTransactionMutations: () => ({
-      dismissNotice: jest.fn(),
-      notifyCreated: jest.fn(),
-      notifyDeleted: mockNotifyDeleted,
-      notifyUpdated: jest.fn(),
-      revision: 0,
-      undo: jest.fn(),
-    }),
+jest.mock('@/features/transactions/transaction-mutation-context', () => ({
+  useTransactionMutations: () => ({
+    dismissNotice: jest.fn(),
+    notifyCreated: jest.fn(),
+    notifyDeleted: mockNotifyDeleted,
+    notifyUpdated: jest.fn(),
+    revision: 0,
+    undo: jest.fn(),
   }),
-);
+}));
 
 jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
   const ReactNative = require('react-native');
@@ -155,6 +152,7 @@ describe('transaction detail screen', () => {
       expect(mockDeleteTransactionForUndo).toHaveBeenCalledWith(
         expect.anything(),
         42,
+        expect.any(Object),
       ),
     );
     await waitFor(() =>

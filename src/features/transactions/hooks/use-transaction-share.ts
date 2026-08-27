@@ -1,10 +1,7 @@
 import * as Sharing from 'expo-sharing';
 import { Alert, Share } from 'react-native';
 
-import {
-  getReceiptFileUri,
-  receiptFileExists,
-} from '@/features/receipts/receipt-storage';
+import { useReceiptStorage } from '@/features/receipts/receipt-storage-context';
 import type { Transaction } from '@/features/transactions/transaction-repository';
 import { getTimezoneOffsetMinutes, toLocalDateTimeInput } from '@/lib/dates';
 import { formatMoney } from '@/lib/money';
@@ -16,6 +13,8 @@ export function useTransactionShare({
   language: 'id' | 'en';
   transaction: Transaction | null;
 }) {
+  const receiptStorage = useReceiptStorage();
+
   async function shareTextSlip() {
     if (!transaction) return;
     let dateStr = transaction.localDate || '';
@@ -109,10 +108,10 @@ export function useTransactionShare({
       try {
         if (
           transaction.receipt &&
-          receiptFileExists(transaction.receipt.storageKey)
+          receiptStorage.exists(transaction.receipt.storageKey)
         ) {
           hasImage = true;
-          imageUri = getReceiptFileUri(transaction.receipt.storageKey);
+          imageUri = receiptStorage.getUri(transaction.receipt.storageKey);
         }
       } catch {
         hasImage = false;

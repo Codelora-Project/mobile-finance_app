@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import {
   copyReceiptToStorage,
+  createReceiptStorage,
   getReceiptFileUri,
   isReceiptStorageKey,
   readReceiptBase64,
@@ -18,9 +19,11 @@ jest.mock('expo-file-system', () => {
   class MockDirectory {
     readonly uri: string;
 
-    constructor(parent: { uri: string } | string, name?: string) {
+    constructor(parent: { uri: string } | string, ...names: string[]) {
       const parentUri = typeof parent === 'string' ? parent : parent.uri;
-      this.uri = name ? `${parentUri.replace(/\/$/, '')}/${name}/` : parentUri;
+      this.uri = names.length
+        ? `${parentUri.replace(/\/$/, '')}/${names.join('/')}/`
+        : parentUri;
     }
 
     get exists() {
@@ -154,5 +157,21 @@ describe('receipt storage', () => {
     expect(mockDirectories.has('file:///documents/receipts/')).toBe(false);
     expect(mockFiles.size).toBe(0);
     expect(() => removeAllReceiptFiles()).not.toThrow();
+  });
+
+  it('keeps receipt files isolated between Google account directories', async () => {
+    const storageA = createReceiptStorage('accounts/account-A/receipts');
+    const storageB = createReceiptStorage('accounts/account-B/receipts');
+    mockFiles.add('file:///cache/shared-source.jpg');
+
+    const keyA = await storageA.copy(
+      'file:///cache/shared-source.jpg',
+      'image/jpeg',
+    );
+
+    expect(storageA.getUri(keyA)).toContain('/accounts/account-A/receipts/');
+    expect(storageA.exists(keyA)).toBe(true);
+    expect(storageB.exists(keyA)).toBe(false);
+    expect(storageB.getUri(keyA)).toContain('/accounts/account-B/receipts/');
   });
 });

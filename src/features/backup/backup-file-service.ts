@@ -14,19 +14,21 @@ import type {
   BackupPayload,
   BackupStats,
 } from '@/features/backup/backup-types';
+import type { ReceiptStorage } from '@/features/receipts/receipt-storage';
 import { createCodedError } from '@/lib/errors';
 
 const BACKUP_DIRECTORY = 'backups';
 
 export async function exportBackupToJsonFile(
   database: SQLiteDatabase,
+  receiptStorage?: ReceiptStorage,
 ): Promise<{
   fileName: string;
   sizeBytes: number;
   summary: BackupPayload['summary'];
   uri: string;
 }> {
-  const payload = await createBackupPayload(database);
+  const payload = await createBackupPayload(database, receiptStorage);
   const jsonContent = JSON.stringify(payload, null, 2);
   if (jsonContent.length > MAX_BACKUP_TEXT_LENGTH) {
     throw createCodedError(

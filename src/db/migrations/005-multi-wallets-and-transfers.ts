@@ -2,6 +2,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 export const multiWalletsAndTransfersMigration = {
   name: '005_multi_wallets_and_transfers',
+  requiresForeignKeysDisabled: true,
   version: 5,
   async up(database: SQLiteDatabase) {
     // 1. Extend payment_methods table with wallet attributes
@@ -83,8 +84,6 @@ export const multiWalletsAndTransfersMigration = {
 
     // 3. Migrate transactions table to support type = 'transfer' and transfer fee attributes
     await database.execAsync(`
-      PRAGMA foreign_keys = OFF;
-
       CREATE TABLE transactions_v5 (
         id INTEGER PRIMARY KEY,
         type TEXT NOT NULL CHECK (type IN ('expense', 'income', 'transfer')),
@@ -146,7 +145,6 @@ export const multiWalletsAndTransfersMigration = {
       CREATE INDEX IF NOT EXISTS idx_transactions_counterparty
         ON transactions(counterparty COLLATE NOCASE);
 
-      PRAGMA foreign_keys = ON;
     `);
   },
-};
+} as const;

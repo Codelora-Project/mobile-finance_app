@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
+    "@react-native-google-signin/google-signin": "16.1.4",
     "expo": "~57.0.13",
     "expo-camera": "~57.0.3",
     "expo-constants": "~57.0.11",
@@ -26,8 +27,10 @@
     "expo-font": "~57.0.1",
     "expo-image-picker": "~57.0.10",
     "expo-linking": "~57.0.6",
+    "expo-network": "~57.0.1",
     "expo-print": "~57.0.1",
     "expo-router": "~57.0.13",
+    "expo-secure-store": "~57.0.1",
     "expo-sharing": "~57.0.12",
     "expo-splash-screen": "~57.0.6",
     "expo-sqlite": "~57.0.1",

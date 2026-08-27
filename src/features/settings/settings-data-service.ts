@@ -3,7 +3,10 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { seedDefaultsInTransaction } from '@/db/seeds';
 import { withIntegrityCheckedTransaction } from '@/db/transactions';
 import { removeCachedClaimPdfs } from '@/features/claims/claim-pdf';
-import { removeAllReceiptFiles } from '@/features/receipts/receipt-storage';
+import {
+  removeAllReceiptFiles,
+  type ReceiptStorage,
+} from '@/features/receipts/receipt-storage';
 import { createCodedError } from '@/lib/errors';
 
 async function resetDatabase(database: SQLiteDatabase) {
@@ -24,9 +27,13 @@ async function resetDatabase(database: SQLiteDatabase) {
   });
 }
 
-function removeManagedFiles() {
+function removeManagedFiles(receiptStorage?: ReceiptStorage) {
   const failures: unknown[] = [];
-  for (const removeFiles of [removeAllReceiptFiles, removeCachedClaimPdfs]) {
+  for (const removeFiles of [
+    () =>
+      receiptStorage ? receiptStorage.removeAll() : removeAllReceiptFiles(),
+    removeCachedClaimPdfs,
+  ]) {
     try {
       removeFiles();
     } catch (error) {
@@ -42,7 +49,10 @@ function removeManagedFiles() {
   }
 }
 
-export async function resetApplicationData(database: SQLiteDatabase) {
+export async function resetApplicationData(
+  database: SQLiteDatabase,
+  receiptStorage?: ReceiptStorage,
+) {
   try {
     await resetDatabase(database);
   } catch (error) {
@@ -53,5 +63,5 @@ export async function resetApplicationData(database: SQLiteDatabase) {
     );
   }
 
-  removeManagedFiles();
+  removeManagedFiles(receiptStorage);
 }

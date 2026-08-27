@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import MainTabLayout from '@/app/(tabs)/_layout';
+import MainTabLayout from '@/app/(app)/(tabs)/_layout';
 import { LanguageProvider } from '@/lib/i18n/language-context';
 
 const mockRouter = { push: jest.fn() };

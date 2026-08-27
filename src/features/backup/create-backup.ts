@@ -16,7 +16,10 @@ import type {
   BackupTransaction,
 } from '@/features/backup/backup-types';
 import { MAX_RECEIPT_BASE64_LENGTH } from '@/features/backup/backup-validation';
-import { readReceiptBase64 } from '@/features/receipts/receipt-storage';
+import {
+  readReceiptBase64,
+  type ReceiptStorage,
+} from '@/features/receipts/receipt-storage';
 import { createCodedError } from '@/lib/errors';
 
 export async function fetchBackupStats(
@@ -56,6 +59,7 @@ export async function fetchBackupStats(
 
 export async function createBackupPayload(
   database: SQLiteDatabase,
+  receiptStorage?: ReceiptStorage,
 ): Promise<BackupPayload> {
   const [
     categories,
@@ -101,7 +105,9 @@ export async function createBackupPayload(
 
   const receipts = await Promise.all(
     receiptRows.map(async (receipt) => {
-      const fileBase64 = await readReceiptBase64(receipt.storage_key);
+      const fileBase64 = receiptStorage
+        ? await receiptStorage.readBase64(receipt.storage_key)
+        : await readReceiptBase64(receipt.storage_key);
       if (!fileBase64) {
         throw createCodedError(
           'FILE_OPERATION_FAILED',

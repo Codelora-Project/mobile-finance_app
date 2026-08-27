@@ -12,10 +12,7 @@ import {
 
 import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
-import {
-  getReceiptFileUri,
-  receiptFileExists,
-} from '@/features/receipts/receipt-storage';
+import { useReceiptStorage } from '@/features/receipts/receipt-storage-context';
 import {
   getTransaction,
   type TransactionReceipt,
@@ -34,6 +31,7 @@ export function ReceiptViewerScreen({
   transactionId: number;
 }) {
   const database = useSQLiteContext();
+  const receiptStorage = useReceiptStorage();
   const router = useRouter();
   const [receipt, setReceipt] = useState<ViewableReceipt | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,14 +50,14 @@ export function ReceiptViewerScreen({
         setError('This transaction has no receipt.');
         return;
       }
-      if (!receiptFileExists(transaction.receipt.storageKey)) {
+      if (!receiptStorage.exists(transaction.receipt.storageKey)) {
         setReceipt(null);
         setError('The stored receipt image is unavailable.');
         return;
       }
       setReceipt({
         ...transaction.receipt,
-        uri: getReceiptFileUri(transaction.receipt.storageKey),
+        uri: receiptStorage.getUri(transaction.receipt.storageKey),
       });
     } catch (loadError) {
       if (requestId === loadRequestRef.current) {
@@ -71,7 +69,7 @@ export function ReceiptViewerScreen({
         setLoading(false);
       }
     }
-  }, [database, transactionId]);
+  }, [database, receiptStorage, transactionId]);
 
   useFocusEffect(
     useCallback(() => {

@@ -22,6 +22,7 @@ import {
   pickManualReceipt,
   type ManualReceiptSource,
 } from '@/features/transactions/manual-receipt-picker';
+import { useReceiptStorage } from '@/features/receipts/receipt-storage-context';
 import {
   buildSaveInput,
   createDefaultForm,
@@ -78,6 +79,7 @@ export function useManualTransactionViewModel({
   const { language, t } = useLanguage();
   const { currencyCode, currencySymbol } = useCurrency();
   const transactionMutations = useTransactionMutations();
+  const receiptStorage = useReceiptStorage();
 
   const params = useLocalSearchParams<{
     categoryId?: string;
@@ -90,7 +92,8 @@ export function useManualTransactionViewModel({
   const transactionId =
     Number.isSafeInteger(propTransactionId) && (propTransactionId ?? 0) > 0
       ? propTransactionId!
-      : Number.isSafeInteger(routeTransactionId) && (routeTransactionId ?? 0) > 0
+      : Number.isSafeInteger(routeTransactionId) &&
+          (routeTransactionId ?? 0) > 0
         ? routeTransactionId
         : null;
   const isEditMode = transactionId !== null;
@@ -156,9 +159,9 @@ export function useManualTransactionViewModel({
   const amountInputRef = useRef<TextInput | null>(null);
   const slideAnim = useRef(new Animated.Value(450)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const [exitTarget, setExitTarget] = useState<'origin' | 'transactions' | null>(
-    null,
-  );
+  const [exitTarget, setExitTarget] = useState<
+    'origin' | 'transactions' | null
+  >(null);
 
   const isDirty = useMemo(
     () =>
@@ -454,11 +457,22 @@ export function useManualTransactionViewModel({
 
       try {
         if (isEditMode) {
-          await updateTransaction(database, transactionId!, input);
+          await updateTransaction(
+            database,
+            transactionId!,
+            input,
+            Date.now(),
+            receiptStorage,
+          );
           transactionMutations.notifyUpdated();
           setExitTarget('origin');
         } else {
-          const result = await createTransaction(database, input);
+          const result = await createTransaction(
+            database,
+            input,
+            Date.now(),
+            receiptStorage,
+          );
           transactionMutations.notifyCreated(result.id);
           setExitTarget('origin');
         }
@@ -468,7 +482,14 @@ export function useManualTransactionViewModel({
         setSaving(false);
       }
     },
-    [database, isEditMode, t, transactionId, transactionMutations],
+    [
+      database,
+      isEditMode,
+      receiptStorage,
+      t,
+      transactionId,
+      transactionMutations,
+    ],
   );
 
   const handleSave = useCallback(async () => {
@@ -522,7 +543,11 @@ export function useManualTransactionViewModel({
     setDeleting(true);
 
     try {
-      const snapshot = await deleteTransactionForUndo(database, transactionId);
+      const snapshot = await deleteTransactionForUndo(
+        database,
+        transactionId,
+        receiptStorage,
+      );
       transactionMutations.notifyDeleted(snapshot);
       setExitTarget('transactions');
     } catch (error) {
@@ -530,7 +555,7 @@ export function useManualTransactionViewModel({
       deletingRef.current = false;
       setDeleting(false);
     }
-  }, [database, t, transactionId, transactionMutations]);
+  }, [database, receiptStorage, t, transactionId, transactionMutations]);
 
   const isExpense = form.type === 'expense';
   const parsedAmountMinor = useMemo(() => {

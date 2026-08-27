@@ -10,6 +10,7 @@ import {
   isReceiptStorageKey,
   receiptFileExists,
   removeReceiptFile,
+  type ReceiptStorage,
 } from '@/features/receipts/receipt-storage';
 import {
   getTransaction,
@@ -54,10 +55,7 @@ type PreparedReceipt = {
   mimeType: ReceiptMimeType;
 } | null;
 
-function normalizeInputForWrite(
-  input: SaveTransactionInput,
-  now: number,
-) {
+function normalizeInputForWrite(input: SaveTransactionInput, now: number) {
   return normalizeTransactionInput(input, now);
 }
 
@@ -126,13 +124,17 @@ async function writeReceipt(
 
 async function prepareReceipt(
   receipt: NormalizedTransactionInput['receipt'],
+  storage?: ReceiptStorage,
 ): Promise<{ copiedStorageKey: string | null; receipt: PreparedReceipt }> {
   if (!receipt) {
     return { copiedStorageKey: null, receipt: null };
   }
 
   if (isReceiptStorageKey(receipt.sourceImageUri)) {
-    if (!receiptFileExists(receipt.sourceImageUri)) {
+    const exists = storage
+      ? storage.exists(receipt.sourceImageUri)
+      : receiptFileExists(receipt.sourceImageUri);
+    if (!exists) {
       throw createCodedError(
         'FILE_OPERATION_FAILED',
         'The stored receipt image is unavailable.',
@@ -145,10 +147,9 @@ async function prepareReceipt(
     };
   }
 
-  const storageKey = await copyReceiptToStorage(
-    receipt.sourceImageUri,
-    receipt.mimeType,
-  );
+  const storageKey = storage
+    ? await storage.copy(receipt.sourceImageUri, receipt.mimeType)
+    : await copyReceiptToStorage(receipt.sourceImageUri, receipt.mimeType);
   const { sourceImageUri: _sourceImageUri, ...metadata } = receipt;
   return {
     copiedStorageKey: storageKey,
@@ -156,12 +157,16 @@ async function prepareReceipt(
   };
 }
 
-function cleanupReceiptFile(storageKey: string | null) {
+function cleanupReceiptFile(
+  storage: ReceiptStorage | undefined,
+  storageKey: string | null,
+) {
   if (!storageKey) {
     return;
   }
   try {
-    removeReceiptFile(storageKey);
+    if (storage) storage.remove(storageKey);
+    else removeReceiptFile(storageKey);
   } catch (error) {
     if (__DEV__) {
       console.warn('Receipt file cleanup failed.', error);
@@ -208,9 +213,10 @@ export async function createTransaction(
   database: SQLiteDatabase,
   input: SaveTransactionInput,
   now = Date.now(),
+  receiptStorage?: ReceiptStorage,
 ) {
   const normalized = normalizeInputForWrite(input, now);
-  const prepared = await prepareReceipt(normalized.receipt);
+  const prepared = await prepareReceipt(normalized.receipt, receiptStorage);
   let createdId: number | null = null;
 
   try {
@@ -269,7 +275,7 @@ export async function createTransaction(
       );
     });
   } catch (error) {
-    cleanupReceiptFile(prepared.copiedStorageKey);
+    cleanupReceiptFile(receiptStorage, prepared.copiedStorageKey);
     throw mapTransactionWriteError(error);
   }
 
@@ -289,6 +295,7 @@ export async function updateTransaction(
   id: number,
   input: SaveTransactionInput,
   now = Date.now(),
+  receiptStorage?: ReceiptStorage,
 ) {
   const normalized = normalizeInputForWrite(input, now);
   const existing = await database.getFirstAsync<{
@@ -327,7 +334,7 @@ export async function updateTransaction(
     'SELECT storage_key FROM receipts WHERE transaction_id = ?',
     id,
   );
-  const prepared = await prepareReceipt(normalized.receipt);
+  const prepared = await prepareReceipt(normalized.receipt, receiptStorage);
 
   try {
     await withIntegrityCheckedTransaction(database, async (transaction) => {
@@ -429,12 +436,12 @@ export async function updateTransaction(
       }
     });
   } catch (error) {
-    cleanupReceiptFile(prepared.copiedStorageKey);
+    cleanupReceiptFile(receiptStorage, prepared.copiedStorageKey);
     throw mapTransactionWriteError(error);
   }
 
   if (oldReceipt && oldReceipt.storage_key !== prepared.receipt?.storageKey) {
-    cleanupReceiptFile(oldReceipt.storage_key);
+    cleanupReceiptFile(receiptStorage, oldReceipt.storage_key);
   }
 
   const saved = await getTransaction(database, id);
@@ -451,6 +458,7 @@ export async function deleteTransaction(
   database: SQLiteDatabase,
   id: number,
   options?: { preserveReceiptFile?: boolean },
+  receiptStorage?: ReceiptStorage,
 ) {
   const receipt = await database.getFirstAsync<{ storage_key: string }>(
     'SELECT storage_key FROM receipts WHERE transaction_id = ?',
@@ -502,7 +510,7 @@ export async function deleteTransaction(
     }
   });
   if (!options?.preserveReceiptFile) {
-    cleanupReceiptFile(receipt?.storage_key ?? null);
+    cleanupReceiptFile(receiptStorage, receipt?.storage_key ?? null);
   }
 }
 
@@ -537,6 +545,7 @@ function transactionToSaveInput(
 export async function deleteTransactionForUndo(
   database: SQLiteDatabase,
   id: number,
+  receiptStorage?: ReceiptStorage,
 ): Promise<DeletedTransactionSnapshot> {
   const [transaction, membership] = await Promise.all([
     getTransaction(database, id),
@@ -552,15 +561,26 @@ export async function deleteTransactionForUndo(
     claimId: membership?.claimId ?? null,
     input: transactionToSaveInput(transaction),
   };
-  await deleteTransaction(database, id, { preserveReceiptFile: true });
+  await deleteTransaction(
+    database,
+    id,
+    { preserveReceiptFile: true },
+    receiptStorage,
+  );
   return snapshot;
 }
 
 export async function restoreDeletedTransaction(
   database: SQLiteDatabase,
   snapshot: DeletedTransactionSnapshot,
+  receiptStorage?: ReceiptStorage,
 ) {
-  const restored = await createTransaction(database, snapshot.input);
+  const restored = await createTransaction(
+    database,
+    snapshot.input,
+    Date.now(),
+    receiptStorage,
+  );
   const claimId = snapshot.claimId;
   if (claimId !== null) {
     await withIntegrityCheckedTransaction(database, async (transaction) => {
@@ -585,6 +605,10 @@ export async function restoreDeletedTransaction(
 
 export function finalizeDeletedTransactionUndo(
   snapshot: DeletedTransactionSnapshot,
+  receiptStorage?: ReceiptStorage,
 ) {
-  cleanupReceiptFile(snapshot.input.receipt?.sourceImageUri ?? null);
+  cleanupReceiptFile(
+    receiptStorage,
+    snapshot.input.receipt?.sourceImageUri ?? null,
+  );
 }

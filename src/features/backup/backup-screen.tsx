@@ -25,6 +25,7 @@ import {
   BackupStatsCard,
   BackupVaultBanner,
 } from '@/features/backup/components';
+import { useReceiptStorage } from '@/features/receipts/receipt-storage-context';
 import { isCodedError, mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
@@ -33,6 +34,7 @@ import { typography } from '@/theme/typography';
 
 export function BackupScreen() {
   const database = useSQLiteContext();
+  const receiptStorage = useReceiptStorage();
   const router = useRouter();
   const { colors } = useTheme();
   const { t } = useLanguage();
@@ -90,7 +92,7 @@ export function BackupScreen() {
     creatingBackupRef.current = true;
     setCreatingBackup(true);
     try {
-      const backupFile = await exportBackupToJsonFile(database);
+      const backupFile = await exportBackupToJsonFile(database, receiptStorage);
       await shareFile(
         backupFile.uri,
         'Bagikan Cadangan Data (JSON)',
@@ -107,7 +109,7 @@ export function BackupScreen() {
       creatingBackupRef.current = false;
       setCreatingBackup(false);
     }
-  }, [database]);
+  }, [database, receiptStorage]);
 
   // Handle Export CSV
   const handleExportCsv = useCallback(async () => {
@@ -164,7 +166,7 @@ export function BackupScreen() {
     restoringRef.current = true;
     setRestoring(true);
     try {
-      await restoreBackupData(database, selectedBackup.payload);
+      await restoreBackupData(database, selectedBackup.payload, receiptStorage);
       setPreviewModalVisible(false);
       setSelectedBackup(null);
       await loadStats();
@@ -190,6 +192,7 @@ export function BackupScreen() {
   }, [
     database,
     loadStats,
+    receiptStorage,
     router,
     selectedBackup,
     t.backup.restoreSuccessDesc,

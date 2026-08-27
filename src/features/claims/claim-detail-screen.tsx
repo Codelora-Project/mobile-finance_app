@@ -14,6 +14,7 @@ import {
 import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
 import { generateClaimPdf, shareClaimPdf } from '@/features/claims/claim-pdf';
+import { useReceiptStorage } from '@/features/receipts/receipt-storage-context';
 import {
   deleteDraftClaim,
   getClaim,
@@ -34,6 +35,7 @@ function statusLabel(status: ClaimStatus) {
 
 export function ClaimDetailScreen({ claimId }: { claimId: number }) {
   const database = useSQLiteContext();
+  const receiptStorage = useReceiptStorage();
   const router = useRouter();
   const workingRef = useRef(false);
   const pdfActionRef = useRef(false);
@@ -149,7 +151,12 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
     setPdfAction('export');
     setError(null);
     try {
-      const generated = await generateClaimPdf(database, claimId);
+      const generated = await generateClaimPdf(
+        database,
+        claimId,
+        Date.now(),
+        receiptStorage,
+      );
       setFeedback(`PDF generated: ${generated.fileName}`);
     } catch (pdfError) {
       setError(
@@ -169,7 +176,7 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
     setPdfAction('share');
     setError(null);
     try {
-      await shareClaimPdf(database, claimId);
+      await shareClaimPdf(database, claimId, Date.now(), receiptStorage);
       setFeedback('PDF shared.');
     } catch (shareError) {
       setError(

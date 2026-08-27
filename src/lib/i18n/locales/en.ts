@@ -99,7 +99,8 @@ export const en = {
     editTransaction: 'Edit Transaction',
     deleteTransaction: 'Delete Transaction',
     deleteDialogTitle: 'Delete transaction?',
-    deleteDialogDesc: 'You can undo this briefly after the transaction is deleted.',
+    deleteDialogDesc:
+      'You can undo this briefly after the transaction is deleted.',
     deleteClaimWarning:
       'This will remove the transaction from the draft claim and delete it.',
     createdSuccess: 'Transaction recorded successfully.',
@@ -118,7 +119,8 @@ export const en = {
     databaseBusy: 'The database is busy. Please try again.',
     saveFailed: 'The transaction could not be saved. Try again.',
     loadFailed: 'The transaction could not be loaded. Try again.',
-    receiptSaveFailed: 'The receipt could not be saved. Choose it again and retry.',
+    receiptSaveFailed:
+      'The receipt could not be saved. Choose it again and retry.',
     notFound: 'Transaction Not Found',
     notFoundDesc:
       'The requested transaction could not be loaded or was removed.',
@@ -178,7 +180,7 @@ export const en = {
     readOnly: 'Read-only',
     dataSection: 'Data',
     dataDesc:
-      'All information stays on this device. No account, cloud, or telemetry is used.',
+      'Google is used only for account identity. Financial data stays local, with no cloud sync or telemetry.',
     deleteAllData: 'Delete All Data',
     aboutSection: 'About App',
     version: 'Version',
@@ -382,7 +384,7 @@ export const en = {
   backup: {
     title: 'Backup & Restore',
     subtitle: 'Manage local data backups and export reports',
-    vaultBadge: '100% Offline & Private',
+    vaultBadge: 'Offline-Ready & Private',
     vaultDesc:
       'Your financial records are stored directly on this device. Create regular backups to keep your data safe when switching phones.',
     statsTitle: 'Current Data Summary',

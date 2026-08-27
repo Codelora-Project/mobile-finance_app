@@ -415,6 +415,8 @@ describe('manual transaction form', () => {
       expect(mockCreateTransaction).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({ paymentMethodId: 9 }),
+        expect.any(Number),
+        expect.any(Object),
       ),
     );
   });
@@ -632,6 +634,8 @@ describe('manual transaction form', () => {
           transferToPaymentMethodId: 2,
           type: 'transfer',
         }),
+        expect.any(Number),
+        expect.any(Object),
       ),
     );
     expect(mockCreateTransaction).toHaveBeenCalledTimes(1);
@@ -682,6 +686,8 @@ describe('manual transaction form', () => {
           categoryId: 3,
           type: 'income',
         }),
+        expect.any(Number),
+        expect.any(Object),
       ),
     );
   });

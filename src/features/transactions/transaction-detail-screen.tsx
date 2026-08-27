@@ -30,6 +30,7 @@ import {
   type TransactionClaimMembership,
 } from '@/features/transactions/transaction-repository';
 import { useTransactionMutations } from '@/features/transactions/transaction-mutation-context';
+import { useReceiptStorage } from '@/features/receipts/receipt-storage-context';
 import { getTimezoneOffsetMinutes, toLocalDateTimeInput } from '@/lib/dates';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
@@ -51,6 +52,7 @@ export function TransactionDetailScreen({
   const { language, t } = useLanguage();
   const { colors } = useTheme();
   const transactionMutations = useTransactionMutations();
+  const receiptStorage = useReceiptStorage();
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deletingRef = useRef(false);
   const loadRequestRef = useRef(0);
@@ -118,7 +120,7 @@ export function TransactionDetailScreen({
     if (!transaction || deletingRef.current) return;
     deletingRef.current = true;
     setDeleting(true);
-    deleteTransactionForUndo(database, transactionId)
+    deleteTransactionForUndo(database, transactionId, receiptStorage)
       .then((snapshot) => {
         transactionMutations.notifyDeleted(snapshot);
         router.dismissTo('/transactions');

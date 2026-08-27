@@ -122,7 +122,10 @@ describe('TransactionMutationProvider', () => {
       mutations!.notifyUpdated();
       await Promise.resolve();
     });
-    expect(mockFinalizeDeletedTransactionUndo).toHaveBeenCalledWith(snapshot);
+    expect(mockFinalizeDeletedTransactionUndo).toHaveBeenCalledWith(
+      snapshot,
+      expect.any(Object),
+    );
 
     mockFinalizeDeletedTransactionUndo.mockClear();
     await act(async () => {
@@ -133,7 +136,10 @@ describe('TransactionMutationProvider', () => {
       jest.advanceTimersByTime(5_000);
       await Promise.resolve();
     });
-    expect(mockFinalizeDeletedTransactionUndo).toHaveBeenCalledWith(snapshot);
+    expect(mockFinalizeDeletedTransactionUndo).toHaveBeenCalledWith(
+      snapshot,
+      expect.any(Object),
+    );
     await act(async () => {
       view.unmount();
       await Promise.resolve();
@@ -170,7 +176,10 @@ describe('TransactionMutationProvider', () => {
       rejectRestore?.(new Error('restore failed'));
       await undoPromise;
     });
-    expect(mockFinalizeDeletedTransactionUndo).toHaveBeenCalledWith(snapshot);
+    expect(mockFinalizeDeletedTransactionUndo).toHaveBeenCalledWith(
+      snapshot,
+      expect.any(Object),
+    );
     warningSpy.mockRestore();
   });
 });

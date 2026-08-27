@@ -129,7 +129,7 @@ export async function seedDefaultsInTransaction(database: SeedDatabase) {
 }
 
 export async function seedDefaults(database: SQLiteDatabase) {
-  await database.withExclusiveTransactionAsync(async (transaction) => {
-    await seedDefaultsInTransaction(transaction);
+  await database.withTransactionAsync(async () => {
+    await seedDefaultsInTransaction(database);
   });
 }

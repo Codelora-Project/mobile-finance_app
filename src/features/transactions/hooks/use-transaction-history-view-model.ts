@@ -16,6 +16,7 @@ import {
 } from '@/features/transactions/transaction-repository';
 import { getTransactionErrorMessage } from '@/features/transactions/transaction-error-messages';
 import { useTransactionMutations } from '@/features/transactions/transaction-mutation-context';
+import { useReceiptStorage } from '@/features/receipts/receipt-storage-context';
 import { useCurrency } from '@/lib/currency/currency-context';
 import { formatGroupDate } from '@/lib/dates';
 import { mapError } from '@/lib/errors';
@@ -85,6 +86,7 @@ function moveDateToMonth(date: Date, year: number, month: number): Date {
 
 export function useTransactionHistoryViewModel() {
   const database = useSQLiteContext();
+  const receiptStorage = useReceiptStorage();
   const router = useRouter();
   const { language, t } = useLanguage();
   const { currencyCode } = useCurrency();
@@ -430,7 +432,11 @@ export function useTransactionHistoryViewModel() {
   const handleDeleteTransaction = useCallback(
     async (tx: TransactionListItem) => {
       try {
-        const snapshot = await deleteTransactionForUndo(database, tx.id);
+        const snapshot = await deleteTransactionForUndo(
+          database,
+          tx.id,
+          receiptStorage,
+        );
         setTransactions((current) =>
           current.filter((item) => item.id !== tx.id),
         );
@@ -442,7 +448,7 @@ export function useTransactionHistoryViewModel() {
         );
       }
     },
-    [database, t, transactionMutations],
+    [database, receiptStorage, t, transactionMutations],
   );
 
   const handleLongPressTransaction = useCallback(

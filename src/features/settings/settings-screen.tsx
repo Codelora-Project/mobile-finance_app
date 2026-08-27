@@ -15,18 +15,23 @@ import {
 
 import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
+import { useAuth } from '@/features/auth/auth-context';
+import { useLegacyData } from '@/features/auth/legacy-data-context';
 import { AddShortcutModal } from '@/features/settings/components/add-shortcut-modal';
 import { CurrencyPickerModal } from '@/features/settings/components/currency-picker-modal';
 import { ShortcutsModal } from '@/features/settings/components/shortcuts-modal';
 import {
+  exportBackupToJsonFile,
   exportTransactionsCsvFile,
   shareFile,
 } from '@/features/backup/backup-service';
 import { SettingsAboutFooter } from '@/features/settings/components/settings-about-footer';
+import { SettingsAccountCard } from '@/features/settings/components/settings-account-card';
 import { SettingsAppearanceCard } from '@/features/settings/components/settings-appearance-card';
 import { SettingsDangerZoneCard } from '@/features/settings/components/settings-danger-zone-card';
 import { SettingsDataManagementCard } from '@/features/settings/components/settings-data-management-card';
 import { SettingsVaultBanner } from '@/features/settings/components/settings-vault-banner';
+import { useReceiptStorage } from '@/features/receipts/receipt-storage-context';
 import {
   clearTemporaryCache,
   DEFAULT_QUICK_SHORTCUTS,
@@ -54,7 +59,10 @@ import { typography } from '@/theme/typography';
 
 export function SettingsScreen() {
   const database = useSQLiteContext();
+  const receiptStorage = useReceiptStorage();
   const router = useRouter();
+  const { isBusy: authBusy, signOut, user } = useAuth();
+  const legacyData = useLegacyData();
   const { language, setLanguage, t } = useLanguage();
   const { brandTheme, colors, setBrandTheme, setThemeSetting, themeSetting } =
     useTheme();
@@ -65,6 +73,7 @@ export function SettingsScreen() {
   const [clearingCache, setClearingCache] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [claimingLegacy, setClaimingLegacy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
   const [shortcuts, setShortcuts] = useState<number[]>([]);
@@ -75,6 +84,7 @@ export function SettingsScreen() {
   const [shortcutError, setShortcutError] = useState<string | null>(null);
 
   const resettingRef = useRef(false);
+  const claimingLegacyRef = useRef(false);
   const appearanceMutationRef = useRef(false);
   const loadRequestRef = useRef(0);
   const shortcutMutationRef = useRef(false);
@@ -143,7 +153,7 @@ export function SettingsScreen() {
     try {
       const [nextOverview, nextStorage] = await Promise.all([
         getSettingsOverview(database),
-        getStorageStats(database),
+        getStorageStats(database, receiptStorage),
       ]);
       if (requestId !== loadRequestRef.current) return;
       setOverview(nextOverview);
@@ -159,7 +169,7 @@ export function SettingsScreen() {
         setLoading(false);
       }
     }
-  }, [database]);
+  }, [database, receiptStorage]);
 
   useFocusEffect(
     useCallback(() => {
@@ -261,7 +271,7 @@ export function SettingsScreen() {
     setError(null);
 
     try {
-      await resetApplicationData(database);
+      await resetApplicationData(database, receiptStorage);
       Alert.alert(t.settings.dataDeletedTitle, t.settings.dataDeletedDesc, [
         {
           onPress: () => router.replace('/'),
@@ -277,7 +287,7 @@ export function SettingsScreen() {
       resettingRef.current = false;
       setResetting(false);
     }
-  }, [database, router, t.settings]);
+  }, [database, receiptStorage, router, t.settings]);
 
   const confirmPermanentReset = useCallback(() => {
     Alert.alert(
@@ -373,7 +383,7 @@ export function SettingsScreen() {
     setClearingCache(true);
     try {
       const result = await clearTemporaryCache();
-      const nextStorage = await getStorageStats(database);
+      const nextStorage = await getStorageStats(database, receiptStorage);
       setStorageStats(nextStorage);
       if (result.freedBytes > 0) {
         Alert.alert(
@@ -391,7 +401,7 @@ export function SettingsScreen() {
     } finally {
       setClearingCache(false);
     }
-  }, [clearingCache, database, t.settings]);
+  }, [clearingCache, database, receiptStorage, t.settings]);
 
   const executeExport = useCallback(
     async (scope: 'this_month' | 'all') => {
@@ -450,6 +460,117 @@ export function SettingsScreen() {
     );
   }, [executeExport, t.settings]);
 
+  const handleLogout = useCallback(() => {
+    Alert.alert(
+      language === 'id' ? 'Keluar dari akun?' : 'Sign out?',
+      language === 'id'
+        ? 'Sesi login akan dihapus, tetapi seluruh data akun ini tetap tersimpan di perangkat.'
+        : 'Your login session will be removed, but this account data will remain on the device.',
+      [
+        {
+          style: 'cancel',
+          text: language === 'id' ? 'Batal' : 'Cancel',
+        },
+        {
+          onPress: () => void signOut(),
+          style: 'destructive',
+          text: language === 'id' ? 'Keluar' : 'Sign out',
+        },
+      ],
+    );
+  }, [language, signOut]);
+
+  const executeLegacyClaim = useCallback(async () => {
+    if (claimingLegacyRef.current) return;
+    claimingLegacyRef.current = true;
+    setClaimingLegacy(true);
+    try {
+      await legacyData.claim();
+      Alert.alert(
+        language === 'id' ? 'Data berhasil dihubungkan' : 'Data connected',
+        language === 'id'
+          ? 'Data perangkat lama kini menjadi milik akun Google ini.'
+          : 'The legacy device data now belongs to this Google account.',
+        [{ onPress: () => router.replace('/'), text: 'OK' }],
+      );
+    } catch (claimError) {
+      Alert.alert(
+        language === 'id' ? 'Gagal menghubungkan data' : 'Connection failed',
+        claimError instanceof Error
+          ? claimError.message
+          : language === 'id'
+            ? 'Data aktif dan arsip lama tidak dihapus.'
+            : 'Current data and the legacy archive were not deleted.',
+      );
+    } finally {
+      claimingLegacyRef.current = false;
+      setClaimingLegacy(false);
+    }
+  }, [language, legacyData, router]);
+
+  const prepareLegacyClaim = useCallback(async () => {
+    if (claimingLegacyRef.current) return;
+    claimingLegacyRef.current = true;
+    setClaimingLegacy(true);
+    try {
+      const backup = await exportBackupToJsonFile(database, receiptStorage);
+      await shareFile(
+        backup.uri,
+        language === 'id'
+          ? 'Simpan backup sebelum mengganti data'
+          : 'Save backup before replacing data',
+        'application/json',
+        'public.json',
+      );
+    } catch (backupError) {
+      Alert.alert(
+        language === 'id' ? 'Backup wajib disimpan' : 'Backup is required',
+        backupError instanceof Error
+          ? backupError.message
+          : language === 'id'
+            ? 'Data lama belum dihubungkan.'
+            : 'Legacy data was not connected.',
+      );
+      return;
+    } finally {
+      claimingLegacyRef.current = false;
+      setClaimingLegacy(false);
+    }
+
+    Alert.alert(
+      language === 'id' ? 'Konfirmasi terakhir' : 'Final confirmation',
+      language === 'id'
+        ? 'Restore akan mengganti seluruh data akun aktif, bukan menggabungkannya. Lanjutkan?'
+        : 'Restore replaces all active-account data; it does not merge it. Continue?',
+      [
+        { style: 'cancel', text: language === 'id' ? 'Batal' : 'Cancel' },
+        {
+          onPress: () => void executeLegacyClaim(),
+          style: 'destructive',
+          text: language === 'id' ? 'Ganti data' : 'Replace data',
+        },
+      ],
+    );
+  }, [database, executeLegacyClaim, language, receiptStorage]);
+
+  const handleLegacyClaim = useCallback(() => {
+    Alert.alert(
+      language === 'id'
+        ? 'Hubungkan data perangkat lama?'
+        : 'Connect legacy device data?',
+      language === 'id'
+        ? 'Sebelum data akun diganti, aplikasi akan membuat backup JSON dan membuka menu berbagi agar Anda menyimpannya.'
+        : 'Before replacing account data, the app will create a JSON backup and open the share sheet so you can save it.',
+      [
+        { style: 'cancel', text: language === 'id' ? 'Batal' : 'Cancel' },
+        {
+          onPress: () => void prepareLegacyClaim(),
+          text: language === 'id' ? 'Buat backup' : 'Create backup',
+        },
+      ],
+    );
+  }, [language, prepareLegacyClaim]);
+
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content}>
@@ -506,6 +627,18 @@ export function SettingsScreen() {
 
         {overview ? (
           <>
+            {user ? (
+              <SettingsAccountCard
+                claimingLegacy={claimingLegacy}
+                isBusy={authBusy}
+                language={language}
+                onClaimLegacy={handleLegacyClaim}
+                onLogout={handleLogout}
+                showLegacyAction={legacyData.status === 'archived'}
+                user={user}
+              />
+            ) : null}
+
             {/* SECTION 1: GENERAL & APPEARANCE */}
             <SettingsAppearanceCard
               brandTheme={brandTheme}

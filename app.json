@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "personal-finance",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "plugins": [
       "expo-router",
       "expo-dev-client",
@@ -28,7 +28,8 @@
       ],
       "expo-sharing",
       "expo-splash-screen",
-      "expo-font"
+      "expo-font",
+      "expo-secure-store"
     ],
     "android": {
       "allowBackup": false,

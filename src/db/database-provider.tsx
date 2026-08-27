@@ -1,5 +1,5 @@
 import { SQLiteProvider } from 'expo-sqlite';
-import { useCallback, useState, type PropsWithChildren } from 'react';
+import { useCallback, useRef, useState, type PropsWithChildren } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -8,7 +8,9 @@ import {
   View,
 } from 'react-native';
 
-import { databaseName, initializeDatabase } from '@/db/database';
+import { initializeDatabase } from '@/db/database';
+import { runSerializedDatabaseInitialization } from '@/db/database-initialization-coordinator';
+import type { ReceiptStorage } from '@/features/receipts/receipt-storage';
 import { colors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -16,26 +18,42 @@ import { typography } from '@/theme/typography';
 
 type InitializationStatus = 'loading' | 'ready' | 'error';
 
-export function DatabaseProvider({ children }: PropsWithChildren) {
+type DatabaseProviderProps = PropsWithChildren<{
+  databaseName: string;
+  receiptStorage: ReceiptStorage;
+}>;
+
+export function DatabaseProvider({
+  children,
+  databaseName,
+  receiptStorage,
+}: DatabaseProviderProps) {
   const [attempt, setAttempt] = useState(0);
   const [status, setStatus] = useState<InitializationStatus>('loading');
+  const lastInitializationError = useRef<Error | null>(null);
 
   const handleInitialize = useCallback(
     async (database: Parameters<typeof initializeDatabase>[0]) => {
-      await initializeDatabase(database);
+      await runSerializedDatabaseInitialization(databaseName, () =>
+        initializeDatabase(database, receiptStorage),
+      );
+      lastInitializationError.current = null;
       setStatus('ready');
     },
-    [],
+    [databaseName, receiptStorage],
   );
 
   const handleError = useCallback((error: Error) => {
+    if (lastInitializationError.current === error) return;
+    lastInitializationError.current = error;
     if (__DEV__) {
       console.error('Database initialization failed.', error);
     }
-    setStatus('error');
+    setTimeout(() => setStatus('error'), 0);
   }, []);
 
   function retryInitialization() {
+    lastInitializationError.current = null;
     setStatus('loading');
     setAttempt((currentAttempt) => currentAttempt + 1);
   }

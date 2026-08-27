@@ -94,7 +94,12 @@ describe('claim detail screen', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: 'Export PDF' }));
     await waitFor(() =>
-      expect(mockGenerateClaimPdf).toHaveBeenCalledWith(expect.anything(), 9),
+      expect(mockGenerateClaimPdf).toHaveBeenCalledWith(
+        expect.anything(),
+        9,
+        expect.any(Number),
+        expect.any(Object),
+      ),
     );
     expect(
       await screen.findByText(/PDF generated: expense-claim-travel/),
@@ -162,7 +167,12 @@ describe('claim detail screen', () => {
     if (status === 'reimbursed') {
       await fireEvent.press(screen.getByRole('button', { name: 'Share PDF' }));
       await waitFor(() =>
-        expect(mockShareClaimPdf).toHaveBeenCalledWith(expect.anything(), 9),
+        expect(mockShareClaimPdf).toHaveBeenCalledWith(
+          expect.anything(),
+          9,
+          expect.any(Number),
+          expect.any(Object),
+        ),
       );
     }
   });

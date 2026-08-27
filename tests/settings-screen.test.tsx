@@ -26,6 +26,25 @@ const mockResetApplicationData = jest.fn<() => Promise<void>>();
 const mockSetQuickShortcutsSetting =
   jest.fn<(...args: unknown[]) => Promise<void>>();
 
+jest.mock('@/features/auth/auth-context', () => ({
+  useAuth: () => ({
+    isBusy: false,
+    signOut: jest.fn(),
+    user: {
+      email: 'dina@example.com',
+      id: 'google-user-1',
+      name: 'Dina',
+      photoUrl: null,
+    },
+  }),
+}));
+jest.mock('@/features/auth/legacy-data-context', () => ({
+  useLegacyData: () => ({
+    claim: jest.fn(),
+    status: 'none',
+  }),
+}));
+
 jest.mock('expo-router', () => {
   const React = require('react');
   return {
@@ -81,6 +100,9 @@ jest.mock('@/features/settings/settings-repository', () => ({
     .mockResolvedValue(undefined),
 }));
 jest.mock('@/features/backup/backup-service', () => ({
+  exportBackupToJsonFile: jest.fn<() => Promise<unknown>>().mockResolvedValue({
+    uri: 'file:///cache/backups/account.json',
+  }),
   exportTransactionsCsvFile: jest
     .fn<() => Promise<unknown>>()
     .mockResolvedValue({
@@ -130,7 +152,7 @@ describe('settings screen', () => {
       screen.getByRole('button', { name: 'Clear Cache' }),
     ).toBeOnTheScreen();
     expect(
-      screen.getByText(/All information stays on this device/),
+      screen.getByText(/Google is used only for account identity/),
     ).toBeOnTheScreen();
     expect(screen.getByText(/Version 1.0.0/)).toBeOnTheScreen();
 

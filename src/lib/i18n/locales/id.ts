@@ -100,7 +100,8 @@ export const id = {
     editTransaction: 'Ubah Transaksi',
     deleteTransaction: 'Hapus Transaksi',
     deleteDialogTitle: 'Hapus transaksi?',
-    deleteDialogDesc: 'Anda dapat membatalkannya sesaat setelah transaksi dihapus.',
+    deleteDialogDesc:
+      'Anda dapat membatalkannya sesaat setelah transaksi dihapus.',
     deleteClaimWarning:
       'Transaksi ini akan dihapus dari draf klaim dan dihapus permanen.',
     createdSuccess: 'Transaksi berhasil dicatat.',
@@ -119,7 +120,8 @@ export const id = {
     databaseBusy: 'Database sedang digunakan. Silakan coba lagi.',
     saveFailed: 'Transaksi belum dapat disimpan. Coba lagi.',
     loadFailed: 'Transaksi belum dapat dimuat. Coba lagi.',
-    receiptSaveFailed: 'Foto struk belum dapat disimpan. Pilih ulang dan coba lagi.',
+    receiptSaveFailed:
+      'Foto struk belum dapat disimpan. Pilih ulang dan coba lagi.',
     notFound: 'Transaksi Tidak Ditemukan',
     notFoundDesc: 'Transaksi yang diminta tidak ditemukan atau telah dihapus.',
     backToList: 'Kembali ke Riwayat',
@@ -177,7 +179,7 @@ export const id = {
     readOnly: 'Hanya baca',
     dataSection: 'Data',
     dataDesc:
-      'Semua informasi tersimpan di perangkat ini. Tidak ada akun, cloud, atau telemetri.',
+      'Google hanya digunakan untuk identitas akun. Data keuangan tetap lokal, tanpa sinkronisasi cloud atau telemetri.',
     deleteAllData: 'Hapus Semua Data',
     aboutSection: 'Tentang Aplikasi',
     version: 'Versi',
@@ -380,7 +382,7 @@ export const id = {
   backup: {
     title: 'Cadangkan & Pulihkan',
     subtitle: 'Kelola cadangan data lokal dan ekspor laporan',
-    vaultBadge: '100% Offline & Aman',
+    vaultBadge: 'Offline-Ready & Aman',
     vaultDesc:
       'Data keuangan Anda disimpan langsung di perangkat ini. Buat cadangan secara berkala agar catatan keuangan tetap aman saat berganti perangkat.',
     statsTitle: 'Ringkasan Data Saat Ini',

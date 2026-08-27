@@ -17,6 +17,8 @@ class FakeDatabase {
   foreignKeys = 0;
   journalMode = 'delete';
   migrationRuns = 0;
+  exclusiveTransactionRuns = 0;
+  transactionRuns = 0;
   userVersion = 0;
 
   asSQLiteDatabase() {
@@ -28,6 +30,10 @@ class FakeDatabase {
 
     if (source === 'PRAGMA foreign_keys = ON') {
       this.foreignKeys = 1;
+    }
+
+    if (source === 'PRAGMA foreign_keys = OFF') {
+      this.foreignKeys = 0;
     }
 
     if (source === 'PRAGMA journal_mode = WAL') {
@@ -58,6 +64,10 @@ class FakeDatabase {
     return row as T | null;
   }
 
+  async getAllAsync<T>(): Promise<T[]> {
+    return [];
+  }
+
   async runAsync(
     source: string,
     ...params: SQLiteBindValue[]
@@ -79,9 +89,15 @@ class FakeDatabase {
     return { changes, lastInsertRowId: 0 };
   }
 
+  async withTransactionAsync(task: () => Promise<void>) {
+    this.transactionRuns += 1;
+    await task();
+  }
+
   async withExclusiveTransactionAsync(
     task: (transaction: SQLiteDatabase) => Promise<void>,
   ) {
+    this.exclusiveTransactionRuns += 1;
     await task(this.asSQLiteDatabase());
   }
 
@@ -141,6 +157,15 @@ describe('database initialization', () => {
       'PRAGMA busy_timeout = 3000',
       'PRAGMA journal_mode = WAL',
     ]);
+  });
+
+  it('runs startup migrations on the provider connection', async () => {
+    const database = new FakeDatabase();
+
+    await initializeDatabase(database.asSQLiteDatabase());
+
+    expect(database.transactionRuns).toBeGreaterThan(0);
+    expect(database.exclusiveTransactionRuns).toBe(0);
   });
 
   it('creates the final currency-aware tables, relationships, and indexes', async () => {

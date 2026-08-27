@@ -1,6 +1,8 @@
 import { Directory, File, Paths } from 'expo-file-system';
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import type { ReceiptStorage } from '@/features/receipts/receipt-storage';
+
 export type StorageStats = Readonly<{
   transactionsCount: number;
   receiptsCount: number;
@@ -11,6 +13,7 @@ export type StorageStats = Readonly<{
 
 export async function getStorageStats(
   database: SQLiteDatabase,
+  receiptStorage?: ReceiptStorage,
 ): Promise<StorageStats> {
   const [txRes, receiptsRes, claimsRes] = await Promise.all([
     database.getFirstAsync<{ count: number }>(
@@ -27,7 +30,8 @@ export async function getStorageStats(
   let receiptsSizeBytes = 0;
   let receiptsCount = receiptsRes?.count ?? 0;
   try {
-    const receiptDir = new Directory(Paths.document, 'receipts');
+    const receiptDir =
+      receiptStorage?.directory ?? new Directory(Paths.document, 'receipts');
     if (receiptDir.exists) {
       const items = receiptDir.list();
       let calculatedBytes = 0;

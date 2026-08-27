@@ -14,11 +14,15 @@ import {
 import { supportedReceiptMimeTypes } from '@/features/receipts/receipt-types';
 import {
   removeReceiptFile,
+  type ReceiptStorage,
   writeReceiptBase64ToStorage,
 } from '@/features/receipts/receipt-storage';
 import { createCodedError } from '@/lib/errors';
 
-async function stageReceiptFiles(payload: BackupPayload) {
+async function stageReceiptFiles(
+  payload: BackupPayload,
+  receiptStorage?: ReceiptStorage,
+) {
   const storageKeys: string[] = [];
   const receipts: BackupReceipt[] = [];
 
@@ -46,25 +50,28 @@ async function stageReceiptFiles(payload: BackupPayload) {
           'File backup berisi format gambar struk yang tidak didukung.',
         );
       }
-      const storageKey = await writeReceiptBase64ToStorage(
-        receipt.file_base64,
-        mimeType,
-      );
+      const storageKey = receiptStorage
+        ? await receiptStorage.writeBase64(receipt.file_base64, mimeType)
+        : await writeReceiptBase64ToStorage(receipt.file_base64, mimeType);
       storageKeys.push(storageKey);
       receipts.push({ ...receipt, storage_key: storageKey });
     }
   } catch (error) {
-    removeReceiptFiles(storageKeys);
+    removeReceiptFiles(storageKeys, receiptStorage);
     throw error;
   }
 
   return { receipts, storageKeys };
 }
 
-function removeReceiptFiles(storageKeys: readonly string[]) {
+function removeReceiptFiles(
+  storageKeys: readonly string[],
+  receiptStorage?: ReceiptStorage,
+) {
   for (const storageKey of storageKeys) {
     try {
-      removeReceiptFile(storageKey);
+      if (receiptStorage) receiptStorage.remove(storageKey);
+      else removeReceiptFile(storageKey);
     } catch {
       // Database integrity takes priority over best-effort file cleanup.
     }
@@ -294,6 +301,7 @@ async function replaceDatabaseData(
 export async function restoreBackupData(
   database: SQLiteDatabase,
   payload: BackupPayload,
+  receiptStorage?: ReceiptStorage,
 ): Promise<{ stats: BackupStats }> {
   const validatedPayload = validateBackupPayload(payload);
   const previousReceipts = await database.getAllAsync<{ storage_key: string }>(
@@ -302,10 +310,10 @@ export async function restoreBackupData(
   let staged: Awaited<ReturnType<typeof stageReceiptFiles>> | null = null;
 
   try {
-    staged = await stageReceiptFiles(validatedPayload);
+    staged = await stageReceiptFiles(validatedPayload, receiptStorage);
     await replaceDatabaseData(database, validatedPayload, staged.receipts);
   } catch (error) {
-    removeReceiptFiles(staged?.storageKeys ?? []);
+    removeReceiptFiles(staged?.storageKeys ?? [], receiptStorage);
     throw error;
   }
 
@@ -316,6 +324,7 @@ export async function restoreBackupData(
     previousReceipts
       .map((receipt) => receipt.storage_key)
       .filter((storageKey) => !activeReceiptKeys.has(storageKey)),
+    receiptStorage,
   );
 
   return { stats: getBackupPayloadStats(validatedPayload) };

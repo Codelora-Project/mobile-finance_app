@@ -2,7 +2,7 @@
 
 Aplikasi pencatatan keuangan pribadi (_Personal Finance_) modern berbasis Android yang dibangun menggunakan **Expo Development Build**, **React Native**, **TypeScript**, **Expo Router**, dan **SQLite**.
 
-Aplikasi dirancang dengan arsitektur **Offline-First**, di mana seluruh data transaksi, anggaran, target tabungan, lampiran foto struk, dan ekspor dokumen PDF disimpan dan diproses 100% secara lokal pada perangkat tanpa memerlukan koneksi internet maupun server eksternal.
+Aplikasi dirancang dengan arsitektur **Offline-First**. Login Google pertama memerlukan internet, tetapi seluruh data transaksi, anggaran, target tabungan, lampiran foto struk, dan ekspor PDF tetap disimpan serta diproses lokal tanpa backend atau sinkronisasi cloud.
 
 ---
 
@@ -21,7 +21,8 @@ Aplikasi dirancang dengan arsitektur **Offline-First**, di mana seluruh data tra
 - **Klaim Reimbursement & Ekspor PDF**: Kelompokkan transaksi yang dapat diklaim (_reimbursable_) ke dalam laporan klaim dan ekspor menjadi berkas PDF resmi lengkap dengan lampiran foto struk.
 - **Kategori & Metode Pembayaran Dinamis**: Kelola kategori dan metode pembayaran kustom sesuai kebutuhan pribadi.
 - **Tema & Bahasa**: Mendukung Dark Mode / Light Mode serta pilihan bahasa Indonesia dan Inggris.
-- **Privasi & Keamanan**: Tanpa registrasi akun, tanpa cloud tracking, dan opsi _Delete All Data_ untuk reset total data lokal.
+- **Google Sign-In dan Isolasi Akun**: Google hanya dipakai sebagai identitas. Setiap akun memiliki database dan direktori struk lokal terpisah; logout tidak menghapus data.
+- **Privasi & Keamanan**: Tanpa backend, sinkronisasi cloud, atau telemetri, serta tersedia opsi _Delete All Data_ untuk mereset data akun aktif.
 
 ---
 
@@ -31,6 +32,7 @@ Aplikasi dirancang dengan arsitektur **Offline-First**, di mana seluruh data tra
 - **Bahasa**: [TypeScript](https://www.typescriptlang.org/) (Strict Mode)
 - **Routing & Navigasi**: [Expo Router](https://docs.expo.dev/router/introduction/) (File-based routing)
 - **Database Lokal**: `expo-sqlite` (SQLite Storage)
+- **Autentikasi**: `@react-native-google-signin/google-signin`, `expo-secure-store`, dan `expo-network`
 - **Media & File**: `expo-camera`, `expo-image-picker`, `expo-file-system`
 - **Dokumen & Berbagi**: `expo-print`, `expo-sharing`
 - **Testing**: [Jest](https://jestjs.io/), `jest-expo`, `@testing-library/react-native`
@@ -60,6 +62,27 @@ Sebelum menjalankan atau mem-build aplikasi, pastikan komputer Anda telah terpas
 ---
 
 ## 🚀 Panduan Menjalankan Aplikasi (_Development_)
+
+### Konfigurasi Google Sign-In
+
+1. Di Google Cloud Console, siapkan OAuth Client tipe **Android** untuk package `com.personalfinance.app` dan SHA-1 keystore debug yang aktif.
+2. Siapkan juga OAuth Client tipe **Web application**. Client ID inilah yang dipakai aplikasi untuk meminta `idToken`; Client Secret tidak diperlukan dan tidak boleh dimasukkan ke aplikasi.
+3. Salin `.env.example` menjadi `.env.local`, lalu isi:
+
+   ```dotenv
+   EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your-web-client-id.apps.googleusercontent.com
+   ```
+
+4. Pastikan akun penguji ditambahkan ke OAuth consent screen jika aplikasi masih berstatus Testing.
+
+Untuk memeriksa SHA-1 debug yang benar:
+
+```powershell
+cd android
+.\gradlew signingReport
+```
+
+Gunakan SHA-1 pada varian `debug`. Proyek ini tidak memakai Firebase, `google-services.json`, atau OAuth Client Secret. Karena library login memiliki kode native, jalankan melalui development build (`npm run android`), bukan Expo Go.
 
 ### 1. Install Dependencies
 

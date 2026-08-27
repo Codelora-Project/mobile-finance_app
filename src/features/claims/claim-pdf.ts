@@ -4,7 +4,10 @@ import * as Sharing from 'expo-sharing';
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { getClaim } from '@/features/claims/claim-repository';
-import { readReceiptBase64 } from '@/features/receipts/receipt-storage';
+import {
+  readReceiptBase64,
+  type ReceiptStorage,
+} from '@/features/receipts/receipt-storage';
 import { getTimezoneOffsetMinutes, toLocalDate } from '@/lib/dates';
 import { createCodedError, isCodedError } from '@/lib/errors';
 import { escapeHtml } from '@/lib/html';
@@ -67,6 +70,7 @@ export async function buildClaimPdfModel(
   database: SQLiteDatabase,
   claimId: number,
   generatedAt = Date.now(),
+  receiptStorage?: ReceiptStorage,
 ): Promise<ClaimPdfModel> {
   const claim = await getClaim(database, claimId);
   if (!claim) {
@@ -90,7 +94,9 @@ export async function buildClaimPdfModel(
     let receiptDataUri: string | null = null;
     let receiptState: ClaimPdfExpense['receiptState'] = 'missing';
     if (expense.receipt) {
-      const base64 = await readReceiptBase64(expense.receipt.storageKey);
+      const base64 = receiptStorage
+        ? await receiptStorage.readBase64(expense.receipt.storageKey)
+        : await readReceiptBase64(expense.receipt.storageKey);
       if (base64) {
         receiptDataUri = `data:${expense.receipt.mimeType};base64,${base64}`;
         receiptState = 'attached';
@@ -209,11 +215,17 @@ export async function generateClaimPdf(
   database: SQLiteDatabase,
   claimId: number,
   generatedAt = Date.now(),
+  receiptStorage?: ReceiptStorage,
 ): Promise<GeneratedClaimPdf> {
   let printFile: File | null = null;
   let destination: File | null = null;
   try {
-    const model = await buildClaimPdfModel(database, claimId, generatedAt);
+    const model = await buildClaimPdfModel(
+      database,
+      claimId,
+      generatedAt,
+      receiptStorage,
+    );
     const html = renderClaimPdfHtml(model);
     const result = await Print.printToFileAsync({ html });
     printFile = new File(result.uri);
@@ -248,8 +260,14 @@ export async function shareClaimPdf(
   database: SQLiteDatabase,
   claimId: number,
   generatedAt = Date.now(),
+  receiptStorage?: ReceiptStorage,
 ) {
-  const generated = await generateClaimPdf(database, claimId, generatedAt);
+  const generated = await generateClaimPdf(
+    database,
+    claimId,
+    generatedAt,
+    receiptStorage,
+  );
   try {
     if (!(await Sharing.isAvailableAsync())) {
       throw createCodedError(

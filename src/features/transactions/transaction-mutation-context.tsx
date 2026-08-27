@@ -19,6 +19,7 @@ import {
   restoreDeletedTransaction,
   type DeletedTransactionSnapshot,
 } from '@/features/transactions/transaction-repository';
+import { useReceiptStorage } from '@/features/receipts/receipt-storage-context';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { spacing } from '@/theme/spacing';
 
@@ -49,10 +50,9 @@ const TransactionMutationContext =
 const UNDO_DURATION_MS = 5_000;
 const RESULT_DURATION_MS = 2_500;
 
-export function TransactionMutationProvider({
-  children,
-}: PropsWithChildren) {
+export function TransactionMutationProvider({ children }: PropsWithChildren) {
   const database = useSQLiteContext();
+  const receiptStorage = useReceiptStorage();
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
   const [revision, setRevision] = useState(0);
@@ -70,11 +70,14 @@ export function TransactionMutationProvider({
     timeoutRef.current = null;
   }, []);
 
-  const finalizePending = useCallback((pending: PendingUndo | null) => {
-    if (pending?.kind === 'deleted') {
-      finalizeDeletedTransactionUndo(pending.snapshot);
-    }
-  }, []);
+  const finalizePending = useCallback(
+    (pending: PendingUndo | null) => {
+      if (pending?.kind === 'deleted') {
+        finalizeDeletedTransactionUndo(pending.snapshot, receiptStorage);
+      }
+    },
+    [receiptStorage],
+  );
 
   const replacePending = useCallback(
     (next: PendingUndo | null) => {
@@ -148,13 +151,22 @@ export function TransactionMutationProvider({
 
     try {
       if (pending.kind === 'created') {
-        await deleteTransaction(database, pending.transactionId);
+        await deleteTransaction(
+          database,
+          pending.transactionId,
+          undefined,
+          receiptStorage,
+        );
         if (!mountedRef.current) return;
         pendingUndoRef.current = null;
         setPendingUndo(null);
         setNoticeKind('createUndone');
       } else {
-        await restoreDeletedTransaction(database, pending.snapshot);
+        await restoreDeletedTransaction(
+          database,
+          pending.snapshot,
+          receiptStorage,
+        );
         if (!mountedRef.current) return;
         pendingUndoRef.current = null;
         setPendingUndo(null);
@@ -178,7 +190,7 @@ export function TransactionMutationProvider({
       undoingRef.current = false;
       if (mountedRef.current) setIsUndoing(false);
     }
-  }, [cancelTimeout, database, finalizePending, scheduleHide]);
+  }, [cancelTimeout, database, finalizePending, receiptStorage, scheduleHide]);
 
   useEffect(() => {
     mountedRef.current = true;
