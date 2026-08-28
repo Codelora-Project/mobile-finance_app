@@ -134,7 +134,7 @@ describe('settings screen', () => {
     mockSetQuickShortcutsSetting.mockResolvedValue(undefined);
   });
 
-  it('shows management links, storage stats, base currency, and local-only About details', async () => {
+  it('shows management links, storage stats, base currency, and local-first About details', async () => {
     await render(
       <ThemeProvider>
         <LanguageProvider initialLanguage="en">
@@ -151,9 +151,7 @@ describe('settings screen', () => {
     expect(
       screen.getByRole('button', { name: 'Clear Cache' }),
     ).toBeOnTheScreen();
-    expect(
-      screen.getByText(/Google is used only for account identity/),
-    ).toBeOnTheScreen();
+    expect(screen.getByText(/Primary data stays local/)).toBeOnTheScreen();
     expect(screen.getByText(/Version 1.0.0/)).toBeOnTheScreen();
     await fireEvent.press(
       screen.getByRole('button', { name: 'View app introduction' }),

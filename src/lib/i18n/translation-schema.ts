@@ -380,6 +380,24 @@ export type TranslationSchema = {
     restoringData: string;
     backupCreatedSuccess: string;
     csvCreatedSuccess: string;
+    cloudSection: string;
+    cloudDesc: string;
+    cloudConnectedAs: string;
+    cloudLastBackup: string;
+    cloudNeverBackedUp: string;
+    cloudBackupNow: string;
+    cloudBackingUp: string;
+    cloudRestore: string;
+    cloudAutomatic: string;
+    cloudAutomaticDesc: string;
+    cloudBackupSuccessTitle: string;
+    cloudBackupSuccessDesc: string;
+    cloudNoBackupTitle: string;
+    cloudNoBackupDesc: string;
+    cloudPermissionDenied: string;
+    cloudStatusReady: string;
+    cloudPendingChanges: string;
+    cloudLastError: string;
   };
   wallets: {
     title: string;

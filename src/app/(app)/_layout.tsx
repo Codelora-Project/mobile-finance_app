@@ -9,6 +9,10 @@ import { createAccountScope } from '@/features/auth/account-scope';
 import { useAuth } from '@/features/auth/auth-context';
 import { LegacyDataProvider } from '@/features/auth/legacy-data-context';
 import { LegacyMigrationGate } from '@/features/auth/legacy-migration-gate';
+import {
+  CloudBackupCoordinator,
+  CloudRestoreGate,
+} from '@/features/cloud-backup';
 import { ReceiptStorageProvider } from '@/features/receipts/receipt-storage-context';
 import { createReceiptStorage } from '@/features/receipts/receipt-storage';
 import {
@@ -68,7 +72,7 @@ function AppNavigation() {
   );
 }
 
-function AppWithProviders() {
+function AppWithProviders({ accountId }: { accountId: string }) {
   const database = useSQLiteContext();
   const [currency, setCurrency] = useState<SupportedCurrencyCode>('IDR');
   const [language, setLanguage] = useState<Language>('id');
@@ -133,9 +137,11 @@ function AppWithProviders() {
           }}
         >
           <AppErrorBoundary>
-            <TransactionMutationProvider>
-              <AppNavigation />
-            </TransactionMutationProvider>
+            <CloudBackupCoordinator accountId={accountId}>
+              <TransactionMutationProvider>
+                <AppNavigation />
+              </TransactionMutationProvider>
+            </CloudBackupCoordinator>
           </AppErrorBoundary>
         </CurrencyProvider>
       </LanguageProvider>
@@ -145,7 +151,11 @@ function AppWithProviders() {
 
 export default function AppLayout() {
   const { user } = useAuth();
-  const scope = useMemo(() => (user ? createAccountScope(user) : null), [user]);
+  const accountId = user?.id ?? null;
+  const scope = useMemo(
+    () => (accountId ? createAccountScope({ id: accountId }) : null),
+    [accountId],
+  );
   const receiptStorage = useMemo(
     () => (scope ? createReceiptStorage(scope.receiptDirectory) : null),
     [scope],
@@ -161,7 +171,9 @@ export default function AppLayout() {
       >
         <LegacyDataProvider accountScope={scope}>
           <LegacyMigrationGate>
-            <AppWithProviders />
+            <CloudRestoreGate accountId={scope.accountId}>
+              <AppWithProviders accountId={scope.accountId} />
+            </CloudRestoreGate>
           </LegacyMigrationGate>
         </LegacyDataProvider>
       </DatabaseProvider>

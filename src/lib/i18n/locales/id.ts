@@ -179,7 +179,7 @@ export const id = {
     readOnly: 'Hanya baca',
     dataSection: 'Data',
     dataDesc:
-      'Google hanya digunakan untuk identitas akun. Data keuangan tetap lokal, tanpa sinkronisasi cloud atau telemetri.',
+      'Data utama tetap lokal. Cadangan opsional disimpan di ruang aplikasi pribadi pada Google Drive tanpa backend pengembang.',
     deleteAllData: 'Hapus Semua Data',
     aboutSection: 'Tentang Aplikasi',
     version: 'Versi',
@@ -420,6 +420,28 @@ export const id = {
     restoringData: 'Memulihkan data...',
     backupCreatedSuccess: 'File cadangan berhasil dibuat dan siap dibagikan.',
     csvCreatedSuccess: 'File CSV berhasil dibuat dan siap dibagikan.',
+    cloudSection: 'Cadangan Google Drive',
+    cloudDesc:
+      'Simpan salinan data ke ruang aplikasi pribadi di Google Drive. Data lokal tetap dapat digunakan tanpa internet.',
+    cloudConnectedAs: 'Terhubung sebagai',
+    cloudLastBackup: 'Terakhir dicadangkan',
+    cloudNeverBackedUp: 'Belum pernah dicadangkan',
+    cloudBackupNow: 'Cadangkan Sekarang',
+    cloudBackingUp: 'Mencadangkan ke Google Drive...',
+    cloudRestore: 'Pulihkan dari Google Drive',
+    cloudAutomatic: 'Cadangkan otomatis',
+    cloudAutomaticDesc:
+      'Cadangkan perubahan ketika aplikasi aktif dan koneksi tersedia.',
+    cloudBackupSuccessTitle: 'Cadangan tersimpan',
+    cloudBackupSuccessDesc: 'Data terbaru berhasil disimpan ke Google Drive.',
+    cloudNoBackupTitle: 'Cadangan tidak ditemukan',
+    cloudNoBackupDesc:
+      'Belum ada cadangan Personal Finance pada akun Google ini.',
+    cloudPermissionDenied:
+      'Izin Google Drive belum diberikan. Data lokal tidak berubah.',
+    cloudStatusReady: 'Akun Google terhubung',
+    cloudPendingChanges: 'Ada perubahan yang belum dicadangkan',
+    cloudLastError: 'Percobaan terakhir gagal',
   },
   // Wallets & Accounts
   wallets: {
@@ -472,7 +494,7 @@ export const id = {
     impactDescription:
       'Setiap transaksi langsung membentuk ringkasan yang mudah dipahami.',
     localAssurance: 'Tersimpan di perangkat • Siap dipakai offline',
-    identityNote: 'Google hanya digunakan untuk identitas akun.',
+    identityNote: 'Google digunakan untuk identitas dan cadangan Drive.',
     demoExpense: 'Catat pengeluaran',
     demoToday: 'Hari ini',
     demoSaved: 'Tersimpan',
@@ -499,7 +521,7 @@ export const id = {
     googleButtonLoading: 'Menghubungkan ke Google...',
     googleButtonHint: 'Masuk dengan akun Google untuk mulai mencatat.',
     privacyNote:
-      'Data keuangan Anda tersimpan lokal di perangkat dan tidak disinkronkan ke cloud.',
+      'Data utama tersimpan lokal dan cadangan dapat dipulihkan melalui Google Drive.',
     dismissErrorLabel: 'Tutup pesan kesalahan',
     reauthTitle: 'Sesi Berakhir',
     reauthDescription:

@@ -9,7 +9,8 @@ import {
   silentlyValidateGoogleSession,
 } from '@/features/auth/google-auth-service';
 
-const mockAddScopes = jest.fn<() => Promise<unknown>>();
+const mockAddScopes =
+  jest.fn<(input: { scopes: string[] }) => Promise<unknown>>();
 const mockConfigure = jest.fn();
 const mockGetTokens = jest.fn<() => Promise<unknown>>();
 const mockHasPlayServices = jest.fn<() => Promise<boolean>>();
@@ -18,7 +19,7 @@ const mockSignInSilently = jest.fn<() => Promise<unknown>>();
 
 jest.mock('@react-native-google-signin/google-signin', () => ({
   GoogleSignin: {
-    addScopes: () => mockAddScopes(),
+    addScopes: (input: { scopes: string[] }) => mockAddScopes(input),
     clearCachedAccessToken: jest.fn(),
     configure: (...args: unknown[]) => mockConfigure(...args),
     getTokens: () => mockGetTokens(),
@@ -83,7 +84,6 @@ describe('Google auth service', () => {
     expect(mockHasPlayServices).toHaveBeenCalledTimes(1);
     expect(mockConfigure).toHaveBeenCalledWith({
       offlineAccess: false,
-      scopes: [GOOGLE_DRIVE_APPDATA_SCOPE],
       webClientId:
         '797819627457-2lci158mp3k2mucv16573gp7b2d67ho6.apps.googleusercontent.com',
     });
@@ -103,6 +103,39 @@ describe('Google auth service', () => {
       'temporary-drive-access-token',
     );
     expect(mockAddScopes).toHaveBeenCalledTimes(1);
+    expect(mockAddScopes).toHaveBeenCalledWith({
+      scopes: [GOOGLE_DRIVE_APPDATA_SCOPE],
+    });
+  });
+
+  it('serializes session validation behind an active Drive permission request', async () => {
+    let resolveAuthorization!: (value: unknown) => void;
+    mockAddScopes.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveAuthorization = resolve;
+        }),
+    );
+    mockSignInSilently.mockResolvedValue({
+      data: googleUser,
+      type: 'success',
+    });
+
+    const firstAuthorization = requestGoogleDriveAccess();
+    const duplicateAuthorization = requestGoogleDriveAccess();
+    await Promise.resolve();
+    const validation = silentlyValidateGoogleSession();
+    await Promise.resolve();
+
+    expect(mockAddScopes).toHaveBeenCalledTimes(1);
+    expect(mockSignInSilently).not.toHaveBeenCalled();
+
+    resolveAuthorization({ data: googleUser, type: 'success' });
+    await expect(
+      Promise.all([firstAuthorization, duplicateAuthorization]),
+    ).resolves.toEqual([{ kind: 'granted' }, { kind: 'granted' }]);
+    await expect(validation).resolves.toMatchObject({ kind: 'success' });
+    expect(mockSignInSilently).toHaveBeenCalledTimes(1);
   });
 
   it('treats account-picker cancellation as a neutral result', async () => {

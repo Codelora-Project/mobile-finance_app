@@ -180,7 +180,7 @@ export const en = {
     readOnly: 'Read-only',
     dataSection: 'Data',
     dataDesc:
-      'Google is used only for account identity. Financial data stays local, with no cloud sync or telemetry.',
+      "Primary data stays local. Optional backups use Google Drive's private app space without a developer backend.",
     deleteAllData: 'Delete All Data',
     aboutSection: 'About App',
     version: 'Version',
@@ -422,6 +422,29 @@ export const en = {
     restoringData: 'Restoring data...',
     backupCreatedSuccess: 'Backup file created and ready to share.',
     csvCreatedSuccess: 'CSV report created and ready to share.',
+    cloudSection: 'Google Drive Backup',
+    cloudDesc:
+      "Store a copy of your data in Google Drive's private app space. Local data remains available without internet.",
+    cloudConnectedAs: 'Connected as',
+    cloudLastBackup: 'Last backed up',
+    cloudNeverBackedUp: 'Never backed up',
+    cloudBackupNow: 'Back Up Now',
+    cloudBackingUp: 'Backing up to Google Drive...',
+    cloudRestore: 'Restore from Google Drive',
+    cloudAutomatic: 'Automatic backup',
+    cloudAutomaticDesc:
+      'Back up changes while the app is active and a connection is available.',
+    cloudBackupSuccessTitle: 'Backup saved',
+    cloudBackupSuccessDesc:
+      'Your latest data was saved to Google Drive successfully.',
+    cloudNoBackupTitle: 'No backup found',
+    cloudNoBackupDesc:
+      'This Google account does not have a Personal Finance backup yet.',
+    cloudPermissionDenied:
+      'Google Drive permission was not granted. Local data was not changed.',
+    cloudStatusReady: 'Google account connected',
+    cloudPendingChanges: 'Changes are waiting to be backed up',
+    cloudLastError: 'Last attempt failed',
   },
   // Wallets & Accounts
   wallets: {
@@ -474,7 +497,7 @@ export const en = {
     impactDescription:
       'Every transaction instantly shapes an overview that is easy to understand.',
     localAssurance: 'Stored on this device • Ready offline',
-    identityNote: 'Google is used only for account identity.',
+    identityNote: 'Google provides identity and Drive backup access.',
     demoExpense: 'Record expense',
     demoToday: 'Today',
     demoSaved: 'Saved',
@@ -501,7 +524,7 @@ export const en = {
     googleButtonLoading: 'Connecting to Google...',
     googleButtonHint: 'Sign in with Google to start tracking.',
     privacyNote:
-      'Your financial data is stored locally on this device and never synced to the cloud.',
+      'Primary data stays local, with secure backups available through Google Drive.',
     dismissErrorLabel: 'Dismiss error message',
     reauthTitle: 'Session Expired',
     reauthDescription:

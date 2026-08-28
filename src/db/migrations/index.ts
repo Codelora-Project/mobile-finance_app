@@ -8,6 +8,7 @@ import { multiWalletsAndTransfersMigration } from '@/db/migrations/005-multi-wal
 import { cleanUnusedDefaultWalletsMigration } from '@/db/migrations/006-clean-unused-default-wallets';
 import { normalizeWalletTransferCategoryMigration } from '@/db/migrations/007-normalize-wallet-transfer-category';
 import { enforceTransactionShapeMigration } from '@/db/migrations/008-enforce-transaction-shape';
+import { cloudBackupStateMigration } from '@/db/migrations/009-cloud-backup-state';
 
 const migrations = [
   initialMigration,
@@ -18,6 +19,7 @@ const migrations = [
   cleanUnusedDefaultWalletsMigration,
   normalizeWalletTransferCategoryMigration,
   enforceTransactionShapeMigration,
+  cloudBackupStateMigration,
 ] as const;
 
 export const latestDatabaseVersion = migrations.at(-1)?.version ?? 0;

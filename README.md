@@ -2,7 +2,7 @@
 
 Aplikasi pencatatan keuangan pribadi (_Personal Finance_) modern berbasis Android yang dibangun menggunakan **Expo Development Build**, **React Native**, **TypeScript**, **Expo Router**, dan **SQLite**.
 
-Aplikasi dirancang dengan arsitektur **Offline-First**. Login Google pertama memerlukan internet, tetapi seluruh data transaksi, anggaran, target tabungan, lampiran foto struk, dan ekspor PDF tetap disimpan serta diproses lokal tanpa backend atau sinkronisasi cloud.
+Aplikasi dirancang dengan arsitektur **Offline-First**. Data utama tetap disimpan dan diproses lokal agar pencatatan tidak bergantung pada internet. Google Drive `appDataFolder` digunakan untuk cadangan otomatis dan pemulihan lintas perangkat tanpa backend milik pengembang.
 
 ---
 
@@ -21,8 +21,9 @@ Aplikasi dirancang dengan arsitektur **Offline-First**. Login Google pertama mem
 - **Klaim Reimbursement & Ekspor PDF**: Kelompokkan transaksi yang dapat diklaim (_reimbursable_) ke dalam laporan klaim dan ekspor menjadi berkas PDF resmi lengkap dengan lampiran foto struk.
 - **Kategori & Metode Pembayaran Dinamis**: Kelola kategori dan metode pembayaran kustom sesuai kebutuhan pribadi.
 - **Tema & Bahasa**: Mendukung Dark Mode / Light Mode serta pilihan bahasa Indonesia dan Inggris.
-- **Google Sign-In dan Isolasi Akun**: Google hanya dipakai sebagai identitas. Setiap akun memiliki database dan direktori struk lokal terpisah; logout tidak menghapus data.
-- **Privasi & Keamanan**: Tanpa backend, sinkronisasi cloud, atau telemetri, serta tersedia opsi _Delete All Data_ untuk mereset data akun aktif.
+- **Google Sign-In dan Isolasi Akun**: Google dipakai sebagai identitas dan otorisasi cadangan Drive. Setiap akun memiliki database dan direktori struk lokal terpisah; logout tidak menghapus data lokal.
+- **Cadangan Google Drive**: Menyimpan hingga tiga snapshot terbaru di ruang aplikasi tersembunyi milik akun Google, dengan restore aman dan dukungan otomatis saat koneksi tersedia.
+- **Privasi & Keamanan**: Tanpa backend atau telemetri milik pengembang, serta tersedia opsi _Delete All Data_ untuk mereset data akun aktif.
 
 ---
 
@@ -33,6 +34,7 @@ Aplikasi dirancang dengan arsitektur **Offline-First**. Login Google pertama mem
 - **Routing & Navigasi**: [Expo Router](https://docs.expo.dev/router/introduction/) (File-based routing)
 - **Database Lokal**: `expo-sqlite` (SQLite Storage)
 - **Autentikasi**: `@react-native-google-signin/google-signin`, `expo-secure-store`, dan `expo-network`
+- **Cadangan Cloud**: Google Drive REST API v3 (`drive.appdata`), `expo-crypto`, `expo-device`, dan `expo-background-task`
 - **Media & File**: `expo-camera`, `expo-image-picker`, `expo-file-system`
 - **Dokumen & Berbagi**: `expo-print`, `expo-sharing`
 - **Testing**: [Jest](https://jestjs.io/), `jest-expo`, `@testing-library/react-native`

@@ -5,6 +5,8 @@ import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
+import { useAuth } from '@/features/auth/auth-context';
+import { requestGoogleDriveAccess } from '@/features/auth/google-auth-service';
 import {
   exportBackupToJsonFile,
   exportTransactionsCsvFile,
@@ -24,7 +26,16 @@ import {
   BackupRestoreModal,
   BackupStatsCard,
   BackupVaultBanner,
+  CloudBackupCard,
 } from '@/features/backup/components';
+import {
+  createCloudBackup,
+  downloadLatestCloudBackup,
+  getCloudBackupState,
+  markCloudRestoreComplete,
+  setCloudBackupEnabled,
+  type CloudBackupState,
+} from '@/features/cloud-backup';
 import { useReceiptStorage } from '@/features/receipts/receipt-storage-context';
 import { isCodedError, mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
@@ -37,7 +48,8 @@ export function BackupScreen() {
   const receiptStorage = useReceiptStorage();
   const router = useRouter();
   const { colors } = useTheme();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+  const { user } = useAuth();
 
   const [currentStats, setCurrentStats] = useState<BackupStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
@@ -45,7 +57,10 @@ export function BackupScreen() {
   const [creatingBackup, setCreatingBackup] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [cloudBusy, setCloudBusy] = useState(false);
+  const [cloudState, setCloudState] = useState<CloudBackupState | null>(null);
   const creatingBackupRef = useRef(false);
+  const cloudBusyRef = useRef(false);
   const exportingCsvRef = useRef(false);
   const loadingStatsRequestRef = useRef(0);
   const pickingFileRef = useRef(false);
@@ -56,6 +71,7 @@ export function BackupScreen() {
   const [selectedBackup, setSelectedBackup] = useState<{
     fileName: string;
     payload: BackupPayload;
+    source?: 'cloud' | 'file';
     stats: BackupStats;
     uri: string;
   } | null>(null);
@@ -77,13 +93,129 @@ export function BackupScreen() {
     }
   }, [database]);
 
+  const loadCloudState = useCallback(async () => {
+    try {
+      setCloudState(await getCloudBackupState(database));
+    } catch (err) {
+      if (__DEV__) console.warn('Failed to load cloud backup state:', err);
+    }
+  }, [database]);
+
   useFocusEffect(
     useCallback(() => {
       void loadStats();
+      void loadCloudState();
       return () => {
         loadingStatsRequestRef.current += 1;
       };
-    }, [loadStats]),
+    }, [loadCloudState, loadStats]),
+  );
+
+  const ensureDriveAccess = useCallback(async () => {
+    const result = await requestGoogleDriveAccess();
+    if (result.kind === 'granted') return true;
+    Alert.alert(t.backup.cloudSection, t.backup.cloudPermissionDenied);
+    return false;
+  }, [t.backup.cloudPermissionDenied, t.backup.cloudSection]);
+
+  const handleCloudBackup = useCallback(async () => {
+    if (cloudBusyRef.current || !user) return;
+    cloudBusyRef.current = true;
+    setCloudBusy(true);
+    try {
+      if (!(await ensureDriveAccess())) return;
+      await createCloudBackup(database, receiptStorage, user.id);
+      await loadCloudState();
+      Alert.alert(
+        t.backup.cloudBackupSuccessTitle,
+        t.backup.cloudBackupSuccessDesc,
+      );
+    } catch (err) {
+      if (__DEV__) console.warn('Cloud backup failed:', err);
+      Alert.alert(
+        language === 'id' ? 'Cadangan gagal' : 'Backup failed',
+        err instanceof Error ? err.message : t.backup.cloudPermissionDenied,
+      );
+    } finally {
+      cloudBusyRef.current = false;
+      setCloudBusy(false);
+    }
+  }, [
+    database,
+    ensureDriveAccess,
+    language,
+    loadCloudState,
+    receiptStorage,
+    t.backup.cloudBackupSuccessDesc,
+    t.backup.cloudBackupSuccessTitle,
+    t.backup.cloudPermissionDenied,
+    user,
+  ]);
+
+  const handleCloudRestore = useCallback(async () => {
+    if (cloudBusyRef.current || !user) return;
+    cloudBusyRef.current = true;
+    setCloudBusy(true);
+    try {
+      if (!(await ensureDriveAccess())) return;
+      const downloaded = await downloadLatestCloudBackup(user.id);
+      if (!downloaded) {
+        Alert.alert(t.backup.cloudNoBackupTitle, t.backup.cloudNoBackupDesc);
+        return;
+      }
+      setSelectedBackup({
+        fileName: downloaded.file.name,
+        payload: downloaded.payload,
+        source: 'cloud',
+        stats: downloaded.stats,
+        uri: `gdrive://${downloaded.file.id}`,
+      });
+      setPreviewModalVisible(true);
+    } catch (err) {
+      if (__DEV__) console.warn('Cloud restore download failed:', err);
+      Alert.alert(
+        language === 'id' ? 'Pemulihan gagal' : 'Restore failed',
+        err instanceof Error ? err.message : t.backup.cloudPermissionDenied,
+      );
+    } finally {
+      cloudBusyRef.current = false;
+      setCloudBusy(false);
+    }
+  }, [
+    ensureDriveAccess,
+    language,
+    t.backup.cloudNoBackupDesc,
+    t.backup.cloudNoBackupTitle,
+    t.backup.cloudPermissionDenied,
+    user,
+  ]);
+
+  const handleToggleAutomatic = useCallback(
+    async (enabled: boolean) => {
+      if (cloudBusyRef.current) return;
+      cloudBusyRef.current = true;
+      setCloudBusy(true);
+      try {
+        if (enabled && !(await ensureDriveAccess())) return;
+        await setCloudBackupEnabled(database, enabled);
+        await loadCloudState();
+      } catch (err) {
+        Alert.alert(
+          t.backup.cloudSection,
+          err instanceof Error ? err.message : t.backup.cloudPermissionDenied,
+        );
+      } finally {
+        cloudBusyRef.current = false;
+        setCloudBusy(false);
+      }
+    },
+    [
+      database,
+      ensureDriveAccess,
+      loadCloudState,
+      t.backup.cloudPermissionDenied,
+      t.backup.cloudSection,
+    ],
   );
 
   // Handle Export Backup (JSON)
@@ -167,6 +299,10 @@ export function BackupScreen() {
     setRestoring(true);
     try {
       await restoreBackupData(database, selectedBackup.payload, receiptStorage);
+      if (selectedBackup.source === 'cloud') {
+        await markCloudRestoreComplete(database);
+        await loadCloudState();
+      }
       setPreviewModalVisible(false);
       setSelectedBackup(null);
       await loadStats();
@@ -191,6 +327,7 @@ export function BackupScreen() {
     }
   }, [
     database,
+    loadCloudState,
     loadStats,
     receiptStorage,
     router,
@@ -241,6 +378,19 @@ export function BackupScreen() {
           loadingStats={loadingStats}
           t={t}
         />
+
+        {user ? (
+          <CloudBackupCard
+            busy={cloudBusy}
+            email={user.email}
+            language={language}
+            onBackup={() => void handleCloudBackup()}
+            onRestore={() => void handleCloudRestore()}
+            onToggleAutomatic={(enabled) => void handleToggleAutomatic(enabled)}
+            state={cloudState}
+            t={t}
+          />
+        ) : null}
 
         {/* 💾 SECTION 1: CADANGKAN DATA (JSON) */}
         <BackupJsonCard

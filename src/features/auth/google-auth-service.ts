@@ -19,6 +19,18 @@ const CLIENT_ID_PATTERN =
 export const GOOGLE_DRIVE_APPDATA_SCOPE =
   'https://www.googleapis.com/auth/drive.appdata';
 let configuredClientId: string | null = null;
+let driveAuthorizationInFlight: Promise<GoogleDriveAuthorizationResult> | null =
+  null;
+let googleOperationTail: Promise<void> = Promise.resolve();
+
+function runSerializedGoogleOperation<T>(operation: () => Promise<T>) {
+  const result = googleOperationTail.then(operation, operation);
+  googleOperationTail = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  return result;
+}
 
 export class GoogleAuthError extends Error {
   constructor(
@@ -46,7 +58,6 @@ export function configureGoogleAuth() {
   if (configuredClientId === webClientId) return;
   GoogleSignin.configure({
     offlineAccess: false,
-    scopes: [GOOGLE_DRIVE_APPDATA_SCOPE],
     webClientId,
   });
   configuredClientId = webClientId;
@@ -82,10 +93,14 @@ export type InteractiveSignInResult =
 export async function signInWithGoogle(): Promise<InteractiveSignInResult> {
   configureGoogleAuth();
   try {
-    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-    const response = await GoogleSignin.signIn();
-    if (!isSuccessResponse(response)) return { kind: 'cancelled' };
-    return { kind: 'success', session: toSession(response.data) };
+    return await runSerializedGoogleOperation(async () => {
+      await GoogleSignin.hasPlayServices({
+        showPlayServicesUpdateDialog: true,
+      });
+      const response = await GoogleSignin.signIn();
+      if (!isSuccessResponse(response)) return { kind: 'cancelled' };
+      return { kind: 'success', session: toSession(response.data) };
+    });
   } catch (error) {
     throw normalizeGoogleAuthError(error);
   }
@@ -98,11 +113,13 @@ export type SilentSignInResult =
 export async function silentlyValidateGoogleSession(): Promise<SilentSignInResult> {
   configureGoogleAuth();
   try {
-    const response = await GoogleSignin.signInSilently();
-    if (isNoSavedCredentialFoundResponse(response)) {
-      return { kind: 'no_saved_credential' };
-    }
-    return { kind: 'success', session: toSession(response.data) };
+    return await runSerializedGoogleOperation(async () => {
+      const response = await GoogleSignin.signInSilently();
+      if (isNoSavedCredentialFoundResponse(response)) {
+        return { kind: 'no_saved_credential' };
+      }
+      return { kind: 'success', session: toSession(response.data) };
+    });
   } catch (error) {
     throw normalizeGoogleAuthError(error);
   }
@@ -110,7 +127,7 @@ export async function silentlyValidateGoogleSession(): Promise<SilentSignInResul
 
 export async function signOutFromGoogle() {
   configureGoogleAuth();
-  await GoogleSignin.signOut();
+  await runSerializedGoogleOperation(() => GoogleSignin.signOut());
 }
 
 export type GoogleDriveAuthorizationResult =
@@ -119,31 +136,44 @@ export type GoogleDriveAuthorizationResult =
   | Readonly<{ kind: 'signed_out' }>;
 
 export async function requestGoogleDriveAccess(): Promise<GoogleDriveAuthorizationResult> {
+  if (driveAuthorizationInFlight) return driveAuthorizationInFlight;
   configureGoogleAuth();
+  const authorization = runSerializedGoogleOperation(async () => {
+    try {
+      const response = await GoogleSignin.addScopes({
+        scopes: [GOOGLE_DRIVE_APPDATA_SCOPE],
+      });
+      if (response === null) return { kind: 'signed_out' } as const;
+      return isSuccessResponse(response)
+        ? ({ kind: 'granted' } as const)
+        : ({ kind: 'cancelled' } as const);
+    } catch (error) {
+      throw normalizeGoogleAuthError(error);
+    }
+  });
+  driveAuthorizationInFlight = authorization;
   try {
-    const response = await GoogleSignin.addScopes({
-      scopes: [GOOGLE_DRIVE_APPDATA_SCOPE],
-    });
-    if (response === null) return { kind: 'signed_out' };
-    return isSuccessResponse(response)
-      ? { kind: 'granted' }
-      : { kind: 'cancelled' };
-  } catch (error) {
-    throw normalizeGoogleAuthError(error);
+    return await authorization;
+  } finally {
+    if (driveAuthorizationInFlight === authorization) {
+      driveAuthorizationInFlight = null;
+    }
   }
 }
 
 export async function getGoogleDriveAccessToken() {
   configureGoogleAuth();
   try {
-    const { accessToken } = await GoogleSignin.getTokens();
-    if (!accessToken) {
-      throw new GoogleAuthError(
-        'REAUTH_REQUIRED',
-        'Izin Google Drive perlu diverifikasi kembali.',
-      );
-    }
-    return accessToken;
+    return await runSerializedGoogleOperation(async () => {
+      const { accessToken } = await GoogleSignin.getTokens();
+      if (!accessToken) {
+        throw new GoogleAuthError(
+          'REAUTH_REQUIRED',
+          'Izin Google Drive perlu diverifikasi kembali.',
+        );
+      }
+      return accessToken;
+    });
   } catch (error) {
     throw normalizeGoogleAuthError(error);
   }
@@ -151,7 +181,9 @@ export async function getGoogleDriveAccessToken() {
 
 export async function clearGoogleDriveAccessToken(accessToken: string) {
   configureGoogleAuth();
-  await GoogleSignin.clearCachedAccessToken(accessToken);
+  await runSerializedGoogleOperation(() =>
+    GoogleSignin.clearCachedAccessToken(accessToken),
+  );
 }
 
 export function normalizeGoogleAuthError(error: unknown): GoogleAuthError {

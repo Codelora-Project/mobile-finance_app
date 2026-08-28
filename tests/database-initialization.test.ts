@@ -127,6 +127,13 @@ describe('database initialization', () => {
     expect(
       database.executedSql.some(
         (source) =>
+          source.includes('CREATE TABLE cloud_backup_state') &&
+          source.includes('cloud_backup_revision_transactions_insert'),
+      ),
+    ).toBe(true);
+    expect(
+      database.executedSql.some(
+        (source) =>
           source.includes("system_key = 'wallet_transfer'") &&
           source.includes("WHERE type = 'transfer'"),
       ),

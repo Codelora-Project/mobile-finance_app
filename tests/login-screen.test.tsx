@@ -59,7 +59,7 @@ describe('LoginScreen', () => {
     expect(screen.getByText('Lanjutkan dengan Google')).toBeOnTheScreen();
     expect(
       screen.getByText(
-        'Data keuangan Anda tersimpan lokal di perangkat dan tidak disinkronkan ke cloud.',
+        'Data utama tersimpan lokal dan cadangan dapat dipulihkan melalui Google Drive.',
       ),
     ).toBeOnTheScreen();
   });

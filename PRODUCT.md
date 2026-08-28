@@ -25,8 +25,8 @@ Pengguna mencatat transaksi harian melalui perangkat Android, sering kali segera
 ## Capabilities and Constraints
 
 - Mendukung pencatatan pemasukan, pengeluaran, transfer, dompet, anggaran, target tabungan, klaim, struk, analitik, backup, dan ekspor.
-- Google hanya digunakan sebagai identitas akun. Tidak ada backend, sinkronisasi cloud, Firebase, atau telemetri.
-- Data keuangan dan lampiran disimpan lokal serta dipisahkan per akun Google.
+- Google digunakan sebagai identitas akun dan otorisasi cadangan pada Google Drive `appDataFolder`. Tidak ada backend, Firebase, atau telemetri milik pengembang.
+- Data utama dan lampiran tetap disimpan lokal serta dipisahkan per akun Google; Drive menyimpan snapshot cadangan untuk pemulihan, bukan sinkronisasi dua arah.
 - Mendukung bahasa Indonesia dan Inggris, light mode dan dark mode.
 - Tahap saat ini berfokus pada Android; iOS bukan bagian dari scope.
 
