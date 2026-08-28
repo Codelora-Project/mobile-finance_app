@@ -466,6 +466,9 @@ export type TranslationSchema = {
       tx2Title: string;
       tx2Amount: string;
       speedBadge: string;
+      budgetLabel: string;
+      budgetUsed: string;
+      budgetRemaining: string;
       tagOffline: string;
       tagNoAds: string;
       tagPrivate: string;

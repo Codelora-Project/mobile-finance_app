@@ -16,6 +16,8 @@ import type {
 
 const CLIENT_ID_PATTERN =
   /^[0-9]+-[A-Za-z0-9_-]+\.apps\.googleusercontent\.com$/;
+export const GOOGLE_DRIVE_APPDATA_SCOPE =
+  'https://www.googleapis.com/auth/drive.appdata';
 let configuredClientId: string | null = null;
 
 export class GoogleAuthError extends Error {
@@ -42,7 +44,11 @@ function getWebClientId() {
 export function configureGoogleAuth() {
   const webClientId = getWebClientId();
   if (configuredClientId === webClientId) return;
-  GoogleSignin.configure({ offlineAccess: false, webClientId });
+  GoogleSignin.configure({
+    offlineAccess: false,
+    scopes: [GOOGLE_DRIVE_APPDATA_SCOPE],
+    webClientId,
+  });
   configuredClientId = webClientId;
 }
 
@@ -105,6 +111,47 @@ export async function silentlyValidateGoogleSession(): Promise<SilentSignInResul
 export async function signOutFromGoogle() {
   configureGoogleAuth();
   await GoogleSignin.signOut();
+}
+
+export type GoogleDriveAuthorizationResult =
+  | Readonly<{ kind: 'cancelled' }>
+  | Readonly<{ kind: 'granted' }>
+  | Readonly<{ kind: 'signed_out' }>;
+
+export async function requestGoogleDriveAccess(): Promise<GoogleDriveAuthorizationResult> {
+  configureGoogleAuth();
+  try {
+    const response = await GoogleSignin.addScopes({
+      scopes: [GOOGLE_DRIVE_APPDATA_SCOPE],
+    });
+    if (response === null) return { kind: 'signed_out' };
+    return isSuccessResponse(response)
+      ? { kind: 'granted' }
+      : { kind: 'cancelled' };
+  } catch (error) {
+    throw normalizeGoogleAuthError(error);
+  }
+}
+
+export async function getGoogleDriveAccessToken() {
+  configureGoogleAuth();
+  try {
+    const { accessToken } = await GoogleSignin.getTokens();
+    if (!accessToken) {
+      throw new GoogleAuthError(
+        'REAUTH_REQUIRED',
+        'Izin Google Drive perlu diverifikasi kembali.',
+      );
+    }
+    return accessToken;
+  } catch (error) {
+    throw normalizeGoogleAuthError(error);
+  }
+}
+
+export async function clearGoogleDriveAccessToken(accessToken: string) {
+  configureGoogleAuth();
+  await GoogleSignin.clearCachedAccessToken(accessToken);
 }
 
 export function normalizeGoogleAuthError(error: unknown): GoogleAuthError {

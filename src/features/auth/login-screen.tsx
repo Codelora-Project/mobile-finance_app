@@ -21,15 +21,6 @@ import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
-/**
- * THESIS: A high-trust, privacy-first personal finance authentication screen
- * featuring an animated floating dashboard card stack preview that demonstrates
- * speed, clarity, and offline-first peace of mind before signing in.
- *
- * OWN-WORLD: Gentle 60fps levitating physics on floating transaction chips,
- * clean vector micro-icons, category pastel tokens, tactile Google Sign-In,
- * dynamic Dark/Light surface contrast, and full a11y.
- */
 export function LoginScreen() {
   const { clearError, error, isBusy, signInWithGoogle, status } = useAuth();
   const { colors, isDark } = useTheme();
@@ -41,6 +32,17 @@ export function LoginScreen() {
   const floatAnimTop = useMemo(() => new Animated.Value(0), []);
   const floatAnimBottom = useMemo(() => new Animated.Value(0), []);
   const floatAnimMain = useMemo(() => new Animated.Value(0), []);
+
+  // Staggered entry animation values
+  const entryBrandOp = useMemo(() => new Animated.Value(0), []);
+  const entryBrandTY = useMemo(() => new Animated.Value(-10), []);
+  const entryCopyOp = useMemo(() => new Animated.Value(0), []);
+  const entryCopyTY = useMemo(() => new Animated.Value(-6), []);
+  const entryPreviewOp = useMemo(() => new Animated.Value(0), []);
+  const entryPreviewScale = useMemo(() => new Animated.Value(0.95), []);
+  const entryTagsOp = useMemo(() => new Animated.Value(0), []);
+  const entryBottomOp = useMemo(() => new Animated.Value(0), []);
+  const entryBottomTY = useMemo(() => new Animated.Value(14), []);
 
   useEffect(() => {
     // Top chip: 2.6s floating cycle
@@ -108,6 +110,85 @@ export function LoginScreen() {
     };
   }, [floatAnimBottom, floatAnimMain, floatAnimTop]);
 
+  // Staggered entry animation sequence: Badge -> Headline -> Preview -> Tags -> CTA
+  useEffect(() => {
+    const entrySequence = Animated.stagger(120, [
+      Animated.parallel([
+        Animated.timing(entryBrandOp, {
+          duration: 450,
+          easing: Easing.out(Easing.cubic),
+          toValue: 1,
+          useNativeDriver: true,
+        }),
+        Animated.timing(entryBrandTY, {
+          duration: 450,
+          easing: Easing.out(Easing.cubic),
+          toValue: 0,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.parallel([
+        Animated.timing(entryCopyOp, {
+          duration: 500,
+          easing: Easing.out(Easing.cubic),
+          toValue: 1,
+          useNativeDriver: true,
+        }),
+        Animated.timing(entryCopyTY, {
+          duration: 500,
+          easing: Easing.out(Easing.cubic),
+          toValue: 0,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.parallel([
+        Animated.timing(entryPreviewOp, {
+          duration: 550,
+          easing: Easing.out(Easing.cubic),
+          toValue: 1,
+          useNativeDriver: true,
+        }),
+        Animated.timing(entryPreviewScale, {
+          duration: 550,
+          easing: Easing.out(Easing.cubic),
+          toValue: 1,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.timing(entryTagsOp, {
+        duration: 400,
+        easing: Easing.out(Easing.cubic),
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+      Animated.parallel([
+        Animated.timing(entryBottomOp, {
+          duration: 500,
+          easing: Easing.out(Easing.cubic),
+          toValue: 1,
+          useNativeDriver: true,
+        }),
+        Animated.timing(entryBottomTY, {
+          duration: 500,
+          easing: Easing.out(Easing.cubic),
+          toValue: 0,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]);
+    entrySequence.start();
+  }, [
+    entryBrandOp,
+    entryBrandTY,
+    entryCopyOp,
+    entryCopyTY,
+    entryPreviewOp,
+    entryPreviewScale,
+    entryTagsOp,
+    entryBottomOp,
+    entryBottomTY,
+  ]);
+
   // Interpolations for natural floating physics
   const topTranslateY = useMemo(
     () =>
@@ -170,10 +251,10 @@ export function LoginScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.container}>
-          {/* Top Group: Brand Badge & Floating Preview Stack */}
-          <View style={styles.topGroup}>
+          {/* ── Upper Content: Brand Badge + Headline + Preview + Trust Tags ── */}
+          <View style={styles.heroGroup}>
             {/* App Brand Badge */}
-            <View
+            <Animated.View
               style={[
                 styles.brandBadge,
                 {
@@ -181,8 +262,10 @@ export function LoginScreen() {
                     ? 'rgba(59, 130, 246, 0.12)'
                     : colors.primaryLight,
                   borderColor: isDark
-                    ? 'rgba(59, 130, 246, 0.3)'
+                    ? 'rgba(59, 130, 246, 0.28)'
                     : 'rgba(37, 99, 235, 0.2)',
+                  opacity: entryBrandOp,
+                  transform: [{ translateY: entryBrandTY }],
                 },
               ]}
             >
@@ -208,10 +291,44 @@ export function LoginScreen() {
               >
                 {authCopy.appTagline}
               </Text>
-            </View>
+            </Animated.View>
+
+            {/* Value Headline & Description */}
+            <Animated.View
+              style={[
+                styles.copyBlock,
+                {
+                  opacity: entryCopyOp,
+                  transform: [{ translateY: entryCopyTY }],
+                },
+              ]}
+            >
+              <Text
+                accessibilityRole="header"
+                style={[styles.heroTitle, { color: colors.textPrimary }]}
+              >
+                {authCopy.heroTitle}
+              </Text>
+              <Text
+                style={[
+                  styles.heroDescription,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {authCopy.heroDescription}
+              </Text>
+            </Animated.View>
 
             {/* Floating Dashboard Preview Stack */}
-            <View style={styles.previewSection}>
+            <Animated.View
+              style={[
+                styles.previewSection,
+                {
+                  opacity: entryPreviewOp,
+                  transform: [{ scale: entryPreviewScale }],
+                },
+              ]}
+            >
               {/* Ambient subtle glow backdrop */}
               <View
                 pointerEvents="none"
@@ -231,7 +348,7 @@ export function LoginScreen() {
                   styles.floatingChipTop,
                   {
                     backgroundColor: colors.surface,
-                    borderColor: isDark ? '#303034' : '#E2E8F0',
+                    borderColor: isDark ? '#27272A' : '#E2E8F0',
                     shadowColor: colors.shadow,
                     transform: [
                       { translateY: topTranslateY },
@@ -277,7 +394,7 @@ export function LoginScreen() {
                   styles.mainCard,
                   {
                     backgroundColor: colors.surface,
-                    borderColor: isDark ? '#303034' : '#E2E8F0',
+                    borderColor: isDark ? '#27272A' : '#E2E8F0',
                     shadowColor: colors.shadow,
                     transform: [{ translateY: mainTranslateY }],
                   },
@@ -287,8 +404,8 @@ export function LoginScreen() {
                 <View style={styles.mainCardHeader}>
                   <View style={styles.mainCardLabelRow}>
                     <MaterialCommunityIcons
-                      color={colors.textSecondary}
-                      name="shield-check-outline"
+                      color={colors.primary}
+                      name="shield-check"
                       size={15}
                     />
                     <Text
@@ -305,8 +422,11 @@ export function LoginScreen() {
                       styles.speedBadge,
                       {
                         backgroundColor: isDark
-                          ? 'rgba(59, 130, 246, 0.18)'
+                          ? 'rgba(59, 130, 246, 0.16)'
                           : colors.primaryLight,
+                        borderColor: isDark
+                          ? 'rgba(59, 130, 246, 0.3)'
+                          : 'rgba(37, 99, 235, 0.2)',
                       },
                     ]}
                   >
@@ -325,78 +445,152 @@ export function LoginScreen() {
 
                 {/* Main Balance Display */}
                 <Text
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.75}
+                  numberOfLines={1}
                   style={[styles.mainCardAmount, { color: colors.textPrimary }]}
                 >
                   {previewCopy.totalBalanceValue}
                 </Text>
 
-                {/* Income & Expense Breakdown Pills */}
+                {/* Clean Minimalist Horizontal Divider */}
+                <View
+                  style={[
+                    styles.cardDivider,
+                    { backgroundColor: isDark ? '#27272A' : '#F1F5F9' },
+                  ]}
+                />
+
+                {/* Income & Expense Clean Minimalist Breakdown (Stacked labels to avoid overlap) */}
                 <View style={styles.mainCardBreakdownRow}>
-                  <View
-                    style={[
-                      styles.breakdownPill,
-                      {
-                        backgroundColor: isDark
-                          ? 'rgba(74, 222, 128, 0.12)'
-                          : '#DCFCE7',
-                      },
-                    ]}
-                  >
-                    <MaterialCommunityIcons
-                      color={colors.positive}
-                      name="arrow-down-left"
-                      size={13}
-                    />
+                  {/* Income */}
+                  <View style={styles.breakdownCol}>
+                    <View style={styles.breakdownLabelRow}>
+                      <View
+                        style={[
+                          styles.metricDot,
+                          { backgroundColor: colors.positive },
+                        ]}
+                      />
+                      <Text
+                        numberOfLines={1}
+                        style={[
+                          styles.breakdownLabel,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {previewCopy.incomeLabel}
+                      </Text>
+                    </View>
                     <Text
+                      numberOfLines={1}
                       style={[
-                        styles.breakdownLabel,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      {previewCopy.incomeLabel}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.breakdownValuePositive,
-                        { color: colors.positive },
+                        styles.breakdownValueText,
+                        { color: colors.textPrimary },
                       ]}
                     >
                       {previewCopy.incomeValue}
                     </Text>
                   </View>
 
+                  {/* Center Vertical Divider */}
                   <View
                     style={[
-                      styles.breakdownPill,
-                      {
-                        backgroundColor: isDark
-                          ? 'rgba(251, 113, 133, 0.12)'
-                          : '#FEE2E2',
-                      },
+                      styles.verticalDivider,
+                      { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
                     ]}
-                  >
-                    <MaterialCommunityIcons
-                      color={colors.destructive}
-                      name="arrow-up-right"
-                      size={13}
-                    />
+                  />
+
+                  {/* Expense */}
+                  <View style={styles.breakdownCol}>
+                    <View style={styles.breakdownLabelRow}>
+                      <View
+                        style={[
+                          styles.metricDot,
+                          { backgroundColor: colors.destructive },
+                        ]}
+                      />
+                      <Text
+                        numberOfLines={1}
+                        style={[
+                          styles.breakdownLabel,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {previewCopy.expenseLabel}
+                      </Text>
+                    </View>
                     <Text
+                      numberOfLines={1}
                       style={[
-                        styles.breakdownLabel,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      {previewCopy.expenseLabel}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.breakdownValueNegative,
-                        { color: colors.destructive },
+                        styles.breakdownValueText,
+                        { color: colors.textPrimary },
                       ]}
                     >
                       {previewCopy.expenseValue}
                     </Text>
                   </View>
+                </View>
+
+                {/* Second Divider for Budget Bar */}
+                <View
+                  style={[
+                    styles.cardDivider,
+                    { backgroundColor: isDark ? '#27272A' : '#F1F5F9' },
+                  ]}
+                />
+
+                {/* Monthly Budget Progress Section (Option A Visual Richness) */}
+                <View style={styles.budgetSection}>
+                  <View style={styles.budgetHeaderRow}>
+                    <View style={styles.budgetLabelWrap}>
+                      <MaterialCommunityIcons
+                        color={colors.primary}
+                        name="chart-donut"
+                        size={13}
+                      />
+                      <Text
+                        style={[
+                          styles.budgetLabel,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {previewCopy.budgetLabel}
+                      </Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.budgetUsedText,
+                        { color: colors.textPrimary },
+                      ]}
+                    >
+                      {previewCopy.budgetUsed}
+                    </Text>
+                  </View>
+
+                  {/* Progress Track & Fill */}
+                  <View
+                    style={[
+                      styles.budgetTrack,
+                      { backgroundColor: isDark ? '#27272A' : '#F1F5F9' },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.budgetFill,
+                        { backgroundColor: colors.primary },
+                      ]}
+                    />
+                  </View>
+
+                  <Text
+                    style={[
+                      styles.budgetRemainingText,
+                      { color: colors.textMuted },
+                    ]}
+                  >
+                    {previewCopy.budgetRemaining}
+                  </Text>
                 </View>
               </Animated.View>
 
@@ -406,7 +600,7 @@ export function LoginScreen() {
                   styles.floatingChipBottom,
                   {
                     backgroundColor: colors.surface,
-                    borderColor: isDark ? '#303034' : '#E2E8F0',
+                    borderColor: isDark ? '#27272A' : '#E2E8F0',
                     shadowColor: colors.shadow,
                     transform: [
                       { translateY: bottomTranslateY },
@@ -442,43 +636,25 @@ export function LoginScreen() {
                   {previewCopy.tx2Amount}
                 </Text>
               </Animated.View>
-            </View>
-          </View>
-
-          {/* Middle Group: Value Headline & Vector Trust Tags */}
-          <View style={styles.middleGroup}>
-            <View style={styles.copyBlock}>
-              <Text
-                accessibilityRole="header"
-                style={[styles.heroTitle, { color: colors.textPrimary }]}
-              >
-                {authCopy.heroTitle}
-              </Text>
-              <Text
-                style={[
-                  styles.heroDescription,
-                  { color: colors.textSecondary },
-                ]}
-              >
-                {authCopy.heroDescription}
-              </Text>
-            </View>
+            </Animated.View>
 
             {/* Curated Vector Micro-Icons Trust Tags */}
-            <View style={styles.tagsRow}>
+            <Animated.View style={[styles.tagsRow, { opacity: entryTagsOp }]}>
               <View
                 style={[
                   styles.tagPill,
                   {
-                    backgroundColor: colors.surfaceSecondary,
-                    borderColor: colors.border,
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : colors.surface,
+                    borderColor: isDark ? '#27272A' : '#E2E8F0',
                   },
                 ]}
               >
                 <MaterialCommunityIcons
-                  color={colors.textSecondary}
+                  color={colors.primary}
                   name="database-lock-outline"
-                  size={13}
+                  size={14}
                 />
                 <Text
                   style={[styles.tagPillText, { color: colors.textSecondary }]}
@@ -490,15 +666,17 @@ export function LoginScreen() {
                 style={[
                   styles.tagPill,
                   {
-                    backgroundColor: colors.surfaceSecondary,
-                    borderColor: colors.border,
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : colors.surface,
+                    borderColor: isDark ? '#27272A' : '#E2E8F0',
                   },
                 ]}
               >
                 <MaterialCommunityIcons
-                  color={colors.textSecondary}
+                  color={colors.positive}
                   name="shield-check-outline"
-                  size={13}
+                  size={14}
                 />
                 <Text
                   style={[styles.tagPillText, { color: colors.textSecondary }]}
@@ -510,15 +688,17 @@ export function LoginScreen() {
                 style={[
                   styles.tagPill,
                   {
-                    backgroundColor: colors.surfaceSecondary,
-                    borderColor: colors.border,
+                    backgroundColor: isDark
+                      ? colors.surfaceSecondary
+                      : colors.surface,
+                    borderColor: isDark ? '#27272A' : '#E2E8F0',
                   },
                 ]}
               >
                 <MaterialCommunityIcons
-                  color={colors.textSecondary}
+                  color={colors.primary}
                   name="lock-outline"
-                  size={13}
+                  size={14}
                 />
                 <Text
                   style={[styles.tagPillText, { color: colors.textSecondary }]}
@@ -526,11 +706,19 @@ export function LoginScreen() {
                   {previewCopy.tagPrivate}
                 </Text>
               </View>
-            </View>
+            </Animated.View>
           </View>
 
-          {/* Bottom Group: Action Section & Footnote */}
-          <View style={styles.bottomGroup}>
+          {/* ── Bottom Content: CTA & Privacy Footnote ── */}
+          <Animated.View
+            style={[
+              styles.bottomGroup,
+              {
+                opacity: entryBottomOp,
+                transform: [{ translateY: entryBottomTY }],
+              },
+            ]}
+          >
             {status === 'reauth_required' ? (
               <View
                 accessibilityRole="alert"
@@ -596,6 +784,7 @@ export function LoginScreen() {
               </Pressable>
             ) : null}
 
+            {/* High-Contrast Tactile Google Sign-In Button */}
             <Pressable
               accessibilityHint={authCopy.googleButtonHint}
               accessibilityLabel={
@@ -606,16 +795,16 @@ export function LoginScreen() {
               android_ripple={{
                 borderless: false,
                 color: isDark
-                  ? 'rgba(255, 255, 255, 0.1)'
-                  : 'rgba(0, 0, 0, 0.06)',
+                  ? 'rgba(255, 255, 255, 0.12)'
+                  : 'rgba(0, 0, 0, 0.08)',
               }}
               disabled={isBusy}
               onPress={() => void signInWithGoogle()}
               style={({ pressed }) => [
                 styles.googleButton,
                 {
-                  backgroundColor: isDark ? '#1E1E24' : '#FFFFFF',
-                  borderColor: isDark ? '#3F3F46' : '#CBD5E1',
+                  backgroundColor: isDark ? colors.surface : '#FFFFFF',
+                  borderColor: isDark ? '#3F3F46' : '#D1D5DB',
                   shadowColor: colors.shadow,
                 },
                 pressed && Platform.OS === 'ios' ? styles.buttonPressed : null,
@@ -664,7 +853,7 @@ export function LoginScreen() {
                 {authCopy.privacyNote}
               </Text>
             </View>
-          </View>
+          </Animated.View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -690,12 +879,12 @@ const styles = StyleSheet.create({
     borderRadius: 140,
     height: 170,
     position: 'absolute',
-    top: 25,
+    top: 20,
     width: 260,
   },
   bottomGroup: {
     gap: spacing.sm + 2,
-    marginTop: spacing.md,
+    marginTop: spacing.xs,
     width: '100%',
   },
   brandBadge: {
@@ -705,7 +894,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.xs + 2,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 1,
+    paddingVertical: 5,
   },
   brandBadgeDot: {
     borderRadius: 3,
@@ -724,44 +913,88 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
+  breakdownCol: {
+    flex: 1,
+    gap: 3,
+    minWidth: 0,
+  },
   breakdownLabel: {
     ...typography.metadata,
-    fontSize: 10,
+    fontSize: 11,
+    fontWeight: '600',
   },
-  breakdownPill: {
+  breakdownLabelRow: {
     alignItems: 'center',
-    borderRadius: radius.sm,
-    flex: 1,
     flexDirection: 'row',
+    gap: 5,
+  },
+  breakdownValueText: {
+    ...typography.metadata,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  budgetFill: {
+    borderRadius: radius.pill,
+    height: '100%',
+    width: '65%',
+  },
+  budgetHeaderRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  budgetLabel: {
+    ...typography.metadata,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  budgetLabelWrap: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
+  },
+  budgetRemainingText: {
+    ...typography.metadata,
+    fontSize: 10,
+    fontWeight: '500',
+    marginTop: 1,
+    textAlign: 'right',
+  },
+  budgetSection: {
     gap: 3,
-    paddingHorizontal: 7,
-    paddingVertical: 5,
+    marginTop: 1,
   },
-  breakdownValueNegative: {
-    ...typography.metadata,
-    fontSize: 10,
-    fontWeight: '700',
+  budgetTrack: {
+    borderRadius: radius.pill,
+    height: 6,
+    marginTop: 2,
+    overflow: 'hidden',
+    width: '100%',
   },
-  breakdownValuePositive: {
+  budgetUsedText: {
     ...typography.metadata,
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
   },
   buttonDisabled: { opacity: 0.65 },
   buttonPressed: { opacity: 0.85, transform: [{ scale: 0.985 }] },
+  cardDivider: {
+    height: 1,
+    marginVertical: 6,
+  },
   chipAmountNegative: {
     ...typography.metadata,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   chipAmountPositive: {
     ...typography.metadata,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   chipIconWrap: {
     alignItems: 'center',
-    borderRadius: radius.pill,
+    borderRadius: 7,
     height: 22,
     justifyContent: 'center',
     width: 22,
@@ -769,12 +1002,11 @@ const styles = StyleSheet.create({
   chipTitle: {
     ...typography.metadata,
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   container: {
     alignItems: 'center',
-    flex: 1,
-    justifyContent: 'space-between',
+    gap: spacing.md + 2,
     maxWidth: 440,
     width: '100%',
   },
@@ -788,7 +1020,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
     bottom: 2,
-    elevation: 5,
+    elevation: 4,
     flexDirection: 'row',
     gap: 6,
     left: 4,
@@ -796,15 +1028,15 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     position: 'absolute',
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
     zIndex: 4,
   },
   floatingChipTop: {
     alignItems: 'center',
     borderRadius: radius.pill,
     borderWidth: 1,
-    elevation: 5,
+    elevation: 4,
     flexDirection: 'row',
     gap: 6,
     paddingHorizontal: spacing.sm + 2,
@@ -812,70 +1044,77 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 4,
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
     top: 2,
     zIndex: 4,
   },
   googleButton: {
     alignItems: 'center',
-    borderRadius: radius.lg,
+    borderRadius: radius.pill,
     borderWidth: 1.5,
-    elevation: 2,
+    elevation: 5,
     flexDirection: 'row',
     gap: spacing.sm + 2,
     justifyContent: 'center',
     minHeight: 54,
     paddingHorizontal: spacing.lg,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
     width: '100%',
   },
   googleButtonText: {
     ...typography.body,
     fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    fontWeight: '800',
+    letterSpacing: -0.2,
   },
   heroDescription: {
     ...typography.body,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13.5,
+    lineHeight: 19,
     maxWidth: 350,
     textAlign: 'center',
+  },
+  heroGroup: {
+    alignItems: 'center',
+    gap: spacing.md,
+    width: '100%',
   },
   heroTitle: {
     ...typography.pageTitle,
     fontSize: 23,
     fontWeight: '900',
-    lineHeight: 29,
+    letterSpacing: -0.5,
+    lineHeight: 30,
     maxWidth: 350,
     textAlign: 'center',
   },
   mainCard: {
-    borderRadius: radius.lg + 2,
+    borderRadius: 20,
     borderWidth: 1,
     elevation: 3,
     gap: spacing.xs + 2,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.md - 2,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    width: '92%',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    width: '94%',
   },
   mainCardAmount: {
     ...typography.displayAmount,
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '900',
-    letterSpacing: -0.5,
-    lineHeight: 32,
+    letterSpacing: -0.6,
+    lineHeight: 34,
+    marginTop: 2,
   },
   mainCardBreakdownRow: {
+    alignItems: 'center',
     flexDirection: 'row',
-    gap: spacing.xs + 2,
-    marginTop: 2,
+    gap: spacing.sm,
   },
   mainCardHeader: {
     alignItems: 'center',
@@ -890,27 +1129,25 @@ const styles = StyleSheet.create({
   mainCardSubtitle: {
     ...typography.metadata,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  middleGroup: {
-    alignItems: 'center',
-    gap: spacing.sm + 2,
-    marginVertical: spacing.xs,
-    width: '100%',
+  metricDot: {
+    borderRadius: radius.pill,
+    height: 7,
+    width: 7,
   },
   previewSection: {
     alignItems: 'center',
-    height: 218,
+    height: 248,
     justifyContent: 'center',
-    marginTop: spacing.xs,
     position: 'relative',
     width: '100%',
   },
   privacyNote: {
     ...typography.metadata,
     flexShrink: 1,
-    fontSize: 11,
-    lineHeight: 15,
+    fontSize: 11.5,
+    lineHeight: 16,
     textAlign: 'center',
   },
   privacyRow: {
@@ -924,17 +1161,18 @@ const styles = StyleSheet.create({
   scrollContent: {
     alignItems: 'center',
     flexGrow: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
   },
   speedBadge: {
     alignItems: 'center',
     borderRadius: radius.pill,
+    borderWidth: 1,
     flexDirection: 'row',
     gap: 3,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
   speedBadgeText: {
     ...typography.metadata,
@@ -947,22 +1185,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: 'row',
     gap: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   tagPillText: {
     ...typography.metadata,
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   tagsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.xs + 2,
     justifyContent: 'center',
+    marginTop: -2,
   },
-  topGroup: {
-    alignItems: 'center',
-    gap: spacing.xs,
-    width: '100%',
+  verticalDivider: {
+    alignSelf: 'stretch',
+    width: 1,
   },
 });
+

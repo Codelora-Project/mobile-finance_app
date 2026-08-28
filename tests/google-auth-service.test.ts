@@ -1,19 +1,27 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import {
+  getGoogleDriveAccessToken,
+  GOOGLE_DRIVE_APPDATA_SCOPE,
   normalizeGoogleAuthError,
+  requestGoogleDriveAccess,
   signInWithGoogle,
   silentlyValidateGoogleSession,
 } from '@/features/auth/google-auth-service';
 
+const mockAddScopes = jest.fn<() => Promise<unknown>>();
 const mockConfigure = jest.fn();
+const mockGetTokens = jest.fn<() => Promise<unknown>>();
 const mockHasPlayServices = jest.fn<() => Promise<boolean>>();
 const mockSignIn = jest.fn<() => Promise<unknown>>();
 const mockSignInSilently = jest.fn<() => Promise<unknown>>();
 
 jest.mock('@react-native-google-signin/google-signin', () => ({
   GoogleSignin: {
+    addScopes: () => mockAddScopes(),
+    clearCachedAccessToken: jest.fn(),
     configure: (...args: unknown[]) => mockConfigure(...args),
+    getTokens: () => mockGetTokens(),
     hasPlayServices: () => mockHasPlayServices(),
     signIn: () => mockSignIn(),
     signInSilently: () => mockSignInSilently(),
@@ -73,6 +81,28 @@ describe('Google auth service', () => {
     });
     expect(JSON.stringify(result)).not.toContain('temporary-id-token');
     expect(mockHasPlayServices).toHaveBeenCalledTimes(1);
+    expect(mockConfigure).toHaveBeenCalledWith({
+      offlineAccess: false,
+      scopes: [GOOGLE_DRIVE_APPDATA_SCOPE],
+      webClientId:
+        '797819627457-2lci158mp3k2mucv16573gp7b2d67ho6.apps.googleusercontent.com',
+    });
+  });
+
+  it('requests Drive access incrementally and returns a temporary access token', async () => {
+    mockAddScopes.mockResolvedValue({ data: googleUser, type: 'success' });
+    mockGetTokens.mockResolvedValue({
+      accessToken: 'temporary-drive-access-token',
+      idToken: 'temporary-id-token',
+    });
+
+    await expect(requestGoogleDriveAccess()).resolves.toEqual({
+      kind: 'granted',
+    });
+    await expect(getGoogleDriveAccessToken()).resolves.toBe(
+      'temporary-drive-access-token',
+    );
+    expect(mockAddScopes).toHaveBeenCalledTimes(1);
   });
 
   it('treats account-picker cancellation as a neutral result', async () => {
