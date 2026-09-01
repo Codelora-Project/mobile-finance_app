@@ -45,7 +45,7 @@ jest.mock('expo-file-system', () => ({
   Paths: { document: 'file:///documents' },
 }));
 jest.mock('expo-sqlite', () => ({
-  defaultDatabaseDirectory: '/data/user/0/com.personalfinance.app/files/SQLite',
+  defaultDatabaseDirectory: '/data/user/0/com.codelora.keuanganku/files/SQLite',
   deleteDatabaseAsync: (...args: unknown[]) => mockDeleteDatabase(...args),
   openDatabaseAsync: (...args: unknown[]) => mockOpenDatabase(...args),
   backupDatabaseAsync: (...args: unknown[]) => mockBackupDatabase(...args),
@@ -102,7 +102,7 @@ function emptyActiveDatabase() {
 
 const accountScope = {
   accountId: 'google-user-1',
-  databaseName: 'personal-finance-google-user-1.db',
+  databaseName: 'keuanganku-google-user-1.db',
   receiptDirectory: 'accounts/google-user-1/receipts',
 };
 
@@ -144,7 +144,7 @@ describe('legacy data migration', () => {
     expect(legacyDatabaseExists()).toBe(true);
     expect(mockFileConstructorArguments).toEqual([
       [
-        'file:///data/user/0/com.personalfinance.app/files/SQLite',
+        'file:///data/user/0/com.codelora.keuanganku/files/SQLite',
         LEGACY_DATABASE_NAME,
       ],
     ]);

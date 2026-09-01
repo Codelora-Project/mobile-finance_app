@@ -30,7 +30,15 @@ import {
 import type { ReceiptStorage } from '@/features/receipts/receipt-storage';
 
 const RETAINED_BACKUP_COUNT = 3;
-const BACKUP_FILE_PREFIX = 'personal_finance_backup_';
+const BACKUP_FILE_PREFIX = 'keuanganku_backup_';
+const LEGACY_BACKUP_FILE_PREFIX = 'personal_finance_backup_';
+
+function isSupportedBackupFile(file: DriveBackupFile) {
+  return (
+    file.name.startsWith(BACKUP_FILE_PREFIX) ||
+    file.name.startsWith(LEGACY_BACKUP_FILE_PREFIX)
+  );
+}
 
 function safeErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Google Drive backup gagal.';
@@ -82,7 +90,7 @@ export async function queryLatestCloudBackup(accountId: string) {
     files.find(
       (file) =>
         file.appProperties.accountId === accountId &&
-        file.name.startsWith(BACKUP_FILE_PREFIX),
+        isSupportedBackupFile(file),
     ) ?? null
   );
 }
@@ -132,7 +140,9 @@ export async function createCloudBackup(
     });
 
     const allFiles = (await listDriveBackups()).filter(
-      (candidate) => candidate.appProperties.accountId === accountId,
+      (candidate) =>
+        candidate.appProperties.accountId === accountId &&
+        isSupportedBackupFile(candidate),
     );
     await pruneOldBackups(allFiles);
     return { file, revision };
@@ -149,8 +159,7 @@ export async function downloadLatestCloudBackup(
 ): Promise<DownloadedCloudBackup | null> {
   const files = (await listDriveBackups()).filter(
     (file) =>
-      file.appProperties.accountId === accountId &&
-      file.name.startsWith(BACKUP_FILE_PREFIX),
+      file.appProperties.accountId === accountId && isSupportedBackupFile(file),
   );
   if (files.length === 0) return null;
 

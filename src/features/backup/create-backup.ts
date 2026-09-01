@@ -125,7 +125,7 @@ export async function createBackupPayload(
   );
 
   return {
-    app_identifier: 'personal_finance_app',
+    app_identifier: 'keuanganku_app',
     version: 2,
     exported_at: new Date().toISOString(),
     app_version: Constants.expoConfig?.version ?? '1.0.0',

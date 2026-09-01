@@ -83,7 +83,7 @@ export function useTransactionShare({
       `─────────────────────────\n` +
       `${detailLines}${noteLine}\n` +
       `─────────────────────────\n` +
-      `Dicatat via FinanceApp`;
+      `Dicatat via KeuanganKu`;
 
     await Share.share(
       {

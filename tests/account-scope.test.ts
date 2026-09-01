@@ -6,7 +6,7 @@ describe('account scope', () => {
   it('derives a distinct database and receipt directory from the Google id', () => {
     expect(createAccountScope({ id: 'google_user-A1' })).toEqual({
       accountId: 'google_user-A1',
-      databaseName: 'personal-finance-google_user-A1.db',
+      databaseName: 'keuanganku-google_user-A1.db',
       receiptDirectory: 'accounts/google_user-A1/receipts',
     });
     expect(createAccountScope({ id: 'google_user-B2' }).databaseName).not.toBe(

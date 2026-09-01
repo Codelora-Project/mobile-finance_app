@@ -4,6 +4,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import {
   createCloudBackup,
   downloadLatestCloudBackup,
+  queryLatestCloudBackup,
   shouldRunAutomaticCloudBackup,
 } from '@/features/cloud-backup/cloud-backup-service';
 import type { DriveBackupFile } from '@/features/cloud-backup/cloud-backup-types';
@@ -40,7 +41,7 @@ jest.mock('@/features/cloud-backup/drive-api-client', () => ({
 }));
 
 const payload = {
-  app_identifier: 'personal_finance_app',
+  app_identifier: 'keuanganku_app',
   app_version: '1.0.0',
   data: {
     app_settings: [],
@@ -66,7 +67,11 @@ const payload = {
   version: 2,
 } as const;
 
-function driveFile(id: string, index = 0): DriveBackupFile {
+function driveFile(
+  id: string,
+  index = 0,
+  prefix = 'keuanganku_backup_',
+): DriveBackupFile {
   return {
     appProperties: {
       accountId: 'google-1',
@@ -75,7 +80,7 @@ function driveFile(id: string, index = 0): DriveBackupFile {
     },
     id,
     modifiedTime: `2026-08-28T0${index}:00:00.000Z`,
-    name: `personal_finance_backup_${id}.json`,
+    name: `${prefix}${id}.json`,
     sizeBytes: 100,
   };
 }
@@ -147,6 +152,22 @@ describe('cloud backup service', () => {
 
     await expect(downloadLatestCloudBackup('google-1')).resolves.toMatchObject({
       file: { id: 'older' },
+    });
+  });
+
+  it('discovers and downloads backups created before the rebrand', async () => {
+    const legacyFile = driveFile('legacy', 0, 'personal_finance_backup_');
+    mockListDriveBackups.mockResolvedValue([legacyFile]);
+    mockDownloadDriveBackup.mockResolvedValue(
+      JSON.stringify({ ...payload, app_identifier: 'personal_finance_app' }),
+    );
+
+    await expect(queryLatestCloudBackup('google-1')).resolves.toEqual(
+      legacyFile,
+    );
+    await expect(downloadLatestCloudBackup('google-1')).resolves.toMatchObject({
+      file: { id: 'legacy' },
+      payload: { app_identifier: 'personal_finance_app' },
     });
   });
 

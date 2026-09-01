@@ -15,7 +15,7 @@ import {
 import { useReceiptStorage } from '@/features/receipts/receipt-storage-context';
 import { createReceiptStorage } from '@/features/receipts/receipt-storage';
 
-const CLOUD_BACKUP_TASK = 'personal-finance-cloud-backup';
+const CLOUD_BACKUP_TASK = 'keuanganku-cloud-backup';
 const FOREGROUND_CHECK_INTERVAL_MS = 60_000;
 
 async function isInternetReachable() {

@@ -34,7 +34,8 @@
     ],
     "android": {
       "allowBackup": false,
-      "package": "com.personalfinance.app",
+      "package": "com.codelora.keuanganku",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#F8FAFC",
         "foregroundImage": "./assets/android-icon-foreground.png",

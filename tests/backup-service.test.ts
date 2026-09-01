@@ -20,7 +20,7 @@ jest.mock('@/features/receipts/receipt-storage', () => ({
 
 function emptyBackupPayload(version: 1 | 2 = 2): BackupPayload {
   return {
-    app_identifier: 'personal_finance_app',
+    app_identifier: 'keuanganku_app',
     app_version: '1.0.0',
     data: {
       app_settings: [],
@@ -91,7 +91,7 @@ describe('Backup Service', () => {
 
     const payload = await createBackupPayload(mockDb);
 
-    expect(payload.app_identifier).toBe('personal_finance_app');
+    expect(payload.app_identifier).toBe('keuanganku_app');
     expect(payload.version).toBe(2);
     expect(payload.summary.categories_count).toBe(1);
     expect(payload.summary.payment_methods_count).toBe(1);

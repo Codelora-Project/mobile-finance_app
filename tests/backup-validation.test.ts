@@ -8,7 +8,7 @@ import { parseBackupPayload } from '@/features/backup/backup-validation';
 
 function emptyPayload(version: 1 | 2): BackupPayload {
   return {
-    app_identifier: 'personal_finance_app',
+    app_identifier: 'keuanganku_app',
     app_version: '1.0.0',
     data: {
       app_settings: [],
@@ -58,8 +58,11 @@ describe('backup payload validation', () => {
     expect(parseBackupPayload(JSON.stringify(payload))).toEqual(payload);
   });
 
-  it('accepts keuanganku_app as valid identifier', () => {
-    const payload = { ...emptyPayload(2), app_identifier: 'keuanganku_app' as const };
+  it('accepts the legacy personal_finance_app identifier', () => {
+    const payload = {
+      ...emptyPayload(2),
+      app_identifier: 'personal_finance_app' as const,
+    };
 
     expect(parseBackupPayload(JSON.stringify(payload))).toEqual(payload);
   });

@@ -5,7 +5,7 @@ import { seedDefaults } from '@/db/seeds';
 import { maintainReceiptStorage } from '@/features/receipts/receipt-maintenance';
 import type { ReceiptStorage } from '@/features/receipts/receipt-storage';
 
-export const databaseName = 'personal-finance.db';
+export const databaseName = 'keuanganku.db';
 
 type ForeignKeysRow = {
   foreign_keys: number;

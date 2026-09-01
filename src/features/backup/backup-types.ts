@@ -140,7 +140,7 @@ export type BackupData = {
 };
 
 export type BackupPayload = {
-  app_identifier: 'personal_finance_app' | 'keuanganku_app';
+  app_identifier: 'keuanganku_app' | 'personal_finance_app';
   version: 1 | 2;
   exported_at: string;
   app_version: string;

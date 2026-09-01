@@ -67,7 +67,7 @@ Sebelum menjalankan atau mem-build aplikasi, pastikan komputer Anda telah terpas
 
 ### Konfigurasi Google Sign-In
 
-1. Di Google Cloud Console, siapkan OAuth Client tipe **Android** untuk package `com.personalfinance.app` dan SHA-1 keystore debug yang aktif.
+1. Di Google Cloud Console, siapkan OAuth Client tipe **Android** untuk package `com.codelora.keuanganku` dan SHA-1 keystore debug yang aktif. Untuk build dari Google Play, daftarkan juga SHA-1 **App signing key certificate** dari Play Console.
 2. Siapkan juga OAuth Client tipe **Web application**. Client ID inilah yang dipakai aplikasi untuk meminta `idToken`; Client Secret tidak diperlukan dan tidak boleh dimasukkan ke aplikasi.
 3. Salin `.env.example` menjadi `.env.local`, lalu isi:
 
@@ -84,7 +84,7 @@ cd android
 .\gradlew signingReport
 ```
 
-Gunakan SHA-1 pada varian `debug`. Proyek ini tidak memakai Firebase, `google-services.json`, atau OAuth Client Secret. Karena library login memiliki kode native, jalankan melalui development build (`npm run android`), bukan Expo Go.
+Gunakan SHA-1 pada varian `debug` untuk development build. Build yang didistribusikan Google Play menggunakan SHA-1 App Signing milik Play, sehingga keduanya harus terdaftar sebagai Android OAuth Client. Proyek ini tidak memakai Firebase, `google-services.json`, atau OAuth Client Secret. Karena library login memiliki kode native, jalankan melalui development build (`npm run android`), bukan Expo Go.
 
 ### 1. Install Dependencies
 
@@ -173,6 +173,9 @@ Untuk menghasilkan APK yang jauh lebih **ringan (~25 - 30 MB)** khusus untuk HP 
   ```
 
 #### 3. Build AAB untuk Google Play Store (~15 - 20 MB download size)
+
+> [!IMPORTANT]
+> Jangan unggah AAB yang masih ditandatangani debug key. Siapkan upload keystore produksi atau gunakan EAS Build, lalu simpan keystore dan kredensialnya di luar repository.
 
 ```powershell
 cd android

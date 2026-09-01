@@ -8,7 +8,7 @@ export function createAccountScope(user: Pick<AuthUser, 'id'>): AccountScope {
   }
   return {
     accountId: user.id,
-    databaseName: `personal-finance-${user.id}.db`,
+    databaseName: `keuanganku-${user.id}.db`,
     receiptDirectory: `accounts/${user.id}/receipts`,
   };
 }
