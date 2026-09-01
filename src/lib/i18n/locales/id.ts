@@ -436,7 +436,7 @@ export const id = {
     cloudBackupSuccessDesc: 'Data terbaru berhasil disimpan ke Google Drive.',
     cloudNoBackupTitle: 'Cadangan tidak ditemukan',
     cloudNoBackupDesc:
-      'Belum ada cadangan Personal Finance pada akun Google ini.',
+      'Belum ada cadangan KeuanganKu pada akun Google ini.',
     cloudPermissionDenied:
       'Izin Google Drive belum diberikan. Data lokal tidak berubah.',
     cloudStatusReady: 'Akun Google terhubung',
@@ -512,7 +512,7 @@ export const id = {
   },
   // Autentikasi & Login
   auth: {
-    appName: 'Personal Finance',
+    appName: 'KeuanganKu',
     appTagline: 'Privat & Offline-First',
     heroTitle: 'Kendali Finansial Penuh, Sepenuhnya Privat',
     heroDescription:

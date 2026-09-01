@@ -439,7 +439,7 @@ export const en = {
       'Your latest data was saved to Google Drive successfully.',
     cloudNoBackupTitle: 'No backup found',
     cloudNoBackupDesc:
-      'This Google account does not have a Personal Finance backup yet.',
+      'This Google account does not have a KeuanganKu backup yet.',
     cloudPermissionDenied:
       'Google Drive permission was not granted. Local data was not changed.',
     cloudStatusReady: 'Google account connected',
@@ -515,7 +515,7 @@ export const en = {
   },
   // Authentication & Login
   auth: {
-    appName: 'Personal Finance',
+    appName: 'KeuanganKu',
     appTagline: 'Private & Offline-First',
     heroTitle: 'Full Financial Control, 100% Private',
     heroDescription:

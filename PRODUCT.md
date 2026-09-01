@@ -12,7 +12,7 @@ Pengguna pribadi Indonesia yang ingin mencatat dan memahami keuangan sehari-hari
 
 ## Product Purpose
 
-Personal Finance membantu pengguna mencatat pemasukan, pengeluaran, transfer, dan kondisi berbagai dompet dengan cepat agar keadaan keuangan mudah dipahami dan ditindaklanjuti. Keberhasilan produk berarti pencatatan rutin terasa ringan dan informasi penting dapat ditemukan dalam sekali pandang.
+KeuanganKu membantu pengguna mencatat pemasukan, pengeluaran, transfer, dan kondisi berbagai dompet dengan cepat agar keadaan keuangan mudah dipahami dan ditindaklanjuti. Keberhasilan produk berarti pencatatan rutin terasa ringan dan informasi penting dapat ditemukan dalam sekali pandang.
 
 ## Positioning
 
@@ -32,7 +32,7 @@ Pengguna mencatat transaksi harian melalui perangkat Android, sering kali segera
 
 ## Brand Commitments
 
-- Nama produk saat ini: Personal Finance.
+- Nama produk saat ini: KeuanganKu.
 - Nada komunikasi harus lugas, bersahabat, dan menumbuhkan rasa mampu mengelola keuangan.
 - Kecepatan pencatatan harus terasa sebagai manfaat utama; privasi dan offline-ready dikomunikasikan sebagai jaminan yang jelas tanpa menakut-nakuti pengguna.
 

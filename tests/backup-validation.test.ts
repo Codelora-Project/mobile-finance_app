@@ -58,6 +58,12 @@ describe('backup payload validation', () => {
     expect(parseBackupPayload(JSON.stringify(payload))).toEqual(payload);
   });
 
+  it('accepts keuanganku_app as valid identifier', () => {
+    const payload = { ...emptyPayload(2), app_identifier: 'keuanganku_app' as const };
+
+    expect(parseBackupPayload(JSON.stringify(payload))).toEqual(payload);
+  });
+
   it('rejects malformed collection rows before database restore', () => {
     const payload = emptyPayload(2) as BackupPayload & {
       data: { transactions: unknown[] };

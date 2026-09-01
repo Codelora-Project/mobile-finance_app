@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -9,6 +10,7 @@ import { typography } from '@/theme/typography';
 
 export type SettingsAboutFooterProps = {
   aboutDesc: string;
+  appName?: string;
   onReplayIntroduction: () => void;
   replayIntroductionLabel: string;
   version: string;
@@ -17,6 +19,7 @@ export type SettingsAboutFooterProps = {
 
 export const SettingsAboutFooter = memo(function SettingsAboutFooter({
   aboutDesc,
+  appName = Constants.expoConfig?.name ?? 'KeuanganKu',
   onReplayIntroduction,
   replayIntroductionLabel,
   version,
@@ -27,7 +30,7 @@ export const SettingsAboutFooter = memo(function SettingsAboutFooter({
   return (
     <View style={styles.aboutFooterContainer}>
       <Text style={[styles.appName, { color: colors.textPrimary }]}>
-        Personal Finance
+        {appName}
       </Text>
       <Text style={[styles.appVersionText, { color: colors.textSecondary }]}>
         {versionLabel} {version}

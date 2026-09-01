@@ -1,6 +1,6 @@
-# Personal Finance Design System
+# KeuanganKu Design System
 
-> Panduan kanonis untuk desain produk dan implementasi antarmuka aplikasi Personal Finance.
+> Panduan kanonis untuk desain produk dan implementasi antarmuka aplikasi KeuanganKu.
 
 | Metadata        | Nilai                             |
 | --------------- | --------------------------------- |

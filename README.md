@@ -1,6 +1,6 @@
-# Personal Finance App 💰
+# KeuanganKu App 💰
 
-Aplikasi pencatatan keuangan pribadi (_Personal Finance_) modern berbasis Android yang dibangun menggunakan **Expo Development Build**, **React Native**, **TypeScript**, **Expo Router**, dan **SQLite**.
+Aplikasi pencatatan keuangan pribadi modern berbasis Android yang dibangun menggunakan **Expo Development Build**, **React Native**, **TypeScript**, **Expo Router**, dan **SQLite**.
 
 Aplikasi dirancang dengan arsitektur **Offline-First**. Data utama tetap disimpan dan diproses lokal agar pencatatan tidak bergantung pada internet. Google Drive `appDataFolder` digunakan untuk cadangan otomatis dan pemulihan lintas perangkat tanpa backend milik pengembang.
 
@@ -128,7 +128,7 @@ Jika aplikasi native sudah terinstal di emulator/HP dan Anda hanya mengubah kode
 npm start
 ```
 
-Buka aplikasi **Personal Finance** di perangkat, dan perubahan kode akan otomatis ter-update via _Fast Refresh_.
+Buka aplikasi **KeuanganKu** di perangkat, dan perubahan kode akan otomatis ter-update via _Fast Refresh_.
 
 ---
 

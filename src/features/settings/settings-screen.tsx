@@ -710,6 +710,7 @@ export function SettingsScreen() {
             {/* SECTION 5: ABOUT */}
             <SettingsAboutFooter
               aboutDesc={t.settings.aboutDesc}
+              appName={Constants.expoConfig?.name ?? t.auth.appName}
               onReplayIntroduction={handleReplayIntroduction}
               replayIntroductionLabel={t.settings.viewIntroduction}
               version={Constants.expoConfig?.version ?? '1.0.0'}

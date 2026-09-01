@@ -279,9 +279,13 @@ export function parseBackupPayload(textContent: string): BackupPayload {
 }
 
 export function validateBackupPayload(parsed: unknown): BackupPayload {
-  if (!isObject(parsed) || parsed.app_identifier !== 'personal_finance_app') {
+  if (
+    !isObject(parsed) ||
+    (parsed.app_identifier !== 'personal_finance_app' &&
+      parsed.app_identifier !== 'keuanganku_app')
+  ) {
     invalidBackup(
-      'File ini bukan file cadangan resmi dari aplikasi Personal Finance.',
+      'File ini bukan file cadangan resmi dari aplikasi KeuanganKu.',
     );
   }
   if (parsed.version !== 1 && parsed.version !== 2) {

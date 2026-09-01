@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Personal Finance",
-    "slug": "personal-finance-app",
+    "name": "KeuanganKu",
+    "slug": "keuanganku-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "personal-finance",
+    "scheme": "keuanganku",
     "userInterfaceStyle": "automatic",
     "plugins": [
       "expo-router",
@@ -22,7 +22,7 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Allow Personal Finance to photograph receipts.",
+          "cameraPermission": "Allow KeuanganKu to photograph receipts.",
           "microphonePermission": false
         }
       ],
