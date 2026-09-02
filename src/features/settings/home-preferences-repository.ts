@@ -12,10 +12,22 @@ export const DEFAULT_QUICK_LOG_SYSTEM_KEYS = [
   'expense_entertainment',
 ] as const;
 
+// Versions before the system-key preference format used this fixed sequence
+// for the Reset action. Keep it only as a one-way compatibility signature.
+const LEGACY_DEFAULT_QUICK_LOG_CATEGORY_IDS = [1, 2, 3, 4, 5] as const;
+
 type QuickLogCategoryReference = Readonly<{
   id: number;
   systemKey: string | null;
   type: 'expense' | 'income';
+}>;
+
+type StoredQuickLogReference =
+  Readonly<{ system_key: string }> | Readonly<{ category_id: number }>;
+
+type StoredQuickLogPreferences = Readonly<{
+  category_refs: StoredQuickLogReference[];
+  version: 2;
 }>;
 
 export function resolveDefaultQuickLogCategoryIds(
@@ -70,6 +82,134 @@ function isValidQuickLogCategoryIds(value: unknown): value is number[] {
   );
 }
 
+function isLegacyDefaultQuickLogSelection(categoryIds: readonly number[]) {
+  return (
+    categoryIds.length === LEGACY_DEFAULT_QUICK_LOG_CATEGORY_IDS.length &&
+    categoryIds.every(
+      (categoryId, index) =>
+        categoryId === LEGACY_DEFAULT_QUICK_LOG_CATEGORY_IDS[index],
+    )
+  );
+}
+
+function isValidStoredQuickLogPreferences(
+  value: unknown,
+): value is StoredQuickLogPreferences {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    !('version' in value) ||
+    value.version !== 2 ||
+    !('category_refs' in value) ||
+    !Array.isArray(value.category_refs) ||
+    value.category_refs.length < 1 ||
+    value.category_refs.length > 8
+  ) {
+    return false;
+  }
+
+  const keys = new Set<string>();
+  for (const reference of value.category_refs) {
+    if (typeof reference !== 'object' || reference === null) return false;
+    let key: string;
+    if (
+      'system_key' in reference &&
+      typeof reference.system_key === 'string' &&
+      reference.system_key.trim().length > 0
+    ) {
+      key = `system:${reference.system_key}`;
+    } else if (
+      'category_id' in reference &&
+      Number.isSafeInteger(reference.category_id) &&
+      Number(reference.category_id) > 0
+    ) {
+      key = `custom:${reference.category_id}`;
+    } else {
+      return false;
+    }
+    if (keys.has(key)) return false;
+    keys.add(key);
+  }
+  return true;
+}
+
+function createStoredQuickLogPreferences(
+  categoryIds: readonly number[],
+  categories: readonly QuickLogCategoryReference[],
+): StoredQuickLogPreferences {
+  const categoriesById = new Map(
+    categories.map((category) => [category.id, category]),
+  );
+  return {
+    category_refs: categoryIds.map((categoryId) => {
+      const category = categoriesById.get(categoryId);
+      return category?.systemKey
+        ? { system_key: category.systemKey }
+        : { category_id: categoryId };
+    }),
+    version: 2,
+  };
+}
+
+function resolveStoredQuickLogCategoryIds(
+  preferences: StoredQuickLogPreferences,
+  categories: readonly QuickLogCategoryReference[],
+): number[] {
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  const bySystemKey = new Map(
+    categories
+      .filter((category) => category.systemKey !== null)
+      .map((category) => [category.systemKey, category]),
+  );
+  const resolved: number[] = [];
+  const seen = new Set<number>();
+  for (const reference of preferences.category_refs) {
+    const category =
+      'system_key' in reference
+        ? bySystemKey.get(reference.system_key)
+        : byId.get(reference.category_id);
+    if (category && category.type === 'expense' && !seen.has(category.id)) {
+      resolved.push(category.id);
+      seen.add(category.id);
+    }
+  }
+  return resolved;
+}
+
+async function getExpenseCategoryReferences(database: SQLiteDatabase) {
+  const rows = await database.getAllAsync<{
+    id: number;
+    system_key: string | null;
+    type: 'expense' | 'income';
+  }>(
+    `SELECT id, system_key, type
+     FROM categories
+     WHERE type = 'expense'
+     ORDER BY is_default DESC, sort_order, name COLLATE NOCASE`,
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    systemKey: row.system_key,
+    type: row.type,
+  }));
+}
+
+async function writeQuickLogPreferences(
+  database: SQLiteDatabase,
+  preferences: StoredQuickLogPreferences,
+  now = Date.now(),
+) {
+  await runSerializedDatabaseWrite(database, () =>
+    database.runAsync(
+      `INSERT INTO app_settings (key, value, updated_at)
+       VALUES ('quick_log_category_ids', ?, ?)
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+      JSON.stringify(preferences),
+      now,
+    ),
+  );
+}
+
 export async function getQuickLogCategoryIds(
   database: SQLiteDatabase,
 ): Promise<number[]> {
@@ -81,8 +221,38 @@ export async function getQuickLogCategoryIds(
   }
   try {
     const parsed = JSON.parse(row.value);
+    const categories = await getExpenseCategoryReferences(database);
+    if (isValidStoredQuickLogPreferences(parsed)) {
+      const resolved = resolveStoredQuickLogCategoryIds(parsed, categories);
+      return resolved.length > 0
+        ? resolved
+        : resolveDefaultQuickLogCategoryIds(categories);
+    }
     if (isValidQuickLogCategoryIds(parsed)) {
-      return parsed;
+      const legacyCategoryIds = isLegacyDefaultQuickLogSelection(parsed)
+        ? resolveDefaultQuickLogCategoryIds(categories)
+        : parsed;
+      const legacyPreferences = createStoredQuickLogPreferences(
+        legacyCategoryIds,
+        categories,
+      );
+      const resolved = resolveStoredQuickLogCategoryIds(
+        legacyPreferences,
+        categories,
+      );
+      if (resolved.length > 0) {
+        try {
+          await writeQuickLogPreferences(
+            database,
+            createStoredQuickLogPreferences(resolved, categories),
+          );
+        } catch (error) {
+          if (__DEV__) {
+            console.warn('Could not migrate quick log preferences.', error);
+          }
+        }
+        return resolved;
+      }
     }
   } catch {
     // fallback
@@ -102,27 +272,33 @@ export async function setQuickLogCategoryIds(
     );
   }
   const placeholders = categoryIds.map(() => '?').join(', ');
-  const existing = await database.getFirstAsync<{ total: number }>(
-    `SELECT COUNT(*) AS total
+  const rows = await database.getAllAsync<{
+    id: number;
+    system_key: string | null;
+    type: 'expense' | 'income';
+  }>(
+    `SELECT id, system_key, type
      FROM categories
      WHERE type = 'expense' AND id IN (${placeholders})`,
     ...categoryIds,
   );
-  if (existing?.total !== categoryIds.length) {
+  if (rows.length !== categoryIds.length) {
     throw createCodedError(
       'VALIDATION_FAILED',
       'Satu atau beberapa kategori catat cepat sudah tidak tersedia.',
     );
   }
-  const value = JSON.stringify(categoryIds);
-  await runSerializedDatabaseWrite(database, () =>
-    database.runAsync(
-      `INSERT INTO app_settings (key, value, updated_at)
-     VALUES ('quick_log_category_ids', ?, ?)
-     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-      value,
-      now,
+  await writeQuickLogPreferences(
+    database,
+    createStoredQuickLogPreferences(
+      categoryIds,
+      rows.map((row) => ({
+        id: row.id,
+        systemKey: row.system_key,
+        type: row.type,
+      })),
     ),
+    now,
   );
 }
 

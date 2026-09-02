@@ -81,11 +81,35 @@ function isOptionalFlag(value: unknown) {
   return value === undefined || isFlag(value);
 }
 
+function isCalendarDate(value: unknown) {
+  if (!isString(value) || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
+function isNullableCalendarDate(value: unknown) {
+  return value === null || isCalendarDate(value);
+}
+
+function areNullableDatesOrdered(start: unknown, end: unknown) {
+  return (
+    start === null ||
+    end === null ||
+    (isString(start) && isString(end) && start <= end)
+  );
+}
+
 function isBase64(value: unknown) {
   return (
     isString(value) &&
     value.length > 0 &&
     value.length <= MAX_RECEIPT_BASE64_LENGTH &&
+    value.length % 4 === 0 &&
     /^[A-Za-z0-9+/]+={0,2}$/.test(value)
   );
 }
@@ -113,7 +137,13 @@ const validatePaymentMethod: RowValidator = (row) =>
   isSafeInteger(row.updated_at) &&
   (row.initial_balance_minor === undefined ||
     isSafeInteger(row.initial_balance_minor)) &&
-  (row.account_type === undefined || isNonEmptyString(row.account_type)) &&
+  (row.account_type === undefined ||
+    row.account_type === 'cash' ||
+    row.account_type === 'bank' ||
+    row.account_type === 'credit_card' ||
+    row.account_type === 'ewallet' ||
+    row.account_type === 'investment' ||
+    row.account_type === 'other') &&
   isOptionalNullableString(row.account_number) &&
   isOptionalNullableString(row.color) &&
   isOptionalNullableString(row.icon_key) &&
@@ -139,17 +169,25 @@ const validateTransaction: RowValidator = (row) => {
     isNullableString(row.note) &&
     isSafeInteger(row.occurred_at) &&
     isSafeInteger(row.timezone_offset_minutes) &&
-    isString(row.local_date) &&
-    /^\d{4}-\d{2}-\d{2}$/.test(row.local_date) &&
+    isCalendarDate(row.local_date) &&
     isFlag(row.is_reimbursable) &&
     isSafeInteger(row.created_at) &&
     isSafeInteger(row.updated_at);
   if (!baseIsValid) return false;
-  if (row.type !== 'transfer') return true;
+  if (row.type !== 'transfer') {
+    return (
+      row.transfer_to_payment_method_id == null &&
+      (row.transfer_fee_minor === undefined || row.transfer_fee_minor === 0) &&
+      row.transfer_fee_category_id == null &&
+      row.transfer_fee_note == null &&
+      (row.type === 'expense' || row.is_reimbursable === 0)
+    );
+  }
   return (
     isPositiveInteger(row.payment_method_id) &&
     isPositiveInteger(row.transfer_to_payment_method_id) &&
-    row.payment_method_id !== row.transfer_to_payment_method_id
+    row.payment_method_id !== row.transfer_to_payment_method_id &&
+    row.is_reimbursable === 0
   );
 };
 
@@ -178,8 +216,9 @@ const validateClaim: RowValidator = (row) =>
     row.status === 'reimbursed' ||
     row.status === 'rejected') &&
   (row.period_mode === 'auto' || row.period_mode === 'manual') &&
-  isNullableString(row.period_start) &&
-  isNullableString(row.period_end) &&
+  isNullableCalendarDate(row.period_start) &&
+  isNullableCalendarDate(row.period_end) &&
+  areNullableDatesOrdered(row.period_start, row.period_end) &&
   isNullableSafeInteger(row.submitted_at) &&
   isNullableSafeInteger(row.reimbursed_at) &&
   isNullableSafeInteger(row.rejected_at) &&
@@ -242,6 +281,169 @@ function invalidBackup(message: string): never {
   throw createCodedError('VALIDATION_FAILED', message);
 }
 
+function assertUnique<T>(
+  rows: readonly T[],
+  keyFor: (row: T) => string | number | null,
+  label: string,
+) {
+  const keys = new Set<string | number>();
+  for (const row of rows) {
+    const key = keyFor(row);
+    if (key === null) continue;
+    if (keys.has(key)) {
+      invalidBackup(`File backup berisi ${label} duplikat.`);
+    }
+    keys.add(key);
+  }
+}
+
+function validateBackupRelations(payload: BackupPayload) {
+  const { data } = payload;
+  assertUnique(data.categories, (row) => row.id, 'ID categories');
+  assertUnique(data.payment_methods, (row) => row.id, 'ID payment_methods');
+  assertUnique(data.transactions, (row) => row.id, 'ID transactions');
+  assertUnique(data.receipts, (row) => row.id, 'ID receipts');
+  assertUnique(data.claims, (row) => row.id, 'ID claims');
+  assertUnique(data.claim_items, (row) => row.id, 'ID claim_items');
+  assertUnique(data.savings_goals, (row) => row.id, 'ID savings_goals');
+  assertUnique(data.goal_transactions, (row) => row.id, 'ID goal_transactions');
+  assertUnique(data.category_budgets, (row) => row.id, 'ID category_budgets');
+
+  assertUnique(data.categories, (row) => row.system_key, 'system_key kategori');
+  assertUnique(
+    data.categories,
+    (row) => `${row.type}:${row.name.trim().toLocaleLowerCase()}`,
+    'nama kategori',
+  );
+  assertUnique(
+    data.payment_methods,
+    (row) => row.system_key,
+    'system_key dompet',
+  );
+  assertUnique(
+    data.payment_methods,
+    (row) => row.name.trim().toLocaleLowerCase(),
+    'nama dompet',
+  );
+  assertUnique(data.app_settings, (row) => row.key, 'pengaturan aplikasi');
+  assertUnique(
+    data.receipts,
+    (row) => row.transaction_id,
+    'struk untuk transaksi yang sama',
+  );
+  assertUnique(data.receipts, (row) => row.storage_key, 'lokasi file struk');
+  assertUnique(
+    data.claim_items,
+    (row) => row.transaction_id,
+    'transaksi pada klaim',
+  );
+  assertUnique(
+    data.category_budgets,
+    (row) => row.category_id,
+    'anggaran kategori',
+  );
+
+  const categories = new Map(data.categories.map((row) => [row.id, row]));
+  const walletIds = new Set(data.payment_methods.map((row) => row.id));
+  const transactions = new Map(data.transactions.map((row) => [row.id, row]));
+  const claimIds = new Set(data.claims.map((row) => row.id));
+  const goals = new Map(data.savings_goals.map((row) => [row.id, row]));
+
+  for (const transaction of data.transactions) {
+    const category = categories.get(transaction.category_id);
+    const categoryIsValid =
+      category &&
+      ((transaction.type === 'transfer' &&
+        category.system_key === 'wallet_transfer') ||
+        (transaction.type !== 'transfer' &&
+          category.type === transaction.type));
+    if (!categoryIsValid) {
+      invalidBackup('File backup berisi relasi kategori transaksi yang rusak.');
+    }
+    if (
+      (transaction.payment_method_id !== null &&
+        !walletIds.has(transaction.payment_method_id)) ||
+      (transaction.transfer_to_payment_method_id != null &&
+        !walletIds.has(transaction.transfer_to_payment_method_id))
+    ) {
+      invalidBackup('File backup berisi relasi dompet transaksi yang rusak.');
+    }
+    if (transaction.transfer_fee_category_id != null) {
+      const feeCategory = categories.get(transaction.transfer_fee_category_id);
+      if (!feeCategory || feeCategory.type !== 'expense') {
+        invalidBackup('File backup berisi kategori biaya transfer yang rusak.');
+      }
+    }
+  }
+
+  if (payload.version >= 2) {
+    for (const receipt of data.receipts) {
+      if (transactions.get(receipt.transaction_id)?.type !== 'expense') {
+        invalidBackup('File backup berisi relasi struk transaksi yang rusak.');
+      }
+    }
+  }
+  for (const item of data.claim_items) {
+    const transaction = transactions.get(item.transaction_id);
+    if (
+      !claimIds.has(item.claim_id) ||
+      transaction?.type !== 'expense' ||
+      transaction.is_reimbursable !== 1
+    ) {
+      invalidBackup('File backup berisi relasi klaim yang rusak.');
+    }
+  }
+  for (const budget of data.category_budgets) {
+    if (categories.get(budget.category_id)?.type !== 'expense') {
+      invalidBackup('File backup berisi relasi anggaran kategori yang rusak.');
+    }
+  }
+
+  const goalBalances = new Map<number, number>();
+  for (const transaction of data.goal_transactions) {
+    if (!goals.has(transaction.goal_id)) {
+      invalidBackup('File backup berisi relasi transaksi target yang rusak.');
+    }
+    const delta =
+      transaction.type === 'deposit'
+        ? transaction.amount_minor
+        : -transaction.amount_minor;
+    goalBalances.set(
+      transaction.goal_id,
+      (goalBalances.get(transaction.goal_id) ?? 0) + delta,
+    );
+  }
+  for (const goal of data.savings_goals) {
+    if ((goalBalances.get(goal.id) ?? 0) !== goal.current_amount_minor) {
+      invalidBackup('Saldo target pada file backup tidak konsisten.');
+    }
+    const expectedCompleted =
+      goal.current_amount_minor >= goal.target_amount_minor ? 1 : 0;
+    if (goal.is_completed !== expectedCompleted) {
+      invalidBackup('Status target pada file backup tidak konsisten.');
+    }
+  }
+}
+
+function validateBackupSummary(payload: BackupPayload) {
+  const expected: BackupPayload['summary'] = {
+    budgets_count: payload.data.category_budgets.length,
+    categories_count: payload.data.categories.length,
+    claims_count: payload.data.claims.length,
+    goals_count: payload.data.savings_goals.length,
+    payment_methods_count: payload.data.payment_methods.length,
+    transactions_count: payload.data.transactions.length,
+  };
+  for (const key of Object.keys(expected) as (keyof typeof expected)[]) {
+    if (!isNonNegativeInteger(payload.summary[key])) {
+      invalidBackup('Ringkasan jumlah data pada file backup rusak.');
+    }
+    if (payload.summary[key] !== expected[key]) {
+      invalidBackup('Ringkasan jumlah data pada file backup tidak konsisten.');
+    }
+  }
+}
+
 function validateCollection(
   name: (typeof requiredCollections)[number],
   value: unknown,
@@ -301,13 +503,17 @@ export function validateBackupPayload(parsed: unknown): BackupPayload {
 
   if (
     !isString(parsed.exported_at) ||
-    !isString(parsed.app_version) ||
+    Number.isNaN(Date.parse(parsed.exported_at)) ||
+    !isNonEmptyString(parsed.app_version) ||
     !isObject(parsed.summary)
   ) {
     invalidBackup('Metadata file backup rusak atau tidak lengkap.');
   }
 
-  return parsed as BackupPayload;
+  const payload = parsed as BackupPayload;
+  validateBackupSummary(payload);
+  validateBackupRelations(payload);
+  return payload;
 }
 
 export function getBackupPayloadStats(payload: BackupPayload): BackupStats {

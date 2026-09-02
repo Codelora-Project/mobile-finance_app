@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { withIntegrityCheckedTransaction } from '@/db/transactions';
 import type {
   BackupAppSetting,
   BackupCategory,
@@ -15,7 +16,10 @@ import type {
   BackupStats,
   BackupTransaction,
 } from '@/features/backup/backup-types';
-import { MAX_RECEIPT_BASE64_LENGTH } from '@/features/backup/backup-validation';
+import {
+  MAX_RECEIPT_BASE64_LENGTH,
+  validateBackupPayload,
+} from '@/features/backup/backup-validation';
 import {
   readReceiptBase64,
   type ReceiptStorage,
@@ -72,36 +76,40 @@ export async function createBackupPayload(
     savings_goals,
     goal_transactions,
     category_budgets,
-  ] = await Promise.all([
-    database.getAllAsync<BackupCategory>(
-      'SELECT * FROM categories ORDER BY sort_order ASC, id ASC;',
-    ),
-    database.getAllAsync<BackupPaymentMethod>(
-      'SELECT * FROM payment_methods ORDER BY sort_order ASC, id ASC;',
-    ),
-    database.getAllAsync<BackupTransaction>(
-      'SELECT * FROM transactions ORDER BY id ASC;',
-    ),
-    database.getAllAsync<BackupReceipt>(
-      'SELECT * FROM receipts ORDER BY id ASC;',
-    ),
-    database.getAllAsync<BackupClaim>('SELECT * FROM claims ORDER BY id ASC;'),
-    database.getAllAsync<BackupClaimItem>(
-      'SELECT * FROM claim_items ORDER BY id ASC;',
-    ),
-    database.getAllAsync<BackupAppSetting>(
-      'SELECT * FROM app_settings ORDER BY key ASC;',
-    ),
-    database.getAllAsync<BackupSavingsGoal>(
-      'SELECT * FROM savings_goals ORDER BY id ASC;',
-    ),
-    database.getAllAsync<BackupGoalTransaction>(
-      'SELECT * FROM goal_transactions ORDER BY id ASC;',
-    ),
-    database.getAllAsync<BackupCategoryBudget>(
-      'SELECT * FROM category_budgets ORDER BY id ASC;',
-    ),
-  ]);
+  ] = await withIntegrityCheckedTransaction(database, (transaction) =>
+    Promise.all([
+      transaction.getAllAsync<BackupCategory>(
+        'SELECT * FROM categories ORDER BY sort_order ASC, id ASC;',
+      ),
+      transaction.getAllAsync<BackupPaymentMethod>(
+        'SELECT * FROM payment_methods ORDER BY sort_order ASC, id ASC;',
+      ),
+      transaction.getAllAsync<BackupTransaction>(
+        'SELECT * FROM transactions ORDER BY id ASC;',
+      ),
+      transaction.getAllAsync<BackupReceipt>(
+        'SELECT * FROM receipts ORDER BY id ASC;',
+      ),
+      transaction.getAllAsync<BackupClaim>(
+        'SELECT * FROM claims ORDER BY id ASC;',
+      ),
+      transaction.getAllAsync<BackupClaimItem>(
+        'SELECT * FROM claim_items ORDER BY id ASC;',
+      ),
+      transaction.getAllAsync<BackupAppSetting>(
+        'SELECT * FROM app_settings ORDER BY key ASC;',
+      ),
+      transaction.getAllAsync<BackupSavingsGoal>(
+        'SELECT * FROM savings_goals ORDER BY id ASC;',
+      ),
+      transaction.getAllAsync<BackupGoalTransaction>(
+        'SELECT * FROM goal_transactions ORDER BY id ASC;',
+      ),
+      transaction.getAllAsync<BackupCategoryBudget>(
+        'SELECT * FROM category_budgets ORDER BY id ASC;',
+      ),
+    ]),
+  );
 
   const receipts = await Promise.all(
     receiptRows.map(async (receipt) => {
@@ -124,7 +132,7 @@ export async function createBackupPayload(
     }),
   );
 
-  return {
+  const payload: BackupPayload = {
     app_identifier: 'keuanganku_app',
     version: 2,
     exported_at: new Date().toISOString(),
@@ -150,4 +158,5 @@ export async function createBackupPayload(
       category_budgets,
     },
   };
+  return validateBackupPayload(payload);
 }

@@ -17,6 +17,7 @@ import {
   resetApplicationData,
   resolveDefaultQuickLogCategoryIds,
   setHomeDisplayPreferences,
+  setQuickLogCategoryIds,
 } from '@/features/settings/settings-repository';
 
 const mockRemoveCachedClaimPdfs = jest.fn();
@@ -263,6 +264,95 @@ describe('settings repository', () => {
     } as unknown as SQLiteDatabase;
 
     await expect(getQuickLogCategoryIds(database)).resolves.toEqual([120, 880]);
+  });
+
+  it('migrates legacy quick-log IDs to system keys while preserving custom categories', async () => {
+    let storedValue = JSON.stringify([12, 91]);
+    const categories = [
+      { id: 12, system_key: 'expense_food', type: 'expense' as const },
+      { id: 91, system_key: null, type: 'expense' as const },
+    ];
+    const database = {
+      getAllAsync: jest.fn(async () => categories),
+      getFirstAsync: jest.fn(async () => ({ value: storedValue })),
+      runAsync: jest.fn(async (_sql: string, value: unknown) => {
+        storedValue = String(value);
+        return { changes: 1, lastInsertRowId: 0 };
+      }),
+    } as unknown as SQLiteDatabase;
+
+    await expect(getQuickLogCategoryIds(database)).resolves.toEqual([12, 91]);
+    expect(JSON.parse(storedValue)).toEqual({
+      category_refs: [{ system_key: 'expense_food' }, { category_id: 91 }],
+      version: 2,
+    });
+  });
+
+  it('replaces the legacy hardcoded default sequence with current system categories', async () => {
+    let storedValue = JSON.stringify([1, 2, 3, 4, 5]);
+    const database = {
+      getAllAsync: jest.fn(async () => [
+        { id: 1, system_key: 'wallet_transfer', type: 'expense' },
+        { id: 42, system_key: 'expense_food', type: 'expense' },
+        { id: 77, system_key: 'expense_transportation', type: 'expense' },
+        { id: 91, system_key: 'expense_shopping', type: 'expense' },
+      ]),
+      getFirstAsync: jest.fn(async () => ({ value: storedValue })),
+      runAsync: jest.fn(async (_sql: string, value: unknown) => {
+        storedValue = String(value);
+        return { changes: 1, lastInsertRowId: 0 };
+      }),
+    } as unknown as SQLiteDatabase;
+
+    await expect(getQuickLogCategoryIds(database)).resolves.toEqual([
+      42, 77, 91,
+    ]);
+    expect(JSON.parse(storedValue)).toEqual({
+      category_refs: [
+        { system_key: 'expense_food' },
+        { system_key: 'expense_transportation' },
+        { system_key: 'expense_shopping' },
+      ],
+      version: 2,
+    });
+  });
+
+  it('resolves migrated system keys when category IDs change', async () => {
+    const database = {
+      getAllAsync: jest.fn(async () => [
+        { id: 712, system_key: 'expense_food', type: 'expense' },
+        { id: 91, system_key: null, type: 'expense' },
+      ]),
+      getFirstAsync: jest.fn(async () => ({
+        value: JSON.stringify({
+          category_refs: [{ system_key: 'expense_food' }, { category_id: 91 }],
+          version: 2,
+        }),
+      })),
+    } as unknown as SQLiteDatabase;
+
+    await expect(getQuickLogCategoryIds(database)).resolves.toEqual([712, 91]);
+  });
+
+  it('stores system categories by key and custom categories by ID', async () => {
+    let storedValue = '';
+    const database = {
+      getAllAsync: jest.fn(async () => [
+        { id: 712, system_key: 'expense_food', type: 'expense' },
+        { id: 91, system_key: null, type: 'expense' },
+      ]),
+      runAsync: jest.fn(async (_sql: string, value: unknown) => {
+        storedValue = String(value);
+        return { changes: 1, lastInsertRowId: 0 };
+      }),
+    } as unknown as SQLiteDatabase;
+
+    await setQuickLogCategoryIds(database, [712, 91], 123);
+
+    expect(JSON.parse(storedValue)).toEqual({
+      category_refs: [{ system_key: 'expense_food' }, { category_id: 91 }],
+      version: 2,
+    });
   });
 
   it('falls back to the first expense categories if system keys are absent', () => {

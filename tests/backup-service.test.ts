@@ -47,6 +47,39 @@ function emptyBackupPayload(version: 1 | 2 = 2): BackupPayload {
   };
 }
 
+function addExpenseTransaction(payload: BackupPayload, id: number) {
+  payload.data.categories.push({
+    created_at: 1,
+    icon_key: null,
+    id,
+    is_default: 1,
+    is_fallback: 0,
+    name: `Expense ${id}`,
+    sort_order: id,
+    system_key: `expense_${id}`,
+    type: 'expense',
+    updated_at: 1,
+  });
+  payload.data.transactions.push({
+    amount_minor: 10_000,
+    category_id: id,
+    counterparty: null,
+    created_at: 1,
+    currency_code: 'IDR',
+    id,
+    is_reimbursable: 0,
+    local_date: '2026-08-24',
+    note: null,
+    occurred_at: 1,
+    payment_method_id: null,
+    timezone_offset_minutes: 420,
+    type: 'expense',
+    updated_at: 1,
+  });
+  payload.summary.categories_count += 1;
+  payload.summary.transactions_count += 1;
+}
+
 describe('Backup Service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -58,35 +91,91 @@ describe('Backup Service', () => {
     const mockDb = {
       getAllAsync: jest.fn(async (sql: string) => {
         if (sql.includes('FROM categories')) {
-          return [{ id: 1, name: 'Food', type: 'expense', sort_order: 1 }];
+          return [
+            {
+              created_at: 1,
+              icon_key: null,
+              id: 1,
+              is_default: 1,
+              is_fallback: 0,
+              name: 'Transfer Between Wallets',
+              sort_order: 1,
+              system_key: 'wallet_transfer',
+              type: 'expense',
+              updated_at: 1,
+            },
+          ];
         }
         if (sql.includes('FROM payment_methods')) {
           return [
             {
+              account_number: null,
+              account_type: 'cash',
+              color: '#2563EB',
+              created_at: 1,
               id: 1,
+              icon_key: 'wallet',
+              include_in_cashflow: 1,
+              initial_balance_minor: 500_000,
+              is_archived: 0,
+              is_default: 1,
+              is_fallback: 1,
               name: 'Cash',
               sort_order: 1,
-              initial_balance_minor: 500_000,
-              account_type: 'cash',
+              system_key: 'cash',
+              updated_at: 1,
+            },
+            {
+              account_number: null,
+              account_type: 'bank',
+              color: '#10B981',
+              created_at: 1,
+              icon_key: 'bank',
               include_in_cashflow: 1,
+              initial_balance_minor: 0,
               is_archived: 0,
+              is_default: 0,
+              is_fallback: 0,
+              id: 2,
+              name: 'Bank',
+              sort_order: 2,
+              system_key: null,
+              updated_at: 1,
             },
           ];
         }
         if (sql.includes('FROM transactions')) {
           return [
             {
-              id: 101,
-              type: 'transfer',
               amount_minor: 50_000,
               category_id: 1,
+              counterparty: null,
+              created_at: 1,
+              currency_code: 'IDR',
+              id: 101,
+              is_reimbursable: 0,
+              local_date: '2026-08-24',
+              note: null,
+              occurred_at: 1,
+              payment_method_id: 1,
+              timezone_offset_minutes: 420,
+              transfer_fee_category_id: null,
               transfer_to_payment_method_id: 2,
               transfer_fee_minor: 2_500,
+              transfer_fee_note: null,
+              type: 'transfer',
+              updated_at: 1,
             },
           ];
         }
         return [];
       }),
+      execAsync: jest.fn(async () => undefined),
+      withExclusiveTransactionAsync: jest.fn(
+        async (task: (database: SQLiteDatabase) => Promise<void>) => {
+          await task(mockDb as unknown as SQLiteDatabase);
+        },
+      ),
     } as unknown as SQLiteDatabase;
 
     const payload = await createBackupPayload(mockDb);
@@ -94,7 +183,7 @@ describe('Backup Service', () => {
     expect(payload.app_identifier).toBe('keuanganku_app');
     expect(payload.version).toBe(2);
     expect(payload.summary.categories_count).toBe(1);
-    expect(payload.summary.payment_methods_count).toBe(1);
+    expect(payload.summary.payment_methods_count).toBe(2);
     expect(payload.summary.transactions_count).toBe(1);
     expect(payload.data.categories).toHaveLength(1);
     expect(payload.data.transactions).toHaveLength(1);
@@ -107,6 +196,7 @@ describe('Backup Service', () => {
       transfer_to_payment_method_id: 2,
       type: 'transfer',
     });
+    expect(mockDb.withExclusiveTransactionAsync).toHaveBeenCalledTimes(1);
   });
 
   it('restores backup data atomically inside SQLite transaction', async () => {
@@ -235,6 +325,12 @@ describe('Backup Service', () => {
         }
         return [];
       }),
+      execAsync: jest.fn(async () => undefined),
+      withExclusiveTransactionAsync: jest.fn(
+        async (task: (database: SQLiteDatabase) => Promise<void>) => {
+          await task(mockDb as unknown as SQLiteDatabase);
+        },
+      ),
     } as unknown as SQLiteDatabase;
 
     await expect(createBackupPayload(mockDb)).rejects.toMatchObject({
@@ -248,6 +344,68 @@ describe('Backup Service', () => {
       .mockResolvedValueOnce('receipts/first.jpg')
       .mockRejectedValueOnce(new Error('storage full'));
     const payload = emptyBackupPayload(2);
+    payload.data.categories.push(
+      {
+        created_at: 1,
+        icon_key: null,
+        id: 1,
+        is_default: 1,
+        is_fallback: 0,
+        name: 'Food',
+        sort_order: 0,
+        system_key: 'expense_food',
+        type: 'expense',
+        updated_at: 1,
+      },
+      {
+        created_at: 1,
+        icon_key: null,
+        id: 2,
+        is_default: 1,
+        is_fallback: 0,
+        name: 'Transport',
+        sort_order: 1,
+        system_key: 'expense_transportation',
+        type: 'expense',
+        updated_at: 1,
+      },
+    );
+    payload.data.transactions.push(
+      {
+        amount_minor: 10_000,
+        category_id: 1,
+        counterparty: null,
+        created_at: 1,
+        currency_code: 'IDR',
+        id: 1,
+        is_reimbursable: 0,
+        local_date: '2026-08-24',
+        note: null,
+        occurred_at: 1,
+        payment_method_id: null,
+        timezone_offset_minutes: 420,
+        type: 'expense',
+        updated_at: 1,
+      },
+      {
+        amount_minor: 20_000,
+        category_id: 2,
+        counterparty: null,
+        created_at: 1,
+        currency_code: 'IDR',
+        id: 2,
+        is_reimbursable: 0,
+        local_date: '2026-08-24',
+        note: null,
+        occurred_at: 1,
+        payment_method_id: null,
+        timezone_offset_minutes: 420,
+        type: 'expense',
+        updated_at: 1,
+      },
+    );
+    payload.summary.categories_count = 2;
+    payload.summary.transactions_count = 2;
     payload.data.receipts.push(
       {
         created_at: 1,
@@ -285,6 +443,49 @@ describe('Backup Service', () => {
     );
     expect(mockRemoveReceiptFile).toHaveBeenCalledTimes(1);
     expect(mockRemoveReceiptFile).toHaveBeenCalledWith('receipts/first.jpg');
+  });
+
+  it('removes staged files and preserves old receipt files when database restore fails', async () => {
+    const payload = emptyBackupPayload(2);
+    addExpenseTransaction(payload, 1);
+    payload.data.receipts.push({
+      created_at: 1,
+      file_base64: 'AAAA',
+      id: 1,
+      mime_type: 'image/jpeg',
+      ocr_raw_text: null,
+      ocr_status: 'not_processed',
+      storage_key: 'receipts/original.jpg',
+      subtotal_minor: null,
+      tax_minor: null,
+      transaction_id: 1,
+      updated_at: 1,
+    });
+    const transaction = {
+      execAsync: jest.fn(async () => undefined),
+      getAllAsync: jest.fn(async () => []),
+      runAsync: jest.fn(async () => {
+        throw new Error('database full');
+      }),
+    } as unknown as SQLiteDatabase;
+    const database = {
+      getAllAsync: jest.fn(async () => [
+        { storage_key: 'receipts/existing.jpg' },
+      ]),
+      withExclusiveTransactionAsync: jest.fn(
+        async (task: (database: SQLiteDatabase) => Promise<void>) => {
+          await task(transaction);
+        },
+      ),
+    } as unknown as SQLiteDatabase;
+
+    await expect(restoreBackupData(database, payload)).rejects.toThrow(
+      'database full',
+    );
+    expect(mockRemoveReceiptFile).toHaveBeenCalledWith('receipts/restored.jpg');
+    expect(mockRemoveReceiptFile).not.toHaveBeenCalledWith(
+      'receipts/existing.jpg',
+    );
   });
 
   it('generates CSV with proper UTF-8 BOM and headers', async () => {

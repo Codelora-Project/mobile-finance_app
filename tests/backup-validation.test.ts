@@ -1,8 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 
 import type {
+  BackupCategory,
   BackupPayload,
   BackupReceipt,
+  BackupTransaction,
 } from '@/features/backup/backup-types';
 import { parseBackupPayload } from '@/features/backup/backup-validation';
 
@@ -47,6 +49,40 @@ function receipt(fileBase64?: string | null): BackupReceipt {
     subtotal_minor: null,
     tax_minor: null,
     transaction_id: 1,
+    updated_at: 1,
+  };
+}
+
+function category(id = 1): BackupCategory {
+  return {
+    created_at: 1,
+    icon_key: null,
+    id,
+    is_default: 1,
+    is_fallback: 0,
+    name: `Expense ${id}`,
+    sort_order: id,
+    system_key: `expense_${id}`,
+    type: 'expense',
+    updated_at: 1,
+  };
+}
+
+function transaction(categoryId = 1): BackupTransaction {
+  return {
+    amount_minor: 10_000,
+    category_id: categoryId,
+    counterparty: null,
+    created_at: 1,
+    currency_code: 'IDR',
+    id: 1,
+    is_reimbursable: 0,
+    local_date: '2026-08-24',
+    note: null,
+    occurred_at: 1,
+    payment_method_id: null,
+    timezone_offset_minutes: 420,
+    type: 'expense',
     updated_at: 1,
   };
 }
@@ -96,6 +132,75 @@ describe('backup payload validation', () => {
 
     expect(() => parseBackupPayload(JSON.stringify(payload))).toThrow(
       /receipts.*baris 1/i,
+    );
+  });
+
+  it('rejects collection counts that disagree with the backup summary', () => {
+    const payload = emptyPayload(2);
+    payload.data.categories.push(category());
+
+    expect(() => parseBackupPayload(JSON.stringify(payload))).toThrow(
+      /ringkasan.*tidak konsisten/i,
+    );
+  });
+
+  it('rejects orphaned transaction relationships before restore', () => {
+    const payload = emptyPayload(2);
+    payload.data.transactions.push(transaction(404));
+    payload.summary.transactions_count = 1;
+
+    expect(() => parseBackupPayload(JSON.stringify(payload))).toThrow(
+      /relasi kategori transaksi/i,
+    );
+  });
+
+  it('rejects duplicate primary IDs before touching the database', () => {
+    const payload = emptyPayload(2);
+    payload.data.categories.push(category(1), {
+      ...category(1),
+      name: 'Another category',
+      system_key: 'expense_another',
+    });
+    payload.summary.categories_count = 2;
+
+    expect(() => parseBackupPayload(JSON.stringify(payload))).toThrow(
+      /ID categories duplikat/i,
+    );
+  });
+
+  it('rejects impossible calendar dates', () => {
+    const payload = emptyPayload(2);
+    payload.data.categories.push(category());
+    payload.data.transactions.push({
+      ...transaction(),
+      local_date: '2026-02-31',
+    });
+    payload.summary.categories_count = 1;
+    payload.summary.transactions_count = 1;
+
+    expect(() => parseBackupPayload(JSON.stringify(payload))).toThrow(
+      /transactions.*baris 1/i,
+    );
+  });
+
+  it('rejects a savings goal whose stored balance differs from its ledger', () => {
+    const payload = emptyPayload(2);
+    payload.data.savings_goals.push({
+      color_key: '#3B82F6',
+      created_at: 1,
+      current_amount_minor: 25_000,
+      icon_key: 'target',
+      id: 1,
+      is_completed: 0,
+      name: 'Emergency fund',
+      target_amount_minor: 100_000,
+      target_date: null,
+      updated_at: 1,
+    });
+    payload.summary.goals_count = 1;
+
+    expect(() => parseBackupPayload(JSON.stringify(payload))).toThrow(
+      /saldo target.*tidak konsisten/i,
     );
   });
 });
