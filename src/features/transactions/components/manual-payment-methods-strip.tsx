@@ -24,16 +24,12 @@ export const ManualPaymentMethodsStrip = memo(
     transactionType = 'expense',
   }: ManualPaymentMethodsStripProps) {
     const { colors, isDark } = useTheme();
-    const { language } = useLanguage();
+    const { t } = useLanguage();
 
     const sectionLabelText =
       transactionType === 'income'
-        ? language === 'id'
-          ? 'MASUK KE DOMPET / REKENING'
-          : 'DEPOSIT TO WALLET / ACCOUNT'
-        : language === 'id'
-          ? 'METODE PEMBAYARAN'
-          : 'PAYMENT METHOD';
+        ? t.transactions.depositToWalletSection
+        : t.transactions.paymentMethodSection;
 
     return (
       <View style={styles.sectionContainer}>

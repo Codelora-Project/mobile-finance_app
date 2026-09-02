@@ -186,7 +186,7 @@ describe('Wallet & Account Management Screen', () => {
     await fireEvent.changeText(nameInput, 'Bibit Reksadana');
 
     // Select Investment Type
-    const investmentChip = screen.getByText('Investasi');
+    const investmentChip = screen.getByText('Portofolio investasi');
     await fireEvent.press(investmentChip);
 
     // Save
@@ -244,7 +244,9 @@ describe('Wallet & Account Management Screen', () => {
     );
 
     await fireEvent.press(screen.getAllByText('Bank BCA')[0]);
-    const reconcileBtn = await screen.findByLabelText('Rekonsiliasi saldo Bank BCA');
+    const reconcileBtn = await screen.findByLabelText(
+      'Rekonsiliasi saldo Bank BCA',
+    );
     await fireEvent.press(reconcileBtn);
 
     await waitFor(() =>
@@ -295,7 +297,9 @@ describe('Wallet & Account Management Screen', () => {
     await renderScreen('en', 'USD');
     const bcaCard = await screen.findByText('Bank BCA');
     await fireEvent.press(bcaCard);
-    const reconcileBtn = await screen.findByLabelText('Reconcile balance Bank BCA');
+    const reconcileBtn = await screen.findByLabelText(
+      'Reconcile balance for Bank BCA',
+    );
     await fireEvent.press(reconcileBtn);
     await fireEvent.changeText(
       screen.getByLabelText('Actual Balance *'),

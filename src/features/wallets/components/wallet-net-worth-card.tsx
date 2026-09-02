@@ -2,6 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -21,13 +22,13 @@ export type WalletNetWorthCardProps = {
 export const WalletNetWorthCard = memo(function WalletNetWorthCard({
   currencyCode,
   hideBalance = false,
-  language,
   onToggleHideBalance,
   operationalCash,
   totalNetWorth,
   trackingAssets,
 }: WalletNetWorthCardProps) {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
 
   const formattedNetWorth = hideBalance
     ? '••••••'
@@ -61,20 +62,14 @@ export const WalletNetWorthCard = memo(function WalletNetWorthCard({
             size={16}
           />
           <Text style={[styles.netWorthLabel, { color: colors.textSecondary }]}>
-            {language === 'id' ? 'TOTAL KEKAYAAN BERSIH' : 'TOTAL NET WORTH'}
+            {t.wallets.netWorthTotal}
           </Text>
         </View>
 
         {onToggleHideBalance ? (
           <Pressable
             accessibilityLabel={
-              hideBalance
-                ? language === 'id'
-                  ? 'Tampilkan Saldo'
-                  : 'Show Balance'
-                : language === 'id'
-                  ? 'Sembunyikan Saldo'
-                  : 'Hide Balance'
+              hideBalance ? t.home.showBalance : t.home.hideBalance
             }
             accessibilityRole="button"
             hitSlop={8}
@@ -100,7 +95,7 @@ export const WalletNetWorthCard = memo(function WalletNetWorthCard({
       {/* 2. Hero Net Worth Amount */}
       <Text
         adjustsFontSizeToFit
-        minimumFontScale={0.7}
+        minimumFontScale={0.85}
         numberOfLines={1}
         style={[styles.netWorthAmount, { color: colors.textPrimary }]}
       >
@@ -124,16 +119,18 @@ export const WalletNetWorthCard = memo(function WalletNetWorthCard({
               style={[styles.metricDot, { backgroundColor: colors.positive }]}
             />
             <Text
-              numberOfLines={1}
-              style={[styles.breakdownLabel, { color: colors.textSecondary }]}>
-              {language === 'id' ? 'Dana Operasional' : 'Liquid Cash'}
+              numberOfLines={2}
+              style={[styles.breakdownLabel, { color: colors.textSecondary }]}
+            >
+              {t.wallets.liquidCash}
             </Text>
           </View>
           <Text
             adjustsFontSizeToFit
-            minimumFontScale={0.75}
+            minimumFontScale={0.85}
             numberOfLines={1}
-            style={[styles.breakdownValue, { color: colors.textPrimary }]}>
+            style={[styles.breakdownValue, { color: colors.textPrimary }]}
+          >
             {formattedCash}
           </Text>
         </View>
@@ -153,16 +150,18 @@ export const WalletNetWorthCard = memo(function WalletNetWorthCard({
               style={[styles.metricDot, { backgroundColor: colors.primary }]}
             />
             <Text
-              numberOfLines={1}
-              style={[styles.breakdownLabel, { color: colors.textSecondary }]}>
-              {language === 'id' ? 'Aset & Investasi' : 'Tracked Assets'}
+              numberOfLines={2}
+              style={[styles.breakdownLabel, { color: colors.textSecondary }]}
+            >
+              {t.wallets.trackedAssets}
             </Text>
           </View>
           <Text
             adjustsFontSizeToFit
-            minimumFontScale={0.75}
+            minimumFontScale={0.85}
             numberOfLines={1}
-            style={[styles.breakdownValue, { color: colors.textPrimary }]}>
+            style={[styles.breakdownValue, { color: colors.textPrimary }]}
+          >
             {formattedAssets}
           </Text>
         </View>

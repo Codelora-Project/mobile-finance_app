@@ -2,6 +2,15 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { ReceiptViewerScreen } from '@/features/receipts/receipt-viewer-screen';
+import { LanguageProvider } from '@/lib/i18n/language-context';
+
+function renderScreen() {
+  return render(
+    <LanguageProvider initialLanguage="en">
+      <ReceiptViewerScreen transactionId={42} />
+    </LanguageProvider>,
+  );
+}
 
 const mockRouter = { back: jest.fn(), push: jest.fn() };
 const mockDatabase = {};
@@ -51,7 +60,7 @@ describe('receipt viewer screen', () => {
   });
 
   it('resolves the relative key and shows the persistent image', async () => {
-    await render(<ReceiptViewerScreen transactionId={42} />);
+    await renderScreen();
 
     const image = await screen.findByLabelText('Stored receipt image');
     expect(image).toHaveProp('source', {
@@ -68,13 +77,13 @@ describe('receipt viewer screen', () => {
 
   it('handles a missing persistent file without crashing', async () => {
     mockReceiptFileExists.mockReturnValue(false);
-    await render(<ReceiptViewerScreen transactionId={42} />);
+    await renderScreen();
 
     expect(
       await screen.findByText('The stored receipt image is unavailable.'),
     ).toBeOnTheScreen();
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Edit transaction' }),
+      screen.getByRole('button', { name: 'Edit Transaction' }),
     );
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/42/edit');
   });

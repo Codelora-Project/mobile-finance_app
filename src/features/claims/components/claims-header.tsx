@@ -13,7 +13,7 @@ export type ClaimsHeaderProps = {
   newClaimLabel: string;
   onBack: () => void;
   onNewClaim?: () => void;
-  title?: string;
+  title: string;
 };
 
 export const ClaimsHeader = memo(function ClaimsHeader({
@@ -21,7 +21,7 @@ export const ClaimsHeader = memo(function ClaimsHeader({
   newClaimLabel,
   onBack,
   onNewClaim,
-  title = 'Claims',
+  title,
 }: ClaimsHeaderProps) {
   const { colors } = useTheme();
 

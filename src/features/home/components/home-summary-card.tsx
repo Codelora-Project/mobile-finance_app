@@ -1,6 +1,12 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { memo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
 import type { HomePeriod, HomeSummary } from '@/features/home/home-repository';
 import type { TranslationSchema } from '@/lib/i18n/translations';
@@ -32,6 +38,8 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
   t,
 }: HomeSummaryCardProps) {
   const { colors, isDark } = useTheme();
+  const { fontScale } = useWindowDimensions();
+  const stackHeader = fontScale >= 1.5;
 
   function getPeriodLabel(p: HomePeriod) {
     switch (p) {
@@ -91,15 +99,20 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
       ]}
     >
       {/* 1. Header: Period Switcher & Display Settings */}
-      <View style={styles.topRow}>
+      <View style={[styles.topRow, stackHeader ? styles.topRowStacked : null]}>
         <Text
-          numberOfLines={1}
+          numberOfLines={stackHeader ? 2 : 1}
           style={[styles.cardTitleLabel, { color: colors.textSecondary }]}
         >
           {t.home.net.toUpperCase()} · {summary.periodLabel.toUpperCase()}
         </Text>
 
-        <View style={styles.topRightControls}>
+        <View
+          style={[
+            styles.topRightControls,
+            stackHeader ? styles.topRightControlsStacked : null,
+          ]}
+        >
           {/* Period Selector Pill */}
           <Pressable
             accessibilityLabel={`${t.home.changePeriod}: ${getPeriodLabel(period)}`}
@@ -140,9 +153,7 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
               style={({ pressed }) => [
                 styles.settingsBtn,
                 {
-                  backgroundColor: isDark
-                    ? colors.surfaceSecondary
-                    : '#F1F5F9',
+                  backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
                   borderColor: isDark ? '#3F3F46' : '#E2E8F0',
                 },
                 pressed ? styles.pillPressed : null,
@@ -163,7 +174,7 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
         <View style={styles.amountRow}>
           <Text
             adjustsFontSizeToFit
-            minimumFontScale={0.7}
+            minimumFontScale={0.85}
             numberOfLines={1}
             style={[
               styles.mainAmountValue,
@@ -190,9 +201,7 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
               style={({ pressed }) => [
                 styles.eyeBtn,
                 {
-                  backgroundColor: isDark
-                    ? colors.surfaceSecondary
-                    : '#F1F5F9',
+                  backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
                   borderColor: isDark ? '#3F3F46' : '#E2E8F0',
                 },
                 pressed ? styles.pillPressed : null,
@@ -267,7 +276,7 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
           </View>
           <Text
             adjustsFontSizeToFit
-            minimumFontScale={0.75}
+            minimumFontScale={0.85}
             numberOfLines={1}
             style={[styles.metricValue, { color: colors.textPrimary }]}
           >
@@ -301,7 +310,7 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
           </View>
           <Text
             adjustsFontSizeToFit
-            minimumFontScale={0.75}
+            minimumFontScale={0.85}
             numberOfLines={1}
             style={[styles.metricValue, { color: colors.textPrimary }]}
           >
@@ -436,11 +445,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.xs + 2,
   },
+  topRightControlsStacked: {
+    alignSelf: 'flex-end',
+  },
   topRow: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 2,
+  },
+  topRowStacked: {
+    alignItems: 'stretch',
+    flexDirection: 'column',
+    gap: spacing.xs,
   },
   verticalDivider: {
     alignSelf: 'stretch',

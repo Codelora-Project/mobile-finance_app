@@ -3,6 +3,7 @@ import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { HistoryPeriod } from '@/features/transactions/components/transaction-period-segmented-control';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { contentMaxWidth } from '@/theme/layout';
 import { radius } from '@/theme/radius';
@@ -24,7 +25,6 @@ export type TransactionDateNavigatorProps = {
 export const TransactionDateNavigator = memo(function TransactionDateNavigator({
   embedded = false,
   isAllTime,
-  language,
   onNextPeriod,
   onPrevPeriod,
   onToggleAllTime,
@@ -33,6 +33,7 @@ export const TransactionDateNavigator = memo(function TransactionDateNavigator({
   secondaryLabel,
 }: TransactionDateNavigatorProps) {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
 
   return (
     <View
@@ -50,9 +51,7 @@ export const TransactionDateNavigator = memo(function TransactionDateNavigator({
       >
         {/* Previous Period Button */}
         <Pressable
-          accessibilityLabel={
-            language === 'id' ? 'Bulan Sebelumnya' : 'Previous Period'
-          }
+          accessibilityLabel={t.transactions.previousPeriod}
           accessibilityRole="button"
           hitSlop={8}
           onPress={onPrevPeriod}
@@ -82,30 +81,21 @@ export const TransactionDateNavigator = memo(function TransactionDateNavigator({
             numberOfLines={1}
             style={[styles.primaryText, { color: colors.textPrimary }]}
           >
-            {isAllTime
-              ? language === 'id'
-                ? 'Semua Waktu'
-                : 'All Time'
-              : primaryLabel}
+            {isAllTime ? t.transactions.allTime : primaryLabel}
           </Text>
           <Text
             numberOfLines={1}
             style={[styles.secondaryText, { color: colors.textMuted }]}
           >
             {isAllTime
-              ? language === 'id'
-                ? 'Sentuh untuk filter per periode'
-                : 'Tap to view by period'
-              : secondaryLabel ||
-                (language === 'id' ? 'Semua waktu' : 'All time')}
+              ? t.transactions.tapForPeriod
+              : secondaryLabel || t.transactions.allTime}
           </Text>
         </Pressable>
 
         {/* Next Period Button */}
         <Pressable
-          accessibilityLabel={
-            language === 'id' ? 'Bulan Berikutnya' : 'Next Period'
-          }
+          accessibilityLabel={t.transactions.nextPeriod}
           accessibilityRole="button"
           hitSlop={8}
           onPress={onNextPeriod}

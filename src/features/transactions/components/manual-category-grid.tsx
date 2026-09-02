@@ -28,16 +28,16 @@ export const ManualCategoryGrid = memo(function ManualCategoryGrid({
   transactionType,
 }: ManualCategoryGridProps) {
   const { colors, isDark } = useTheme();
-  const { language } = useLanguage();
+  const { t } = useLanguage();
 
   return (
     <View style={styles.sectionContainer}>
       <View style={styles.sectionHeaderRow}>
         <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-          {language === 'id' ? 'PILIH KATEGORI' : 'SELECT CATEGORY'} *
+          {t.transactions.selectCategory.toUpperCase()} *
         </Text>
         <Pressable
-          accessibilityLabel="Category *"
+          accessibilityLabel={t.transactions.selectCategory}
           accessibilityRole="button"
           hitSlop={8}
           onPress={onOpenMoreCategories}
@@ -47,7 +47,7 @@ export const ManualCategoryGrid = memo(function ManualCategoryGrid({
           ]}
         >
           <Text style={[styles.moreCategoriesText, { color: colors.primary }]}>
-            {language === 'id' ? '+ Kategori Lain' : '+ More'}
+            {t.transactions.moreCategories}
           </Text>
         </Pressable>
       </View>
@@ -112,7 +112,7 @@ export const ManualCategoryGrid = memo(function ManualCategoryGrid({
                 />
               </View>
               <Text
-                numberOfLines={1}
+                numberOfLines={2}
                 style={[
                   styles.categoryNameText,
                   { color: textColor },
@@ -149,7 +149,8 @@ const styles = StyleSheet.create({
   categoryCard: {
     alignItems: 'center',
     gap: 6,
-    width: 68,
+    minHeight: 92,
+    width: 80,
   },
   categoryCardSelected: {
     transform: [{ scale: 1.04 }],
@@ -178,6 +179,7 @@ const styles = StyleSheet.create({
     ...typography.metadata,
     fontSize: 11,
     fontWeight: '600',
+    lineHeight: 16,
     textAlign: 'center',
   },
   categoryNameTextSelected: {

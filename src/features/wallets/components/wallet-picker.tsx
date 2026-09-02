@@ -41,7 +41,7 @@ export function WalletPicker({
   const database = useSQLiteContext();
   const { colors, isDark } = useTheme();
   const { currencyCode } = useCurrency();
-  const { language } = useLanguage();
+  const { t } = useLanguage();
 
   const loadWallets = useCallback(
     () => getWallets(database, { includeArchived: false }),
@@ -67,7 +67,7 @@ export function WalletPicker({
       <View style={styles.stateContainer}>
         <ActivityIndicator color={colors.primary} size="large" />
         <Text style={[styles.stateText, { color: colors.textMuted }]}>
-          {language === 'id' ? 'Memuat dompet…' : 'Loading wallets…'}
+          {t.wallets.loading}
         </Text>
       </View>
     );
@@ -80,7 +80,7 @@ export function WalletPicker({
           {error}
         </Text>
         <AppButton
-          label={language === 'id' ? 'Coba Lagi' : 'Try Again'}
+          label={t.common.tryAgain}
           onPress={() => void reload()}
           variant="secondary"
         />
@@ -140,10 +140,10 @@ export function WalletPicker({
                 <Text
                   style={[styles.walletName, { color: colors.textPrimary }]}
                 >
-                  {language === 'id' ? 'Tanpa Dompet' : 'No wallet selected'}
+                  {t.wallets.noWalletSelected}
                 </Text>
                 <Text style={[styles.walletMeta, { color: colors.textMuted }]}>
-                  {language === 'id' ? 'Opsional' : 'Optional'}
+                  {t.common.optional}
                 </Text>
               </View>
               <MaterialCommunityIcons
@@ -222,7 +222,7 @@ export function WalletPicker({
                         { color: colors.textMuted },
                       ]}
                     >
-                      {language === 'id' ? 'Aset' : 'Asset'}
+                      {t.wallets.assetBadge}
                     </Text>
                   </View>
                 ) : null}

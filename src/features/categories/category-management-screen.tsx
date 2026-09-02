@@ -24,6 +24,7 @@ import {
   type CategoryType,
 } from '@/features/categories/category-repository';
 import { isCodedError, mapError } from '@/lib/errors';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -34,17 +35,11 @@ type EditorState = {
   type: CategoryType;
 };
 
-function getOperationMessage(error: unknown) {
-  if (isCodedError(error) && error.code === 'VALIDATION_FAILED') {
-    return error.message;
-  }
-  return mapError(error, 'DATABASE_WRITE_FAILED').message;
-}
-
 export function CategoryManagementScreen() {
   const database = useSQLiteContext();
   const router = useRouter();
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const savingRef = useRef(false);
   const deletingRef = useRef(false);
   const loadRequestRef = useRef(0);
@@ -71,14 +66,16 @@ export function CategoryManagementScreen() {
         console.error('Category management could not load categories.', error);
       }
       if (requestId === loadRequestRef.current) {
-        setScreenError(mapError(error, 'DATABASE_WRITE_FAILED').message);
+        setScreenError(
+          mapError(error, 'DATABASE_WRITE_FAILED', t.appErrors).message,
+        );
       }
     } finally {
       if (requestId === loadRequestRef.current) {
         setLoading(false);
       }
     }
-  }, [database, selectedType]);
+  }, [database, selectedType, t.appErrors]);
 
   useEffect(() => {
     const loadTimer = setTimeout(() => {
@@ -140,7 +137,9 @@ export function CategoryManagementScreen() {
       if (__DEV__ && !isCodedError(error)) {
         console.error('Category could not be saved.', error);
       }
-      setFormError(getOperationMessage(error));
+      setFormError(
+        mapError(error, 'DATABASE_WRITE_FAILED', t.appErrors).message,
+      );
     } finally {
       savingRef.current = false;
       setSaving(false);
@@ -161,7 +160,9 @@ export function CategoryManagementScreen() {
       if (__DEV__ && !isCodedError(error)) {
         console.error('Category could not be deleted.', error);
       }
-      setScreenError(getOperationMessage(error));
+      setScreenError(
+        mapError(error, 'DATABASE_WRITE_FAILED', t.appErrors).message,
+      );
     } finally {
       deletingRef.current = false;
       setDeletingId(null);
@@ -170,14 +171,21 @@ export function CategoryManagementScreen() {
 
   function requestDelete(category: Category) {
     Alert.alert(
-      'Delete category?',
-      `Transactions using ${category.name} will be moved to the ${category.type} Other category.`,
+      t.categories.deleteConfirmTitle,
+      t.categories.deleteReassignment
+        .replace('{name}', category.name)
+        .replace(
+          '{type}',
+          category.type === 'expense'
+            ? t.categories.expenseType
+            : t.categories.incomeType,
+        ),
       [
-        { style: 'cancel', text: 'Cancel' },
+        { style: 'cancel', text: t.common.cancel },
         {
           onPress: () => void confirmDelete(category),
           style: 'destructive',
-          text: 'Delete',
+          text: t.common.delete,
         },
       ],
     );
@@ -186,14 +194,22 @@ export function CategoryManagementScreen() {
   return (
     <Screen>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <AppButton label="Back" onPress={() => router.back()} variant="ghost" />
+        <AppButton
+          label={t.common.back}
+          onPress={() => router.back()}
+          variant="ghost"
+        />
         <Text
           accessibilityRole="header"
           style={[styles.title, { color: colors.textPrimary }]}
         >
-          Categories
+          {t.categories.title}
         </Text>
-        <AppButton label="Add" onPress={openAddEditor} variant="ghost" />
+        <AppButton
+          label={t.common.add}
+          onPress={openAddEditor}
+          variant="ghost"
+        />
       </View>
 
       <View
@@ -222,7 +238,9 @@ export function CategoryManagementScreen() {
                   selected ? styles.selectedTabLabel : null,
                 ]}
               >
-                {type === 'expense' ? 'Expense' : 'Income'}
+                {type === 'expense'
+                  ? t.transactions.expense
+                  : t.transactions.income}
               </Text>
             </Pressable>
           );
@@ -240,7 +258,11 @@ export function CategoryManagementScreen() {
           <Text style={[styles.errorText, { color: colors.destructive }]}>
             {screenError}
           </Text>
-          <AppButton label="Try again" onPress={retryLoad} variant="ghost" />
+          <AppButton
+            label={t.common.tryAgain}
+            onPress={retryLoad}
+            variant="ghost"
+          />
         </View>
       ) : null}
 
@@ -248,7 +270,7 @@ export function CategoryManagementScreen() {
         <View accessibilityLiveRegion="polite" style={styles.loadingState}>
           <ActivityIndicator color={colors.primary} size="large" />
           <Text style={[styles.secondaryText, { color: colors.textSecondary }]}>
-            Loading categories…
+            {t.categories.loading}
           </Text>
         </View>
       ) : (
@@ -262,13 +284,22 @@ export function CategoryManagementScreen() {
                 accessibilityRole="header"
                 style={[styles.emptyTitle, { color: colors.textPrimary }]}
               >
-                No {selectedType} categories
+                {t.categories.emptyTitle.replace(
+                  '{type}',
+                  selectedType === 'expense'
+                    ? t.categories.expenseType
+                    : t.categories.incomeType,
+                )}
               </Text>
               <Text
                 style={[styles.secondaryText, { color: colors.textSecondary }]}
               >
-                Add your first custom {selectedType} category to keep your
-                spending organized.
+                {t.categories.emptyDescription.replace(
+                  '{type}',
+                  selectedType === 'expense'
+                    ? t.categories.expenseType
+                    : t.categories.incomeType,
+                )}
               </Text>
             </View>
           }
@@ -276,7 +307,7 @@ export function CategoryManagementScreen() {
             const isDeleting = deletingId === category.id;
             return (
               <View
-                accessibilityLabel={`${category.name}, ${category.isDefault ? 'Default category' : 'Custom category'}`}
+                accessibilityLabel={`${category.name}, ${category.isDefault ? t.categories.defaultCategory : t.categories.customCategory}`}
                 style={[
                   styles.row,
                   {
@@ -293,23 +324,29 @@ export function CategoryManagementScreen() {
                     style={[styles.metadata, { color: colors.textSecondary }]}
                   >
                     {category.isDefault
-                      ? 'Default category'
-                      : 'Custom category'}
+                      ? t.categories.defaultCategory
+                      : t.categories.customCategory}
                   </Text>
                 </View>
                 {!category.isDefault ? (
                   <View style={styles.actions}>
                     <AppButton
-                      accessibilityLabel={`Edit ${category.name}`}
+                      accessibilityLabel={t.categories.editAccessibility.replace(
+                        '{name}',
+                        category.name,
+                      )}
                       disabled={isDeleting}
-                      label="Edit"
+                      label={t.common.edit}
                       onPress={() => openEditEditor(category)}
                       variant="ghost"
                     />
                     <AppButton
-                      accessibilityLabel={`Delete ${category.name}`}
+                      accessibilityLabel={t.categories.deleteAccessibility.replace(
+                        '{name}',
+                        category.name,
+                      )}
                       disabled={isDeleting}
-                      label="Delete"
+                      label={t.common.delete}
                       loading={isDeleting}
                       onPress={() => requestDelete(category)}
                       variant="destructive"
@@ -332,7 +369,7 @@ export function CategoryManagementScreen() {
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
             <AppButton
               disabled={saving}
-              label="Cancel"
+              label={t.common.cancel}
               onPress={closeEditor}
               variant="ghost"
             />
@@ -340,7 +377,7 @@ export function CategoryManagementScreen() {
               accessibilityRole="header"
               style={[styles.title, { color: colors.textPrimary }]}
             >
-              {editor?.category ? 'Edit Category' : 'New Category'}
+              {editor?.category ? t.categories.edit : t.categories.newTitle}
             </Text>
             <View style={styles.headerSpacer} />
           </View>
@@ -349,19 +386,19 @@ export function CategoryManagementScreen() {
             <AppInput
               autoFocus
               error={formError}
-              label="Name"
+              label={t.categories.nameLabel}
               maxLength={40}
               onChangeText={(nextName) => {
                 setName(nextName);
                 if (formError) setFormError(null);
               }}
-              placeholder="e.g. Subscriptions"
+              placeholder={t.categories.namePlaceholder}
               value={name}
             />
 
             <View>
               <Text style={[styles.fieldLabel, { color: colors.textPrimary }]}>
-                Type
+                {t.categories.typeLabel}
               </Text>
               <View style={styles.editorTypeRow}>
                 {(['expense', 'income'] as const).map((type) => {
@@ -402,7 +439,9 @@ export function CategoryManagementScreen() {
                           selected ? styles.selectedTypeLabel : null,
                         ]}
                       >
-                        {type === 'expense' ? 'Expense' : 'Income'}
+                        {type === 'expense'
+                          ? t.transactions.expense
+                          : t.transactions.income}
                       </Text>
                     </Pressable>
                   );
@@ -413,7 +452,7 @@ export function CategoryManagementScreen() {
             <View style={styles.editorActions}>
               <AppButton
                 disabled={saving || name.trim().length === 0}
-                label="Save Category"
+                label={t.categories.save}
                 loading={saving}
                 onPress={() => void saveEditor()}
               />

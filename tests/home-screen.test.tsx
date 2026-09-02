@@ -398,7 +398,7 @@ describe('home screen', () => {
       </LanguageProvider>,
     );
 
-    expect(await screen.findByText('Semua Dompet')).toBeOnTheScreen();
+    expect(await screen.findByText('Semua dompet')).toBeOnTheScreen();
     expect(screen.getByText('Bank BCA')).toBeOnTheScreen();
     expect(screen.getByText('Dompet Tunai')).toBeOnTheScreen();
 

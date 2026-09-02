@@ -17,7 +17,6 @@ export type DetailTransferFlowProps = {
 };
 
 export const DetailTransferFlow = memo(function DetailTransferFlow({
-  language = 'id',
   t,
   transaction,
 }: DetailTransferFlowProps) {
@@ -34,7 +33,7 @@ export const DetailTransferFlow = memo(function DetailTransferFlow({
       ]}
     >
       <Text style={[styles.transferFlowTitle, { color: colors.textSecondary }]}>
-        {language === 'id' ? 'ALUR TRANSFER DANA' : 'TRANSFER FLOW'}
+        {t.transactions.transferFlow}
       </Text>
 
       <View style={styles.transferFlowNodes}>
@@ -135,7 +134,7 @@ export const DetailTransferFlow = memo(function DetailTransferFlow({
             <Text
               style={[styles.transferFeeLabel, { color: colors.textSecondary }]}
             >
-              {language === 'id' ? 'Biaya Transfer' : 'Transfer Fee'}
+              {t.transactions.transferFee}
             </Text>
           </View>
           <Text

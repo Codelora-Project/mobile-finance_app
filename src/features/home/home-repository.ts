@@ -6,7 +6,7 @@ import {
 } from '@/features/transactions/transaction-repository';
 import { getTimezoneOffsetMinutes, toLocalDate } from '@/lib/dates';
 import { createCodedError } from '@/lib/errors';
-import type { Language } from '@/lib/i18n/translations';
+import { translations, type Language } from '@/lib/i18n/translations';
 
 const HOME_RECENT_TRANSACTION_LIMIT = 8;
 const HOME_CATEGORY_LIMIT = 5;
@@ -135,7 +135,7 @@ export function formatPeriodLabel(
       referenceDate.getMonth() === today.getMonth() &&
       referenceDate.getDate() === today.getDate()
     ) {
-      return language === 'id' ? 'Hari Ini' : 'Today';
+      return translations[language].transactions.today;
     }
     return new Intl.DateTimeFormat(locale, {
       day: 'numeric',

@@ -4,12 +4,11 @@
     "slug": "keuanganku-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/keuanganku-icon.png",
     "scheme": "keuanganku",
     "userInterfaceStyle": "automatic",
     "plugins": [
       "expo-router",
-      "expo-dev-client",
       "expo-status-bar",
       "expo-sqlite",
       [
@@ -34,13 +33,13 @@
     ],
     "android": {
       "allowBackup": false,
+      "blockedPermissions": ["android.permission.SYSTEM_ALERT_WINDOW"],
       "package": "com.codelora.keuanganku",
       "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#F8FAFC",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/keuanganku-adaptive-foreground.png",
+        "monochromeImage": "./assets/keuanganku-monochrome.png"
       }
     }
   }

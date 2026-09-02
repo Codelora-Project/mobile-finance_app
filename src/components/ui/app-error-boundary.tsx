@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -18,6 +19,48 @@ type AppErrorBoundaryState = {
   error: Error | null;
   hasError: boolean;
 };
+
+function DefaultErrorFallback({
+  error,
+  onReset,
+}: {
+  error: Error;
+  onReset: () => void;
+}) {
+  const { t } = useLanguage();
+
+  return (
+    <Screen>
+      <View style={styles.container}>
+        <View style={styles.iconCircle}>
+          <MaterialCommunityIcons
+            color="#EF4444"
+            name="alert-circle-outline"
+            size={48}
+          />
+        </View>
+
+        <Text accessibilityRole="header" style={styles.title}>
+          {t.errorBoundary.title}
+        </Text>
+
+        <Text style={styles.message}>
+          {__DEV__ && error.message
+            ? error.message
+            : t.errorBoundary.description}
+        </Text>
+
+        <View style={styles.actionWrap}>
+          <AppButton
+            label={t.errorBoundary.reload}
+            onPress={onReset}
+            variant="primary"
+          />
+        </View>
+      </View>
+    </Screen>
+  );
+}
 
 export class AppErrorBoundary extends Component<
   AppErrorBoundaryProps,
@@ -60,34 +103,10 @@ export class AppErrorBoundary extends Component<
       }
 
       return (
-        <Screen>
-          <View style={styles.container}>
-            <View style={styles.iconCircle}>
-              <MaterialCommunityIcons
-                color="#EF4444"
-                name="alert-circle-outline"
-                size={48}
-              />
-            </View>
-
-            <Text accessibilityRole="header" style={styles.title}>
-              Terjadi Kendala Teknis
-            </Text>
-
-            <Text style={styles.message}>
-              {this.state.error.message ||
-                'Aplikasi mengalami kendala tak terduga. Silakan coba muat ulang bagian ini.'}
-            </Text>
-
-            <View style={styles.actionWrap}>
-              <AppButton
-                label="Coba Muat Ulang"
-                onPress={this.resetErrorBoundary}
-                variant="primary"
-              />
-            </View>
-          </View>
-        </Screen>
+        <DefaultErrorFallback
+          error={this.state.error}
+          onReset={this.resetErrorBoundary}
+        />
       );
     }
 

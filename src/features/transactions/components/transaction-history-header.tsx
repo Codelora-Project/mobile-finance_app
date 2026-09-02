@@ -13,6 +13,7 @@ import {
   TransactionPeriodSegmentedControl,
   type HistoryPeriod,
 } from '@/features/transactions/components/transaction-period-segmented-control';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { contentMaxWidth } from '@/theme/layout';
 import { radius } from '@/theme/radius';
@@ -47,11 +48,12 @@ export const TransactionHistoryHeader = memo(function TransactionHistoryHeader({
   selectedYear,
 }: TransactionHistoryHeaderProps) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const [monthPickerVisible, setMonthPickerVisible] = useState(false);
-  const selectMonthLabel =
-    language === 'id'
-      ? `Pilih bulan, ${monthLabel}`
-      : `Choose month, ${monthLabel}`;
+  const selectMonthLabel = t.transactions.selectMonthAccessibility.replace(
+    '{month}',
+    monthLabel,
+  );
 
   function handleSelectMonth(year: number, month: number) {
     onSelectMonth(year, month);
@@ -64,9 +66,7 @@ export const TransactionHistoryHeader = memo(function TransactionHistoryHeader({
         <View style={styles.topRow}>
           <View style={styles.monthNavigator}>
             <Pressable
-              accessibilityLabel={
-                language === 'id' ? 'Bulan sebelumnya' : 'Previous month'
-              }
+              accessibilityLabel={t.common.previousMonth}
               accessibilityRole="button"
               hitSlop={6}
               onPress={onPrevMonth}
@@ -105,9 +105,7 @@ export const TransactionHistoryHeader = memo(function TransactionHistoryHeader({
             </Pressable>
 
             <Pressable
-              accessibilityLabel={
-                language === 'id' ? 'Bulan berikutnya' : 'Next month'
-              }
+              accessibilityLabel={t.common.nextMonth}
               accessibilityRole="button"
               hitSlop={6}
               onPress={onNextMonth}
@@ -126,9 +124,7 @@ export const TransactionHistoryHeader = memo(function TransactionHistoryHeader({
 
           {onExport ? (
             <Pressable
-              accessibilityLabel={
-                language === 'id' ? 'Ekspor CSV' : 'Export CSV'
-              }
+              accessibilityLabel={t.common.exportCsv}
               accessibilityRole="button"
               accessibilityState={{ busy: exporting, disabled: exporting }}
               disabled={exporting}

@@ -37,7 +37,7 @@ import {
   type CloudBackupState,
 } from '@/features/cloud-backup';
 import { useReceiptStorage } from '@/features/receipts/receipt-storage-context';
-import { isCodedError, mapError } from '@/lib/errors';
+import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { spacing } from '@/theme/spacing';
@@ -133,7 +133,7 @@ export function BackupScreen() {
     } catch (err) {
       if (__DEV__) console.warn('Cloud backup failed:', err);
       Alert.alert(
-        language === 'id' ? 'Cadangan gagal' : 'Backup failed',
+        t.backup.backupFailedTitle,
         err instanceof Error ? err.message : t.backup.cloudPermissionDenied,
       );
     } finally {
@@ -143,11 +143,11 @@ export function BackupScreen() {
   }, [
     database,
     ensureDriveAccess,
-    language,
     loadCloudState,
     receiptStorage,
     t.backup.cloudBackupSuccessDesc,
     t.backup.cloudBackupSuccessTitle,
+    t.backup.backupFailedTitle,
     t.backup.cloudPermissionDenied,
     user,
   ]);
@@ -174,7 +174,7 @@ export function BackupScreen() {
     } catch (err) {
       if (__DEV__) console.warn('Cloud restore download failed:', err);
       Alert.alert(
-        language === 'id' ? 'Pemulihan gagal' : 'Restore failed',
+        t.backup.restoreFailedTitle,
         err instanceof Error ? err.message : t.backup.cloudPermissionDenied,
       );
     } finally {
@@ -183,10 +183,10 @@ export function BackupScreen() {
     }
   }, [
     ensureDriveAccess,
-    language,
     t.backup.cloudNoBackupDesc,
     t.backup.cloudNoBackupTitle,
     t.backup.cloudPermissionDenied,
+    t.backup.restoreFailedTitle,
     user,
   ]);
 
@@ -227,21 +227,19 @@ export function BackupScreen() {
       const backupFile = await exportBackupToJsonFile(database, receiptStorage);
       await shareFile(
         backupFile.uri,
-        'Bagikan Cadangan Data (JSON)',
+        t.backup.shareJsonBackup,
         'application/json',
         'public.json',
       );
     } catch (err) {
       if (__DEV__) console.warn('Backup error:', err);
-      const msg = isCodedError(err)
-        ? err.message
-        : mapError(err, 'FILE_OPERATION_FAILED').message;
-      Alert.alert('Gagal Membuat Cadangan', msg);
+      const msg = mapError(err, 'FILE_OPERATION_FAILED', t.appErrors).message;
+      Alert.alert(t.backup.backupFailedTitle, msg);
     } finally {
       creatingBackupRef.current = false;
       setCreatingBackup(false);
     }
-  }, [database, receiptStorage]);
+  }, [database, receiptStorage, t.appErrors, t.backup]);
 
   // Handle Export CSV
   const handleExportCsv = useCallback(async () => {
@@ -251,26 +249,24 @@ export function BackupScreen() {
     try {
       const csvFile = await exportTransactionsCsvFile(database);
       if (csvFile.count === 0) {
-        Alert.alert('Informasi', t.backup.noTransactions);
+        Alert.alert(t.backup.informationTitle, t.backup.noTransactions);
         return;
       }
       await shareFile(
         csvFile.uri,
-        'Bagikan Laporan Transaksi (CSV)',
+        t.backup.shareCsvReport,
         'text/csv',
         'public.comma-separated-values-text',
       );
     } catch (err) {
       if (__DEV__) console.warn('CSV export error:', err);
-      const msg = isCodedError(err)
-        ? err.message
-        : mapError(err, 'FILE_OPERATION_FAILED').message;
-      Alert.alert('Gagal Mengekspor CSV', msg);
+      const msg = mapError(err, 'FILE_OPERATION_FAILED', t.appErrors).message;
+      Alert.alert(t.backup.csvExportFailedTitle, msg);
     } finally {
       exportingCsvRef.current = false;
       setExportingCsv(false);
     }
-  }, [database, t.backup.noTransactions]);
+  }, [database, t.appErrors, t.backup]);
 
   // Handle Pick Backup File for Restore
   const handleSelectBackupFile = useCallback(async () => {
@@ -283,14 +279,12 @@ export function BackupScreen() {
       setPreviewModalVisible(true);
     } catch (err) {
       if (__DEV__) console.warn('Pick backup error:', err);
-      const msg = isCodedError(err)
-        ? err.message
-        : mapError(err, 'VALIDATION_FAILED').message;
-      Alert.alert('File Tidak Valid', msg);
+      const msg = mapError(err, 'VALIDATION_FAILED', t.appErrors).message;
+      Alert.alert(t.backup.invalidFileTitle, msg);
     } finally {
       pickingFileRef.current = false;
     }
-  }, []);
+  }, [t.appErrors, t.backup.invalidFileTitle]);
 
   // Confirm Restore
   const handleConfirmRestore = useCallback(async () => {
@@ -317,10 +311,8 @@ export function BackupScreen() {
       ]);
     } catch (err) {
       if (__DEV__) console.warn('Restore error:', err);
-      const msg = isCodedError(err)
-        ? err.message
-        : mapError(err, 'DATABASE_WRITE_FAILED').message;
-      Alert.alert('Gagal Memulihkan Data', msg);
+      const msg = mapError(err, 'DATABASE_WRITE_FAILED', t.appErrors).message;
+      Alert.alert(t.backup.restoreFailedTitle, msg);
     } finally {
       restoringRef.current = false;
       setRestoring(false);
@@ -334,6 +326,8 @@ export function BackupScreen() {
     selectedBackup,
     t.backup.restoreSuccessDesc,
     t.backup.restoreSuccessTitle,
+    t.appErrors,
+    t.backup.restoreFailedTitle,
     t.common.save,
   ]);
 
@@ -369,7 +363,7 @@ export function BackupScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* 🛡️ Hero Trust Banner: 100% Offline & Private */}
+        {/* Local storage and optional backup assurance. */}
         <BackupVaultBanner t={t} />
 
         {/* 📊 Data Summary Grid */}

@@ -73,7 +73,7 @@ export const GoalDetailHeroCard = memo(function GoalDetailHeroCard({
           </Text>
           {goal.targetDate ? (
             <Text style={[styles.goalDate, { color: colors.textSecondary }]}>
-              {language === 'id' ? 'Target: ' : 'Target: '}
+              {t.goals.target}:{' '}
               {new Date(goal.targetDate).toLocaleDateString(
                 language === 'id' ? 'id-ID' : 'en-US',
                 {
@@ -99,7 +99,7 @@ export const GoalDetailHeroCard = memo(function GoalDetailHeroCard({
               size={14}
             />
             <Text style={[styles.completedBadgeText, { color: '#16A34A' }]}>
-              {language === 'id' ? 'Tercapai' : 'Achieved'}
+              {t.goals.achieved}
             </Text>
           </View>
         ) : null}
@@ -109,7 +109,7 @@ export const GoalDetailHeroCard = memo(function GoalDetailHeroCard({
       <View style={styles.amountDisplayRow}>
         <View style={styles.amountCol}>
           <Text style={[styles.amountLabel, { color: colors.textSecondary }]}>
-            {language === 'id' ? 'Terkumpul' : 'Collected'}
+            {t.goals.collected}
           </Text>
           <Text style={[styles.currentAmount, { color: goalColor }]}>
             {formatMoney(goal.currentAmountMinor, currencyCode)}
@@ -118,7 +118,7 @@ export const GoalDetailHeroCard = memo(function GoalDetailHeroCard({
 
         <View style={[styles.amountCol, { alignItems: 'flex-end' }]}>
           <Text style={[styles.amountLabel, { color: colors.textSecondary }]}>
-            {language === 'id' ? 'Target' : 'Target'}
+            {t.goals.target}
           </Text>
           <Text style={[styles.targetAmount, { color: colors.textPrimary }]}>
             {formatMoney(goal.targetAmountMinor, currencyCode)}
@@ -155,14 +155,12 @@ export const GoalDetailHeroCard = memo(function GoalDetailHeroCard({
             <Text
               style={[styles.remainingText, { color: colors.textSecondary }]}
             >
-              {language === 'id' ? 'Kurang ' : 'Remaining '}
+              {t.goals.remainingPrefix}
               {formatMoney(remainingMinor, currencyCode)}
             </Text>
           ) : (
             <Text style={[styles.remainingText, { color: '#16A34A' }]}>
-              {language === 'id'
-                ? '🎉 Target Tercapai!'
-                : '🎉 Target Achieved!'}
+              {t.goals.congratsCompleted}
             </Text>
           )}
         </View>

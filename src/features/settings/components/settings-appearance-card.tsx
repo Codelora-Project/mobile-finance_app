@@ -60,7 +60,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
       <Text
         style={[styles.sectionHeaderLabel, { color: colors.textSecondary }]}
       >
-        {language === 'id' ? 'UMUM & TAMPILAN' : 'GENERAL & APPEARANCE'}
+        {t.settings.generalAppearance}
       </Text>
 
       <View
@@ -139,7 +139,10 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
               const isSelected = themeSetting === item.key;
               return (
                 <Pressable
-                  accessibilityLabel={`Pilih Tema ${item.label}`}
+                  accessibilityLabel={t.settings.chooseThemeAccessibility.replace(
+                    '{theme}',
+                    item.label,
+                  )}
                   accessibilityRole="button"
                   key={item.key}
                   onPress={() => onSelectTheme(item.key as ThemeSetting)}
@@ -208,14 +211,12 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                 accessibilityRole="header"
                 style={[styles.itemTitle, { color: colors.textPrimary }]}
               >
-                {language === 'id' ? 'Warna Utama' : 'Primary Color'}
+                {t.settings.primaryColor}
               </Text>
               <Text
                 style={[styles.itemSubtitle, { color: colors.textSecondary }]}
               >
-                {language === 'id'
-                  ? 'Pilih warna untuk tombol utama dan status aktif'
-                  : 'Choose the color for primary actions and active states'}
+                {t.settings.primaryColorDescription}
               </Text>
             </View>
           </View>
@@ -224,18 +225,21 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
           <View style={styles.colorSwatchesGrid}>
             {(
               [
-                { id: 'blue', name: 'Biru Modern' },
-                { id: 'emerald', name: 'Emerald' },
-                { id: 'indigo', name: 'Indigo' },
-                { id: 'violet', name: 'Violet' },
-                { id: 'amber', name: 'Amber' },
-                { id: 'slate', name: 'Slate' },
+                { id: 'blue', name: t.settings.colorBlue },
+                { id: 'emerald', name: t.settings.colorEmerald },
+                { id: 'indigo', name: t.settings.colorIndigo },
+                { id: 'violet', name: t.settings.colorViolet },
+                { id: 'amber', name: t.settings.colorAmber },
+                { id: 'slate', name: t.settings.colorSlate },
               ] as const
             ).map((swatch) => {
               const isSelected = brandTheme === swatch.id;
               return (
                 <Pressable
-                  accessibilityLabel={`Pilih Warna ${swatch.name}`}
+                  accessibilityLabel={t.settings.chooseColorAccessibility.replace(
+                    '{color}',
+                    swatch.name,
+                  )}
                   accessibilityRole="button"
                   key={swatch.id}
                   onPress={() => onSelectBrandTheme?.(swatch.id)}
@@ -334,7 +338,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
           <View style={styles.languagePillsRow}>
             {/* Indonesian */}
             <Pressable
-              accessibilityLabel="Pilih Bahasa Indonesia"
+              accessibilityLabel={t.settings.selectIndonesianAccessibility}
               accessibilityRole="button"
               onPress={() => onSelectLanguage('id')}
               style={[
@@ -356,8 +360,8 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
               <Text style={styles.langFlagIcon}>🇮🇩</Text>
               <Text
                 adjustsFontSizeToFit
-                minimumFontScale={0.8}
-                numberOfLines={1}
+                minimumFontScale={0.85}
+                numberOfLines={2}
                 style={[
                   styles.langOptionText,
                   { color: colors.textPrimary },
@@ -372,7 +376,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
 
             {/* English */}
             <Pressable
-              accessibilityLabel="Select English language"
+              accessibilityLabel={t.settings.selectEnglishAccessibility}
               accessibilityRole="button"
               onPress={() => onSelectLanguage('en')}
               style={[
@@ -394,8 +398,8 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
               <Text style={styles.langFlagIcon}>🇬🇧</Text>
               <Text
                 adjustsFontSizeToFit
-                minimumFontScale={0.8}
-                numberOfLines={1}
+                minimumFontScale={0.85}
+                numberOfLines={2}
                 style={[
                   styles.langOptionText,
                   { color: colors.textPrimary },
@@ -417,7 +421,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
         {/* 3. Base Currency Selection Row */}
         <View style={styles.cardItemPadding}>
           <Pressable
-            accessibilityLabel="Pilih Mata Uang Utama"
+            accessibilityLabel={t.settings.selectCurrencyAccessibility}
             accessibilityRole="button"
             onPress={onOpenCurrencyPicker}
             style={styles.menuRowButton}
@@ -444,14 +448,12 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                   accessibilityRole="header"
                   style={[styles.itemTitle, { color: colors.textPrimary }]}
                 >
-                  {language === 'id' ? 'Mata Uang Utama' : 'Base Currency'}
+                  {t.settings.baseCurrency}
                 </Text>
                 <Text
                   style={[styles.itemSubtitle, { color: colors.textSecondary }]}
                 >
-                  {language === 'id'
-                    ? 'Simbol & format tampilan transaksi'
-                    : 'Transaction symbol & formatting'}
+                  {t.settings.baseCurrencyDescription}
                 </Text>
               </View>
             </View>
@@ -531,8 +533,12 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                 <Text
                   style={[styles.itemSubtitle, { color: colors.textSecondary }]}
                 >
-                  {shortcutPreviewSummary}... ({shortcuts.length}{' '}
-                  {language === 'id' ? 'tombol' : 'chips'})
+                  {shortcutPreviewSummary}... (
+                  {t.settings.shortcutCount.replace(
+                    '{count}',
+                    String(shortcuts.length),
+                  )}
+                  )
                 </Text>
               </View>
             </View>
@@ -552,7 +558,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                 <Text
                   style={[styles.actionPillText, { color: colors.warning }]}
                 >
-                  {language === 'id' ? 'Sesuaikan' : 'Customize'}
+                  {t.settings.customize}
                 </Text>
                 <MaterialCommunityIcons
                   color={colors.warning}

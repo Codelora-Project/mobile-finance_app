@@ -191,7 +191,7 @@ export const AnalyticsTrendsTab = memo(function AnalyticsTrendsTab({
                 </Text>
                 <Text
                   adjustsFontSizeToFit
-                  minimumFontScale={0.7}
+                  minimumFontScale={0.85}
                   numberOfLines={1}
                   style={[
                     styles.chartNet,

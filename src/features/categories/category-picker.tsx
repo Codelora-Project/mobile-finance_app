@@ -16,6 +16,7 @@ import {
   type CategoryType,
 } from '@/features/categories/category-repository';
 import { usePickerData } from '@/lib/use-picker-data';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { colors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -33,6 +34,7 @@ export function CategoryPicker({
   type,
 }: CategoryPickerProps) {
   const database = useSQLiteContext();
+  const { t } = useLanguage();
   const loadCategories = useCallback(
     () => listCategories(database, type),
     [database, type],
@@ -56,7 +58,7 @@ export function CategoryPicker({
     return (
       <View accessibilityLiveRegion="polite" style={styles.state}>
         <ActivityIndicator color={colors.primary} />
-        <Text style={styles.stateText}>Loading categories…</Text>
+        <Text style={styles.stateText}>{t.categories.loading}</Text>
       </View>
     );
   }
@@ -65,7 +67,11 @@ export function CategoryPicker({
     return (
       <View accessibilityLiveRegion="assertive" style={styles.state}>
         <Text style={styles.error}>{error}</Text>
-        <AppButton label="Try again" onPress={retryLoad} variant="secondary" />
+        <AppButton
+          label={t.common.tryAgain}
+          onPress={retryLoad}
+          variant="secondary"
+        />
       </View>
     );
   }
@@ -75,7 +81,11 @@ export function CategoryPicker({
       data={categories}
       keyExtractor={(category) => String(category.id)}
       ListEmptyComponent={
-        <Text style={styles.stateText}>No {type} categories available.</Text>
+        <Text style={styles.stateText}>
+          {type === 'expense'
+            ? t.categories.emptyExpense
+            : t.categories.emptyIncome}
+        </Text>
       }
       renderItem={({ item }) => {
         const selected = item.id === selectedId;
@@ -93,13 +103,13 @@ export function CategoryPicker({
             <View style={styles.rowText}>
               <Text style={styles.name}>{item.name}</Text>
               {item.isDefault ? (
-                <Text style={styles.metadata}>Default</Text>
+                <Text style={styles.metadata}>{t.common.defaultLabel}</Text>
               ) : null}
             </View>
             <Text
               style={selected ? styles.selectedMark : styles.unselectedMark}
             >
-              {selected ? 'Selected' : 'Select'}
+              {selected ? t.common.selected : t.common.select}
             </Text>
           </Pressable>
         );

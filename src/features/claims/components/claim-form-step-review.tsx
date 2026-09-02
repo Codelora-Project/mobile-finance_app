@@ -8,6 +8,7 @@ import type {
 } from '@/features/claims/claim-repository';
 import { formatMoney } from '@/lib/money';
 import { normalizeText } from '@/lib/strings';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { colors } from '@/theme/colors';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -37,12 +38,13 @@ export const ClaimFormStepReview = memo(function ClaimFormStepReview({
   title,
   totalMinor,
 }: ClaimFormStepReviewProps) {
+  const { t } = useLanguage();
   const missingCount = selectedExpenses.length - attachedCount;
 
   return (
     <View style={styles.section}>
       <Text accessibilityRole="header" style={styles.sectionTitle}>
-        Claim Review
+        {t.claims.reviewTitle}
       </Text>
       <Text style={styles.reviewTitle}>{normalizeText(title)}</Text>
       <Text style={styles.metadata}>
@@ -64,19 +66,21 @@ export const ClaimFormStepReview = memo(function ClaimFormStepReview({
         </View>
       ))}
       <View style={styles.totalRow}>
-        <Text style={styles.totalLabel}>Total</Text>
+        <Text style={styles.totalLabel}>{t.common.total}</Text>
         <Text style={styles.totalAmount}>
           {totalMinor === null || !selectedCurrency
-            ? 'Total unavailable'
+            ? t.claims.totalUnavailable
             : formatMoney(totalMinor, selectedCurrency)}
         </Text>
       </View>
       <Text style={styles.receiptSummary}>
-        {attachedCount} receipt attached · {missingCount} missing
+        {t.claims.receiptSummary
+          .replace('{attached}', String(attachedCount))
+          .replace('{missing}', String(missingCount))}
       </Text>
       <AppButton
         disabled={saving}
-        label="Save Draft"
+        label={t.claims.saveDraft}
         loading={saving}
         onPress={onSave}
       />

@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppButton } from '@/components/ui/app-button';
 import { AppInput } from '@/components/ui/app-input';
 import type { ClaimPeriodMode } from '@/features/claims/claim-repository';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { colors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -36,25 +37,27 @@ export const ClaimFormStepDetails = memo(function ClaimFormStepDetails({
   periodStart,
   title,
 }: ClaimFormStepDetailsProps) {
+  const { t } = useLanguage();
+
   return (
     <View style={styles.section}>
       <Text accessibilityRole="header" style={styles.sectionTitle}>
-        Claim details
+        {t.claims.detailsTitle}
       </Text>
       <AppInput
-        label="Title *"
+        label={t.claims.titleLabel}
         maxLength={100}
         onChangeText={onChangeTitle}
         value={title}
       />
       <AppInput
-        label="Description"
+        label={t.claims.descriptionLabel}
         maxLength={500}
         multiline
         onChangeText={onChangeDescription}
         value={description}
       />
-      <Text style={styles.label}>Period</Text>
+      <Text style={styles.label}>{t.claims.periodLabel}</Text>
       <View style={styles.choiceRow}>
         {(['auto', 'manual'] as const).map((mode) => (
           <Pressable
@@ -68,7 +71,9 @@ export const ClaimFormStepDetails = memo(function ClaimFormStepDetails({
             ]}
           >
             <Text style={styles.choiceText}>
-              {mode === 'auto' ? 'Based on expense dates' : 'Manual'}
+              {mode === 'auto'
+                ? t.claims.automaticPeriod
+                : t.claims.manualPeriod}
             </Text>
           </Pressable>
         ))}
@@ -77,7 +82,7 @@ export const ClaimFormStepDetails = memo(function ClaimFormStepDetails({
         <View style={styles.dateRow}>
           <View style={styles.dateField}>
             <AppInput
-              label="From"
+              label={t.claims.fromLabel}
               onChangeText={onChangePeriodStart}
               placeholder="YYYY-MM-DD"
               value={periodStart}
@@ -85,7 +90,7 @@ export const ClaimFormStepDetails = memo(function ClaimFormStepDetails({
           </View>
           <View style={styles.dateField}>
             <AppInput
-              label="To"
+              label={t.claims.toLabel}
               onChangeText={onChangePeriodEnd}
               placeholder="YYYY-MM-DD"
               value={periodEnd}
@@ -93,7 +98,7 @@ export const ClaimFormStepDetails = memo(function ClaimFormStepDetails({
           </View>
         </View>
       ) : null}
-      <AppButton label="Select Expenses" onPress={onNext} />
+      <AppButton label={t.claims.selectExpenses} onPress={onNext} />
     </View>
   );
 });

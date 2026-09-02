@@ -259,13 +259,13 @@ export function HomeScreen() {
     } catch (err) {
       if (__DEV__) console.warn('Could not save quick log settings', err);
       Alert.alert(
-        language === 'id' ? 'Pengaturan tidak tersimpan' : 'Setting not saved',
-        mapError(err, 'DATABASE_WRITE_FAILED').message,
+        t.common.settingNotSaved,
+        mapError(err, 'DATABASE_WRITE_FAILED', t.appErrors).message,
       );
     } finally {
       preferenceMutationRef.current = false;
     }
-  }, [database, handleCloseCustomizeModal, language, selectedIdsInModal]);
+  }, [database, handleCloseCustomizeModal, selectedIdsInModal, t]);
 
   const handleResetQuickLogCategories = useCallback(() => {
     setSelectedIdsInModal(DEFAULT_QUICK_LOG_IDS);
@@ -283,16 +283,14 @@ export function HomeScreen() {
         apply();
       } catch (caughtError) {
         Alert.alert(
-          language === 'id'
-            ? 'Pengaturan tidak tersimpan'
-            : 'Setting not saved',
-          mapError(caughtError, 'DATABASE_WRITE_FAILED').message,
+          t.common.settingNotSaved,
+          mapError(caughtError, 'DATABASE_WRITE_FAILED', t.appErrors).message,
         );
       } finally {
         preferenceMutationRef.current = false;
       }
     },
-    [database, language],
+    [database, t],
   );
 
   const handleToggleShowWalletChips = useCallback(
@@ -577,7 +575,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     gap: spacing.md,
     maxWidth: contentMaxWidth,
-    paddingBottom: spacing.xxl + 84,
+    paddingBottom: spacing.xxl + 148,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
     width: '100%',

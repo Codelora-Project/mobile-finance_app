@@ -18,11 +18,12 @@ import {
 } from '@/features/backup/backup-service';
 import { useLegacyData } from '@/features/auth/legacy-data-context';
 import { useReceiptStorage } from '@/features/receipts/receipt-storage-context';
+import { translations } from '@/lib/i18n/translations';
 import { darkColors, lightColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
-import { useCallback, useMemo, useState, type PropsWithChildren } from 'react';
+import { useCallback, useState, type PropsWithChildren } from 'react';
 
 function isIndonesianLocale() {
   try {
@@ -42,55 +43,8 @@ export function LegacyMigrationGate({ children }: PropsWithChildren) {
   const [preparingBackup, setPreparingBackup] = useState(false);
   const colors = useColorScheme() === 'dark' ? darkColors : lightColors;
   const isId = isIndonesianLocale();
+  const copy = translations[isId ? 'id' : 'en'];
   const busy = preparingBackup || status === 'checking' || status === 'working';
-
-  const copy = useMemo(
-    () =>
-      isId
-        ? {
-            archive: 'Arsipkan untuk nanti',
-            claim: 'Hubungkan data',
-            description:
-              'Kami menemukan data dari versi aplikasi sebelumnya. Pilih akun Google ini sebagai pemiliknya, atau simpan arsip agar bisa dihubungkan nanti.',
-            retry: 'Coba lagi',
-            backupError:
-              'Backup akun aktif harus berhasil sebelum data diganti.',
-            backupPrompt:
-              'Aplikasi akan membuat backup JSON akun aktif dan membuka menu berbagi sebelum data lama dihubungkan.',
-            backupTitle: 'Simpan backup terlebih dahulu',
-            createBackup: 'Buat backup',
-            finalPrompt:
-              'Data lama akan mengganti seluruh data akun aktif, bukan menggabungkannya. Lanjutkan?',
-            finalTitle: 'Konfirmasi penggantian data',
-            replace: 'Ganti data',
-            cancel: 'Batal',
-            title: 'Data perangkat lama ditemukan',
-            warning:
-              'Sumber lama baru akan dihapus setelah seluruh data dan struk berhasil dipulihkan serta diverifikasi.',
-          }
-        : {
-            archive: 'Archive for later',
-            claim: 'Connect data',
-            description:
-              'We found data from an earlier app version. Assign it to this Google account, or keep the archive to connect later.',
-            retry: 'Try again',
-            backupError:
-              'The active-account backup must succeed before data is replaced.',
-            backupPrompt:
-              'The app will create an active-account JSON backup and open the share sheet before connecting legacy data.',
-            backupTitle: 'Save a backup first',
-            createBackup: 'Create backup',
-            finalPrompt:
-              'Legacy data will replace all active-account data; it will not be merged. Continue?',
-            finalTitle: 'Confirm data replacement',
-            replace: 'Replace data',
-            cancel: 'Cancel',
-            title: 'Legacy device data found',
-            warning:
-              'The legacy source is removed only after all records and receipts are restored and verified.',
-          },
-    [isId],
-  );
 
   const executeClaim = useCallback(async () => {
     try {
@@ -106,37 +60,48 @@ export function LegacyMigrationGate({ children }: PropsWithChildren) {
       const backup = await exportBackupToJsonFile(database, receiptStorage);
       await shareFile(
         backup.uri,
-        isId
-          ? 'Simpan backup sebelum mengganti data'
-          : 'Save backup before replacing data',
+        copy.settings.saveBackupBeforeReplace,
         'application/json',
         'public.json',
       );
     } catch (backupError) {
       Alert.alert(
-        copy.backupTitle,
-        backupError instanceof Error ? backupError.message : copy.backupError,
+        copy.legacyMigration.backupTitle,
+        backupError instanceof Error
+          ? backupError.message
+          : copy.legacyMigration.backupError,
       );
       return;
     } finally {
       setPreparingBackup(false);
     }
 
-    Alert.alert(copy.finalTitle, copy.finalPrompt, [
-      { style: 'cancel', text: copy.cancel },
-      {
-        onPress: () => void executeClaim(),
-        style: 'destructive',
-        text: copy.replace,
-      },
-    ]);
-  }, [copy, database, executeClaim, isId, receiptStorage]);
+    Alert.alert(
+      copy.legacyMigration.finalTitle,
+      copy.legacyMigration.finalPrompt,
+      [
+        { style: 'cancel', text: copy.common.cancel },
+        {
+          onPress: () => void executeClaim(),
+          style: 'destructive',
+          text: copy.legacyMigration.replace,
+        },
+      ],
+    );
+  }, [copy, database, executeClaim, receiptStorage]);
 
   const requestClaim = useCallback(() => {
-    Alert.alert(copy.backupTitle, copy.backupPrompt, [
-      { style: 'cancel', text: copy.cancel },
-      { onPress: () => void prepareClaim(), text: copy.createBackup },
-    ]);
+    Alert.alert(
+      copy.legacyMigration.backupTitle,
+      copy.legacyMigration.backupPrompt,
+      [
+        { style: 'cancel', text: copy.common.cancel },
+        {
+          onPress: () => void prepareClaim(),
+          text: copy.legacyMigration.createBackup,
+        },
+      ],
+    );
   }, [copy, prepareClaim]);
 
   const handleArchive = useCallback(() => {
@@ -158,10 +123,10 @@ export function LegacyMigrationGate({ children }: PropsWithChildren) {
           />
         </View>
         <Text style={[styles.title, { color: colors.textPrimary }]}>
-          {copy.title}
+          {copy.legacyMigration.title}
         </Text>
         <Text style={[styles.description, { color: colors.textSecondary }]}>
-          {copy.description}
+          {copy.legacyMigration.description}
         </Text>
 
         {summary ? (
@@ -172,19 +137,28 @@ export function LegacyMigrationGate({ children }: PropsWithChildren) {
             ]}
           >
             <Text style={[styles.metric, { color: colors.textPrimary }]}>
-              {summary.transactionsCount} {isId ? 'transaksi' : 'transactions'}
+              {copy.legacyMigration.transactionsCount.replace(
+                '{count}',
+                String(summary.transactionsCount),
+              )}
             </Text>
             <Text style={[styles.metric, { color: colors.textPrimary }]}>
-              {summary.goalsCount} {isId ? 'target' : 'goals'}
+              {copy.legacyMigration.goalsCount.replace(
+                '{count}',
+                String(summary.goalsCount),
+              )}
             </Text>
             <Text style={[styles.metric, { color: colors.textPrimary }]}>
-              {summary.receiptFilesCount} {isId ? 'struk' : 'receipts'}
+              {copy.legacyMigration.receiptsCount.replace(
+                '{count}',
+                String(summary.receiptFilesCount),
+              )}
             </Text>
           </View>
         ) : null}
 
         <Text style={[styles.warning, { color: colors.warning }]}>
-          {copy.warning}
+          {copy.legacyMigration.warning}
         </Text>
         {error ? (
           <Text
@@ -209,7 +183,7 @@ export function LegacyMigrationGate({ children }: PropsWithChildren) {
               ]}
             >
               <Text style={[styles.primaryLabel, { color: colors.onPrimary }]}>
-                {copy.claim}
+                {copy.legacyMigration.claim}
               </Text>
             </Pressable>
             <Pressable
@@ -221,7 +195,7 @@ export function LegacyMigrationGate({ children }: PropsWithChildren) {
               <Text
                 style={[styles.secondaryLabel, { color: colors.textPrimary }]}
               >
-                {copy.archive}
+                {copy.legacyMigration.archive}
               </Text>
             </Pressable>
             {status === 'error' ? (
@@ -230,7 +204,7 @@ export function LegacyMigrationGate({ children }: PropsWithChildren) {
                 onPress={() => void refresh()}
               >
                 <Text style={[styles.retry, { color: colors.primary }]}>
-                  {copy.retry}
+                  {copy.legacyMigration.retry}
                 </Text>
               </Pressable>
             ) : null}

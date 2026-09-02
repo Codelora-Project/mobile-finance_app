@@ -25,8 +25,8 @@ export type TransactionRowItemProps = {
   onEdit?: (transaction: TransactionListItem) => void;
   onLongPress?: (transaction: TransactionListItem) => void;
   onPress: (id: number) => void;
-  receiptBadgeText?: string;
-  reimbursableBadgeText?: string;
+  receiptBadgeText: string;
+  reimbursableBadgeText: string;
   transaction: TransactionListItem;
 };
 
@@ -36,12 +36,12 @@ export const TransactionRowItem = memo(function TransactionRowItem({
   onEdit,
   onLongPress,
   onPress,
-  receiptBadgeText = 'Struk',
-  reimbursableBadgeText = 'Reimburse',
+  receiptBadgeText,
+  reimbursableBadgeText,
   transaction,
 }: TransactionRowItemProps) {
   const { colors, isDark } = useTheme();
-  const { language } = useLanguage();
+  const { t } = useLanguage();
 
   const translateX = useRef(new Animated.Value(0)).current;
   const currentOffset = useRef(0);
@@ -132,9 +132,7 @@ export const TransactionRowItem = memo(function TransactionRowItem({
 
   // 2. Determine Subtitle
   const metaSubtitle = isTransfer
-    ? language === 'id'
-      ? 'Transfer Antar Dompet'
-      : 'Wallet Transfer'
+    ? t.wallets.transferBetween
     : hasCounterparty
       ? `${transaction.categoryName}${
           transaction.paymentMethodName
@@ -170,7 +168,7 @@ export const TransactionRowItem = memo(function TransactionRowItem({
           ]}
         >
           <Pressable
-            accessibilityLabel={language === 'id' ? 'Ubah' : 'Edit'}
+            accessibilityLabel={t.common.edit}
             accessibilityRole="button"
             onPress={() => {
               closeSwipe();
@@ -183,9 +181,7 @@ export const TransactionRowItem = memo(function TransactionRowItem({
               name="pencil-outline"
               size={18}
             />
-            <Text style={styles.swipeActionText}>
-              {language === 'id' ? 'Ubah' : 'Edit'}
-            </Text>
+            <Text style={styles.swipeActionText}>{t.common.edit}</Text>
           </Pressable>
         </View>
       ) : null}
@@ -201,7 +197,7 @@ export const TransactionRowItem = memo(function TransactionRowItem({
           ]}
         >
           <Pressable
-            accessibilityLabel={language === 'id' ? 'Hapus' : 'Delete'}
+            accessibilityLabel={t.common.delete}
             accessibilityRole="button"
             onPress={() => {
               closeSwipe();
@@ -214,9 +210,7 @@ export const TransactionRowItem = memo(function TransactionRowItem({
               name="trash-can-outline"
               size={18}
             />
-            <Text style={styles.swipeActionText}>
-              {language === 'id' ? 'Hapus' : 'Delete'}
-            </Text>
+            <Text style={styles.swipeActionText}>{t.common.delete}</Text>
           </Pressable>
         </View>
       ) : null}

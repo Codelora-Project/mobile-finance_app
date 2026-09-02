@@ -28,7 +28,7 @@ export const UndoToastBanner = memo(function UndoToastBanner({
   visible,
 }: UndoToastBannerProps) {
   const { colors } = useTheme();
-  const { language } = useLanguage();
+  const { t } = useLanguage();
 
   if (!visible || !message) return null;
 
@@ -70,9 +70,7 @@ export const UndoToastBanner = memo(function UndoToastBanner({
 
       {canUndo ? (
         <Pressable
-          accessibilityLabel={
-            language === 'id' ? 'Batalkan tindakan' : 'Undo action'
-          }
+          accessibilityLabel={t.common.undoAction}
           accessibilityRole="button"
           disabled={isUndoing}
           hitSlop={8}
@@ -92,14 +90,12 @@ export const UndoToastBanner = memo(function UndoToastBanner({
             size={14}
           />
           <Text style={[styles.undoButtonText, { color: colors.primary }]}>
-            {language === 'id' ? 'Batalkan' : 'Undo'}
+            {t.common.undo}
           </Text>
         </Pressable>
       ) : null}
       <Pressable
-        accessibilityLabel={
-          language === 'id' ? 'Tutup notifikasi' : 'Dismiss notification'
-        }
+        accessibilityLabel={t.common.dismissNotification}
         accessibilityRole="button"
         hitSlop={10}
         onPress={onClose}

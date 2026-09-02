@@ -33,7 +33,7 @@ export const ManualAmountInput = memo(function ManualAmountInput({
   quickShortcuts,
 }: ManualAmountInputProps) {
   const { colors, isDark } = useTheme();
-  const { language } = useLanguage();
+  const { t } = useLanguage();
 
   return (
     <View style={styles.container}>
@@ -56,7 +56,7 @@ export const ManualAmountInput = memo(function ManualAmountInput({
           {currencySymbol}
         </Text>
         <TextInput
-          accessibilityLabel={language === 'id' ? 'Nominal wajib' : 'Amount *'}
+          accessibilityLabel={t.transactions.amountRequired}
           autoFocus={false}
           inputMode="numeric"
           keyboardType="numeric"
@@ -70,9 +70,7 @@ export const ManualAmountInput = memo(function ManualAmountInput({
 
         {amount ? (
           <Pressable
-            accessibilityLabel={
-              language === 'id' ? 'Hapus nominal' : 'Clear amount'
-            }
+            accessibilityLabel={t.transactions.clearAmount}
             accessibilityRole="button"
             hitSlop={8}
             onPress={onResetAmount}

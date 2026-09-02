@@ -9,6 +9,15 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Alert } from 'react-native';
 
 import { ClaimDetailScreen } from '@/features/claims/claim-detail-screen';
+import { LanguageProvider } from '@/lib/i18n/language-context';
+
+function renderScreen() {
+  return render(
+    <LanguageProvider initialLanguage="en">
+      <ClaimDetailScreen claimId={9} />
+    </LanguageProvider>,
+  );
+}
 
 const mockRouter = { back: jest.fn(), dismissTo: jest.fn(), push: jest.fn() };
 const mockDatabase = {};
@@ -88,7 +97,7 @@ describe('claim detail screen', () => {
   });
 
   it('allows Draft editing, submission, membership viewing, and deletion', async () => {
-    await render(<ClaimDetailScreen claimId={9} />);
+    await renderScreen();
     expect(await screen.findByText('Travel Claim')).toBeOnTheScreen();
     expect(screen.getByText('Receipt missing')).toBeOnTheScreen();
 
@@ -105,7 +114,7 @@ describe('claim detail screen', () => {
       await screen.findByText(/PDF generated: expense-claim-travel/),
     ).toBeOnTheScreen();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Edit Claim' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Edit claim' }));
     expect(mockRouter.push).toHaveBeenCalledWith('/claims/9/edit');
 
     const alertSpy = jest
@@ -118,7 +127,7 @@ describe('claim detail screen', () => {
           ?.onPress?.();
       });
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Mark Submitted' }),
+      screen.getByRole('button', { name: 'Mark submitted' }),
     );
     await waitFor(() =>
       expect(mockTransition).toHaveBeenCalledWith(
@@ -127,7 +136,7 @@ describe('claim detail screen', () => {
         'submitted',
       ),
     );
-    await fireEvent.press(screen.getByRole('button', { name: 'Delete Claim' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Delete claim' }));
     await waitFor(() =>
       expect(mockDelete).toHaveBeenCalledWith(expect.anything(), 9),
     );
@@ -135,33 +144,33 @@ describe('claim detail screen', () => {
   });
 
   it.each([
-    ['submitted', 'Submitted claims are locked.', 'Move Back to Draft'],
+    ['submitted', 'Submitted claims are locked.', 'Move back to draft'],
     [
       'rejected',
-      'Move this claim back to Draft before editing it.',
-      'Move Back to Draft',
+      'Move this claim back to draft before editing it.',
+      'Move back to draft',
     ],
     ['reimbursed', 'Reimbursed claims are final and read-only.', null],
   ])('renders %s lock behavior', async (status, message, action) => {
     mockGetClaim.mockResolvedValue({ ...claim, status });
-    await render(<ClaimDetailScreen claimId={9} />);
+    await renderScreen();
     expect(await screen.findByText(message)).toBeOnTheScreen();
     expect(
-      screen.queryByRole('button', { name: 'Edit Claim' }),
+      screen.queryByRole('button', { name: 'Edit claim' }),
     ).not.toBeOnTheScreen();
     if (action) {
       expect(screen.getByRole('button', { name: action })).toBeOnTheScreen();
     } else {
       expect(
-        screen.queryByRole('button', { name: 'Move Back to Draft' }),
+        screen.queryByRole('button', { name: 'Move back to draft' }),
       ).not.toBeOnTheScreen();
     }
     if (status === 'submitted') {
       expect(
-        screen.getByRole('button', { name: 'Mark Reimbursed' }),
+        screen.getByRole('button', { name: 'Mark reimbursed' }),
       ).toBeOnTheScreen();
       expect(
-        screen.getByRole('button', { name: 'Mark Rejected' }),
+        screen.getByRole('button', { name: 'Mark rejected' }),
       ).toBeOnTheScreen();
     }
     if (status === 'reimbursed') {
@@ -186,11 +195,11 @@ describe('claim detail screen', () => {
         }),
     );
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-    await render(<ClaimDetailScreen claimId={9} />);
+    await renderScreen();
     await screen.findByText('Travel Claim');
 
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Mark Submitted' }),
+      screen.getByRole('button', { name: 'Mark submitted' }),
     );
     const confirm = alertSpy.mock.calls[0]?.[2]?.find(
       (button) => button.text === 'Confirm',

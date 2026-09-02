@@ -12,7 +12,6 @@ import { AppButton } from '@/components/ui/app-button';
 import { getRecommendedShortcuts } from '@/features/settings/settings-repository';
 import type { SavingsGoal } from '@/features/goals/goals-repository';
 import { useCurrency } from '@/lib/currency/currency-context';
-import { useLanguage } from '@/lib/i18n/language-context';
 import type { TranslationSchema } from '@/lib/i18n/translations';
 import { formatMoney, formatShortcutLabel } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
@@ -47,7 +46,6 @@ export const DepositGoalModal = memo(function DepositGoalModal({
 }: DepositGoalModalProps) {
   const { colors, isDark } = useTheme();
   const { currencyCode, currencySymbol } = useCurrency();
-  const { language } = useLanguage();
   const shortcutAmounts = getRecommendedShortcuts(currencyCode).slice(-4);
 
   if (!depositGoal) return null;
@@ -80,7 +78,7 @@ export const DepositGoalModal = memo(function DepositGoalModal({
           <Text
             style={[styles.depositModalTitle, { color: colors.textPrimary }]}
           >
-            {language === 'id' ? 'Nabung untuk' : 'Save for'} {depositGoal.name}
+            {t.goals.saveFor} {depositGoal.name}
           </Text>
           <Text
             style={[
@@ -146,11 +144,7 @@ export const DepositGoalModal = memo(function DepositGoalModal({
 
           <TextInput
             onChangeText={onChangeNote}
-            placeholder={
-              language === 'id'
-                ? 'Catatan setor (opsional)'
-                : 'Deposit note (optional)'
-            }
+            placeholder={t.goals.depositNotePlaceholder}
             placeholderTextColor={colors.textSecondary}
             style={[
               styles.noteInput,
@@ -175,13 +169,7 @@ export const DepositGoalModal = memo(function DepositGoalModal({
             <View style={{ flex: 1 }}>
               <AppButton
                 disabled={saving || !depositAmount}
-                label={
-                  saving
-                    ? language === 'id'
-                      ? 'Menyimpan…'
-                      : 'Saving…'
-                    : t.goals.deposit
-                }
+                label={saving ? t.goals.saving : t.goals.deposit}
                 loading={saving}
                 onPress={onSubmit}
                 variant="primary"

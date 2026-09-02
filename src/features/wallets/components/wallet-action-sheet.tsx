@@ -3,7 +3,11 @@ import React, { memo } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Wallet } from '@/features/wallets/wallet-types';
-import { getWalletBrandColor, getWalletIconName } from '@/features/wallets/wallet-icons';
+import {
+  getWalletBrandColor,
+  getWalletIconName,
+} from '@/features/wallets/wallet-icons';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -24,7 +28,6 @@ export type WalletActionSheetProps = {
 
 export const WalletActionSheet = memo(function WalletActionSheet({
   currencyCode,
-  language,
   onArchive,
   onClose,
   onEdit,
@@ -34,6 +37,7 @@ export const WalletActionSheet = memo(function WalletActionSheet({
   wallet,
 }: WalletActionSheetProps) {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
 
   if (!wallet) return null;
 
@@ -66,9 +70,7 @@ export const WalletActionSheet = memo(function WalletActionSheet({
                   backgroundColor: isDark
                     ? `${brandColor}24`
                     : `${brandColor}14`,
-                  borderColor: isDark
-                    ? `${brandColor}44`
-                    : `${brandColor}28`,
+                  borderColor: isDark ? `${brandColor}44` : `${brandColor}28`,
                 },
               ]}
             >
@@ -94,16 +96,14 @@ export const WalletActionSheet = memo(function WalletActionSheet({
             </View>
 
             <Pressable
-              accessibilityLabel={language === 'id' ? 'Tutup' : 'Close'}
+              accessibilityLabel={t.common.close}
               accessibilityRole="button"
               hitSlop={8}
               onPress={onClose}
               style={({ pressed }) => [
                 styles.closeBtn,
                 {
-                  backgroundColor: isDark
-                    ? colors.surfaceSecondary
-                    : '#F1F5F9',
+                  backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
                 },
                 pressed ? styles.pressed : null,
               ]}
@@ -128,19 +128,16 @@ export const WalletActionSheet = memo(function WalletActionSheet({
           <View style={styles.actionsList}>
             {/* 1. Reconcile Balance */}
             <Pressable
-              accessibilityLabel={
-                language === 'id'
-                  ? `Rekonsiliasi saldo ${wallet.name}`
-                  : `Reconcile balance ${wallet.name}`
-              }
+              accessibilityLabel={t.wallets.reconcileAccessibility.replace(
+                '{name}',
+                wallet.name,
+              )}
               accessibilityRole="button"
               onPress={() => onReconcile(wallet)}
               style={({ pressed }) => [
                 styles.actionRow,
                 {
-                  backgroundColor: isDark
-                    ? colors.surfaceSecondary
-                    : '#F8FAFC',
+                  backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
                 },
                 pressed ? styles.pressed : null,
               ]}
@@ -165,16 +162,12 @@ export const WalletActionSheet = memo(function WalletActionSheet({
                 <Text
                   style={[styles.actionTitle, { color: colors.textPrimary }]}
                 >
-                  {language === 'id'
-                    ? 'Sesuaikan Saldo (Rekonsiliasi)'
-                    : 'Reconcile Balance'}
+                  {t.wallets.reconcileTitle}
                 </Text>
                 <Text
                   style={[styles.actionDesc, { color: colors.textSecondary }]}
                 >
-                  {language === 'id'
-                    ? 'Sesuaikan dengan saldo fisik / mutasi bank terkini'
-                    : 'Match with your actual physical / bank balance'}
+                  {t.wallets.reconcileSubtitle}
                 </Text>
               </View>
               <MaterialCommunityIcons
@@ -187,11 +180,10 @@ export const WalletActionSheet = memo(function WalletActionSheet({
             {/* 2. Quick Transfer */}
             {onTransfer ? (
               <Pressable
-                accessibilityLabel={
-                  language === 'id'
-                    ? `Transfer dari ${wallet.name}`
-                    : `Transfer from ${wallet.name}`
-                }
+                accessibilityLabel={t.wallets.transferFromAccessibility.replace(
+                  '{name}',
+                  wallet.name,
+                )}
                 accessibilityRole="button"
                 onPress={() => onTransfer(wallet)}
                 style={({ pressed }) => [
@@ -224,16 +216,12 @@ export const WalletActionSheet = memo(function WalletActionSheet({
                   <Text
                     style={[styles.actionTitle, { color: colors.textPrimary }]}
                   >
-                    {language === 'id'
-                      ? 'Transfer ke Dompet Lain'
-                      : 'Transfer to Another Wallet'}
+                    {t.wallets.transferToOther}
                   </Text>
                   <Text
                     style={[styles.actionDesc, { color: colors.textSecondary }]}
                   >
-                    {language === 'id'
-                      ? 'Pindahkan saldo dari dompet ini'
-                      : 'Move balance out of this wallet'}
+                    {t.wallets.transferToOtherDescription}
                   </Text>
                 </View>
                 <MaterialCommunityIcons
@@ -246,15 +234,13 @@ export const WalletActionSheet = memo(function WalletActionSheet({
 
             {/* 3. Edit Wallet */}
             <Pressable
-              accessibilityLabel={language === 'id' ? 'Ubah' : 'Edit'}
+              accessibilityLabel={t.common.edit}
               accessibilityRole="button"
               onPress={() => onEdit(wallet)}
               style={({ pressed }) => [
                 styles.actionRow,
                 {
-                  backgroundColor: isDark
-                    ? colors.surfaceSecondary
-                    : '#F8FAFC',
+                  backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
                 },
                 pressed ? styles.pressed : null,
               ]}
@@ -279,16 +265,12 @@ export const WalletActionSheet = memo(function WalletActionSheet({
                 <Text
                   style={[styles.actionTitle, { color: colors.textPrimary }]}
                 >
-                  {language === 'id'
-                    ? 'Ubah Informasi Dompet'
-                    : 'Edit Wallet Details'}
+                  {t.wallets.editInformation}
                 </Text>
                 <Text
                   style={[styles.actionDesc, { color: colors.textSecondary }]}
                 >
-                  {language === 'id'
-                    ? 'Ganti nama, warna ikon, dan nomor rekening'
-                    : 'Update name, brand color, and account number'}
+                  {t.wallets.editInformationDescription}
                 </Text>
               </View>
               <MaterialCommunityIcons
@@ -300,7 +282,7 @@ export const WalletActionSheet = memo(function WalletActionSheet({
 
             {/* 4. Archive Wallet */}
             <Pressable
-              accessibilityLabel={language === 'id' ? 'Arsipkan' : 'Archive'}
+              accessibilityLabel={t.wallets.archiveAction}
               accessibilityRole="button"
               onPress={() => onArchive(wallet)}
               style={({ pressed }) => [
@@ -333,14 +315,12 @@ export const WalletActionSheet = memo(function WalletActionSheet({
                 <Text
                   style={[styles.actionTitle, { color: colors.destructive }]}
                 >
-                  {language === 'id' ? 'Arsipkan Dompet' : 'Archive Wallet'}
+                  {t.wallets.archiveWallet}
                 </Text>
                 <Text
                   style={[styles.actionDesc, { color: colors.textSecondary }]}
                 >
-                  {language === 'id'
-                    ? 'Sembunyikan dari daftar tanpa menghapus data transaksi'
-                    : 'Hide from active list without deleting transaction history'}
+                  {t.wallets.archiveDescription}
                 </Text>
               </View>
               <MaterialCommunityIcons

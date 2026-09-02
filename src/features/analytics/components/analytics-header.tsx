@@ -12,6 +12,7 @@ import {
   MonthPickerModal,
   type MonthPickerValue,
 } from '@/components/ui/month-picker-modal';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { contentMaxWidth } from '@/theme/layout';
 import { radius } from '@/theme/radius';
@@ -50,6 +51,7 @@ export const AnalyticsHeader = memo(function AnalyticsHeader({
   selectedYear,
 }: AnalyticsHeaderProps) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const [monthPickerVisible, setMonthPickerVisible] = useState(false);
 
   function handleSelectMonth(year: number, month: number) {
@@ -81,9 +83,7 @@ export const AnalyticsHeader = memo(function AnalyticsHeader({
 
         <View style={[styles.monthNavigator, onBack && styles.withBack]}>
           <Pressable
-            accessibilityLabel={
-              language === 'id' ? 'Bulan sebelumnya' : 'Previous month'
-            }
+            accessibilityLabel={t.common.previousMonth}
             accessibilityRole="button"
             hitSlop={6}
             onPress={onPreviousMonth}
@@ -100,9 +100,7 @@ export const AnalyticsHeader = memo(function AnalyticsHeader({
           </Pressable>
 
           <Pressable
-            accessibilityLabel={`${
-              language === 'id' ? 'Pilih bulan' : 'Choose month'
-            }, ${monthLabel}`}
+            accessibilityLabel={`${t.common.chooseMonth}, ${monthLabel}`}
             accessibilityRole="button"
             onPress={() => setMonthPickerVisible(true)}
             style={({ pressed }) => [
@@ -124,9 +122,7 @@ export const AnalyticsHeader = memo(function AnalyticsHeader({
           </Pressable>
 
           <Pressable
-            accessibilityLabel={
-              language === 'id' ? 'Bulan berikutnya' : 'Next month'
-            }
+            accessibilityLabel={t.common.nextMonth}
             accessibilityRole="button"
             accessibilityState={{ disabled: nextMonthDisabled }}
             disabled={nextMonthDisabled}
@@ -148,9 +144,7 @@ export const AnalyticsHeader = memo(function AnalyticsHeader({
 
         {onExport ? (
           <Pressable
-            accessibilityLabel={
-              language === 'id' ? 'Ekspor laporan CSV' : 'Export report CSV'
-            }
+            accessibilityLabel={t.common.exportCsv}
             accessibilityRole="button"
             accessibilityState={{ busy: exporting, disabled: exporting }}
             disabled={exporting}

@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '@/components/ui/app-button';
 import type { ClaimExpense } from '@/features/claims/claim-repository';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 import { colors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
@@ -22,15 +23,15 @@ export const ClaimFormStepExpenses = memo(function ClaimFormStepExpenses({
   onToggleExpense,
   selectedIds,
 }: ClaimFormStepExpensesProps) {
+  const { t } = useLanguage();
+
   return (
     <View style={styles.section}>
       <Text accessibilityRole="header" style={styles.sectionTitle}>
-        Select reimbursable expenses
+        {t.claims.selectExpensesTitle}
       </Text>
       {expenses.length === 0 ? (
-        <Text style={styles.stateText}>
-          No eligible reimbursable expenses are available.
-        </Text>
+        <Text style={styles.stateText}>{t.claims.noEligibleExpenses}</Text>
       ) : (
         expenses.map((expense) => {
           const selected = selectedIds.includes(expense.id);
@@ -54,7 +55,9 @@ export const ClaimFormStepExpenses = memo(function ClaimFormStepExpenses({
                   {expense.categoryName} · {expense.localDate}
                 </Text>
                 <Text style={styles.metadata}>
-                  {expense.hasReceipt ? 'Receipt attached' : 'Receipt missing'}
+                  {expense.hasReceipt
+                    ? t.claims.receiptAttached
+                    : t.claims.receiptMissing}
                 </Text>
               </View>
               <Text style={styles.expenseAmount}>
@@ -64,8 +67,10 @@ export const ClaimFormStepExpenses = memo(function ClaimFormStepExpenses({
           );
         })
       )}
-      <Text style={styles.selectionSummary}>{selectedIds.length} selected</Text>
-      <AppButton label="Review Claim" onPress={onNext} />
+      <Text style={styles.selectionSummary}>
+        {t.claims.selectedCount.replace('{count}', String(selectedIds.length))}
+      </Text>
+      <AppButton label={t.claims.review} onPress={onNext} />
     </View>
   );
 });

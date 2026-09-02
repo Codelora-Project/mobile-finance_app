@@ -567,12 +567,8 @@ export function useManualTransactionViewModel({
   }, [currencyCode, form.amount]);
 
   const screenTitle = isEditMode
-    ? language === 'id'
-      ? 'Edit Transaksi'
-      : 'Edit Transaction'
-    : language === 'id'
-      ? 'Catat Transaksi'
-      : 'Record Transaction';
+    ? t.transactions.editTransaction
+    : t.transactions.recordTransaction;
 
   return {
     actions: {

@@ -55,7 +55,7 @@ describe('OnboardingScreen', () => {
 
     expect(screen.getByLabelText('Langkah 3 dari 3')).toBeOnTheScreen();
     expect(
-      screen.getByText('Multi-Rekening & 100% Privat'),
+      screen.getByText('Semua dompet dalam satu tempat'),
     ).toBeOnTheScreen();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Mulai' }));

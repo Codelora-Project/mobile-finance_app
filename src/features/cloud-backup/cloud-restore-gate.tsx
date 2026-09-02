@@ -17,6 +17,7 @@ import {
   queryLatestCloudBackup,
 } from '@/features/cloud-backup/cloud-backup-service';
 import { useReceiptStorage } from '@/features/receipts/receipt-storage-context';
+import { translations } from '@/lib/i18n/translations';
 
 export function CloudRestoreGate({
   accountId,
@@ -41,6 +42,7 @@ export function CloudRestoreGate({
         "SELECT value FROM app_settings WHERE key = 'language';",
       );
       const language = languageRow?.value === 'en' ? 'en' : 'id';
+      const t = translations[language];
       const state = await getCloudBackupState(database);
       if (state.restorePromptDismissed) {
         await finish();
@@ -83,43 +85,25 @@ export function CloudRestoreGate({
       );
 
       Alert.alert(
+        localHasData ? t.backup.localAndBackupFound : t.backup.backupFound,
         localHasData
-          ? language === 'id'
-            ? 'Data lokal dan cadangan ditemukan'
-            : 'Local data and backup found'
-          : language === 'id'
-            ? 'Cadangan ditemukan'
-            : 'Backup found',
-        localHasData
-          ? language === 'id'
-            ? `Perangkat ini sudah memiliki data. Cadangan ${createdAt} tidak akan menimpanya tanpa persetujuan Anda.`
-            : `This device already has data. The ${createdAt} backup will not overwrite it without your approval.`
-          : language === 'id'
-            ? `Cadangan dari ${createdAt} berisi ${transactionCount} transaksi.`
-            : `The ${createdAt} backup contains ${transactionCount} transactions.`,
+          ? t.backup.localAndBackupDescription.replace('{date}', createdAt)
+          : t.backup.backupFoundDescription
+              .replace('{date}', createdAt)
+              .replace('{count}', String(transactionCount)),
         [
           {
             onPress: () => {
               void dismissCloudRestorePrompt(database).finally(finish);
             },
-            text: localHasData
-              ? language === 'id'
-                ? 'Pertahankan Data Lokal'
-                : 'Keep Local Data'
-              : language === 'id'
-                ? 'Mulai dari Nol'
-                : 'Start Fresh',
+            text: localHasData ? t.backup.keepLocalData : t.backup.startFresh,
           },
           {
             onPress: () => {
               void downloadLatestCloudBackup(accountId)
                 .then((backup) => {
                   if (!backup) {
-                    throw new Error(
-                      language === 'id'
-                        ? 'Cadangan Google Drive tidak lagi tersedia.'
-                        : 'The Google Drive backup is no longer available.',
-                    );
+                    throw new Error(t.backup.backupUnavailable);
                   }
                   return restoreBackupData(
                     database,
@@ -130,25 +114,21 @@ export function CloudRestoreGate({
                 .then(() => markCloudRestoreComplete(database))
                 .then(() => {
                   Alert.alert(
-                    language === 'id'
-                      ? 'Pemulihan berhasil'
-                      : 'Restore complete',
-                    language === 'id'
-                      ? 'Data Google Drive sudah dipulihkan ke perangkat ini.'
-                      : 'Your Google Drive backup is now restored on this device.',
+                    t.backup.restoreCompleteTitle,
+                    t.backup.restoreCompleteDescription,
                   );
                 })
                 .catch((error) => {
                   Alert.alert(
-                    language === 'id' ? 'Pemulihan gagal' : 'Restore failed',
+                    t.backup.restoreFailedTitle,
                     error instanceof Error
                       ? error.message
-                      : 'Google Drive backup could not be restored.',
+                      : t.backup.restoreGenericFailure,
                   );
                 })
                 .finally(finish);
             },
-            text: language === 'id' ? 'Pulihkan Data' : 'Restore Data',
+            text: t.backup.restoreData,
           },
         ],
         { cancelable: false },

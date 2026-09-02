@@ -6,6 +6,7 @@ import { ClaimFormStepDetails } from '@/features/claims/components/claim-form-st
 import { ClaimFormStepExpenses } from '@/features/claims/components/claim-form-step-expenses';
 import { ClaimFormStepReview } from '@/features/claims/components/claim-form-step-review';
 import { useClaimFormViewModel } from '@/features/claims/hooks/use-claim-form-view-model';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { colors } from '@/theme/colors';
 import { spacing } from '@/theme/spacing';
 
@@ -13,12 +14,13 @@ export type ClaimFormScreenProps = { claimId?: number };
 
 export function ClaimFormScreen({ claimId }: ClaimFormScreenProps) {
   const { actions, state } = useClaimFormViewModel({ claimId });
+  const { t } = useLanguage();
 
   if (state.loading) {
     return (
       <Screen style={styles.state}>
         <ActivityIndicator color={colors.primary} size="large" />
-        <Text style={styles.stateText}>Loading claim…</Text>
+        <Text style={styles.stateText}>{t.claims.loading}</Text>
       </Screen>
     );
   }
@@ -68,9 +70,9 @@ export function ClaimFormScreen({ claimId }: ClaimFormScreenProps) {
             expenses={state.expenses}
             onNext={() => {
               if (state.selectedIds.length === 0) {
-                actions.setError('Select at least one reimbursable expense.');
+                actions.setError(t.claims.selectAtLeastOne);
               } else if (state.totalMinor === null) {
-                actions.setError('The selected expense total is too large.');
+                actions.setError(t.claims.selectedTotalTooLarge);
               } else {
                 actions.setError(null);
                 actions.setStep(3);

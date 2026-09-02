@@ -174,9 +174,7 @@ export function TransactionDetailScreen({
             />
           </View>
           <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
-            {language === 'id'
-              ? 'Transaksi Tidak Ditemukan'
-              : 'Transaction Not Found'}
+            {t.transactions.notFound}
           </Text>
           <Text style={[styles.stateText, { color: colors.textSecondary }]}>
             {error || t.transactions.notFoundDesc}
@@ -236,9 +234,7 @@ export function TransactionDetailScreen({
           style={[styles.headerTitle, { color: colors.textPrimary }]}
         >
           {isTransfer
-            ? language === 'id'
-              ? 'Detail Transfer'
-              : 'Transfer Details'
+            ? t.transactions.transferDetails
             : t.transactions.detailTitle}
         </Text>
 
@@ -371,15 +367,11 @@ export function TransactionDetailScreen({
           <DetailInfoRow
             icon="identifier"
             isLast
-            label={language === 'id' ? 'ID Transaksi' : 'Transaction ID'}
+            label={t.transactions.transactionId}
             onPress={handleCopyDetails}
             rightActionIcon="content-copy"
             value={
-              copiedNotification
-                ? language === 'id'
-                  ? 'Disalin!'
-                  : 'Copied!'
-                : `#${transaction.id}`
+              copiedNotification ? t.transactions.copied : `#${transaction.id}`
             }
           />
         </View>

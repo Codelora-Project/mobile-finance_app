@@ -22,21 +22,19 @@ import {
   type ClaimDetail,
   type ClaimStatus,
 } from '@/features/claims/claim-repository';
-import { isCodedError, mapError } from '@/lib/errors';
+import { mapError } from '@/lib/errors';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 import { colors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
-function statusLabel(status: ClaimStatus) {
-  return status[0]?.toUpperCase() + status.slice(1);
-}
-
 export function ClaimDetailScreen({ claimId }: { claimId: number }) {
   const database = useSQLiteContext();
   const receiptStorage = useReceiptStorage();
   const router = useRouter();
+  const { t } = useLanguage();
   const workingRef = useRef(false);
   const pdfActionRef = useRef(false);
   const loadRequestRef = useRef(0);
@@ -58,14 +56,29 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
       }
     } catch (loadError) {
       if (requestId === loadRequestRef.current) {
-        setError(mapError(loadError, 'DATABASE_WRITE_FAILED').message);
+        setError(
+          mapError(loadError, 'DATABASE_WRITE_FAILED', t.appErrors).message,
+        );
       }
     } finally {
       if (requestId === loadRequestRef.current) {
         setLoading(false);
       }
     }
-  }, [claimId, database]);
+  }, [claimId, database, t.appErrors]);
+
+  function statusLabel(status: ClaimStatus) {
+    switch (status) {
+      case 'draft':
+        return t.claims.statusDraft;
+      case 'submitted':
+        return t.claims.statusSubmitted;
+      case 'reimbursed':
+        return t.claims.statusReimbursed;
+      case 'rejected':
+        return t.claims.statusRejected;
+    }
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -83,13 +96,13 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
     setError(null);
     try {
       await transitionClaimStatus(database, claimId, nextStatus);
-      setFeedback(`Claim moved to ${statusLabel(nextStatus)}.`);
+      setFeedback(
+        t.claims.statusMoved.replace('{status}', statusLabel(nextStatus)),
+      );
       await load();
     } catch (transitionError) {
       setError(
-        isCodedError(transitionError)
-          ? transitionError.message
-          : mapError(transitionError, 'DATABASE_WRITE_FAILED').message,
+        mapError(transitionError, 'DATABASE_WRITE_FAILED', t.appErrors).message,
       );
     } finally {
       workingRef.current = false;
@@ -99,50 +112,45 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
 
   function confirmTransition(nextStatus: ClaimStatus) {
     Alert.alert(
-      `Mark claim ${statusLabel(nextStatus)}?`,
+      t.claims.confirmStatusTitle.replace('{status}', statusLabel(nextStatus)),
       nextStatus === 'reimbursed'
-        ? 'Reimbursed is terminal and cannot be undone.'
-        : 'The claim status will be updated.',
+        ? t.claims.reimbursedTerminal
+        : t.claims.statusUpdateDescription,
       [
-        { style: 'cancel', text: 'Cancel' },
-        { onPress: () => void transition(nextStatus), text: 'Confirm' },
+        { style: 'cancel', text: t.common.cancel },
+        { onPress: () => void transition(nextStatus), text: t.common.confirm },
       ],
     );
   }
 
   function confirmDelete() {
-    Alert.alert(
-      'Delete draft claim?',
-      'Expenses will remain, but claim membership will be removed.',
-      [
-        { style: 'cancel', text: 'Cancel' },
-        {
-          onPress: () => {
-            if (workingRef.current || pdfActionRef.current) return;
-            workingRef.current = true;
-            setWorking(true);
-            deleteDraftClaim(database, claimId)
-              .then(() =>
-                router.dismissTo({
-                  params: { feedback: 'Draft claim deleted.' },
-                  pathname: '/claims',
-                }),
-              )
-              .catch((deleteError: unknown) => {
-                setError(
-                  isCodedError(deleteError)
-                    ? deleteError.message
-                    : mapError(deleteError, 'DATABASE_WRITE_FAILED').message,
-                );
-                workingRef.current = false;
-                setWorking(false);
-              });
-          },
-          style: 'destructive',
-          text: 'Delete',
+    Alert.alert(t.claims.deleteDraftTitle, t.claims.deleteDraftDescription, [
+      { style: 'cancel', text: t.common.cancel },
+      {
+        onPress: () => {
+          if (workingRef.current || pdfActionRef.current) return;
+          workingRef.current = true;
+          setWorking(true);
+          deleteDraftClaim(database, claimId)
+            .then(() =>
+              router.dismissTo({
+                params: { feedback: t.claims.draftDeleted },
+                pathname: '/claims',
+              }),
+            )
+            .catch((deleteError: unknown) => {
+              setError(
+                mapError(deleteError, 'DATABASE_WRITE_FAILED', t.appErrors)
+                  .message,
+              );
+              workingRef.current = false;
+              setWorking(false);
+            });
         },
-      ],
-    );
+        style: 'destructive',
+        text: t.common.delete,
+      },
+    ]);
   }
 
   async function exportPdf() {
@@ -157,12 +165,12 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
         Date.now(),
         receiptStorage,
       );
-      setFeedback(`PDF generated: ${generated.fileName}`);
+      setFeedback(
+        t.claims.pdfGenerated.replace('{fileName}', generated.fileName),
+      );
     } catch (pdfError) {
       setError(
-        isCodedError(pdfError)
-          ? pdfError.message
-          : mapError(pdfError, 'PDF_GENERATION_FAILED').message,
+        mapError(pdfError, 'PDF_GENERATION_FAILED', t.appErrors).message,
       );
     } finally {
       pdfActionRef.current = false;
@@ -177,12 +185,10 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
     setError(null);
     try {
       await shareClaimPdf(database, claimId, Date.now(), receiptStorage);
-      setFeedback('PDF shared.');
+      setFeedback(t.claims.pdfShared);
     } catch (shareError) {
       setError(
-        isCodedError(shareError)
-          ? shareError.message
-          : mapError(shareError, 'FILE_OPERATION_FAILED').message,
+        mapError(shareError, 'FILE_OPERATION_FAILED', t.appErrors).message,
       );
     } finally {
       pdfActionRef.current = false;
@@ -194,7 +200,7 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
     return (
       <Screen style={styles.state}>
         <ActivityIndicator color={colors.primary} size="large" />
-        <Text style={styles.stateText}>Loading claim…</Text>
+        <Text style={styles.stateText}>{t.claims.loading}</Text>
       </Screen>
     );
   }
@@ -203,12 +209,12 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
     return (
       <Screen style={styles.state}>
         <Text accessibilityRole="header" style={styles.title}>
-          Claim unavailable
+          {t.claims.unavailable}
         </Text>
         <Text accessibilityLiveRegion="assertive" style={styles.stateText}>
-          {error ?? 'Claim not found.'}
+          {error ?? t.claims.notFound}
         </Text>
-        <AppButton label="Back" onPress={() => router.back()} />
+        <AppButton label={t.common.back} onPress={() => router.back()} />
       </Screen>
     );
   }
@@ -216,9 +222,13 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
   return (
     <Screen>
       <View style={styles.header}>
-        <AppButton label="Back" onPress={() => router.back()} variant="ghost" />
+        <AppButton
+          label={t.common.back}
+          onPress={() => router.back()}
+          variant="ghost"
+        />
         <Text accessibilityRole="header" style={styles.headerTitle}>
-          Claim Detail
+          {t.claims.detailTitle}
         </Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -232,7 +242,7 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
           <Text style={styles.period}>
             {claim.periodStart && claim.periodEnd
               ? `${claim.periodStart} – ${claim.periodEnd}`
-              : 'No period'}
+              : t.claims.noPeriod}
           </Text>
           <Text style={styles.total}>
             {claim.currencyCode
@@ -240,8 +250,9 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
               : '—'}
           </Text>
           <Text style={styles.receipts}>
-            {claim.receiptAttachedCount} receipt attached ·{' '}
-            {claim.receiptMissingCount} missing
+            {t.claims.receiptSummary
+              .replace('{attached}', String(claim.receiptAttachedCount))
+              .replace('{missing}', String(claim.receiptMissingCount))}
           </Text>
         </View>
 
@@ -258,7 +269,7 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
 
         <View style={styles.section}>
           <Text accessibilityRole="header" style={styles.sectionTitle}>
-            Expenses
+            {t.claims.expensesTitle}
           </Text>
           {claim.expenses.map((expense) => (
             <Pressable
@@ -278,7 +289,9 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
                   {expense.categoryName} · {expense.localDate}
                 </Text>
                 <Text style={styles.metadata}>
-                  {expense.hasReceipt ? 'Receipt attached' : 'Receipt missing'}
+                  {expense.hasReceipt
+                    ? t.claims.receiptAttached
+                    : t.claims.receiptMissing}
                 </Text>
               </View>
               <Text style={styles.expenseAmount}>
@@ -291,7 +304,7 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
         <View style={styles.actions}>
           <AppButton
             disabled={pdfAction !== null}
-            label="Export PDF"
+            label={t.claims.exportPdf}
             loading={pdfAction === 'export'}
             onPress={() => void exportPdf()}
             variant="secondary"
@@ -300,18 +313,18 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
             <>
               <AppButton
                 disabled={working}
-                label="Edit Claim"
+                label={t.claims.editClaim}
                 onPress={() => router.push(`/claims/${claim.id}/edit`)}
                 variant="secondary"
               />
               <AppButton
                 disabled={working}
-                label="Mark Submitted"
+                label={t.claims.markSubmitted}
                 onPress={() => confirmTransition('submitted')}
               />
               <AppButton
                 disabled={working}
-                label="Delete Claim"
+                label={t.claims.deleteClaim}
                 onPress={confirmDelete}
                 variant="destructive"
               />
@@ -319,21 +332,21 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
           ) : null}
           {claim.status === 'submitted' ? (
             <>
-              <Text style={styles.locked}>Submitted claims are locked.</Text>
+              <Text style={styles.locked}>{t.claims.submittedLocked}</Text>
               <AppButton
                 disabled={working}
-                label="Move Back to Draft"
+                label={t.claims.moveToDraft}
                 onPress={() => confirmTransition('draft')}
                 variant="secondary"
               />
               <AppButton
                 disabled={working}
-                label="Mark Reimbursed"
+                label={t.claims.markReimbursed}
                 onPress={() => confirmTransition('reimbursed')}
               />
               <AppButton
                 disabled={working}
-                label="Mark Rejected"
+                label={t.claims.markRejected}
                 onPress={() => confirmTransition('rejected')}
                 variant="destructive"
               />
@@ -341,24 +354,20 @@ export function ClaimDetailScreen({ claimId }: { claimId: number }) {
           ) : null}
           {claim.status === 'rejected' ? (
             <>
-              <Text style={styles.locked}>
-                Move this claim back to Draft before editing it.
-              </Text>
+              <Text style={styles.locked}>{t.claims.rejectedLocked}</Text>
               <AppButton
                 disabled={working}
-                label="Move Back to Draft"
+                label={t.claims.moveToDraft}
                 onPress={() => confirmTransition('draft')}
               />
             </>
           ) : null}
           {claim.status === 'reimbursed' ? (
             <>
-              <Text style={styles.locked}>
-                Reimbursed claims are final and read-only.
-              </Text>
+              <Text style={styles.locked}>{t.claims.reimbursedLocked}</Text>
               <AppButton
                 disabled={pdfAction !== null}
-                label="Share PDF"
+                label={t.claims.sharePdf}
                 loading={pdfAction === 'share'}
                 onPress={() => void sharePdf()}
               />

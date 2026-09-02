@@ -8,17 +8,6 @@ import { contentMaxWidth } from '@/theme/layout';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 
-export const CLAIM_STATUS_FILTERS: readonly Readonly<{
-  label: string;
-  value: ClaimStatus | undefined;
-}>[] = [
-  { label: 'All', value: undefined },
-  { label: 'Draft', value: 'draft' },
-  { label: 'Submitted', value: 'submitted' },
-  { label: 'Reimbursed', value: 'reimbursed' },
-  { label: 'Rejected', value: 'rejected' },
-];
-
 export type ClaimsStatusFilterBarProps = {
   onSelectStatus: (status: ClaimStatus | undefined) => void;
   selectedStatus?: ClaimStatus;
@@ -29,17 +18,14 @@ export const ClaimsStatusFilterBar = memo(function ClaimsStatusFilterBar({
   selectedStatus,
 }: ClaimsStatusFilterBarProps) {
   const { colors } = useTheme();
-  const { language } = useLanguage();
-  const filters =
-    language === 'id'
-      ? [
-          { label: 'Semua', value: undefined },
-          { label: 'Draf', value: 'draft' as const },
-          { label: 'Diajukan', value: 'submitted' as const },
-          { label: 'Dibayar', value: 'reimbursed' as const },
-          { label: 'Ditolak', value: 'rejected' as const },
-        ]
-      : CLAIM_STATUS_FILTERS;
+  const { t } = useLanguage();
+  const filters = [
+    { label: t.claims.allStatuses, value: undefined },
+    { label: t.claims.statusDraft, value: 'draft' as const },
+    { label: t.claims.statusSubmitted, value: 'submitted' as const },
+    { label: t.claims.statusReimbursed, value: 'reimbursed' as const },
+    { label: t.claims.statusRejected, value: 'rejected' as const },
+  ];
 
   return (
     <View style={styles.filters}>

@@ -25,7 +25,7 @@ export const ManualReceiptModal = memo(function ManualReceiptModal({
   visible,
 }: ManualReceiptModalProps) {
   const { colors } = useTheme();
-  const { language } = useLanguage();
+  const { t } = useLanguage();
 
   return (
     <Modal
@@ -47,29 +47,27 @@ export const ManualReceiptModal = memo(function ManualReceiptModal({
           <Text
             style={[styles.actionSheetTitle, { color: colors.textPrimary }]}
           >
-            {language === 'id' ? 'Foto Bukti / Struk' : 'Attach Photo Proof'}
+            {t.transactions.receiptPhotoTitle}
           </Text>
           <AppButton
-            label={language === 'id' ? 'Ambil Foto (Kamera)' : 'Take photo'}
+            label={t.transactions.takePhoto}
             onPress={() => onSelectSource('camera')}
             variant="secondary"
           />
           <AppButton
-            label={
-              language === 'id' ? 'Pilih dari Galeri' : 'Choose from gallery'
-            }
+            label={t.transactions.chooseFromGallery}
             onPress={() => onSelectSource('gallery')}
             variant="secondary"
           />
           {hasReceipt ? (
             <AppButton
-              label={language === 'id' ? 'Hapus Foto' : 'Remove Photo'}
+              label={t.transactions.removePhoto}
               onPress={onRemoveReceipt}
               variant="destructive"
             />
           ) : null}
           <AppButton
-            label={language === 'id' ? 'Batal' : 'Cancel'}
+            label={t.common.cancel}
             onPress={onClose}
             variant="ghost"
           />

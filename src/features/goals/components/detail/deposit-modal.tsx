@@ -11,7 +11,6 @@ import {
 
 import { AppButton } from '@/components/ui/app-button';
 import { useCurrency } from '@/lib/currency/currency-context';
-import { useLanguage } from '@/lib/i18n/language-context';
 import type { TranslationSchema } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -45,7 +44,6 @@ export const GoalDetailModal = memo(function GoalDetailModal({
 }: GoalDetailModalProps) {
   const { colors, isDark } = useTheme();
   const { currencySymbol } = useCurrency();
-  const { language } = useLanguage();
 
   if (!modalType) return null;
 
@@ -105,7 +103,7 @@ export const GoalDetailModal = memo(function GoalDetailModal({
           {/* Amount Input */}
           <View style={styles.inputGroup}>
             <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
-              {language === 'id' ? 'Nominal' : 'Amount'}
+              {t.goals.amountLabel}
             </Text>
             <View
               style={[
@@ -140,13 +138,7 @@ export const GoalDetailModal = memo(function GoalDetailModal({
             <TextInput
               onChangeText={onNoteChange}
               placeholder={
-                isDeposit
-                  ? language === 'id'
-                    ? 'Contoh: Tabungan gaji bulanan'
-                    : 'Example: Monthly salary savings'
-                  : language === 'id'
-                    ? 'Contoh: Beli kebutuhan'
-                    : 'Example: Essential purchase'
+                isDeposit ? t.goals.depositExample : t.goals.withdrawExample
               }
               placeholderTextColor={colors.textMuted}
               style={[

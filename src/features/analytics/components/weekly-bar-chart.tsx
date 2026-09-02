@@ -136,7 +136,12 @@ export function WeeklyBarChart({
           );
 
           return (
-            <View key={day.dayIndex} style={styles.columnContainer}>
+            <View
+              accessibilityLabel={`${t.analytics.dayNames[day.dayOfWeek] ?? ''}, ${t.analytics.thisWeek}: ${formatMoney(day.thisWeekMinor, currencyCode)}, ${t.analytics.lastWeek}: ${formatMoney(day.lastWeekMinor, currencyCode)}`}
+              accessible
+              key={day.dayIndex}
+              style={styles.columnContainer}
+            >
               <View style={styles.barsTrack}>
                 {/* Last Week Bar */}
                 <View

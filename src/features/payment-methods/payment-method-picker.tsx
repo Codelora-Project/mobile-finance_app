@@ -15,6 +15,7 @@ import {
   type PaymentMethod,
 } from '@/features/payment-methods/payment-method-repository';
 import { usePickerData } from '@/lib/use-picker-data';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { colors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -32,6 +33,7 @@ export function PaymentMethodPicker({
   selectedId,
 }: PaymentMethodPickerProps) {
   const database = useSQLiteContext();
+  const { t } = useLanguage();
   const loadPaymentMethods = useCallback(
     () => listPaymentMethods(database),
     [database],
@@ -55,7 +57,7 @@ export function PaymentMethodPicker({
     return (
       <View accessibilityLiveRegion="polite" style={styles.state}>
         <ActivityIndicator color={colors.primary} />
-        <Text style={styles.stateText}>Loading payment methods…</Text>
+        <Text style={styles.stateText}>{t.pickers.loadingPaymentMethods}</Text>
       </View>
     );
   }
@@ -64,7 +66,11 @@ export function PaymentMethodPicker({
     return (
       <View accessibilityLiveRegion="assertive" style={styles.state}>
         <Text style={styles.error}>{error}</Text>
-        <AppButton label="Try again" onPress={retryLoad} variant="secondary" />
+        <AppButton
+          label={t.common.tryAgain}
+          onPress={retryLoad}
+          variant="secondary"
+        />
       </View>
     );
   }
@@ -75,6 +81,9 @@ export function PaymentMethodPicker({
     <FlatList
       data={paymentMethods}
       keyExtractor={(paymentMethod) => String(paymentMethod.id)}
+      ListEmptyComponent={
+        <Text style={styles.stateText}>{t.pickers.noPaymentMethods}</Text>
+      }
       ListHeaderComponent={
         allowNone ? (
           <Pressable
@@ -88,13 +97,13 @@ export function PaymentMethodPicker({
             ]}
           >
             <View style={styles.rowText}>
-              <Text style={styles.name}>No payment method</Text>
-              <Text style={styles.metadata}>Optional</Text>
+              <Text style={styles.name}>{t.pickers.noPaymentMethod}</Text>
+              <Text style={styles.metadata}>{t.common.optional}</Text>
             </View>
             <Text
               style={noneSelected ? styles.selectedMark : styles.unselectedMark}
             >
-              {noneSelected ? 'Selected' : 'Select'}
+              {noneSelected ? t.common.selected : t.common.select}
             </Text>
           </Pressable>
         ) : null
@@ -115,13 +124,13 @@ export function PaymentMethodPicker({
             <View style={styles.rowText}>
               <Text style={styles.name}>{item.name}</Text>
               {item.isDefault ? (
-                <Text style={styles.metadata}>Default</Text>
+                <Text style={styles.metadata}>{t.common.defaultLabel}</Text>
               ) : null}
             </View>
             <Text
               style={selected ? styles.selectedMark : styles.unselectedMark}
             >
-              {selected ? 'Selected' : 'Select'}
+              {selected ? t.common.selected : t.common.select}
             </Text>
           </Pressable>
         );

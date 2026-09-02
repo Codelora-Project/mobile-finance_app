@@ -15,29 +15,23 @@ export type ClaimListRowItemProps = {
   onPress: (id: number) => void;
 };
 
-function statusLabel(status: ClaimStatus, language: 'en' | 'id') {
-  if (language === 'id') {
-    return {
-      draft: 'Draf',
-      rejected: 'Ditolak',
-      reimbursed: 'Dibayar',
-      submitted: 'Diajukan',
-    }[status];
-  }
-  return status[0]?.toUpperCase() + status.slice(1);
-}
-
 export const ClaimListRowItem = memo(function ClaimListRowItem({
   claim,
   onPress,
 }: ClaimListRowItemProps) {
   const { colors } = useTheme();
-  const { language } = useLanguage();
-  const status = statusLabel(claim.status, language);
+  const { t } = useLanguage();
+  const status = {
+    draft: t.claims.statusDraft,
+    rejected: t.claims.statusRejected,
+    reimbursed: t.claims.statusReimbursed,
+    submitted: t.claims.statusSubmitted,
+  } satisfies Record<ClaimStatus, string>;
+  const statusText = status[claim.status];
 
   return (
     <Pressable
-      accessibilityLabel={`${claim.title}, ${status}`}
+      accessibilityLabel={`${claim.title}, ${statusText}`}
       accessibilityRole="button"
       onPress={() => onPress(claim.id)}
       style={({ pressed }) => [
@@ -57,8 +51,8 @@ export const ClaimListRowItem = memo(function ClaimListRowItem({
           {claim.title}
         </Text>
         <Text style={[styles.rowMetadata, { color: colors.textSecondary }]}>
-          {status} · {claim.itemCount}{' '}
-          {language === 'id' ? 'transaksi' : 'items'}
+          {statusText} ·{' '}
+          {t.claims.itemCount.replace('{count}', String(claim.itemCount))}
         </Text>
       </View>
       <Text style={[styles.amount, { color: colors.textPrimary }]}>

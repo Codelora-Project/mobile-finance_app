@@ -3,7 +3,11 @@ import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Wallet } from '@/features/wallets/wallet-types';
-import { getWalletBrandColor, getWalletIconName } from '@/features/wallets/wallet-icons';
+import {
+  getWalletBrandColor,
+  getWalletIconName,
+} from '@/features/wallets/wallet-icons';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -26,11 +30,11 @@ export const WalletRowItem = memo(function WalletRowItem({
   currencyCode,
   hideBalance = false,
   isLast = false,
-  language,
   onPress,
   wallet,
 }: WalletRowItemProps) {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const brandColor = getWalletBrandColor(wallet);
 
   const formattedBalance = hideBalance
@@ -43,17 +47,17 @@ export const WalletRowItem = memo(function WalletRowItem({
     }
     switch (wallet.accountType) {
       case 'bank':
-        return language === 'id' ? 'Rekening Bank' : 'Bank Account';
+        return t.wallets.typeBank;
       case 'cash':
-        return language === 'id' ? 'Uang Tunai' : 'Cash Wallet';
+        return t.wallets.typeCash;
       case 'ewallet':
-        return language === 'id' ? 'Dompet Digital' : 'E-Wallet';
+        return t.wallets.typeEwallet;
       case 'investment':
-        return language === 'id' ? 'Portofolio Investasi' : 'Investment';
+        return t.wallets.typeInvestment;
       case 'credit_card':
-        return language === 'id' ? 'Kartu Kredit' : 'Credit Card';
+        return t.wallets.typeCreditCard;
       default:
-        return language === 'id' ? 'Akun Finansial' : 'Financial Account';
+        return t.wallets.typeFinancial;
     }
   }
 
@@ -78,12 +82,8 @@ export const WalletRowItem = memo(function WalletRowItem({
           style={[
             styles.walletIconBox,
             {
-              backgroundColor: isDark
-                ? `${brandColor}24`
-                : `${brandColor}14`,
-              borderColor: isDark
-                ? `${brandColor}44`
-                : `${brandColor}28`,
+              backgroundColor: isDark ? `${brandColor}24` : `${brandColor}14`,
+              borderColor: isDark ? `${brandColor}44` : `${brandColor}28`,
             },
           ]}
         >
@@ -118,7 +118,7 @@ export const WalletRowItem = memo(function WalletRowItem({
                 ]}
               >
                 <Text style={[styles.badgeText, { color: colors.primary }]}>
-                  {language === 'id' ? 'Utama' : 'Default'}
+                  {t.wallets.defaultBadge}
                 </Text>
               </View>
             ) : !wallet.includeInCashflow ? (
@@ -136,7 +136,7 @@ export const WalletRowItem = memo(function WalletRowItem({
                 <Text
                   style={[styles.badgeText, { color: colors.textSecondary }]}
                 >
-                  {language === 'id' ? 'Aset Tracking' : 'Tracked Asset'}
+                  {t.wallets.trackedAssetBadge}
                 </Text>
               </View>
             ) : null}

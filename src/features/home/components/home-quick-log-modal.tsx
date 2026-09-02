@@ -68,7 +68,7 @@ export const HomeQuickLogModal = memo(function HomeQuickLogModal({
           ]}
         >
           <Pressable
-            accessibilityLabel="Close modal"
+            accessibilityLabel={t.common.close}
             onPress={onClose}
             style={StyleSheet.absoluteFill}
           />
@@ -113,7 +113,7 @@ export const HomeQuickLogModal = memo(function HomeQuickLogModal({
                 </Text>
               </View>
               <Pressable
-                accessibilityLabel="Close"
+                accessibilityLabel={t.common.close}
                 accessibilityRole="button"
                 hitSlop={8}
                 onPress={onClose}

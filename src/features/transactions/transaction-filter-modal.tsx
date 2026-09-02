@@ -164,7 +164,7 @@ export function TransactionFilterModal({
   visible,
 }: TransactionFilterModalProps) {
   const database = useSQLiteContext();
-  const { language, t } = useLanguage();
+  const { t } = useLanguage();
   const { colors, isDark } = useTheme();
 
   const [draft, setDraft] = useState(() => createDraft(filters));
@@ -211,19 +211,11 @@ export function TransactionFilterModal({
       (dateFrom && !isLocalDate(dateFrom)) ||
       (dateTo && !isLocalDate(dateTo))
     ) {
-      setDateError(
-        language === 'id'
-          ? 'Format tanggal harus YYYY-MM-DD.'
-          : 'Enter dates as YYYY-MM-DD.',
-      );
+      setDateError(t.transactions.invalidDateFormat);
       return;
     }
     if (dateFrom && dateTo && dateFrom > dateTo) {
-      setDateError(
-        language === 'id'
-          ? 'Tanggal awal tidak boleh lebih besar dari tanggal akhir.'
-          : 'Start date must be on or before end date.',
-      );
+      setDateError(t.transactions.invalidDateRange);
       return;
     }
 
@@ -314,7 +306,7 @@ export function TransactionFilterModal({
                 <Text
                   style={[styles.sectionLabel, { color: colors.textSecondary }]}
                 >
-                  {language === 'id' ? 'TIPE TRANSAKSI' : 'TRANSACTION TYPE'}
+                  {t.transactions.transactionTypeSection}
                 </Text>
                 <View accessibilityRole="radiogroup" style={styles.choiceRow}>
                   {(['all', 'expense', 'income'] as const).map((type) => (
@@ -385,13 +377,13 @@ export function TransactionFilterModal({
                 <Text
                   style={[styles.sectionLabel, { color: colors.textSecondary }]}
                 >
-                  {language === 'id' ? 'RENTANG TANGGAL' : 'DATE RANGE'}
+                  {t.transactions.dateRangeSection}
                 </Text>
                 <View style={styles.dateRow}>
                   <View style={styles.dateField}>
                     <AppInput
                       autoCapitalize="none"
-                      label={language === 'id' ? 'Dari Tanggal' : 'From Date'}
+                      label={t.transactions.fromDate}
                       onChangeText={(dateFrom) => {
                         setDraft((current) => ({ ...current, dateFrom }));
                         setDateError(null);
@@ -403,7 +395,7 @@ export function TransactionFilterModal({
                   <View style={styles.dateField}>
                     <AppInput
                       autoCapitalize="none"
-                      label={language === 'id' ? 'Sampai Tanggal' : 'To Date'}
+                      label={t.transactions.toDate}
                       onChangeText={(dateTo) => {
                         setDraft((current) => ({ ...current, dateTo }));
                         setDateError(null);
@@ -458,23 +450,23 @@ export function TransactionFilterModal({
               <BooleanChoices
                 allLabel={t.transactions.all}
                 label={t.transactions.reimbursementStatus.toUpperCase()}
-                noLabel={language === 'id' ? 'Bukan Klaim' : 'Not Reimbursable'}
+                noLabel={t.transactions.notClaimable}
                 onChange={(isReimbursable) =>
                   setDraft((current) => ({ ...current, isReimbursable }))
                 }
                 value={draft.isReimbursable}
-                yesLabel={language === 'id' ? 'Klaim Kantor' : 'Reimbursable'}
+                yesLabel={t.transactions.officeClaim}
               />
 
               <BooleanChoices
                 allLabel={t.transactions.all}
                 label={t.transactions.receipt.toUpperCase()}
-                noLabel={language === 'id' ? 'Tanpa Struk' : 'No Receipt'}
+                noLabel={t.transactions.noReceiptFilter}
                 onChange={(hasReceipt) =>
                   setDraft((current) => ({ ...current, hasReceipt }))
                 }
                 value={draft.hasReceipt}
-                yesLabel={language === 'id' ? 'Ada Struk' : 'With Receipt'}
+                yesLabel={t.transactions.withReceiptFilter}
               />
 
               {/* Actions */}
@@ -488,9 +480,7 @@ export function TransactionFilterModal({
                   variant="secondary"
                 />
                 <AppButton
-                  label={
-                    language === 'id' ? 'Terapkan Filter' : 'Apply Filters'
-                  }
+                  label={t.transactions.applyFilters}
                   onPress={apply}
                   variant="primary"
                 />

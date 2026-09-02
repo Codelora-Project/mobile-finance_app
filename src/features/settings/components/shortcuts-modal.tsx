@@ -92,7 +92,7 @@ export const ShortcutsModal = memo(function ShortcutsModal({
             </Text>
           </View>
           <Pressable
-            accessibilityLabel="Close shortcut manager"
+            accessibilityLabel={t.settings.closeShortcutManager}
             accessibilityRole="button"
             hitSlop={12}
             onPress={onClose}
@@ -225,7 +225,10 @@ export const ShortcutsModal = memo(function ShortcutsModal({
                     {formatShortcutLabel(amount, currencySymbol)}
                   </Text>
                   <Pressable
-                    accessibilityLabel={`Hapus shortcut ${amount}`}
+                    accessibilityLabel={t.settings.removeShortcutAccessibility.replace(
+                      '{amount}',
+                      String(amount),
+                    )}
                     accessibilityRole="button"
                     hitSlop={6}
                     onPress={() => onRemoveShortcut(amount)}

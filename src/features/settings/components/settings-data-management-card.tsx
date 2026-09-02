@@ -58,7 +58,7 @@ export const SettingsDataManagementCard = memo(
           accessibilityRole="header"
           style={[styles.sectionHeaderLabel, { color: colors.textSecondary }]}
         >
-          {language === 'id' ? 'TRANSAKSI & DATA' : 'TRANSACTIONS & DATA'}
+          {t.settings.transactionsDataSection}
         </Text>
 
         <View
@@ -109,9 +109,7 @@ export const SettingsDataManagementCard = memo(
                     { color: colors.textSecondary },
                   ]}
                 >
-                  {language === 'id'
-                    ? 'Kelola kategori pemasukan & pengeluaran'
-                    : 'Manage income & expense categories'}
+                  {t.settings.categoriesDescription}
                 </Text>
               </View>
             </View>
@@ -168,9 +166,7 @@ export const SettingsDataManagementCard = memo(
                     { color: colors.textSecondary },
                   ]}
                 >
-                  {language === 'id'
-                    ? 'Kelola dompet, saldo awal & rekonsiliasi'
-                    : 'Manage wallets, initial balance & reconcile'}
+                  {t.settings.walletsDescription}
                 </Text>
               </View>
             </View>
@@ -342,10 +338,16 @@ export const SettingsDataManagementCard = memo(
                     ]}
                   >
                     {storageStats
-                      ? `Total: ${formatStorageSize(totalStorageBytes)} · ${storageStats.transactionsCount} transaksi`
-                      : language === 'id'
-                        ? 'Memuat rincian...'
-                        : 'Loading details...'}
+                      ? t.settings.storageSummary
+                          .replace(
+                            '{size}',
+                            formatStorageSize(totalStorageBytes),
+                          )
+                          .replace(
+                            '{count}',
+                            String(storageStats.transactionsCount),
+                          )
+                      : t.settings.loadingDetails}
                   </Text>
                 </View>
               </View>

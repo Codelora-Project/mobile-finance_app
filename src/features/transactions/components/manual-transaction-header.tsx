@@ -23,7 +23,7 @@ export const ManualTransactionHeader = memo(function ManualTransactionHeader({
   title,
 }: ManualTransactionHeaderProps) {
   const { colors } = useTheme();
-  const { language } = useLanguage();
+  const { t } = useLanguage();
 
   return (
     <View
@@ -36,7 +36,7 @@ export const ManualTransactionHeader = memo(function ManualTransactionHeader({
       ]}
     >
       <Pressable
-        accessibilityLabel={language === 'id' ? 'Tutup formulir' : 'Close form'}
+        accessibilityLabel={t.transactions.closeForm}
         accessibilityRole="button"
         hitSlop={12}
         onPress={onClose}
@@ -59,9 +59,7 @@ export const ManualTransactionHeader = memo(function ManualTransactionHeader({
 
       {isEditMode && onDelete ? (
         <Pressable
-          accessibilityLabel={
-            language === 'id' ? 'Hapus transaksi' : 'Delete transaction'
-          }
+          accessibilityLabel={t.transactions.deleteTransactionAccessibility}
           accessibilityRole="button"
           disabled={deleting}
           hitSlop={12}

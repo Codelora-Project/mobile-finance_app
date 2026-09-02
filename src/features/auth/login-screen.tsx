@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/features/auth/auth-context';
+import { useReduceMotion } from '@/lib/accessibility/use-reduce-motion';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -25,6 +26,7 @@ export function LoginScreen() {
   const { clearError, error, isBusy, signInWithGoogle, status } = useAuth();
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();
+  const reduceMotion = useReduceMotion();
   const authCopy = t.auth;
   const previewCopy = authCopy.preview;
 
@@ -45,6 +47,12 @@ export function LoginScreen() {
   const entryBottomTY = useMemo(() => new Animated.Value(14), []);
 
   useEffect(() => {
+    if (reduceMotion) {
+      floatAnimTop.setValue(0);
+      floatAnimBottom.setValue(0);
+      floatAnimMain.setValue(0);
+      return;
+    }
     // Top chip: 2.6s floating cycle
     const animTop = Animated.loop(
       Animated.sequence([
@@ -108,10 +116,22 @@ export function LoginScreen() {
       animBottom.stop();
       animMain.stop();
     };
-  }, [floatAnimBottom, floatAnimMain, floatAnimTop]);
+  }, [floatAnimBottom, floatAnimMain, floatAnimTop, reduceMotion]);
 
   // Staggered entry animation sequence: Badge -> Headline -> Preview -> Tags -> CTA
   useEffect(() => {
+    if (reduceMotion) {
+      entryBrandOp.setValue(1);
+      entryBrandTY.setValue(0);
+      entryCopyOp.setValue(1);
+      entryCopyTY.setValue(0);
+      entryPreviewOp.setValue(1);
+      entryPreviewScale.setValue(1);
+      entryTagsOp.setValue(1);
+      entryBottomOp.setValue(1);
+      entryBottomTY.setValue(0);
+      return;
+    }
     const entrySequence = Animated.stagger(120, [
       Animated.parallel([
         Animated.timing(entryBrandOp, {
@@ -187,6 +207,7 @@ export function LoginScreen() {
     entryTagsOp,
     entryBottomOp,
     entryBottomTY,
+    reduceMotion,
   ]);
 
   // Interpolations for natural floating physics
@@ -373,9 +394,7 @@ export function LoginScreen() {
                     size={13}
                   />
                 </View>
-                <Text
-                  style={[styles.chipTitle, { color: colors.textPrimary }]}
-                >
+                <Text style={[styles.chipTitle, { color: colors.textPrimary }]}>
                   {previewCopy.tx1Title}
                 </Text>
                 <Text
@@ -446,7 +465,7 @@ export function LoginScreen() {
                 {/* Main Balance Display */}
                 <Text
                   adjustsFontSizeToFit
-                  minimumFontScale={0.75}
+                  minimumFontScale={0.85}
                   numberOfLines={1}
                   style={[styles.mainCardAmount, { color: colors.textPrimary }]}
                 >
@@ -625,13 +644,14 @@ export function LoginScreen() {
                     size={13}
                   />
                 </View>
-                <Text
-                  style={[styles.chipTitle, { color: colors.textPrimary }]}
-                >
+                <Text style={[styles.chipTitle, { color: colors.textPrimary }]}>
                   {previewCopy.tx2Title}
                 </Text>
                 <Text
-                  style={[styles.chipAmountPositive, { color: colors.positive }]}
+                  style={[
+                    styles.chipAmountPositive,
+                    { color: colors.positive },
+                  ]}
                 >
                   {previewCopy.tx2Amount}
                 </Text>
@@ -1205,4 +1225,3 @@ const styles = StyleSheet.create({
     width: 1,
   },
 });
-

@@ -3,6 +3,7 @@ import React, { memo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { Wallet } from '@/features/wallets';
+import { useLanguage } from '@/lib/i18n/language-context';
 import type { Language } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -25,6 +26,7 @@ export const HomeWalletChipsBar = memo(function HomeWalletChipsBar({
   wallets,
 }: HomeWalletChipsBarProps) {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
 
   if (wallets.length === 0) return null;
 
@@ -39,9 +41,7 @@ export const HomeWalletChipsBar = memo(function HomeWalletChipsBar({
       >
         {/* 'Semua' (All) Chip */}
         <Pressable
-          accessibilityLabel={
-            language === 'id' ? 'Semua Dompet' : 'All Wallets'
-          }
+          accessibilityLabel={t.home.allWallets}
           accessibilityRole="tab"
           accessibilityState={{ selected: isAllSelected }}
           onPress={() => onSelectWallet(null)}
@@ -69,7 +69,7 @@ export const HomeWalletChipsBar = memo(function HomeWalletChipsBar({
               },
             ]}
           >
-            {language === 'id' ? 'Semua Dompet' : 'All Wallets'}
+            {t.home.allWallets}
           </Text>
         </Pressable>
 
@@ -120,9 +120,7 @@ export const HomeWalletChipsBar = memo(function HomeWalletChipsBar({
         {/* + Add Wallet Chip */}
         {onAddWalletPress ? (
           <Pressable
-            accessibilityLabel={
-              language === 'id' ? 'Kelola Dompet' : 'Manage Wallets'
-            }
+            accessibilityLabel={t.home.manageWallets}
             accessibilityRole="button"
             onPress={onAddWalletPress}
             style={({ pressed }) => [

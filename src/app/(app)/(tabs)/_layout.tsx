@@ -1,10 +1,18 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Tabs, usePathname, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Animated,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useLanguage } from '@/lib/i18n/language-context';
+import { useReduceMotion } from '@/lib/accessibility/use-reduce-motion';
 import {
   TabBarVisibilityProvider,
   useTabBarVisibility,
@@ -18,6 +26,14 @@ type BottomTabBarProps = Parameters<
 >[0];
 
 type TabIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+
+// Android can report a requested 1.3 scale a few hundredths lower.
+const ADAPTIVE_GRID_FONT_SCALE = 1.25;
+
+function getTabBarHeight(fontScale: number) {
+  if (fontScale >= ADAPTIVE_GRID_FONT_SCALE) return 132;
+  return 64 + Math.max(0, fontScale - 1) * 44;
+}
 
 function getTabIcon(routeName: string, focused: boolean): TabIconName {
   switch (routeName) {
@@ -35,33 +51,42 @@ function getTabIcon(routeName: string, focused: boolean): TabIconName {
       return focused ? 'bullseye-arrow' : 'bullseye';
     case 'more':
       return focused ? 'dots-grid' : 'dots-grid';
+    case 'action':
+      return 'cash-plus';
     default:
       return 'circle';
   }
 }
 
 function TabItem({
+  adaptiveGrid = false,
   focused,
   label,
   name,
   onPress,
 }: {
+  adaptiveGrid?: boolean;
   focused: boolean;
   label: string;
   name: string;
   onPress: () => void;
 }) {
   const { colors, isDark } = useTheme();
+  const reduceMotion = useReduceMotion();
   const [scaleAnim] = useState(() => new Animated.Value(focused ? 1 : 0.88));
 
   useEffect(() => {
+    if (reduceMotion) {
+      scaleAnim.setValue(focused ? 1 : 0.88);
+      return;
+    }
     Animated.spring(scaleAnim, {
       friction: 6,
       tension: 140,
       toValue: focused ? 1 : 0.88,
       useNativeDriver: true,
     }).start();
-  }, [focused, scaleAnim]);
+  }, [focused, reduceMotion, scaleAnim]);
 
   const activeBg = isDark ? '#1E3A8A' : '#EFF6FF';
   const activeColor = colors.primary;
@@ -75,7 +100,10 @@ function TabItem({
       accessibilityState={{ selected: focused }}
       hitSlop={4}
       onPress={onPress}
-      style={styles.tabItemPressable}
+      style={[
+        styles.tabItemPressable,
+        adaptiveGrid ? styles.tabItemAdaptiveGrid : null,
+      ]}
     >
       <Animated.View
         style={[
@@ -101,9 +129,9 @@ function TabItem({
       </Animated.View>
       <Text
         adjustsFontSizeToFit
-        maxFontSizeMultiplier={1.4}
+        maxFontSizeMultiplier={adaptiveGrid ? 1.5 : 2}
         minimumFontScale={0.85}
-        numberOfLines={1}
+        numberOfLines={2}
         style={[
           styles.tabLabel,
           {
@@ -128,28 +156,35 @@ function FloatingActionButton({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { fontScale } = useWindowDimensions();
+  const resolvedFontScale = fontScale || 1;
+  const reduceMotion = useReduceMotion();
   const { tabBarAnim } = useTabBarVisibility();
   const [fabScale] = useState(() => new Animated.Value(1));
 
   const handlePressIn = useCallback(() => {
+    if (reduceMotion) return;
     Animated.spring(fabScale, {
       friction: 5,
       tension: 200,
       toValue: 0.92,
       useNativeDriver: true,
     }).start();
-  }, [fabScale]);
+  }, [fabScale, reduceMotion]);
 
   const handlePressOut = useCallback(() => {
+    if (reduceMotion) return;
     Animated.spring(fabScale, {
       friction: 5,
       tension: 200,
       toValue: 1,
       useNativeDriver: true,
     }).start();
-  }, [fabScale]);
+  }, [fabScale, reduceMotion]);
 
-  const fabBottom = insets.bottom + 64 + spacing.md;
+  const compact = resolvedFontScale >= 1.5;
+  const tabBarHeight = getTabBarHeight(resolvedFontScale);
+  const fabBottom = insets.bottom + tabBarHeight + spacing.md;
 
   const translateY = tabBarAnim.interpolate({
     inputRange: [0, 1],
@@ -181,6 +216,7 @@ function FloatingActionButton({
         onPressOut={handlePressOut}
         style={[
           styles.fabButton,
+          compact ? styles.fabButtonCompact : null,
           {
             backgroundColor: colors.primary,
             shadowColor: colors.shadow,
@@ -194,9 +230,15 @@ function FloatingActionButton({
           name="cash-plus"
           size={20}
         />
-        <Text style={[styles.fabLabel, { color: colors.onPrimary }]}>
-          {label}
-        </Text>
+        {!compact ? (
+          <Text
+            maxFontSizeMultiplier={2}
+            numberOfLines={2}
+            style={[styles.fabLabel, { color: colors.onPrimary }]}
+          >
+            {label}
+          </Text>
+        ) : null}
       </Pressable>
     </Animated.View>
   );
@@ -208,6 +250,12 @@ function CustomFloatingTabBar({
   state,
 }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
+  const resolvedFontScale = fontScale || 1;
+  const adaptiveGrid = resolvedFontScale >= ADAPTIVE_GRID_FONT_SCALE;
+  const pathname = usePathname();
+  const router = useRouter();
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const { tabBarAnim } = useTabBarVisibility();
 
@@ -245,10 +293,11 @@ function CustomFloatingTabBar({
       <View
         style={[
           styles.floatingPillBar,
+          adaptiveGrid ? styles.floatingPillBarAdaptiveGrid : null,
           {
             backgroundColor: colors.surface,
             borderColor: colors.border,
-            height: 64 + insets.bottom,
+            minHeight: getTabBarHeight(resolvedFontScale) + insets.bottom,
             paddingBottom: insets.bottom,
           },
         ]}
@@ -273,6 +322,7 @@ function CustomFloatingTabBar({
 
           return (
             <TabItem
+              adaptiveGrid={adaptiveGrid}
               focused={isFocused}
               key={route.key}
               label={label}
@@ -281,15 +331,26 @@ function CustomFloatingTabBar({
             />
           );
         })}
+        {adaptiveGrid && pathname !== '/analytics' ? (
+          <TabItem
+            adaptiveGrid
+            focused={false}
+            label={t.common.record}
+            name="action"
+            onPress={() => router.push('/transactions/new')}
+          />
+        ) : null}
       </View>
     </Animated.View>
   );
 }
 
 function MainTabLayoutContent() {
-  const { language, t } = useLanguage();
+  const { t } = useLanguage();
   const pathname = usePathname();
-  const showTransactionFab = pathname !== '/analytics';
+  const { fontScale } = useWindowDimensions();
+  const showTransactionFab =
+    pathname !== '/analytics' && (fontScale || 1) < ADAPTIVE_GRID_FONT_SCALE;
 
   return (
     <View style={styles.rootContainer}>
@@ -361,10 +422,8 @@ function MainTabLayoutContent() {
 
       {showTransactionFab ? (
         <FloatingActionButton
-          accessibilityLabel={
-            language === 'id' ? 'Catat transaksi' : 'Add transaction'
-          }
-          label={language === 'id' ? 'Catat' : 'Record'}
+          accessibilityLabel={t.common.addTransaction}
+          label={t.common.record}
         />
       ) : null}
     </View>
@@ -392,9 +451,10 @@ const styles = StyleSheet.create({
     elevation: 3,
     flexDirection: 'row',
     gap: spacing.xs,
-    height: 48,
+    minHeight: 48,
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.16,
     shadowRadius: 6,
@@ -404,6 +464,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: spacing.md,
     zIndex: 999,
+  },
+  fabButtonCompact: {
+    borderRadius: radius.pill,
+    height: 52,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    width: 52,
   },
   fabLabel: {
     fontSize: 13,
@@ -417,6 +484,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 4,
     width: '100%',
+  },
+  floatingPillBarAdaptiveGrid: {
+    flexWrap: 'wrap',
+    justifyContent: 'center',
   },
   iconContainer: {
     alignItems: 'center',
@@ -436,11 +507,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     minHeight: 48,
+    minWidth: 0,
     paddingVertical: 2,
+  },
+  tabItemAdaptiveGrid: {
+    flexBasis: '33.333%',
+    flexGrow: 0,
+    flexShrink: 0,
+    minHeight: 62,
   },
   tabLabel: {
     fontSize: 11,
+    lineHeight: 14,
     marginTop: 2,
+    minHeight: 14,
     textAlign: 'center',
   },
 });

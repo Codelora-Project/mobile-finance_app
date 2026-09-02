@@ -84,14 +84,16 @@ export function WalletsScreen({
         console.error('Wallets load error:', caughtError);
       }
       if (requestId === loadRequestRef.current) {
-        setScreenError(mapError(caughtError, 'DATABASE_WRITE_FAILED').message);
+        setScreenError(
+          mapError(caughtError, 'DATABASE_WRITE_FAILED', t.appErrors).message,
+        );
       }
     } finally {
       if (requestId === loadRequestRef.current) {
         setLoading(false);
       }
     }
-  }, [database]);
+  }, [database, t.appErrors]);
 
   useFocusEffect(
     useCallback(() => {
@@ -104,10 +106,8 @@ export function WalletsScreen({
 
   function handleConfirmArchive(wallet: Wallet) {
     Alert.alert(
-      language === 'id' ? 'Arsipkan Dompet' : 'Archive Wallet',
-      language === 'id'
-        ? `Apakah Anda yakin ingin mengarsipkan "${wallet.name}"? Dompet ini akan disembunyikan dari daftar aktif.`
-        : `Are you sure you want to archive "${wallet.name}"? It will be hidden from active lists.`,
+      t.wallets.archiveWallet,
+      t.wallets.archiveConfirmDescription.replace('{name}', wallet.name),
       [
         {
           style: 'cancel',
@@ -120,13 +120,13 @@ export function WalletsScreen({
               await loadData();
             } catch (err) {
               Alert.alert(
-                'Error',
-                mapError(err, 'DATABASE_WRITE_FAILED').message,
+                t.common.error,
+                mapError(err, 'DATABASE_WRITE_FAILED', t.appErrors).message,
               );
             }
           },
           style: 'destructive',
-          text: language === 'id' ? 'Arsipkan' : 'Archive',
+          text: t.wallets.archiveAction,
         },
       ],
     );
@@ -137,7 +137,10 @@ export function WalletsScreen({
       await unarchiveWallet(database, wallet.id);
       await loadData();
     } catch (err) {
-      Alert.alert('Error', mapError(err, 'DATABASE_WRITE_FAILED').message);
+      Alert.alert(
+        t.common.error,
+        mapError(err, 'DATABASE_WRITE_FAILED', t.appErrors).message,
+      );
     }
   }
 
@@ -157,7 +160,7 @@ export function WalletsScreen({
         <View style={styles.centerLoading}>
           <ActivityIndicator color={colors.primary} size="large" />
           <Text style={[styles.loadingText, { color: colors.textMuted }]}>
-            {language === 'id' ? 'Memuat data dompet…' : 'Loading wallets…'}
+            {t.wallets.loading}
           </Text>
         </View>
       </Screen>
@@ -204,18 +207,14 @@ export function WalletsScreen({
           numberOfLines={1}
           style={[styles.headerTitle, { color: colors.textPrimary }]}
         >
-          {language === 'id' ? 'Dompet & Rekening' : 'Wallets & Accounts'}
+          {t.wallets.title}
         </Text>
 
         <View style={styles.headerRightActions}>
           {/* Quick Transfer Button */}
           {activeWallets.length >= 2 ? (
             <Pressable
-              accessibilityLabel={
-                language === 'id'
-                  ? 'Transfer Antar Dompet'
-                  : 'Transfer Between Wallets'
-              }
+              accessibilityLabel={t.wallets.transferBetween}
               accessibilityRole="button"
               hitSlop={6}
               onPress={() => handleQuickTransfer()}
@@ -238,16 +237,14 @@ export function WalletsScreen({
                 size={16}
               />
               <Text style={[styles.transferLabel, { color: colors.primary }]}>
-                {language === 'id' ? 'Transfer' : 'Transfer'}
+                {t.wallets.transferAction}
               </Text>
             </Pressable>
           ) : null}
 
           {/* Add Wallet Button */}
           <Pressable
-            accessibilityLabel={
-              language === 'id' ? 'Tambah Dompet Baru' : 'Add New Wallet'
-            }
+            accessibilityLabel={t.wallets.addWallet}
             accessibilityRole="button"
             hitSlop={8}
             onPress={() => setEditorTarget('new')}
@@ -263,7 +260,7 @@ export function WalletsScreen({
               size={18}
             />
             <Text style={[styles.addWalletLabel, { color: colors.onPrimary }]}>
-              {language === 'id' ? 'Tambah' : 'Add'}
+              {t.common.add}
             </Text>
           </Pressable>
         </View>
@@ -281,20 +278,14 @@ export function WalletsScreen({
               size={48}
             />
             <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
-              {language === 'id' ? 'Belum Ada Dompet' : 'No Wallets Yet'}
+              {t.wallets.emptyTitle}
             </Text>
             <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
-              {language === 'id'
-                ? 'Tambahkan dompet tunai atau rekening bank untuk mulai mencatat keuangan Anda.'
-                : 'Add a cash wallet or bank account to start tracking your finances.'}
+              {t.wallets.emptyDescription}
             </Text>
             <View style={{ marginTop: spacing.md }}>
               <AppButton
-                label={
-                  language === 'id'
-                    ? '+ Tambah Dompet Pertama'
-                    : '+ Add First Wallet'
-                }
+                label={t.wallets.addFirst}
                 onPress={() => setEditorTarget('new')}
               />
             </View>
@@ -348,9 +339,10 @@ export function WalletsScreen({
               <Text
                 style={[styles.sectionTitle, { color: colors.textSecondary }]}
               >
-                {language === 'id'
-                  ? `DOMPET AKTIF (${activeWallets.length})`
-                  : `ACTIVE WALLETS (${activeWallets.length})`}
+                {t.wallets.activeCount.replace(
+                  '{count}',
+                  String(activeWallets.length),
+                )}
               </Text>
             </View>
           </View>

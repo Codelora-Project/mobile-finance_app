@@ -41,12 +41,12 @@ describe('AppErrorBoundary component', () => {
     await render(<TestContainer />);
 
     expect(
-      screen.getByRole('header', { name: 'Terjadi Kendala Teknis' }),
+      screen.getByRole('header', { name: 'Terjadi kendala teknis' }),
     ).toBeOnTheScreen();
     expect(screen.getByText('Test crash in child component')).toBeOnTheScreen();
 
     // Trigger reset
-    await fireEvent.press(screen.getByText('Coba Muat Ulang'));
+    await fireEvent.press(screen.getByText('Muat ulang'));
 
     spy.mockRestore();
   });

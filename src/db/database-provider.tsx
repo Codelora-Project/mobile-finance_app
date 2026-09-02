@@ -11,6 +11,7 @@ import {
 import { initializeDatabase } from '@/db/database';
 import { runSerializedDatabaseInitialization } from '@/db/database-initialization-coordinator';
 import type { ReceiptStorage } from '@/features/receipts/receipt-storage';
+import { translations } from '@/lib/i18n/translations';
 import { colors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -28,6 +29,13 @@ export function DatabaseProvider({
   databaseName,
   receiptStorage,
 }: DatabaseProviderProps) {
+  const systemLanguage = Intl.DateTimeFormat()
+    .resolvedOptions()
+    .locale.toLowerCase()
+    .startsWith('id')
+    ? 'id'
+    : 'en';
+  const t = translations[systemLanguage];
   const [attempt, setAttempt] = useState(0);
   const [status, setStatus] = useState<InitializationStatus>('loading');
   const lastInitializationError = useRef<Error | null>(null);
@@ -72,28 +80,28 @@ export function DatabaseProvider({
       {status === 'loading' ? (
         <View accessibilityLiveRegion="polite" style={styles.stateContainer}>
           <ActivityIndicator
-            accessibilityLabel="Initializing local database"
+            accessibilityLabel={t.database.initializing}
             color={colors.primary}
             size="large"
           />
-          <Text style={styles.message}>Preparing local data…</Text>
+          <Text style={styles.message}>{t.database.preparing}</Text>
         </View>
       ) : null}
 
       {status === 'error' ? (
         <View accessibilityLiveRegion="assertive" style={styles.stateContainer}>
           <Text accessibilityRole="header" style={styles.title}>
-            Database unavailable
+            {t.database.unavailableTitle}
           </Text>
           <Text style={styles.message}>
-            We couldn’t initialize local data. Try again.
+            {t.database.unavailableDescription}
           </Text>
           <Pressable
             accessibilityRole="button"
             onPress={retryInitialization}
             style={styles.retryButton}
           >
-            <Text style={styles.retryLabel}>Try again</Text>
+            <Text style={styles.retryLabel}>{t.common.tryAgain}</Text>
           </Pressable>
         </View>
       ) : null}

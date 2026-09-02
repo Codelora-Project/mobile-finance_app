@@ -204,7 +204,15 @@ export function OnboardingScreen({ mode, onFinish }: OnboardingScreenProps) {
         </Animated.View>
       </ScrollView>
     ),
-    [colors, floatTranslateY, isDark, pageWidth, reduceMotion, reveal, t.onboarding],
+    [
+      colors,
+      floatTranslateY,
+      isDark,
+      pageWidth,
+      reduceMotion,
+      reveal,
+      t.onboarding,
+    ],
   );
 
   const finalLabel = mode === 'replay' ? t.onboarding.done : t.onboarding.start;
@@ -335,8 +343,12 @@ function RecordPage({
   reduceMotion,
   t,
 }: PageProps) {
-  const [amountAnim] = useState(() => new Animated.Value(reduceMotion ? 1 : 0.7));
-  const [categoryAnim] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
+  const [amountAnim] = useState(
+    () => new Animated.Value(reduceMotion ? 1 : 0.7),
+  );
+  const [categoryAnim] = useState(
+    () => new Animated.Value(reduceMotion ? 1 : 0),
+  );
   const [walletAnim] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
   const [badgeAnim] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
 
@@ -479,9 +491,7 @@ function RecordPage({
           <DemoField
             colors={colors}
             icon="cash"
-            iconBackground={
-              isDark ? 'rgba(16, 185, 129, 0.16)' : '#DCFCE7'
-            }
+            iconBackground={isDark ? 'rgba(16, 185, 129, 0.16)' : '#DCFCE7'}
             iconColor="#10B981"
             label={t.demoWalletLabel}
             value={t.demoWallet}
@@ -508,7 +518,9 @@ function ImpactPage({
   reduceMotion,
   t,
 }: PageProps) {
-  const [progressAnim] = useState(() => new Animated.Value(reduceMotion ? 0.65 : 0));
+  const [progressAnim] = useState(
+    () => new Animated.Value(reduceMotion ? 0.65 : 0),
+  );
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -569,9 +581,7 @@ function ImpactPage({
         {/* Animated Budget Bar */}
         <View style={styles.budgetTrackWrap}>
           <View style={styles.budgetMetaRow}>
-            <Text
-              style={[styles.budgetLabel, { color: colors.textSecondary }]}
-            >
+            <Text style={[styles.budgetLabel, { color: colors.textSecondary }]}>
               Anggaran Bulanan
             </Text>
             <Text style={[styles.budgetValue, { color: colors.positive }]}>
@@ -640,7 +650,7 @@ function ImpactPage({
 }
 
 // ==========================================
-// 3. SLIDE 3: WALLETS (Multi-Rekening & 100% Privat)
+// 3. SLIDE 3: WALLETS
 // ==========================================
 function WalletsPage({
   colors,
@@ -690,7 +700,7 @@ function WalletsPage({
         <View style={styles.demoHeader}>
           <View>
             <Text style={[styles.demoTitle, { color: colors.textPrimary }]}>
-              {t.demoWalletsTotal || 'Total Kekayaan Bersih'}
+              {t.demoWalletsTotal}
             </Text>
             <Text style={[styles.impactAmount, { color: colors.textPrimary }]}>
               Rp 10.575.000
@@ -741,7 +751,7 @@ function WalletsPage({
             iconColor="#0066AE"
             isDark={isDark}
             name="Bank BCA"
-            subtitle="Rekening Operasional"
+            subtitle={t.demoOperationalAccount}
           />
         </Animated.View>
 
@@ -766,7 +776,7 @@ function WalletsPage({
             iconColor="#00AED6"
             isDark={isDark}
             name="GoPay"
-            subtitle="Dompet Digital"
+            subtitle={t.demoDigitalWallet}
           />
         </Animated.View>
 
@@ -790,19 +800,16 @@ function WalletsPage({
             icon="cash"
             iconColor="#10B981"
             isDark={isDark}
-            name="Dompet Tunai"
-            subtitle="Uang Fisik"
+            name={t.demoWallet}
+            subtitle={t.demoCashWallet}
           />
         </Animated.View>
       </Animated.View>
 
       <PageCopy
         colors={colors}
-        description={
-          t.walletsDescription ||
-          'Kelola uang tunai, bank, dan dompet digital dalam satu tempat. Aman tersimpan di perangkat Anda.'
-        }
-        title={t.walletsTitle || 'Multi-Rekening & 100% Privat'}
+        description={t.walletsDescription}
+        title={t.walletsTitle}
       />
     </>
   );
@@ -863,9 +870,7 @@ function DemoWalletItem({
         style={[
           styles.fieldIconBox,
           {
-            backgroundColor: isDark
-              ? `${iconColor}22`
-              : `${iconColor}14`,
+            backgroundColor: isDark ? `${iconColor}22` : `${iconColor}14`,
             borderColor: isDark ? `${iconColor}44` : `${iconColor}28`,
             borderWidth: 1,
           },

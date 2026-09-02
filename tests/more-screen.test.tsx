@@ -35,7 +35,7 @@ describe('more screen', () => {
 
     await fireEvent.press(
       screen.getByRole('button', {
-        name: /Savings Goals, Track savings goals and progress/,
+        name: /Savings goals, Track targets and savings progress/,
       }),
     );
     expect(mockRouter.push).toHaveBeenCalledWith('/goals');

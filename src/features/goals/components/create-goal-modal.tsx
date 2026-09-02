@@ -14,7 +14,6 @@ import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
 import { GOAL_ICONS } from '@/features/goals/goal-icons';
 import { useCurrency } from '@/lib/currency/currency-context';
-import { useLanguage } from '@/lib/i18n/language-context';
 import type { TranslationSchema } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -73,12 +72,8 @@ export const CreateGoalModal = memo(function CreateGoalModal({
 }: CreateGoalModalProps) {
   const { colors } = useTheme();
   const { currencyCode, currencySymbol } = useCurrency();
-  const { language } = useLanguage();
   const amountPlaceholder = currencyCode === 'IDR' ? '5000000' : '50000.00';
-  const namePlaceholder =
-    language === 'id'
-      ? 'misal: Beli Laptop Baru, Liburan Bali'
-      : 'e.g. New Laptop, Emergency Fund';
+  const namePlaceholder = t.goals.namePlaceholder;
 
   return (
     <Modal
@@ -190,7 +185,7 @@ export const CreateGoalModal = memo(function CreateGoalModal({
           {/* Icon Picker */}
           <View style={styles.formFieldGroup}>
             <Text style={[styles.fieldLabel, { color: colors.textPrimary }]}>
-              {language === 'id' ? 'Pilih Ikon' : 'Choose Icon'}
+              {t.goals.chooseIcon}
             </Text>
             <View style={styles.iconsGrid}>
               {ICON_KEYS.map((key) => {
@@ -198,7 +193,10 @@ export const CreateGoalModal = memo(function CreateGoalModal({
                 const iconName = GOAL_ICONS[key] || 'target';
                 return (
                   <Pressable
-                    accessibilityLabel={`${language === 'id' ? 'Ikon' : 'Icon'} ${key}`}
+                    accessibilityLabel={t.goals.iconAccessibility.replace(
+                      '{icon}',
+                      key,
+                    )}
                     accessibilityRole="button"
                     key={key}
                     onPress={() => onChangeSelectedIcon(key)}
@@ -226,14 +224,17 @@ export const CreateGoalModal = memo(function CreateGoalModal({
           {/* Color Picker */}
           <View style={styles.formFieldGroup}>
             <Text style={[styles.fieldLabel, { color: colors.textPrimary }]}>
-              {language === 'id' ? 'Pilih Warna Tema' : 'Choose Theme Color'}
+              {t.goals.chooseThemeColor}
             </Text>
             <View style={styles.colorsRow}>
               {COLOR_OPTIONS.map((c) => {
                 const isSelected = selectedColor === c;
                 return (
                   <Pressable
-                    accessibilityLabel={`${language === 'id' ? 'Warna' : 'Color'} ${c}`}
+                    accessibilityLabel={t.goals.colorAccessibility.replace(
+                      '{color}',
+                      c,
+                    )}
                     accessibilityRole="button"
                     key={c}
                     onPress={() => onChangeSelectedColor(c)}
@@ -259,15 +260,7 @@ export const CreateGoalModal = memo(function CreateGoalModal({
           <View style={styles.modalSubmitWrap}>
             <AppButton
               disabled={saving || !name.trim() || !targetAmount}
-              label={
-                saving
-                  ? language === 'id'
-                    ? 'Menyimpan…'
-                    : 'Saving…'
-                  : language === 'id'
-                    ? 'Simpan Target Tabungan'
-                    : 'Save Savings Goal'
-              }
+              label={saving ? t.goals.saving : t.goals.saveGoal}
               loading={saving}
               onPress={onSubmit}
               variant="primary"

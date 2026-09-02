@@ -3,6 +3,7 @@ import React, { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { GoalTransaction } from '@/features/goals/goals-repository';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -34,6 +35,7 @@ export const GoalDetailTransactionRow = memo(function GoalDetailTransactionRow({
   language,
 }: GoalDetailTransactionRowProps) {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
 
   const isDeposit = item.type === 'deposit';
 
@@ -77,12 +79,8 @@ export const GoalDetailTransactionRow = memo(function GoalDetailTransactionRow({
         >
           {item.note ||
             (isDeposit
-              ? language === 'id'
-                ? 'Setoran Tabungan'
-                : 'Deposit'
-              : language === 'id'
-                ? 'Penarikan Dana'
-                : 'Withdrawal')}
+              ? t.goals.depositDefaultNote
+              : t.goals.withdrawDefaultNote)}
         </Text>
         <Text style={[styles.txDate, { color: colors.textSecondary }]}>
           {formatTxDate(item.createdAt, language)}

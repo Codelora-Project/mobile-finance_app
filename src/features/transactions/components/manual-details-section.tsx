@@ -56,7 +56,7 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
   time,
 }: ManualDetailsSectionProps) {
   const { colors, isDark } = useTheme();
-  const { language } = useLanguage();
+  const { t } = useLanguage();
 
   return (
     <View style={styles.sectionContainer}>
@@ -76,17 +76,9 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
             size={20}
           />
           <TextInput
-            accessibilityLabel={
-              language === 'id'
-                ? 'Nama toko atau pihak terkait'
-                : 'Merchant or counterparty'
-            }
+            accessibilityLabel={t.transactions.counterpartyAccessibility}
             onChangeText={onChangeCounterparty}
-            placeholder={
-              language === 'id'
-                ? 'Nama toko / catatan (opsional)'
-                : 'Merchant / note (optional)'
-            }
+            placeholder={t.transactions.counterpartyPlaceholder}
             placeholderTextColor={colors.textMuted}
             style={[styles.compactInput, { color: colors.textPrimary }]}
             value={counterparty}
@@ -95,9 +87,7 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
 
         {isExpense ? (
           <Pressable
-            accessibilityLabel={
-              language === 'id' ? 'Tambah struk' : 'Add receipt'
-            }
+            accessibilityLabel={t.transactions.addReceipt}
             accessibilityRole="button"
             onPress={onOpenReceiptMenu}
             style={[
@@ -130,11 +120,7 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
                 receipt ? styles.receiptActionChipTextActive : null,
               ]}
             >
-              {receipt
-                ? receipt.displayName
-                : language === 'id'
-                  ? '+ Foto'
-                  : '+ Photo'}
+              {receipt ? receipt.displayName : t.transactions.addPhoto}
             </Text>
           </Pressable>
         ) : null}
@@ -142,9 +128,9 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
 
       {claimMembership ? (
         <Text style={styles.claimMembershipNotice}>
-          {language === 'id'
-            ? `Terikat pada Klaim #${claimMembership.claimId} (${claimMembership.claimStatus})`
-            : `Included in Claim #${claimMembership.claimId} (${claimMembership.claimStatus})`}
+          {t.transactions.claimMembership
+            .replace('{id}', String(claimMembership.claimId))
+            .replace('{status}', claimMembership.claimStatus)}
         </Text>
       ) : null}
 
@@ -157,12 +143,8 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
       >
         <Text style={[styles.advancedToggleText, { color: colors.primary }]}>
           {showDetailSection
-            ? language === 'id'
-              ? '▲ Sembunyikan Opsi Lanjutan'
-              : '▲ Hide Details'
-            : language === 'id'
-              ? '▼ Tanggal, Catatan & Klaim'
-              : '▼ Date, Note & Claim Details'}
+            ? t.transactions.hideAdvancedOptions
+            : t.transactions.showAdvancedOptions}
         </Text>
       </Pressable>
 
@@ -179,10 +161,8 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
           <View style={styles.dateRow}>
             <View style={styles.dateField}>
               <AppInput
-                accessibilityLabel={
-                  language === 'id' ? 'Tanggal transaksi' : 'Transaction date'
-                }
-                label={language === 'id' ? 'Tanggal' : 'Date'}
+                accessibilityLabel={t.transactions.transactionDate}
+                label={t.transactions.dateLabel}
                 onChangeText={onChangeDate}
                 placeholder="YYYY-MM-DD"
                 value={date}
@@ -190,10 +170,8 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
             </View>
             <View style={styles.timeField}>
               <AppInput
-                accessibilityLabel={
-                  language === 'id' ? 'Waktu transaksi' : 'Transaction time'
-                }
-                label={language === 'id' ? 'Waktu' : 'Time'}
+                accessibilityLabel={t.transactions.transactionTime}
+                label={t.transactions.timeLabel}
                 onChangeText={onChangeTime}
                 placeholder="HH:mm"
                 value={time}
@@ -215,9 +193,7 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
                     { color: colors.textPrimary },
                   ]}
                 >
-                  {language === 'id'
-                    ? 'Dapat Diklaim (Reimburse)'
-                    : 'Reimbursable Expense'}
+                  {t.transactions.claimableLabel}
                 </Text>
                 <Text
                   style={[
@@ -225,15 +201,11 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
                     { color: colors.textSecondary },
                   ]}
                 >
-                  {language === 'id'
-                    ? 'Tandai untuk klaim kantor / dinas'
-                    : 'Mark to claim reimbursement'}
+                  {t.transactions.claimableDescription}
                 </Text>
               </View>
               <Switch
-                accessibilityLabel={
-                  language === 'id' ? 'Dapat diklaim' : 'Reimbursable'
-                }
+                accessibilityLabel={t.transactions.claimableLabel}
                 onValueChange={onChangeReimbursable}
                 trackColor={{ false: '#CBD5E1', true: colors.primary }}
                 value={isReimbursable}
@@ -242,11 +214,11 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
           ) : null}
 
           <AppInput
-            label={language === 'id' ? 'Catatan Lengkap' : 'Full Note'}
+            label={t.transactions.fullNote}
             multiline
             numberOfLines={2}
             onChangeText={onChangeNote}
-            placeholder="Optional"
+            placeholder={t.common.optional}
             value={note}
           />
         </View>

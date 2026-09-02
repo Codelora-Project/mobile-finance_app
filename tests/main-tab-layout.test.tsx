@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { Dimensions } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import MainTabLayout from '@/app/(app)/(tabs)/_layout';
@@ -52,6 +53,10 @@ describe('main tab layout', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockPathname = '/';
+    Dimensions.set({
+      screen: { fontScale: 1, height: 812, scale: 1, width: 375 },
+      window: { fontScale: 1, height: 812, scale: 1, width: 375 },
+    });
   });
 
   it('renders the tab destinations and opens Add as an action in English', async () => {

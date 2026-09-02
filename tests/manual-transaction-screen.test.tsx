@@ -31,8 +31,7 @@ const mockListCategories = jest.fn<() => Promise<unknown[]>>();
 const mockListPaymentMethods = jest.fn<() => Promise<unknown[]>>();
 let mockPreventRemoveEnabled = false;
 let mockPreventRemoveCallback:
-  | ((event: { data: { action: { type: string } } }) => void)
-  | null = null;
+  ((event: { data: { action: { type: string } } }) => void) | null = null;
 
 const categories = [
   {
@@ -114,19 +113,16 @@ jest.mock('expo-router/react-navigation', () => ({
   },
 }));
 
-jest.mock(
-  '@/features/transactions/transaction-mutation-context',
-  () => ({
-    useTransactionMutations: () => ({
-      dismissNotice: jest.fn(),
-      notifyCreated: mockNotifyCreated,
-      notifyDeleted: mockNotifyDeleted,
-      notifyUpdated: mockNotifyUpdated,
-      revision: 0,
-      undo: jest.fn(),
-    }),
+jest.mock('@/features/transactions/transaction-mutation-context', () => ({
+  useTransactionMutations: () => ({
+    dismissNotice: jest.fn(),
+    notifyCreated: mockNotifyCreated,
+    notifyDeleted: mockNotifyDeleted,
+    notifyUpdated: mockNotifyUpdated,
+    revision: 0,
+    undo: jest.fn(),
   }),
-);
+}));
 
 jest.mock('expo-sqlite', () => ({
   useSQLiteContext: () => mockDatabase,
@@ -275,7 +271,9 @@ describe('manual transaction form', () => {
     ).toEqual({ selected: true });
 
     // Open advanced section
-    await fireEvent.press(screen.getByRole('button', { name: /Details/ }));
+    await fireEvent.press(
+      screen.getByRole('button', { name: /Date, note, and claim details/ }),
+    );
     expect(screen.getByLabelText('Reimbursable')).toBeOnTheScreen();
     expect(
       screen.getByRole('button', { name: 'Add receipt' }),
@@ -293,7 +291,7 @@ describe('manual transaction form', () => {
       ).not.toBeOnTheScreen();
     });
     expect(
-      screen.getByRole('button', { name: /Save Income/ }),
+      screen.getByRole('button', { name: /Save income/ }),
     ).toBeOnTheScreen();
   });
 
@@ -309,13 +307,13 @@ describe('manual transaction form', () => {
     const reset = screen.getByRole('button', { name: 'Reset amount' });
 
     await fireEvent.press(plus2k);
-    expect(screen.getByLabelText('Amount *').props.value).toBe('2000');
+    expect(screen.getByLabelText('Amount required').props.value).toBe('2000');
 
     await fireEvent.press(plus5k);
-    expect(screen.getByLabelText('Amount *').props.value).toBe('7000');
+    expect(screen.getByLabelText('Amount required').props.value).toBe('7000');
 
     await fireEvent.press(reset);
-    expect(screen.getByLabelText('Amount *').props.value).toBe('');
+    expect(screen.getByLabelText('Amount required').props.value).toBe('');
   });
 
   it('adds quick shortcuts without losing USD decimal precision', async () => {
@@ -327,10 +325,15 @@ describe('manual transaction form', () => {
       </CurrencyProvider>,
     );
 
-    await fireEvent.changeText(screen.getByLabelText('Amount *'), '1.50');
+    await fireEvent.changeText(
+      screen.getByLabelText('Amount required'),
+      '1.50',
+    );
     await fireEvent.press(screen.getByRole('button', { name: 'Add +$2k' }));
 
-    expect(screen.getByLabelText('Amount *').props.value).toBe('2001.50');
+    expect(screen.getByLabelText('Amount required').props.value).toBe(
+      '2001.50',
+    );
   });
 
   it('offers camera and gallery from one receipt action', async () => {
@@ -388,7 +391,7 @@ describe('manual transaction form', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Enter an amount.')).toBeOnTheScreen();
-      expect(screen.getByText('Choose a category.')).toBeOnTheScreen();
+      expect(screen.getByText('Choose an expense category.')).toBeOnTheScreen();
     });
     expect(mockCreateTransaction).not.toHaveBeenCalled();
   });
@@ -407,7 +410,10 @@ describe('manual transaction form', () => {
 
     await screen.findByText('Primary Bank');
     expect(mockPreventRemoveEnabled).toBe(false);
-    await fireEvent.changeText(screen.getByLabelText('Amount *'), '35000');
+    await fireEvent.changeText(
+      screen.getByLabelText('Amount required'),
+      '35000',
+    );
     await fireEvent.press(screen.getByText('Food & Drink'));
     await fireEvent.press(screen.getByTestId('save-transaction'));
 
@@ -435,9 +441,9 @@ describe('manual transaction form', () => {
     expect(
       await screen.findByText('Categories and wallets could not be loaded.'),
     ).toBeOnTheScreen();
-    expect(screen.getByTestId('save-transaction').props.accessibilityState).toEqual(
-      expect.objectContaining({ disabled: true }),
-    );
+    expect(
+      screen.getByTestId('save-transaction').props.accessibilityState,
+    ).toEqual(expect.objectContaining({ disabled: true }));
     await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('Food & Drink')).toBeOnTheScreen();
     warningSpy.mockRestore();
@@ -451,7 +457,10 @@ describe('manual transaction form', () => {
       </LanguageProvider>,
     );
     await screen.findByText('Food & Drink');
-    await fireEvent.changeText(screen.getByLabelText('Amount *'), '1000');
+    await fireEvent.changeText(
+      screen.getByLabelText('Amount required'),
+      '1000',
+    );
     await waitFor(() => expect(mockPreventRemoveEnabled).toBe(true));
 
     const action = { type: 'GO_BACK' };
@@ -484,8 +493,13 @@ describe('manual transaction form', () => {
       </LanguageProvider>,
     );
 
-    await fireEvent.changeText(screen.getByLabelText('Amount *'), '35000');
-    await fireEvent.press(screen.getByRole('button', { name: 'Category *' }));
+    await fireEvent.changeText(
+      screen.getByLabelText('Amount required'),
+      '35000',
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Select category' }),
+    );
     const selectFood = await screen.findByRole('button', {
       name: 'Select Food',
     });
@@ -517,7 +531,10 @@ describe('manual transaction form', () => {
       </LanguageProvider>,
     );
 
-    await fireEvent.changeText(screen.getByLabelText('Amount *'), '35000');
+    await fireEvent.changeText(
+      screen.getByLabelText('Amount required'),
+      '35000',
+    );
     await fireEvent.press(screen.getByText('Food & Drink'));
     await fireEvent.press(screen.getByTestId('save-transaction'));
 
@@ -535,7 +552,10 @@ describe('manual transaction form', () => {
       </LanguageProvider>,
     );
 
-    await fireEvent.changeText(screen.getByLabelText('Amount *'), '1000');
+    await fireEvent.changeText(
+      screen.getByLabelText('Amount required'),
+      '1000',
+    );
     await fireEvent.press(screen.getByLabelText('Close form'));
 
     await waitFor(() => expect(mockRouter.back).toHaveBeenCalled());

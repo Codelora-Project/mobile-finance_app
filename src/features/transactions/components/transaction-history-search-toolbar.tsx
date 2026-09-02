@@ -22,7 +22,6 @@ export type TransactionHistorySearchToolbarProps = {
 export const TransactionHistorySearchToolbar = memo(
   function TransactionHistorySearchToolbar({
     activeFiltersCount,
-    language,
     onClearSearch,
     onOpenFilter,
     onSearchChange,
@@ -49,9 +48,7 @@ export const TransactionHistorySearchToolbar = memo(
             size={20}
           />
           <TextInput
-            accessibilityLabel={
-              language === 'id' ? 'Cari transaksi' : 'Search transactions'
-            }
+            accessibilityLabel={t.transactions.searchAccessibility}
             onChangeText={onSearchChange}
             placeholder={t.transactions.searchPlaceholder}
             placeholderTextColor={colors.textMuted}
@@ -60,9 +57,7 @@ export const TransactionHistorySearchToolbar = memo(
           />
           {searchQuery ? (
             <Pressable
-              accessibilityLabel={
-                language === 'id' ? 'Hapus pencarian' : 'Clear search'
-              }
+              accessibilityLabel={t.transactions.clearSearch}
               accessibilityRole="button"
               hitSlop={8}
               onPress={onClearSearch}
@@ -78,12 +73,11 @@ export const TransactionHistorySearchToolbar = memo(
         </View>
 
         <Pressable
-          accessibilityHint={
-            language === 'id'
-              ? `${activeFiltersCount} filter aktif`
-              : `${activeFiltersCount} active filters`
-          }
-          accessibilityLabel="Filter"
+          accessibilityHint={t.transactions.activeFiltersHint.replace(
+            '{count}',
+            String(activeFiltersCount),
+          )}
+          accessibilityLabel={t.transactions.filterAccessibility}
           accessibilityRole="button"
           accessibilityState={{ selected: activeFiltersCount > 0 }}
           onPress={onOpenFilter}
@@ -91,9 +85,7 @@ export const TransactionHistorySearchToolbar = memo(
             styles.filterButton,
             {
               backgroundColor:
-                activeFiltersCount > 0
-                  ? colors.primary
-                  : colors.surface,
+                activeFiltersCount > 0 ? colors.primary : colors.surface,
               borderColor:
                 activeFiltersCount > 0
                   ? colors.primary
@@ -123,7 +115,7 @@ export const TransactionHistorySearchToolbar = memo(
               },
             ]}
           >
-            {language === 'id' ? 'Filter' : 'Filter'}
+            {t.transactions.filters}
             {activeFiltersCount > 0 ? ` · ${activeFiltersCount}` : ''}
           </Text>
         </Pressable>

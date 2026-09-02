@@ -2,6 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -25,6 +26,7 @@ export const TransactionMonthSelector = memo(function TransactionMonthSelector({
   year,
 }: TransactionMonthSelectorProps) {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
 
   const dateObj = new Date(year, month - 1, 1);
   const monthLabel = new Intl.DateTimeFormat(
@@ -64,9 +66,7 @@ export const TransactionMonthSelector = memo(function TransactionMonthSelector({
       <View style={styles.navRow}>
         {/* Previous Month Button */}
         <Pressable
-          accessibilityLabel={
-            language === 'id' ? 'Bulan Sebelumnya' : 'Previous Month'
-          }
+          accessibilityLabel={t.common.previousMonth}
           accessibilityRole="button"
           hitSlop={12}
           onPress={handlePrevMonth}
@@ -84,13 +84,7 @@ export const TransactionMonthSelector = memo(function TransactionMonthSelector({
 
         {/* Month / Period Label & Toggle */}
         <Pressable
-          accessibilityLabel={
-            isAllTime
-              ? language === 'id'
-                ? 'Semua Waktu'
-                : 'All Time'
-              : monthLabel
-          }
+          accessibilityLabel={isAllTime ? t.transactions.allTime : monthLabel}
           accessibilityRole="button"
           onPress={onToggleAllTime}
           style={styles.labelWrapper}
@@ -99,11 +93,7 @@ export const TransactionMonthSelector = memo(function TransactionMonthSelector({
             numberOfLines={1}
             style={[styles.monthText, { color: colors.textPrimary }]}
           >
-            {isAllTime
-              ? language === 'id'
-                ? 'Semua Waktu'
-                : 'All Time'
-              : monthLabel}
+            {isAllTime ? t.transactions.allTime : monthLabel}
           </Text>
           <View
             style={[
@@ -118,22 +108,14 @@ export const TransactionMonthSelector = memo(function TransactionMonthSelector({
             <Text
               style={[styles.subToggleText, { color: colors.textSecondary }]}
             >
-              {isAllTime
-                ? language === 'id'
-                  ? 'Pilih per bulan'
-                  : 'View by month'
-                : language === 'id'
-                  ? 'Semua waktu'
-                  : 'All time'}
+              {isAllTime ? t.transactions.viewByMonth : t.transactions.allTime}
             </Text>
           </View>
         </Pressable>
 
         {/* Next Month Button */}
         <Pressable
-          accessibilityLabel={
-            language === 'id' ? 'Bulan Berikutnya' : 'Next Month'
-          }
+          accessibilityLabel={t.common.nextMonth}
           accessibilityRole="button"
           hitSlop={12}
           onPress={handleNextMonth}

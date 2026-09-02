@@ -8,6 +8,15 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Alert } from 'react-native';
 
 import { ClaimFormScreen } from '@/features/claims/claim-form-screen';
+import { LanguageProvider } from '@/lib/i18n/language-context';
+
+function renderScreen() {
+  return render(
+    <LanguageProvider initialLanguage="en">
+      <ClaimFormScreen />
+    </LanguageProvider>,
+  );
+}
 
 const mockRouter = { back: jest.fn(), dismissTo: jest.fn() };
 const mockDatabase = {};
@@ -65,24 +74,24 @@ describe('claim form screen', () => {
   });
 
   it('reviews and saves a same-currency Draft with missing receipt allowed', async () => {
-    await render(<ClaimFormScreen />);
-    await screen.findByRole('header', { name: 'New Claim' });
+    await renderScreen();
+    await screen.findByRole('header', { name: 'New claim' });
 
     await fireEvent.changeText(screen.getByLabelText('Title *'), 'August Trip');
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Select Expenses' }),
+      screen.getByRole('button', { name: 'Select expenses' }),
     );
     await fireEvent.press(screen.getByRole('checkbox', { name: 'Taxi, IDR' }));
     await fireEvent.press(screen.getByRole('checkbox', { name: 'Train, IDR' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Review Claim' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Review claim' }));
 
     expect(
-      screen.getByRole('header', { name: 'Claim Review' }),
+      screen.getByRole('header', { name: 'Claim review' }),
     ).toBeOnTheScreen();
     expect(
       screen.getByText('1 receipt attached · 1 missing'),
     ).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole('button', { name: 'Save Draft' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Save draft' }));
 
     await waitFor(() =>
       expect(mockCreateClaim).toHaveBeenCalledWith(
@@ -101,11 +110,11 @@ describe('claim form screen', () => {
   });
 
   it('rejects a different currency during selection', async () => {
-    await render(<ClaimFormScreen />);
-    await screen.findByRole('header', { name: 'New Claim' });
+    await renderScreen();
+    await screen.findByRole('header', { name: 'New claim' });
     await fireEvent.changeText(screen.getByLabelText('Title *'), 'Mixed');
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Select Expenses' }),
+      screen.getByRole('button', { name: 'Select expenses' }),
     );
     await fireEvent.press(screen.getByRole('checkbox', { name: 'Taxi, IDR' }));
     await fireEvent.press(
@@ -123,11 +132,11 @@ describe('claim form screen', () => {
       { ...eligible[0], amountMinor: Number.MAX_SAFE_INTEGER },
       { ...eligible[1], amountMinor: 1 },
     ]);
-    await render(<ClaimFormScreen />);
-    await screen.findByRole('header', { name: 'New Claim' });
+    await renderScreen();
+    await screen.findByRole('header', { name: 'New claim' });
     await fireEvent.changeText(screen.getByLabelText('Title *'), 'Large');
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Select Expenses' }),
+      screen.getByRole('button', { name: 'Select expenses' }),
     );
     await fireEvent.press(screen.getByRole('checkbox', { name: 'Taxi, IDR' }));
     await fireEvent.press(screen.getByRole('checkbox', { name: 'Train, IDR' }));
@@ -140,8 +149,8 @@ describe('claim form screen', () => {
 
   it('protects unsaved claim details when leaving from the first step', async () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-    await render(<ClaimFormScreen />);
-    await screen.findByRole('header', { name: 'New Claim' });
+    await renderScreen();
+    await screen.findByRole('header', { name: 'New claim' });
 
     await fireEvent.changeText(screen.getByLabelText('Title *'), 'Unsaved');
     await fireEvent.press(screen.getByRole('button', { name: 'Back' }));

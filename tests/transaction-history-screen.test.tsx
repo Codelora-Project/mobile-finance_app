@@ -216,7 +216,7 @@ describe('transaction history screen', () => {
     expect(
       await screen.findByRole('button', { name: /Cash → Mandiri/ }),
     ).toBeOnTheScreen();
-    expect(screen.getByText(/Transfer Antar Dompet/)).toBeOnTheScreen();
+    expect(screen.getByText(/Transfer antar dompet/)).toBeOnTheScreen();
     expect(
       screen.getByText(`⇄ ${formatMoney(520_000, 'IDR')}`),
     ).toBeOnTheScreen();
@@ -239,7 +239,9 @@ describe('transaction history screen', () => {
     await render(<TransactionHistoryScreen />);
     await screen.findByRole('button', { name: /Coffee Shop/ });
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Filter' }));
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Filter transaksi' }),
+    );
     await fireEvent.press(
       screen.getByRole('button', { name: 'Apply test filter' }),
     );
@@ -344,7 +346,7 @@ describe('transaction history screen', () => {
       );
       expect(mockShareTransactionCsv).toHaveBeenCalledWith(
         'file:///test.csv',
-        'Ekspor Riwayat Transaksi',
+        'Ekspor riwayat transaksi',
       );
     });
   });

@@ -18,6 +18,10 @@ export type UserFacingError = Readonly<{
 
 export type CodedError = Error & { code: AppErrorCode };
 
+type LocalizedErrorDefinitions = Readonly<
+  Record<AppErrorCode, Readonly<{ message: string; title: string }>>
+>;
+
 const errorDefinitions: Record<AppErrorCode, Omit<UserFacingError, 'code'>> = {
   VALIDATION_FAILED: {
     title: 'Check your information',
@@ -80,7 +84,11 @@ function getErrorCode(error: unknown) {
 export function mapError(
   error: unknown,
   fallbackCode: AppErrorCode,
+  localizedDefinitions?: LocalizedErrorDefinitions,
 ): UserFacingError {
   const code = getErrorCode(error) ?? fallbackCode;
-  return { code, ...errorDefinitions[code] };
+  return {
+    code,
+    ...(localizedDefinitions?.[code] ?? errorDefinitions[code]),
+  };
 }

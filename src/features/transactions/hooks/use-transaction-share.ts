@@ -4,6 +4,7 @@ import { Alert, Share } from 'react-native';
 import { useReceiptStorage } from '@/features/receipts/receipt-storage-context';
 import type { Transaction } from '@/features/transactions/transaction-repository';
 import { getTimezoneOffsetMinutes, toLocalDateTimeInput } from '@/lib/dates';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 
 export function useTransactionShare({
@@ -14,6 +15,7 @@ export function useTransactionShare({
   transaction: Transaction | null;
 }) {
   const receiptStorage = useReceiptStorage();
+  const { t } = useLanguage();
 
   async function shareTextSlip() {
     if (!transaction) return;
@@ -35,15 +37,13 @@ export function useTransactionShare({
 
     const isExpense = transaction.type === 'expense';
     const isTransfer = transaction.type === 'transfer';
-    const typeLabel = isTransfer
-      ? 'TRANSFER'
-      : isExpense
-        ? language === 'id'
-          ? 'PENGELUARAN'
-          : 'EXPENSE'
-        : language === 'id'
-          ? 'PEMASUKAN'
-          : 'INCOME';
+    const typeLabel = (
+      isTransfer
+        ? t.transactions.transfer
+        : isExpense
+          ? t.transactions.expense
+          : t.transactions.income
+    ).toLocaleUpperCase(language === 'id' ? 'id-ID' : 'en-US');
 
     const amountFormatted = formatMoney(
       transaction.amountMinor,
@@ -88,13 +88,10 @@ export function useTransactionShare({
     await Share.share(
       {
         message,
-        title: language === 'id' ? 'Bukti Transaksi' : 'Transaction Receipt',
+        title: t.transactions.receiptShareTitle,
       },
       {
-        dialogTitle:
-          language === 'id'
-            ? 'Bagikan Bukti Transaksi'
-            : 'Share Transaction Receipt',
+        dialogTitle: t.transactions.shareTransactionReceipt,
       },
     );
   }
@@ -121,10 +118,7 @@ export function useTransactionShare({
         try {
           if (await Sharing.isAvailableAsync()) {
             await Sharing.shareAsync(imageUri, {
-              dialogTitle:
-                language === 'id'
-                  ? 'Bagikan Foto Struk'
-                  : 'Share Receipt Image',
+              dialogTitle: t.transactions.shareReceiptImage,
               mimeType: transaction.receipt?.mimeType || 'image/jpeg',
             });
             return;
@@ -140,10 +134,8 @@ export function useTransactionShare({
         console.warn('Share failed:', shareErr);
       }
       Alert.alert(
-        language === 'id' ? 'Gagal Membagikan' : 'Share Failed',
-        language === 'id'
-          ? 'Tidak dapat membuka menu berbagi pada perangkat ini.'
-          : 'Could not open share menu on this device.',
+        t.transactions.shareFailedTitle,
+        t.transactions.shareFailedDescription,
       );
     }
   }

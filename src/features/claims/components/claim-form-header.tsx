@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '@/components/ui/app-button';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { typography } from '@/theme/typography';
 
 export type ClaimFormHeaderProps = {
@@ -15,17 +16,21 @@ export const ClaimFormHeader = memo(function ClaimFormHeader({
   onBack,
   step,
 }: ClaimFormHeaderProps) {
+  const { t } = useLanguage();
+
   return (
     <View style={styles.header}>
       <AppButton
-        label={step === 1 ? 'Back' : 'Previous'}
+        label={step === 1 ? t.common.back : t.claims.previous}
         onPress={onBack}
         variant="ghost"
       />
       <Text accessibilityRole="header" style={styles.title}>
-        {claimId === undefined ? 'New Claim' : 'Edit Claim'}
+        {claimId === undefined ? t.claims.newClaim : t.claims.editClaimTitle}
       </Text>
-      <Text style={styles.step}>Step {step} of 3</Text>
+      <Text style={styles.step}>
+        {t.claims.stepProgress.replace('{step}', String(step))}
+      </Text>
     </View>
   );
 });

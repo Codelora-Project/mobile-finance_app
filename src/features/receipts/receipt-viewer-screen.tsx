@@ -18,6 +18,7 @@ import {
   type TransactionReceipt,
 } from '@/features/transactions/transaction-repository';
 import { mapError } from '@/lib/errors';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { colors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -33,6 +34,7 @@ export function ReceiptViewerScreen({
   const database = useSQLiteContext();
   const receiptStorage = useReceiptStorage();
   const router = useRouter();
+  const { t } = useLanguage();
   const [receipt, setReceipt] = useState<ViewableReceipt | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,12 +49,12 @@ export function ReceiptViewerScreen({
       if (requestId !== loadRequestRef.current) return;
       if (!transaction?.receipt) {
         setReceipt(null);
-        setError('This transaction has no receipt.');
+        setError(t.receipts.missingForTransaction);
         return;
       }
       if (!receiptStorage.exists(transaction.receipt.storageKey)) {
         setReceipt(null);
-        setError('The stored receipt image is unavailable.');
+        setError(t.receipts.missingStoredImage);
         return;
       }
       setReceipt({
@@ -62,14 +64,16 @@ export function ReceiptViewerScreen({
     } catch (loadError) {
       if (requestId === loadRequestRef.current) {
         setReceipt(null);
-        setError(mapError(loadError, 'FILE_OPERATION_FAILED').message);
+        setError(
+          mapError(loadError, 'FILE_OPERATION_FAILED', t.appErrors).message,
+        );
       }
     } finally {
       if (requestId === loadRequestRef.current) {
         setLoading(false);
       }
     }
-  }, [database, receiptStorage, transactionId]);
+  }, [database, receiptStorage, t, transactionId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -83,9 +87,13 @@ export function ReceiptViewerScreen({
   return (
     <Screen>
       <View style={styles.header}>
-        <AppButton label="Back" onPress={() => router.back()} variant="ghost" />
+        <AppButton
+          label={t.common.back}
+          onPress={() => router.back()}
+          variant="ghost"
+        />
         <Text accessibilityRole="header" style={styles.title}>
-          Receipt
+          {t.receipts.title}
         </Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -93,19 +101,19 @@ export function ReceiptViewerScreen({
       {loading ? (
         <View style={styles.state}>
           <ActivityIndicator color={colors.primary} size="large" />
-          <Text style={styles.stateText}>Loading receipt…</Text>
+          <Text style={styles.stateText}>{t.receipts.loading}</Text>
         </View>
       ) : receipt ? (
         <ScrollView contentContainerStyle={styles.content}>
           <Image
-            accessibilityLabel="Stored receipt image"
+            accessibilityLabel={t.receipts.imageLabel}
             resizeMode="contain"
             source={{ uri: receipt.uri }}
             style={styles.image}
           />
           <Text style={styles.metadata}>{receipt.mimeType}</Text>
           <AppButton
-            label="Replace or remove receipt"
+            label={t.receipts.replaceOrRemove}
             onPress={() => router.push(`/transactions/${transactionId}/edit`)}
             variant="secondary"
           />
@@ -113,15 +121,15 @@ export function ReceiptViewerScreen({
       ) : (
         <View style={styles.state}>
           <Text accessibilityLiveRegion="assertive" style={styles.stateText}>
-            {error ?? 'Receipt unavailable.'}
+            {error ?? t.receipts.unavailable}
           </Text>
           <AppButton
-            label="Edit transaction"
+            label={t.transactions.editTransaction}
             onPress={() => router.push(`/transactions/${transactionId}/edit`)}
           />
-          <AppButton label="Try again" onPress={() => void load()} />
+          <AppButton label={t.common.tryAgain} onPress={() => void load()} />
           <AppButton
-            label="Back"
+            label={t.common.back}
             onPress={() => router.back()}
             variant="secondary"
           />

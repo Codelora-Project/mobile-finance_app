@@ -92,11 +92,11 @@ export function SettingsScreen() {
   const showAppearanceSaveError = useCallback(
     (caughtError: unknown) => {
       Alert.alert(
-        language === 'id' ? 'Pengaturan tidak tersimpan' : 'Setting not saved',
-        mapError(caughtError, 'DATABASE_WRITE_FAILED').message,
+        t.common.settingNotSaved,
+        mapError(caughtError, 'DATABASE_WRITE_FAILED', t.appErrors).message,
       );
     },
-    [language],
+    [t.appErrors, t.common.settingNotSaved],
   );
 
   const handleLanguageChange = useCallback(
@@ -161,7 +161,11 @@ export function SettingsScreen() {
       setShortcuts(nextOverview.quickShortcuts ?? DEFAULT_QUICK_SHORTCUTS);
     } catch (loadError) {
       if (requestId === loadRequestRef.current) {
-        const mappedError = mapError(loadError, 'DATABASE_WRITE_FAILED');
+        const mappedError = mapError(
+          loadError,
+          'DATABASE_WRITE_FAILED',
+          t.appErrors,
+        );
         setError(mappedError.message);
       }
     } finally {
@@ -169,7 +173,7 @@ export function SettingsScreen() {
         setLoading(false);
       }
     }
-  }, [database, receiptStorage]);
+  }, [database, receiptStorage, t.appErrors]);
 
   useFocusEffect(
     useCallback(() => {
@@ -191,13 +195,19 @@ export function SettingsScreen() {
     } catch (err) {
       if (__DEV__) console.warn('Could not reset shortcuts', err);
       Alert.alert(
-        language === 'id' ? 'Shortcut tidak tersimpan' : 'Shortcuts not saved',
-        mapError(err, 'DATABASE_WRITE_FAILED').message,
+        t.settings.shortcutsNotSaved,
+        mapError(err, 'DATABASE_WRITE_FAILED', t.appErrors).message,
       );
     } finally {
       shortcutMutationRef.current = false;
     }
-  }, [currencyCode, database, language, overview]);
+  }, [
+    currencyCode,
+    database,
+    overview,
+    t.appErrors,
+    t.settings.shortcutsNotSaved,
+  ]);
 
   const handleRemoveShortcut = useCallback(
     async (amount: number) => {
@@ -210,14 +220,14 @@ export function SettingsScreen() {
       } catch (err) {
         if (__DEV__) console.warn('Could not remove shortcut', err);
         Alert.alert(
-          language === 'id' ? 'Shortcut tidak tersimpan' : 'Shortcut not saved',
-          mapError(err, 'DATABASE_WRITE_FAILED').message,
+          t.settings.shortcutsNotSaved,
+          mapError(err, 'DATABASE_WRITE_FAILED', t.appErrors).message,
         );
       } finally {
         shortcutMutationRef.current = false;
       }
     },
-    [database, language, shortcuts],
+    [database, shortcuts, t.appErrors, t.settings.shortcutsNotSaved],
   );
 
   const handleAddShortcut = useCallback(async () => {
@@ -336,14 +346,10 @@ export function SettingsScreen() {
       const current = overview?.currencyCode ?? currencyCode;
       if (selected === current) return;
       Alert.alert(
-        language === 'id'
-          ? 'Ubah mata uang global?'
-          : 'Change global currency?',
-        language === 'id'
-          ? `Seluruh aplikasi akan menggunakan ${selected}. Angka nominal lama tetap sama tanpa konversi kurs; hanya kode, simbol, dan format mata uangnya yang berubah.`
-          : `The whole app will use ${selected}. Existing nominal amounts stay the same without exchange-rate conversion; only their currency code, symbol, and formatting change.`,
+        t.settings.currencyChangeTitle,
+        t.settings.currencyChangeDescription.replace('{currency}', selected),
         [
-          { style: 'cancel', text: language === 'id' ? 'Batal' : 'Cancel' },
+          { style: 'cancel', text: t.common.cancel },
           {
             onPress: () => {
               void (async () => {
@@ -366,20 +372,24 @@ export function SettingsScreen() {
                   );
                 } catch (currencyError) {
                   setError(
-                    isCodedError(currencyError)
-                      ? currencyError.message
-                      : mapError(currencyError, 'DATABASE_WRITE_FAILED')
-                          .message,
+                    isCodedError(currencyError) &&
+                      currencyError.code === 'VALIDATION_FAILED'
+                      ? t.settings.currencyPrecisionError
+                      : mapError(
+                          currencyError,
+                          'DATABASE_WRITE_FAILED',
+                          t.appErrors,
+                        ).message,
                   );
                 }
               })();
             },
-            text: language === 'id' ? 'Ubah mata uang' : 'Change currency',
+            text: t.settings.currencyChangeConfirm,
           },
         ],
       );
     },
-    [currencyCode, language, overview?.currencyCode, setCurrency],
+    [currencyCode, overview?.currencyCode, setCurrency, t],
   );
 
   const handleClearCache = useCallback(async () => {
@@ -431,9 +441,7 @@ export function SettingsScreen() {
         const msg =
           isCodedError(err) || err instanceof Error
             ? err.message
-            : language === 'id'
-              ? 'Gagal mengekspor data transaksi.'
-              : 'Failed to export transaction data.';
+            : t.settings.exportFailedMessage;
         Alert.alert(t.settings.quickExportTitle, msg);
       } finally {
         setExportingCsv(false);
@@ -465,24 +473,18 @@ export function SettingsScreen() {
   }, [executeExport, t.settings]);
 
   const handleLogout = useCallback(() => {
-    Alert.alert(
-      language === 'id' ? 'Keluar dari akun?' : 'Sign out?',
-      language === 'id'
-        ? 'Sesi login akan dihapus, tetapi seluruh data akun ini tetap tersimpan di perangkat.'
-        : 'Your login session will be removed, but this account data will remain on the device.',
-      [
-        {
-          style: 'cancel',
-          text: language === 'id' ? 'Batal' : 'Cancel',
-        },
-        {
-          onPress: () => void signOut(),
-          style: 'destructive',
-          text: language === 'id' ? 'Keluar' : 'Sign out',
-        },
-      ],
-    );
-  }, [language, signOut]);
+    Alert.alert(t.settings.signOutTitle, t.settings.signOutDescription, [
+      {
+        style: 'cancel',
+        text: t.common.cancel,
+      },
+      {
+        onPress: () => void signOut(),
+        style: 'destructive',
+        text: t.settings.signOut,
+      },
+    ]);
+  }, [signOut, t.common.cancel, t.settings]);
 
   const executeLegacyClaim = useCallback(async () => {
     if (claimingLegacyRef.current) return;
@@ -491,26 +493,22 @@ export function SettingsScreen() {
     try {
       await legacyData.claim();
       Alert.alert(
-        language === 'id' ? 'Data berhasil dihubungkan' : 'Data connected',
-        language === 'id'
-          ? 'Data perangkat lama kini menjadi milik akun Google ini.'
-          : 'The legacy device data now belongs to this Google account.',
-        [{ onPress: () => router.replace('/'), text: 'OK' }],
+        t.settings.legacyConnectedTitle,
+        t.settings.legacyConnectedDescription,
+        [{ onPress: () => router.replace('/'), text: t.common.okay }],
       );
     } catch (claimError) {
       Alert.alert(
-        language === 'id' ? 'Gagal menghubungkan data' : 'Connection failed',
+        t.settings.legacyConnectionFailed,
         claimError instanceof Error
           ? claimError.message
-          : language === 'id'
-            ? 'Data aktif dan arsip lama tidak dihapus.'
-            : 'Current data and the legacy archive were not deleted.',
+          : t.settings.legacyConnectionPreserved,
       );
     } finally {
       claimingLegacyRef.current = false;
       setClaimingLegacy(false);
     }
-  }, [language, legacyData, router]);
+  }, [legacyData, router, t.common.okay, t.settings]);
 
   const prepareLegacyClaim = useCallback(async () => {
     if (claimingLegacyRef.current) return;
@@ -520,20 +518,16 @@ export function SettingsScreen() {
       const backup = await exportBackupToJsonFile(database, receiptStorage);
       await shareFile(
         backup.uri,
-        language === 'id'
-          ? 'Simpan backup sebelum mengganti data'
-          : 'Save backup before replacing data',
+        t.settings.saveBackupBeforeReplace,
         'application/json',
         'public.json',
       );
     } catch (backupError) {
       Alert.alert(
-        language === 'id' ? 'Backup wajib disimpan' : 'Backup is required',
+        t.settings.backupRequiredTitle,
         backupError instanceof Error
           ? backupError.message
-          : language === 'id'
-            ? 'Data lama belum dihubungkan.'
-            : 'Legacy data was not connected.',
+          : t.settings.legacyNotConnected,
       );
       return;
     } finally {
@@ -542,38 +536,38 @@ export function SettingsScreen() {
     }
 
     Alert.alert(
-      language === 'id' ? 'Konfirmasi terakhir' : 'Final confirmation',
-      language === 'id'
-        ? 'Restore akan mengganti seluruh data akun aktif, bukan menggabungkannya. Lanjutkan?'
-        : 'Restore replaces all active-account data; it does not merge it. Continue?',
+      t.settings.finalConfirmation,
+      t.settings.replaceDataDescription,
       [
-        { style: 'cancel', text: language === 'id' ? 'Batal' : 'Cancel' },
+        { style: 'cancel', text: t.common.cancel },
         {
           onPress: () => void executeLegacyClaim(),
           style: 'destructive',
-          text: language === 'id' ? 'Ganti data' : 'Replace data',
+          text: t.settings.replaceData,
         },
       ],
     );
-  }, [database, executeLegacyClaim, language, receiptStorage]);
+  }, [
+    database,
+    executeLegacyClaim,
+    receiptStorage,
+    t.common.cancel,
+    t.settings,
+  ]);
 
   const handleLegacyClaim = useCallback(() => {
     Alert.alert(
-      language === 'id'
-        ? 'Hubungkan data perangkat lama?'
-        : 'Connect legacy device data?',
-      language === 'id'
-        ? 'Sebelum data akun diganti, aplikasi akan membuat backup JSON dan membuka menu berbagi agar Anda menyimpannya.'
-        : 'Before replacing account data, the app will create a JSON backup and open the share sheet so you can save it.',
+      t.settings.connectLegacyTitle,
+      t.settings.connectLegacyDescription,
       [
-        { style: 'cancel', text: language === 'id' ? 'Batal' : 'Cancel' },
+        { style: 'cancel', text: t.common.cancel },
         {
           onPress: () => void prepareLegacyClaim(),
-          text: language === 'id' ? 'Buat backup' : 'Create backup',
+          text: t.settings.createBackup,
         },
       ],
     );
-  }, [language, prepareLegacyClaim]);
+  }, [prepareLegacyClaim, t.common.cancel, t.settings]);
 
   return (
     <Screen>
@@ -687,15 +681,11 @@ export function SettingsScreen() {
                   { color: colors.textSecondary },
                 ]}
               >
-                {language === 'id' ? 'DATA & PRIVASI' : 'DATA & PRIVACY'}
+                {t.settings.dataPrivacy}
               </Text>
               <SettingsVaultBanner
                 description={t.settings.dataDesc}
-                title={
-                  language === 'id'
-                    ? 'Data tersimpan di perangkat'
-                    : 'Data stays on this device'
-                }
+                title={t.settings.localDataTitle}
               />
             </View>
 

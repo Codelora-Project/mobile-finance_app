@@ -146,8 +146,8 @@ describe('settings screen', () => {
     expect(
       await screen.findByRole('header', { name: 'Settings' }),
     ).toBeOnTheScreen();
-    expect(screen.getByText('Base Currency')).toBeOnTheScreen();
-    expect(screen.getByText('Storage & Cache')).toBeOnTheScreen();
+    expect(screen.getByText('Base currency')).toBeOnTheScreen();
+    expect(screen.getByText('Cache/PDF')).toBeOnTheScreen();
     expect(
       screen.getByRole('button', { name: 'Clear Cache' }),
     ).toBeOnTheScreen();
@@ -189,7 +189,7 @@ describe('settings screen', () => {
     expect(screen.getByText('Reset to IDR Recommended')).toBeOnTheScreen();
 
     // Remove one shortcut
-    const deleteBtn = screen.getByLabelText('Hapus shortcut 2000');
+    const deleteBtn = screen.getByLabelText('Remove quick amount 2000');
     await fireEvent.press(deleteBtn);
     expect(mockSetQuickShortcutsSetting).toHaveBeenCalled();
 
@@ -294,7 +294,7 @@ describe('settings screen', () => {
     expect(screen.getByText('Hapus Semua Data')).toBeOnTheScreen();
 
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Select English language' }),
+      screen.getByRole('button', { name: 'Pilih bahasa Inggris' }),
     );
     expect(screen.getByText('TRANSACTIONS & DATA')).toBeOnTheScreen();
     expect(screen.getByText('Categories')).toBeOnTheScreen();
@@ -365,13 +365,13 @@ describe('settings screen', () => {
     );
 
     // Look for Base Currency button & badge
-    const currencyBtn = await screen.findByLabelText('Pilih Mata Uang Utama');
+    const currencyBtn = await screen.findByLabelText('Select primary currency');
     expect(currencyBtn).toBeOnTheScreen();
     expect(within(currencyBtn).getByText('🇮🇩')).toBeOnTheScreen();
 
     // Open Currency Modal
     await fireEvent.press(currencyBtn);
-    expect(screen.getByText('Select Base Currency')).toBeOnTheScreen();
+    expect(screen.getByText('Select base currency')).toBeOnTheScreen();
 
     // Search for USD
     const searchInput = screen.getByPlaceholderText(

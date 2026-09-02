@@ -143,7 +143,7 @@ describe('goals screen', () => {
       '5000000',
     );
 
-    await fireEvent.press(screen.getByText('Simpan Target Tabungan'));
+    await fireEvent.press(screen.getByText('Simpan target tabungan'));
     await waitFor(() => expect(mockCreateSavingsGoal).toHaveBeenCalled());
   });
 
@@ -171,7 +171,7 @@ describe('goals screen', () => {
       '12.50',
     );
     await fireEvent.changeText(screen.getByPlaceholderText('0'), '1.25');
-    await fireEvent.press(screen.getByText('Save Savings Goal'));
+    await fireEvent.press(screen.getByText('Save savings goal'));
 
     await waitFor(() =>
       expect(mockCreateSavingsGoal).toHaveBeenCalledWith(

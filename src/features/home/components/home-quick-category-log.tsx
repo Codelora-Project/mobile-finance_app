@@ -1,6 +1,13 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { memo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
 import { getCategoryMeta } from '@/features/categories/category-meta';
 import type { Category } from '@/features/categories/category-repository';
@@ -24,6 +31,11 @@ export const HomeQuickCategoryLog = memo(function HomeQuickCategoryLog({
   t,
 }: HomeQuickCategoryLogProps) {
   const { colors, isDark } = useTheme();
+  const { fontScale } = useWindowDimensions();
+  const categoryItemStyle = {
+    minHeight: 92 + Math.max(0, fontScale - 1) * 52,
+    width: 80 + Math.max(0, fontScale - 1) * 32,
+  };
 
   return (
     <View
@@ -92,12 +104,13 @@ export const HomeQuickCategoryLog = memo(function HomeQuickCategoryLog({
           const meta = getCategoryMeta(cat.name, 'expense', isDark);
           return (
             <Pressable
-              accessibilityLabel={`Catat ${cat.name}`}
+              accessibilityLabel={`${t.tabs.add} ${cat.name}`}
               accessibilityRole="button"
               key={cat.id}
               onPress={() => onSelectCategory(cat)}
               style={({ pressed }) => [
                 styles.quickLogItem,
+                categoryItemStyle,
                 pressed && styles.pressed,
               ]}
             >
@@ -119,7 +132,7 @@ export const HomeQuickCategoryLog = memo(function HomeQuickCategoryLog({
                 />
               </View>
               <Text
-                numberOfLines={1}
+                numberOfLines={2}
                 style={[styles.quickLogLabel, { color: colors.textPrimary }]}
               >
                 {cat.name}
@@ -135,6 +148,7 @@ export const HomeQuickCategoryLog = memo(function HomeQuickCategoryLog({
           onPress={onOpenCustomize}
           style={({ pressed }) => [
             styles.quickLogItem,
+            categoryItemStyle,
             pressed && styles.pressed,
           ]}
         >
@@ -156,7 +170,7 @@ export const HomeQuickCategoryLog = memo(function HomeQuickCategoryLog({
             />
           </View>
           <Text
-            numberOfLines={1}
+            numberOfLines={2}
             style={[
               styles.quickLogLabel,
               { color: colors.primary, fontWeight: '700' },
@@ -177,7 +191,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: 'row',
     gap: 4,
-    minHeight: 34,
+    minHeight: 48,
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: 4,
   },
@@ -217,12 +231,14 @@ const styles = StyleSheet.create({
   quickLogItem: {
     alignItems: 'center',
     gap: 6,
-    width: 66,
+    minHeight: 92,
+    width: 80,
   },
   quickLogLabel: {
     ...typography.metadata,
     fontSize: 11,
     fontWeight: '700',
+    lineHeight: 16,
     textAlign: 'center',
   },
   quickLogList: {

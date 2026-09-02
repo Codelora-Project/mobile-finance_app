@@ -53,14 +53,28 @@ const DEFAULT_WALLET_ICON: MaterialCommunityIconName = 'bank';
 const ACCOUNT_TYPES: readonly {
   icon: MaterialCommunityIconName;
   key: AccountType;
-  label: string;
+  translationKey:
+    | 'typeBank'
+    | 'typeCash'
+    | 'typeCreditCard'
+    | 'typeEwallet'
+    | 'typeInvestment'
+    | 'typeOther';
 }[] = [
-  { icon: 'bank', key: 'bank', label: 'Bank' },
-  { icon: 'cellphone', key: 'ewallet', label: 'E-Wallet' },
-  { icon: 'cash', key: 'cash', label: 'Tunai' },
-  { icon: 'trending-up', key: 'investment', label: 'Investasi' },
-  { icon: 'credit-card', key: 'credit_card', label: 'Kartu Kredit' },
-  { icon: 'dots-horizontal', key: 'other', label: 'Lainnya' },
+  { icon: 'bank', key: 'bank', translationKey: 'typeBank' },
+  { icon: 'cellphone', key: 'ewallet', translationKey: 'typeEwallet' },
+  { icon: 'cash', key: 'cash', translationKey: 'typeCash' },
+  {
+    icon: 'trending-up',
+    key: 'investment',
+    translationKey: 'typeInvestment',
+  },
+  {
+    icon: 'credit-card',
+    key: 'credit_card',
+    translationKey: 'typeCreditCard',
+  },
+  { icon: 'dots-horizontal', key: 'other', translationKey: 'typeOther' },
 ];
 
 export const WalletEditorModal = memo(function WalletEditorModal({
@@ -73,7 +87,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
 }: WalletEditorModalProps) {
   const database = useSQLiteContext();
   const { colors, isDark } = useTheme();
-  const { language } = useLanguage();
+  const { t } = useLanguage();
   const savingRef = useRef(false);
 
   const isEditing = wallet !== null && wallet !== 'new';
@@ -120,11 +134,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
     if (savingRef.current) return;
     const trimmed = name.trim();
     if (!trimmed) {
-      setError(
-        language === 'id'
-          ? 'Nama dompet harus diisi.'
-          : 'Wallet name is required.',
-      );
+      setError(t.wallets.nameRequired);
       return;
     }
 
@@ -133,11 +143,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
       try {
         balanceMinor = parseSignedMoneyInput(initialBalance, currencyCode);
       } catch {
-        setError(
-          language === 'id'
-            ? 'Saldo awal tidak valid.'
-            : 'The initial balance is invalid.',
-        );
+        setError(t.wallets.invalidInitialBalance);
         return;
       }
     }
@@ -169,7 +175,11 @@ export const WalletEditorModal = memo(function WalletEditorModal({
       onSuccess();
       onClose();
     } catch (caughtError) {
-      const mapped = mapError(caughtError, 'DATABASE_WRITE_FAILED');
+      const mapped = mapError(
+        caughtError,
+        'DATABASE_WRITE_FAILED',
+        t.appErrors,
+      );
       setError(mapped.message);
     } finally {
       savingRef.current = false;
@@ -199,16 +209,10 @@ export const WalletEditorModal = memo(function WalletEditorModal({
           {/* Header */}
           <View style={styles.sheetHeader}>
             <Text style={[styles.sheetTitle, { color: colors.textPrimary }]}>
-              {isEditing
-                ? language === 'id'
-                  ? 'Ubah Dompet'
-                  : 'Edit Wallet'
-                : language === 'id'
-                  ? 'Tambah Dompet Baru'
-                  : 'Add New Wallet'}
+              {isEditing ? t.wallets.editWallet : t.wallets.addWallet}
             </Text>
             <Pressable
-              accessibilityLabel={language === 'id' ? 'Tutup' : 'Close'}
+              accessibilityLabel={t.common.close}
               accessibilityRole="button"
               disabled={saving}
               hitSlop={8}
@@ -232,22 +236,12 @@ export const WalletEditorModal = memo(function WalletEditorModal({
             {/* 1. Wallet Name Input */}
             <View style={styles.inputSection}>
               <Text style={[styles.fieldLabel, { color: colors.textPrimary }]}>
-                {language === 'id'
-                  ? 'Nama Dompet / Rekening *'
-                  : 'Wallet / Account Name *'}
+                {t.wallets.walletNameLabel}
               </Text>
               <TextInput
-                accessibilityLabel={
-                  language === 'id'
-                    ? 'Nama Dompet / Rekening *'
-                    : 'Wallet / Account Name *'
-                }
+                accessibilityLabel={t.wallets.walletNameLabel}
                 onChangeText={setName}
-                placeholder={
-                  language === 'id'
-                    ? 'Contoh: Bank BCA, GoPay, Tunai'
-                    : 'e.g. Bank BCA, Cash, PayPal'
-                }
+                placeholder={t.wallets.walletNamePlaceholder}
                 placeholderTextColor={colors.textMuted}
                 style={[
                   styles.textInput,
@@ -266,7 +260,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
             {/* 2. Account Type Selector */}
             <View style={styles.inputSection}>
               <Text style={[styles.fieldLabel, { color: colors.textPrimary }]}>
-                {language === 'id' ? 'Jenis Akun' : 'Account Type'}
+                {t.wallets.accountTypeLabel}
               </Text>
               <View style={styles.typeGrid}>
                 {ACCOUNT_TYPES.map((type) => {
@@ -274,7 +268,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
                   return (
                     <Pressable
                       key={type.key}
-                      accessibilityLabel={type.label}
+                      accessibilityLabel={t.wallets[type.translationKey]}
                       accessibilityRole="button"
                       onPress={() => {
                         setAccountType(type.key);
@@ -317,7 +311,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
                           },
                         ]}
                       >
-                        {type.label}
+                        {t.wallets[type.translationKey]}
                       </Text>
                     </Pressable>
                   );
@@ -331,7 +325,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
                 <Text
                   style={[styles.fieldLabel, { color: colors.textPrimary }]}
                 >
-                  {language === 'id' ? 'Saldo Awal' : 'Initial Balance'}
+                  {t.wallets.initialBalanceLabel}
                 </Text>
                 <View
                   style={[
@@ -350,9 +344,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
                     {currencySymbol}
                   </Text>
                   <TextInput
-                    accessibilityLabel={
-                      language === 'id' ? 'Saldo Awal' : 'Initial Balance'
-                    }
+                    accessibilityLabel={t.wallets.initialBalanceLabel}
                     keyboardType="decimal-pad"
                     onChangeText={setInitialBalance}
                     placeholder="0"
@@ -367,16 +359,12 @@ export const WalletEditorModal = memo(function WalletEditorModal({
             {/* 4. Account Number / Note */}
             <View style={styles.inputSection}>
               <Text style={[styles.fieldLabel, { color: colors.textPrimary }]}>
-                {language === 'id'
-                  ? 'Nomor Rekening / Catatan (Opsional)'
-                  : 'Account Number / Note (Optional)'}
+                {t.wallets.accountNumberLabel}
               </Text>
               <TextInput
-                accessibilityLabel="Nomor Rekening"
+                accessibilityLabel={t.wallets.accountNumberAccessibility}
                 onChangeText={setAccountNumber}
-                placeholder={
-                  language === 'id' ? 'Contoh: 1234567890' : 'e.g. 1234567890'
-                }
+                placeholder={t.wallets.accountNumberPlaceholder}
                 placeholderTextColor={colors.textMuted}
                 style={[
                   styles.textInput,
@@ -395,7 +383,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
             {/* 5. Color Theme Picker */}
             <View style={styles.inputSection}>
               <Text style={[styles.fieldLabel, { color: colors.textPrimary }]}>
-                {language === 'id' ? 'Warna Tema' : 'Color Theme'}
+                {t.wallets.colorThemeLabel}
               </Text>
               <View style={styles.colorPaletteRow}>
                 {PRESET_COLORS.map((c) => {
@@ -403,7 +391,10 @@ export const WalletEditorModal = memo(function WalletEditorModal({
                   return (
                     <Pressable
                       key={c}
-                      accessibilityLabel={`Pilih warna ${c}`}
+                      accessibilityLabel={t.wallets.selectColor.replace(
+                        '{color}',
+                        c,
+                      )}
                       accessibilityRole="button"
                       onPress={() => setColor(c)}
                       style={[
@@ -439,9 +430,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
                 <Text
                   style={[styles.toggleTitle, { color: colors.textPrimary }]}
                 >
-                  {language === 'id'
-                    ? 'Kecualikan dari Arus Kas Operasional'
-                    : 'Exclude from Liquid Cashflow'}
+                  {t.wallets.excludeCashflowTitle}
                 </Text>
                 <Text
                   style={[
@@ -449,9 +438,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
                     { color: colors.textSecondary },
                   ]}
                 >
-                  {language === 'id'
-                    ? 'Cocok untuk aset investasi atau piutang jangka panjang.'
-                    : 'Ideal for investments or long-term assets.'}
+                  {t.wallets.excludeCashflowDescription}
                 </Text>
               </View>
               <Switch
@@ -475,15 +462,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
             <View style={styles.actionRow}>
               <AppButton
                 disabled={saving}
-                label={
-                  isEditing
-                    ? language === 'id'
-                      ? 'Simpan Perubahan'
-                      : 'Save Changes'
-                    : language === 'id'
-                      ? 'Simpan'
-                      : 'Save'
-                }
+                label={isEditing ? t.wallets.saveChanges : t.common.save}
                 loading={saving}
                 onPress={() => void handleSave()}
                 variant="primary"

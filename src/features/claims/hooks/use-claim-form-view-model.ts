@@ -12,7 +12,8 @@ import {
   type ClaimPeriodMode,
 } from '@/features/claims/claim-repository';
 import { isLocalDate } from '@/lib/dates';
-import { isCodedError, mapError } from '@/lib/errors';
+import { mapError } from '@/lib/errors';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { sumMoney } from '@/lib/money';
 import { normalizeText } from '@/lib/strings';
 
@@ -46,6 +47,7 @@ export function useClaimFormViewModel({
 }: UseClaimFormViewModelOptions = {}) {
   const database = useSQLiteContext();
   const router = useRouter();
+  const { t } = useLanguage();
   const savingRef = useRef(false);
 
   const [initialSnapshot, setInitialSnapshot] = useState<string | null>(
@@ -83,11 +85,11 @@ export function useClaimFormViewModel({
       .then(([eligible, claim]) => {
         if (!active) return;
         if (claimId !== undefined && !claim) {
-          setError('Claim not found.');
+          setError(t.claims.notFound);
           return;
         }
         if (claim && claim.status !== 'draft') {
-          setError('Move this claim back to Draft before editing it.');
+          setError(t.claims.rejectedLocked);
           return;
         }
         setExpenses(eligible);
@@ -113,7 +115,9 @@ export function useClaimFormViewModel({
       })
       .catch((loadError: unknown) => {
         if (active) {
-          setError(mapError(loadError, 'DATABASE_WRITE_FAILED').message);
+          setError(
+            mapError(loadError, 'DATABASE_WRITE_FAILED', t.appErrors).message,
+          );
         }
       })
       .finally(() => {
@@ -122,7 +126,7 @@ export function useClaimFormViewModel({
     return () => {
       active = false;
     };
-  }, [claimId, database]);
+  }, [claimId, database, t]);
 
   const selectedExpenses = useMemo(
     () => expenses.filter((expense) => selectedIds.includes(expense.id)),
@@ -154,11 +158,15 @@ export function useClaimFormViewModel({
       router.back();
       return;
     }
-    Alert.alert('Discard changes?', 'Your unsaved changes will be lost.', [
-      { style: 'cancel', text: 'Keep Editing' },
-      { onPress: () => router.back(), style: 'destructive', text: 'Discard' },
+    Alert.alert(t.claims.discardTitle, t.claims.discardDescription, [
+      { style: 'cancel', text: t.claims.keepEditing },
+      {
+        onPress: () => router.back(),
+        style: 'destructive',
+        text: t.claims.discard,
+      },
     ]);
-  }, [isDirty, router, step]);
+  }, [isDirty, router, step, t.claims]);
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener(
@@ -174,15 +182,15 @@ export function useClaimFormViewModel({
   const validateDetails = useCallback((): boolean => {
     const normalizedTitle = normalizeText(title);
     if (!normalizedTitle) {
-      setError('Enter a claim title.');
+      setError(t.claims.titleRequired);
       return false;
     }
     if (Array.from(normalizedTitle).length > 100) {
-      setError('Claim title must be 100 characters or fewer.');
+      setError(t.claims.titleTooLong);
       return false;
     }
     if (Array.from(normalizeText(description)).length > 500) {
-      setError('Description must be 500 characters or fewer.');
+      setError(t.claims.descriptionTooLong);
       return false;
     }
     if (
@@ -191,12 +199,12 @@ export function useClaimFormViewModel({
         !isLocalDate(periodEnd.trim()) ||
         periodStart.trim() > periodEnd.trim())
     ) {
-      setError('Enter a valid claim period.');
+      setError(t.claims.invalidPeriod);
       return false;
     }
     setError(null);
     return true;
-  }, [description, periodEnd, periodMode, periodStart, title]);
+  }, [description, periodEnd, periodMode, periodStart, t.claims, title]);
 
   const toggleExpense = useCallback(
     (expense: ClaimExpense) => {
@@ -206,27 +214,27 @@ export function useClaimFormViewModel({
         return;
       }
       if (selectedCurrency && expense.currencyCode !== selectedCurrency) {
-        setError('This expense uses a different currency.');
+        setError(t.claims.differentCurrency);
         return;
       }
       if (calculateClaimTotal([...selectedExpenses, expense]) === null) {
-        setError('The selected expense total is too large.');
+        setError(t.claims.selectedTotalTooLarge);
         return;
       }
       setSelectedIds((current) => [...current, expense.id]);
       setError(null);
     },
-    [selectedCurrency, selectedExpenses, selectedIds],
+    [selectedCurrency, selectedExpenses, selectedIds, t.claims],
   );
 
   const save = useCallback(async () => {
     if (savingRef.current || !validateDetails()) return;
     if (selectedIds.length === 0) {
-      setError('Select at least one reimbursable expense.');
+      setError(t.claims.selectAtLeastOne);
       return;
     }
     if (totalMinor === null) {
-      setError('The selected expense total is too large.');
+      setError(t.claims.selectedTotalTooLarge);
       return;
     }
     savingRef.current = true;
@@ -245,14 +253,12 @@ export function useClaimFormViewModel({
           ? await createClaim(database, input)
           : (await updateDraftClaim(database, claimId, input), claimId);
       router.dismissTo({
-        params: { feedback: 'Draft claim saved.' },
+        params: { feedback: t.claims.draftSaved },
         pathname: `/claims/${savedId}`,
       });
     } catch (saveError) {
       setError(
-        isCodedError(saveError)
-          ? saveError.message
-          : mapError(saveError, 'DATABASE_WRITE_FAILED').message,
+        mapError(saveError, 'DATABASE_WRITE_FAILED', t.appErrors).message,
       );
       savingRef.current = false;
       setSaving(false);
@@ -267,6 +273,7 @@ export function useClaimFormViewModel({
     router,
     selectedIds,
     title,
+    t,
     totalMinor,
     validateDetails,
   ]);

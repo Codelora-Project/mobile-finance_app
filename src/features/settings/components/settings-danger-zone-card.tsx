@@ -75,9 +75,7 @@ export const SettingsDangerZoneCard = memo(function SettingsDangerZoneCard({
               <Text
                 style={[styles.navRowSubtitle, { color: colors.textSecondary }]}
               >
-                {language === 'id'
-                  ? 'Hapus seluruh riwayat transaksi & reset data'
-                  : 'Delete all records & restore defaults'}
+                {t.settings.deleteAllDataDescription}
               </Text>
             </View>
           </View>

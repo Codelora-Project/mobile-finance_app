@@ -29,67 +29,52 @@ type MenuSection = {
 
 export function MoreScreen() {
   const router = useRouter();
-  const { language } = useLanguage();
+  const { t } = useLanguage();
   const { colors, isDark } = useTheme();
 
   const goalsItem: MenuItem = {
     bgColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#D1FAE5',
     borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#A7F3D0',
-    description:
-      language === 'id'
-        ? 'Pantau target dan progres tabungan'
-        : 'Track savings goals and progress',
+    description: t.more.goalsDescription,
     icon: 'bullseye-arrow',
     iconColor: isDark ? '#34D399' : '#059669',
-    label: language === 'id' ? 'Target Tabungan' : 'Savings Goals',
+    label: t.more.goalsLabel,
     route: '/goals',
   };
   const categoriesItem: MenuItem = {
     bgColor: isDark ? 'rgba(139, 92, 246, 0.15)' : '#EDE9FE',
     borderColor: isDark ? 'rgba(139, 92, 246, 0.3)' : '#DDD6FE',
-    description:
-      language === 'id'
-        ? 'Atur pos pengeluaran dan pemasukan'
-        : 'Manage income and expense categories',
+    description: t.more.categoriesDescription,
     icon: 'tag-multiple-outline',
     iconColor: isDark ? '#A78BFA' : '#7C3AED',
-    label: language === 'id' ? 'Kelola Kategori' : 'Categories',
+    label: t.more.categoriesLabel,
     route: '/categories',
   };
   const claimsItem: MenuItem = {
     bgColor: isDark ? 'rgba(245, 158, 11, 0.15)' : '#FEF3C7',
     borderColor: isDark ? 'rgba(245, 158, 11, 0.3)' : '#FDE68A',
-    description:
-      language === 'id'
-        ? 'Kelola penggantian biaya kantor'
-        : 'Manage expense reimbursements and claims',
+    description: t.more.claimsDescription,
     icon: 'briefcase-outline',
     iconColor: isDark ? '#FBBF24' : '#D97706',
-    label: language === 'id' ? 'Klaim Kantor' : 'Claims & Reimburse',
+    label: t.more.claimsLabel,
     route: '/claims',
   };
   const settingsItem: MenuItem = {
     bgColor: isDark ? 'rgba(99, 102, 241, 0.15)' : '#EEF2FF',
     borderColor: isDark ? 'rgba(99, 102, 241, 0.3)' : '#C7D2FE',
-    description:
-      language === 'id'
-        ? 'Bahasa, mata uang, tampilan, dan preferensi'
-        : 'Language, currency, appearance, and preferences',
+    description: t.more.settingsDescription,
     icon: 'cog-outline',
     iconColor: isDark ? '#818CF8' : '#4F46E5',
-    label: language === 'id' ? 'Pengaturan Aplikasi' : 'Settings',
+    label: t.more.settingsLabel,
     route: '/settings',
   };
   const backupItem: MenuItem = {
     bgColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#DBEAFE',
     borderColor: isDark ? 'rgba(59, 130, 246, 0.3)' : '#BFDBFE',
-    description:
-      language === 'id'
-        ? 'Cadangkan, pulihkan, dan ekspor data'
-        : 'Export, restore, and safeguard your data',
+    description: t.more.backupDescription,
     icon: 'cloud-sync-outline',
     iconColor: isDark ? '#60A5FA' : '#2563EB',
-    label: language === 'id' ? 'Backup & Ekspor Data' : 'Backup & Export',
+    label: t.more.backupLabel,
     route: '/settings/backup',
   };
 
@@ -97,17 +82,17 @@ export function MoreScreen() {
     {
       id: 'planning',
       items: [goalsItem],
-      title: language === 'id' ? 'Perencanaan' : 'Planning',
+      title: t.more.planningSection,
     },
     {
       id: 'transactions',
       items: [categoriesItem, claimsItem],
-      title: language === 'id' ? 'Transaksi' : 'Transaction Management',
+      title: t.more.transactionsSection,
     },
     {
       id: 'app-data',
       items: [settingsItem, backupItem],
-      title: language === 'id' ? 'Aplikasi & Data' : 'App & Data',
+      title: t.more.appDataSection,
     },
   ];
 
@@ -118,12 +103,10 @@ export function MoreScreen() {
           accessibilityRole="header"
           style={[styles.title, { color: colors.textPrimary }]}
         >
-          {language === 'id' ? 'Lainnya' : 'More'}
+          {t.more.title}
         </Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          {language === 'id'
-            ? 'Fitur pendukung dan pengelolaan aplikasi'
-            : 'Additional tools and app management'}
+          {t.more.subtitle}
         </Text>
       </View>
 

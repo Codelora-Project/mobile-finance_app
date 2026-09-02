@@ -2,6 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { memo, useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -36,6 +37,7 @@ export const MonthPickerModal = memo(function MonthPickerModal({
   visible,
 }: MonthPickerModalProps) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const normalizedSelectedYear = normalizeYear(selectedYear);
   const [displayYear, setDisplayYear] = useState(normalizedSelectedYear);
   const locale = language === 'id' ? 'id-ID' : 'en-US';
@@ -79,9 +81,7 @@ export const MonthPickerModal = memo(function MonthPickerModal({
     >
       <View style={styles.modalRoot}>
         <Pressable
-          accessibilityLabel={
-            language === 'id' ? 'Tutup pemilih bulan' : 'Close month picker'
-          }
+          accessibilityLabel={t.common.closeMonthPicker}
           accessibilityRole="button"
           onPress={onClose}
           style={StyleSheet.absoluteFill}
@@ -100,9 +100,7 @@ export const MonthPickerModal = memo(function MonthPickerModal({
         >
           <View style={styles.yearRow}>
             <Pressable
-              accessibilityLabel={
-                language === 'id' ? 'Tahun sebelumnya' : 'Previous year'
-              }
+              accessibilityLabel={t.common.previousYear}
               accessibilityRole="button"
               hitSlop={8}
               onPress={() => setDisplayYear((year) => normalizeYear(year - 1))}
@@ -123,9 +121,7 @@ export const MonthPickerModal = memo(function MonthPickerModal({
             </Text>
 
             <Pressable
-              accessibilityLabel={
-                language === 'id' ? 'Tahun berikutnya' : 'Next year'
-              }
+              accessibilityLabel={t.common.nextYear}
               accessibilityRole="button"
               accessibilityState={{ disabled: nextYearDisabled }}
               disabled={nextYearDisabled}

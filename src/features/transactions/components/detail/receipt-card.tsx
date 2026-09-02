@@ -17,7 +17,6 @@ export type DetailReceiptCardProps = {
 };
 
 export const DetailReceiptCard = memo(function DetailReceiptCard({
-  language = 'id',
   t,
   transaction,
 }: DetailReceiptCardProps) {
@@ -53,18 +52,19 @@ export const DetailReceiptCard = memo(function DetailReceiptCard({
         </View>
         <View style={styles.receiptMetaCol}>
           <Text style={[styles.receiptTitle, { color: colors.textPrimary }]}>
-            {language === 'id' ? 'Bukti Struk Pembayaran' : 'Receipt Proof'}
+            {t.receipts.proofTitle}
           </Text>
           <Text
             style={[styles.receiptSubtitle, { color: colors.textSecondary }]}
           >
-            {transaction.receipt.mimeType.toUpperCase()} • Tersimpan Aman
+            {transaction.receipt.mimeType.toUpperCase()} •{' '}
+            {t.receipts.storedSafely}
           </Text>
         </View>
       </View>
 
       <Pressable
-        accessibilityLabel="Lihat Bukti Struk"
+        accessibilityLabel={t.receipts.viewImage}
         accessibilityRole="button"
         onPress={() => router.push(`/transactions/${transaction.id}/receipt`)}
         style={({ pressed }) => [
@@ -82,7 +82,7 @@ export const DetailReceiptCard = memo(function DetailReceiptCard({
           size={18}
         />
         <Text style={[styles.viewReceiptText, { color: colors.primary }]}>
-          {language === 'id' ? 'Lihat Gambar Struk' : 'View Receipt Image'}
+          {t.receipts.viewImage}
         </Text>
       </Pressable>
     </View>

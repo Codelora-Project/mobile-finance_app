@@ -3,6 +3,7 @@ import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Wallet } from '@/features/wallets/wallet-types';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -19,19 +20,20 @@ export type WalletArchivedSectionProps = {
 export const WalletArchivedSection = memo(function WalletArchivedSection({
   archivedWallets,
   currencyCode,
-  language,
   onUnarchive,
 }: WalletArchivedSectionProps) {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
 
   if (archivedWallets.length === 0) return null;
 
   return (
     <View style={styles.container}>
       <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-        {language === 'id'
-          ? `DOMPET DIARSIPKAN (${archivedWallets.length})`
-          : `ARCHIVED WALLETS (${archivedWallets.length})`}
+        {t.wallets.archivedCount.replace(
+          '{count}',
+          String(archivedWallets.length),
+        )}
       </Text>
 
       <View
@@ -77,9 +79,7 @@ export const WalletArchivedSection = memo(function WalletArchivedSection({
             </View>
 
             <Pressable
-              accessibilityLabel={
-                language === 'id' ? 'Buka Arsip' : 'Unarchive'
-              }
+              accessibilityLabel={t.wallets.unarchiveWallet}
               accessibilityRole="button"
               onPress={() => onUnarchive(wallet)}
               style={({ pressed }) => [
@@ -100,7 +100,7 @@ export const WalletArchivedSection = memo(function WalletArchivedSection({
               <Text
                 style={[styles.unarchiveBtnText, { color: colors.primary }]}
               >
-                {language === 'id' ? 'Buka Arsip' : 'Unarchive'}
+                {t.wallets.unarchiveWallet}
               </Text>
             </Pressable>
           </View>

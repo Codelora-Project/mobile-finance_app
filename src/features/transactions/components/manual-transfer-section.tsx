@@ -12,7 +12,6 @@ import {
 import type { Category } from '@/features/categories/category-repository';
 import type { SelectedReference } from '@/features/transactions/hooks/use-manual-transaction-view-model';
 import type { TranslationSchema } from '@/lib/i18n/translations';
-import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -62,7 +61,6 @@ export const ManualTransferSection = memo(function ManualTransferSection({
   onChangeFeeNote,
 }: ManualTransferSectionProps) {
   const { colors, isDark } = useTheme();
-  const { language } = useLanguage();
 
   return (
     <View style={styles.container}>
@@ -119,10 +117,7 @@ export const ManualTransferSection = memo(function ManualTransferSection({
                 { color: sourceWallet ? colors.textPrimary : colors.textMuted },
               ]}
             >
-              {sourceWallet?.name ||
-                (t.transactions.transferFrom
-                  ? t.transactions.transferFrom
-                  : 'Pilih dompet asal')}
+              {sourceWallet?.name || t.transactions.selectSourceWallet}
             </Text>
             <MaterialCommunityIcons
               color={colors.textMuted}
@@ -141,11 +136,7 @@ export const ManualTransferSection = memo(function ManualTransferSection({
         <View style={styles.flowConnector}>
           <View style={[styles.flowLine, { backgroundColor: colors.border }]} />
           <Pressable
-            accessibilityLabel={
-              language === 'id'
-                ? 'Tukar dompet pengirim dan penerima'
-                : 'Swap source and destination wallets'
-            }
+            accessibilityLabel={t.transactions.swapWallets}
             accessibilityRole="button"
             onPress={onSwapWallets}
             style={({ pressed }) => [
@@ -216,9 +207,7 @@ export const ManualTransferSection = memo(function ManualTransferSection({
               ]}
             >
               {destinationWallet?.name ||
-                (t.transactions.transferTo
-                  ? t.transactions.transferTo
-                  : 'Pilih dompet tujuan')}
+                t.transactions.selectDestinationWallet}
             </Text>
             <MaterialCommunityIcons
               color={colors.textMuted}
@@ -404,7 +393,8 @@ export const ManualTransferSection = memo(function ManualTransferSection({
                     { color: colors.textPrimary },
                   ]}
                 >
-                  {transferFeeCategory?.name || 'Tagihan & Admin'}
+                  {transferFeeCategory?.name ||
+                    t.transactions.transferFeeCategory}
                 </Text>
                 <MaterialCommunityIcons
                   color={colors.textMuted}

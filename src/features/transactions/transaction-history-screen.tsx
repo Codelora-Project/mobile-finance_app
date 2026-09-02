@@ -58,9 +58,7 @@ export function TransactionHistoryScreen() {
               onLongPress={actions.handleLongPressTransaction}
               onPress={actions.handleOpenDetail}
               receiptBadgeText={state.t.home.receiptBadge}
-              reimbursableBadgeText={
-                state.t.transactions.reimbursementStatus || 'Reimburse'
-              }
+              reimbursableBadgeText={state.t.transactions.reimbursementStatus}
               transaction={tx}
             />
           ))}
@@ -95,7 +93,7 @@ export function TransactionHistoryScreen() {
             currencyCode={state.currencyCode}
             expenseLabel={state.t.transactions.expense}
             incomeLabel={state.t.transactions.income}
-            netLabel={state.language === 'id' ? 'Arus Bersih' : 'Net Flow'}
+            netLabel={state.t.analytics.netFlow}
             onSelectTypeFilter={actions.handleSelectTypeFilter}
             totalExpenseMinor={state.totalExpenseMinor}
             totalIncomeMinor={state.totalIncomeMinor}

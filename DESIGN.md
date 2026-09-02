@@ -8,7 +8,7 @@ Dokumen ini adalah panduan desain resmi (_Design System & UX Guidelines_) untuk 
 
 ### Prinsip Produk
 
-- **Zero-Friction & Speed**: Menolak formulir panjang yang membosankan. Prioritas pada _Quick-Entry_ (catat dalam < 3 detik).
+- **Zero-Friction & Speed**: Menolak formulir panjang yang membosankan. Prioritas pada _Quick-Entry_ yang singkat dan mudah diselesaikan.
 - **Data First**: Nominal, periode, status, dan tindakan berikutnya lebih penting daripada dekorasi.
 - **Trust Through Clarity**: Label harus langsung, status tidak hanya mengandalkan warna, serta keadaan memuat, kosong, sukses, dan gagal selalu eksplisit.
 - **Intentional Visuals**: Ikon dan warna memperkuat makna. Bayangan, radius, badge, dan kartu dipakai hanya ketika membantu hierarki.

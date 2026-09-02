@@ -116,16 +116,10 @@ export function DonutBreakdownChart({
           const minPercent = Math.max(item.percentage, 4);
 
           return (
-            <Pressable
-              accessibilityLabel={`${item.categoryName}, ${formatMoney(
-                item.amountMinor,
-                currencyCode,
-              )}, ${item.percentage}%`}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isSelected }}
-              hitSlop={4}
+            <View
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
               key={item.categoryId}
-              onPress={() => setSelectedCategoryId(item.categoryId)}
               style={[
                 styles.segmentSlice,
                 {

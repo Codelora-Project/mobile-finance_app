@@ -115,8 +115,8 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
             router.back();
           } catch (err) {
             Alert.alert(
-              'Gagal',
-              mapError(err, 'DATABASE_WRITE_FAILED').message,
+              t.common.error,
+              mapError(err, 'DATABASE_WRITE_FAILED', t.appErrors).message,
             );
           } finally {
             deletingRef.current = false;
@@ -154,7 +154,9 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
         goalId,
         note:
           note.trim() ||
-          (modalType === 'deposit' ? 'Setoran Tabungan' : 'Penarikan Dana'),
+          (modalType === 'deposit'
+            ? t.goals.depositDefaultNote
+            : t.goals.withdrawDefaultNote),
         type: modalType,
       });
       setModalType(null);
@@ -275,9 +277,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
         ListEmptyComponent={
           <View style={styles.emptyTxContainer}>
             <Text style={[styles.emptyTxText, { color: colors.textMuted }]}>
-              {language === 'id'
-                ? 'Belum ada riwayat setoran'
-                : 'No deposit history yet'}
+              {t.goals.noDepositHistory}
             </Text>
           </View>
         }
@@ -309,7 +309,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
               <View style={{ flex: 1 }}>
                 <AppButton
                   accessibilityLabel={t.goals.deposit}
-                  label={t.goals.deposit || 'Setor Tabungan'}
+                  label={t.goals.deposit}
                   onPress={() => {
                     setModalType('deposit');
                     setAmount('');
@@ -324,7 +324,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
                 <AppButton
                   accessibilityLabel={t.goals.withdraw}
                   disabled={goal.currentAmountMinor <= 0}
-                  label={t.goals.withdraw || 'Tarik Tabungan'}
+                  label={t.goals.withdraw}
                   onPress={() => {
                     setModalType('withdraw');
                     setAmount('');
@@ -340,7 +340,7 @@ export function GoalDetailScreen({ goalId }: GoalDetailScreenProps) {
             <Text
               style={[styles.sectionTitle, { color: colors.textSecondary }]}
             >
-              {language === 'id' ? 'RIWAYAT TABUNGAN' : 'SAVINGS HISTORY'}
+              {t.goals.savingsHistory}
             </Text>
           </View>
         }

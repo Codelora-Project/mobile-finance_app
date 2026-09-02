@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { Wallet, WalletSummary } from '@/features/wallets';
 import { getWalletIconName } from '@/features/wallets/wallet-icons';
 import type { Language } from '@/lib/i18n/translations';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -22,13 +23,13 @@ export type HomeWalletCarouselProps = {
 
 export const HomeWalletCarousel = memo(function HomeWalletCarousel({
   currencyCode,
-  language,
   onAddWalletPress,
   onSelectWallet,
   selectedWalletId,
   walletSummary,
 }: HomeWalletCarouselProps) {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const [isBalanceHidden, setIsBalanceHidden] = useState(false);
 
   const isAllSelected = selectedWalletId === null;
@@ -53,19 +54,13 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
             size={18}
           />
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-            {language === 'id' ? 'Dompet & Saldo' : 'Wallets & Balance'}
+            {t.home.walletsAndBalance}
           </Text>
 
           {/* Privacy Eye Toggle */}
           <Pressable
             accessibilityLabel={
-              isBalanceHidden
-                ? language === 'id'
-                  ? 'Tampilkan Saldo'
-                  : 'Show Balance'
-                : language === 'id'
-                  ? 'Sembunyikan Saldo'
-                  : 'Hide Balance'
+              isBalanceHidden ? t.home.showBalance : t.home.hideBalance
             }
             accessibilityRole="button"
             hitSlop={8}
@@ -86,7 +81,7 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
         {/* Right Header Action: Reset Filter or Manage Link */}
         {selectedWalletId !== null ? (
           <Pressable
-            accessibilityLabel="Reset filter dompet ke Semua"
+            accessibilityLabel={t.home.resetWalletFilter}
             accessibilityRole="button"
             onPress={() => onSelectWallet(null)}
             style={({ pressed }) => [
@@ -99,7 +94,7 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
             ]}
           >
             <Text style={[styles.resetFilterText, { color: colors.primary }]}>
-              {language === 'id' ? 'Tampilkan Semua' : 'Show All'}
+              {t.home.showAll}
             </Text>
             <MaterialCommunityIcons
               color={colors.primary}
@@ -109,15 +104,13 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
           </Pressable>
         ) : onAddWalletPress ? (
           <Pressable
-            accessibilityLabel={
-              language === 'id' ? 'Kelola Dompet' : 'Manage Wallets'
-            }
+            accessibilityLabel={t.home.manageWallets}
             accessibilityRole="button"
             onPress={onAddWalletPress}
             style={styles.manageHeaderBtn}
           >
             <Text style={[styles.manageHeaderText, { color: colors.primary }]}>
-              {language === 'id' ? 'Kelola' : 'Manage'}
+              {t.home.manage}
             </Text>
             <MaterialCommunityIcons
               color={colors.primary}
@@ -127,8 +120,7 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
           </Pressable>
         ) : (
           <Text style={[styles.walletsCount, { color: colors.textMuted }]}>
-            {wallets.length}{' '}
-            {language === 'id' ? 'Akun Aktif' : 'Active Accounts'}
+            {wallets.length} {t.home.activeAccounts}
           </Text>
         )}
       </View>
@@ -194,7 +186,7 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
                   },
                 ]}
               >
-                {language === 'id' ? 'Semua Akun' : 'All Accounts'}
+                {t.home.allAccounts}
               </Text>
               {isAllSelected ? (
                 <View
@@ -208,7 +200,7 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
 
             <Text
               adjustsFontSizeToFit
-              minimumFontScale={0.75}
+              minimumFontScale={0.85}
               numberOfLines={1}
               style={[styles.miniCardBalance, { color: colors.textPrimary }]}
             >
@@ -286,7 +278,7 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
 
                 <Text
                   adjustsFontSizeToFit
-                  minimumFontScale={0.75}
+                  minimumFontScale={0.85}
                   numberOfLines={1}
                   style={[
                     styles.miniCardBalance,
@@ -303,9 +295,7 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
         {/* 3. Add Account Mini Card */}
         {onAddWalletPress ? (
           <Pressable
-            accessibilityLabel={
-              language === 'id' ? 'Tambah Akun / Dompet Baru' : 'Add New Wallet'
-            }
+            accessibilityLabel={t.home.addWalletAccessibility}
             accessibilityRole="button"
             onPress={onAddWalletPress}
             style={({ pressed }) => [
@@ -331,7 +321,7 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
               />
             </View>
             <Text style={[styles.addCardText, { color: colors.textSecondary }]}>
-              {language === 'id' ? '+ Tambah' : '+ Add'}
+              {t.home.addShort}
             </Text>
           </Pressable>
         ) : null}

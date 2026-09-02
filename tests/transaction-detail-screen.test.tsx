@@ -129,12 +129,12 @@ describe('transaction detail screen', () => {
     );
 
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Ubah Transaksi' }),
+      screen.getByRole('button', { name: 'Ubah transaksi' }),
     );
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/42/edit');
 
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Lihat Bukti Struk' }),
+      screen.getByRole('button', { name: 'Lihat gambar struk' }),
     );
     expect(mockRouter.push).toHaveBeenCalledWith('/transactions/42/receipt');
   });
@@ -176,7 +176,7 @@ describe('transaction detail screen', () => {
       await screen.findByText(/Transaksi ini terkunci oleh klaim/i),
     ).toBeOnTheScreen();
     expect(
-      screen.queryByRole('button', { name: 'Ubah Transaksi' }),
+      screen.queryByRole('button', { name: 'Ubah transaksi' }),
     ).not.toBeOnTheScreen();
     expect(
       screen.queryByRole('button', { name: 'Hapus Transaksi' }),
@@ -188,14 +188,14 @@ describe('transaction detail screen', () => {
     await screen.findAllByText('Coffee Shop');
 
     const shareBtn = screen.getByRole('button', {
-      name: 'Bagikan Struk',
+      name: 'Bagikan struk',
     });
     await fireEvent.press(shareBtn);
 
     expect(mockShareAsync).toHaveBeenCalledWith(
       'file:///mock-docs/receipts/receipt.jpg',
       expect.objectContaining({
-        dialogTitle: 'Bagikan Foto Struk',
+        dialogTitle: 'Bagikan foto struk',
         mimeType: 'image/jpeg',
       }),
     );
@@ -216,7 +216,7 @@ describe('transaction detail screen', () => {
     await screen.findAllByText('Coffee Shop');
 
     const shareBtn = screen.getByRole('button', {
-      name: 'Bagikan Slip',
+      name: 'Bagikan slip',
     });
     await fireEvent.press(shareBtn);
 

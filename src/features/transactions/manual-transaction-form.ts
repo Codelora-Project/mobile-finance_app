@@ -12,6 +12,7 @@ import {
   parseLocalDateTimeInput,
   toLocalDateTimeInput,
 } from '@/lib/dates';
+import { translations } from '@/lib/i18n/translations';
 import { formatMoneyInput, parseMoneyInput } from '@/lib/money';
 
 export type SelectedReference = Readonly<{ id: number; name: string }>;
@@ -185,6 +186,7 @@ export function buildSaveInput(
   fallbackCategoryId = 1,
   language: 'id' | 'en' = 'id',
 ) {
+  const t = translations[language];
   const errors: FormErrors = {};
   let amountMinor: number | null = null;
   let dateTime: ReturnType<typeof parseLocalDateTimeInput> | null = null;
@@ -192,57 +194,44 @@ export function buildSaveInput(
   try {
     amountMinor = parseMoneyInput(form.amount, currencyCode);
   } catch {
-    errors.amount =
-      language === 'id' ? 'Masukkan nominal transaksi.' : 'Enter an amount.';
+    errors.amount = t.transactions.enterAmountError;
   }
 
   if (form.type !== 'transfer') {
     if (!form.category) {
       errors.category =
-        language === 'id'
-          ? form.type === 'income'
-            ? 'Pilih kategori pemasukan.'
-            : 'Pilih kategori pengeluaran.'
-          : 'Choose a category.';
+        form.type === 'income'
+          ? t.transactions.chooseIncomeCategoryError
+          : form.type === 'expense'
+            ? t.transactions.chooseExpenseCategoryError
+            : t.transactions.chooseCategoryError;
     }
   } else {
     if (!form.paymentMethod) {
-      errors.paymentMethod =
-        language === 'id' ? 'Pilih dompet asal.' : 'Choose a source wallet.';
+      errors.paymentMethod = t.transactions.chooseSourceWalletError;
     }
     if (!form.transferToPaymentMethod) {
       errors.transferToPaymentMethod =
-        language === 'id'
-          ? 'Pilih dompet tujuan.'
-          : 'Choose a destination wallet.';
+        t.transactions.chooseDestinationWalletError;
     }
     if (
       form.paymentMethod &&
       form.transferToPaymentMethod &&
       form.paymentMethod.id === form.transferToPaymentMethod.id
     ) {
-      errors.transferToPaymentMethod =
-        language === 'id'
-          ? 'Dompet asal dan tujuan tidak boleh sama.'
-          : 'Source and destination wallet cannot be the same.';
+      errors.transferToPaymentMethod = t.transactions.sameWalletError;
     }
   }
 
   let feeMinor = 0;
   if (form.type === 'transfer' && form.hasTransferFee) {
     if (!form.transferFeeAmount.trim()) {
-      errors.transferFeeAmount =
-        language === 'id'
-          ? 'Masukkan nominal biaya transfer.'
-          : 'Enter a transfer fee amount.';
+      errors.transferFeeAmount = t.transactions.enterTransferFeeError;
     } else {
       try {
         feeMinor = parseMoneyInput(form.transferFeeAmount, currencyCode);
       } catch {
-        errors.transferFeeAmount =
-          language === 'id'
-            ? 'Nominal biaya transfer tidak valid.'
-            : 'Invalid transfer fee amount.';
+        errors.transferFeeAmount = t.transactions.invalidTransferFeeError;
       }
     }
   }
@@ -250,22 +239,13 @@ export function buildSaveInput(
   try {
     dateTime = parseLocalDateTimeInput(form.date, form.time);
     if (dateTime.occurredAt > Date.now()) {
-      errors.dateTime =
-        language === 'id'
-          ? 'Tanggal transaksi tidak boleh di masa depan.'
-          : 'Transaction date cannot be in the future.';
+      errors.dateTime = t.transactions.futureDateError;
     }
   } catch {
-    errors.dateTime =
-      language === 'id'
-        ? 'Format tanggal atau waktu tidak valid.'
-        : 'Enter a valid transaction date and time.';
+    errors.dateTime = t.transactions.invalidDateTimeError;
   }
   if (Array.from(form.note.normalize('NFC').trim()).length > 500) {
-    errors.note =
-      language === 'id'
-        ? 'Catatan maksimal 500 karakter.'
-        : 'Note must be 500 characters or fewer.';
+    errors.note = t.transactions.noteTooLongError;
   }
 
   if (

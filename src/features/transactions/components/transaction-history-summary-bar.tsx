@@ -14,7 +14,7 @@ export type TransactionHistorySummaryBarProps = {
   currencyCode: string;
   expenseLabel: string;
   incomeLabel: string;
-  netLabel?: string;
+  netLabel: string;
   onSelectTypeFilter?: (type?: 'expense' | 'income') => void;
   totalExpenseMinor: number;
   totalIncomeMinor: number;
@@ -26,7 +26,7 @@ export const TransactionHistorySummaryBar = memo(
     currencyCode,
     expenseLabel,
     incomeLabel,
-    netLabel = 'Arus Bersih',
+    netLabel,
     onSelectTypeFilter,
     totalExpenseMinor,
     totalIncomeMinor,
@@ -93,7 +93,7 @@ export const TransactionHistorySummaryBar = memo(
               </Text>
               <Text
                 adjustsFontSizeToFit
-                minimumFontScale={0.75}
+                minimumFontScale={0.85}
                 numberOfLines={1}
                 style={[styles.statAmountText, { color: colors.destructive }]}
               >
@@ -154,7 +154,7 @@ export const TransactionHistorySummaryBar = memo(
               </Text>
               <Text
                 adjustsFontSizeToFit
-                minimumFontScale={0.75}
+                minimumFontScale={0.85}
                 numberOfLines={1}
                 style={[styles.statAmountText, { color: colors.positive }]}
               >
@@ -201,7 +201,7 @@ export const TransactionHistorySummaryBar = memo(
               </Text>
               <Text
                 adjustsFontSizeToFit
-                minimumFontScale={0.75}
+                minimumFontScale={0.85}
                 numberOfLines={1}
                 style={[
                   styles.statAmountText,

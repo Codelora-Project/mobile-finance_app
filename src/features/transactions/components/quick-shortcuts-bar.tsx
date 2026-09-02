@@ -22,7 +22,7 @@ export const QuickShortcutsBar = memo(function QuickShortcutsBar({
   quickShortcuts,
 }: QuickShortcutsBarProps) {
   const { colors, isDark } = useTheme();
-  const { language } = useLanguage();
+  const { t } = useLanguage();
 
   return (
     <View style={styles.quickShortcutsRow}>
@@ -35,16 +35,14 @@ export const QuickShortcutsBar = memo(function QuickShortcutsBar({
           const label = formatShortcutLabel(amount, currencySymbol);
           return (
             <Pressable
-              accessibilityLabel={`${language === 'id' ? 'Tambah' : 'Add'} ${label}`}
+              accessibilityLabel={`${t.common.add} ${label}`}
               accessibilityRole="button"
               key={amount}
               onPress={() => onAddIncrement(amount)}
               style={({ pressed }) => [
                 styles.shortcutChip,
                 {
-                  backgroundColor: isDark
-                    ? colors.surfaceSecondary
-                    : '#F8FAFC',
+                  backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
                   borderColor: isDark ? '#27272A' : '#E2E8F0',
                 },
                 pressed && styles.shortcutChipPressed,
@@ -62,9 +60,7 @@ export const QuickShortcutsBar = memo(function QuickShortcutsBar({
           );
         })}
         <Pressable
-          accessibilityLabel={
-            language === 'id' ? 'Atur ulang nominal' : 'Reset amount'
-          }
+          accessibilityLabel={t.transactions.resetAmount}
           accessibilityRole="button"
           onPress={onReset}
           style={({ pressed }) => [
@@ -83,7 +79,7 @@ export const QuickShortcutsBar = memo(function QuickShortcutsBar({
               { color: colors.textSecondary },
             ]}
           >
-            ⌫ {language === 'id' ? 'Ulangi' : 'Reset'}
+            ⌫ {t.transactions.reset}
           </Text>
         </Pressable>
       </ScrollView>

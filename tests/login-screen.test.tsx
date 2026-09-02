@@ -47,7 +47,7 @@ describe('LoginScreen', () => {
     await renderLoginScreen('id');
 
     expect(
-      screen.getByText('Kendali Finansial Penuh, Sepenuhnya Privat'),
+      screen.getByText('Gambaran keuangan harian yang lebih jelas'),
     ).toBeOnTheScreen();
     expect(screen.getByText('Total Saldo Aktif')).toBeOnTheScreen();
     expect(screen.getByText('Rp 14.850.000')).toBeOnTheScreen();
@@ -55,7 +55,7 @@ describe('LoginScreen', () => {
     expect(screen.getByText('Bonus Project')).toBeOnTheScreen();
     expect(screen.getByText('Offline-First')).toBeOnTheScreen();
     expect(screen.getByText('Bebas Iklan')).toBeOnTheScreen();
-    expect(screen.getByText('100% Privat')).toBeOnTheScreen();
+    expect(screen.getByText('Tersimpan Lokal')).toBeOnTheScreen();
     expect(screen.getByText('Lanjutkan dengan Google')).toBeOnTheScreen();
     expect(
       screen.getByText(
@@ -68,7 +68,7 @@ describe('LoginScreen', () => {
     await renderLoginScreen('en');
 
     expect(
-      screen.getByText('Full Financial Control, 100% Private'),
+      screen.getByText('A clearer view of your everyday finances'),
     ).toBeOnTheScreen();
     expect(screen.getByText('Active Total Balance')).toBeOnTheScreen();
     expect(screen.getByText('Coffee & Breakfast')).toBeOnTheScreen();

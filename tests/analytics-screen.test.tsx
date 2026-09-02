@@ -249,9 +249,7 @@ describe('analytics screen', () => {
     );
 
     await screen.findByText('Net Flow');
-    await fireEvent.press(
-      screen.getByRole('button', { name: 'Export report CSV' }),
-    );
+    await fireEvent.press(screen.getByRole('button', { name: 'Export CSV' }));
 
     await waitFor(() =>
       expect(mockExportAnalyticsReportToCsv).toHaveBeenCalledWith(

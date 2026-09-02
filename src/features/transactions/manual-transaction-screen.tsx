@@ -56,6 +56,26 @@ export function ManualTransactionScreen({
   }
 
   const isTransfer = state.form.type === 'transfer';
+  const formattedAmount = formatMoney(
+    state.parsedAmountMinor,
+    state.currencyCode,
+  );
+  const saveLabel = state.isEditMode
+    ? state.t.transactions.updateTransaction
+    : isTransfer
+      ? state.t.transactions.reviewTransferAmount.replace(
+          '{amount}',
+          formattedAmount,
+        )
+      : state.form.type === 'income'
+        ? state.t.transactions.saveIncomeAmount.replace(
+            '{amount}',
+            formattedAmount,
+          )
+        : state.t.transactions.saveExpenseAmount.replace(
+            '{amount}',
+            formattedAmount,
+          );
 
   return (
     <View style={styles.modalOverlay}>
@@ -68,9 +88,7 @@ export function ManualTransactionScreen({
         ]}
       >
         <Pressable
-          accessibilityLabel={
-            state.language === 'id' ? 'Tutup dialog' : 'Close dialog'
-          }
+          accessibilityLabel={state.t.transactions.closeDialog}
           accessibilityRole="button"
           onPress={actions.handleClose}
           style={StyleSheet.absoluteFill}
@@ -302,23 +320,7 @@ export function ManualTransactionScreen({
           {/* Big Action Save Button */}
           <View style={styles.actionBtnContainer}>
             <Pressable
-              accessibilityLabel={
-                state.isEditMode
-                  ? state.language === 'id'
-                    ? 'Perbarui Transaksi'
-                    : 'Update Transaction'
-                  : isTransfer
-                    ? state.language === 'id'
-                      ? `Tinjau Transfer (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                      : `Review Transfer (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                    : state.form.type === 'income'
-                      ? state.language === 'id'
-                        ? `Simpan Pemasukan (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                        : `Save Income (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                      : state.language === 'id'
-                        ? `Simpan Pengeluaran (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                        : `Save Expense (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-              }
+              accessibilityLabel={saveLabel}
               accessibilityRole="button"
               accessibilityState={{
                 busy: state.saving,
@@ -353,23 +355,7 @@ export function ManualTransactionScreen({
               {state.saving ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
-                <Text style={styles.saveBigButtonText}>
-                  {state.isEditMode
-                    ? state.language === 'id'
-                      ? 'Perbarui Transaksi'
-                      : 'Update Transaction'
-                    : isTransfer
-                      ? state.language === 'id'
-                        ? `Tinjau Transfer (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                        : `Review Transfer (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                      : state.form.type === 'income'
-                        ? state.language === 'id'
-                          ? `Simpan Pemasukan (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                          : `Save Income (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                        : state.language === 'id'
-                          ? `Simpan Pengeluaran (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`
-                          : `Save Expense (${formatMoney(state.parsedAmountMinor, state.currencyCode)})`}
-                </Text>
+                <Text style={styles.saveBigButtonText}>{saveLabel}</Text>
               )}
             </Pressable>
           </View>
@@ -395,14 +381,10 @@ export function ManualTransactionScreen({
             <Text
               style={[styles.actionSheetTitle, { color: colors.textPrimary }]}
             >
-              {state.language === 'id' ? 'Pilih Kategori' : 'Select Category'}
+              {state.t.transactions.selectCategory}
             </Text>
             <Pressable
-              accessibilityLabel={
-                state.language === 'id'
-                  ? 'Tutup pemilih kategori'
-                  : 'Close category picker'
-              }
+              accessibilityLabel={state.t.transactions.closeCategoryPicker}
               accessibilityRole="button"
               hitSlop={12}
               onPress={() => actions.setPicker(null)}
@@ -441,16 +423,10 @@ export function ManualTransactionScreen({
             <Text
               style={[styles.actionSheetTitle, { color: colors.textPrimary }]}
             >
-              {state.language === 'id'
-                ? 'Pilih Metode Pembayaran'
-                : 'Select Payment Method'}
+              {state.t.transactions.selectPaymentMethod}
             </Text>
             <Pressable
-              accessibilityLabel={
-                state.language === 'id'
-                  ? 'Tutup pemilih metode pembayaran'
-                  : 'Close payment method picker'
-              }
+              accessibilityLabel={state.t.transactions.closePaymentMethodPicker}
               accessibilityRole="button"
               hitSlop={12}
               onPress={() => actions.setPicker(null)}
@@ -490,16 +466,10 @@ export function ManualTransactionScreen({
             <Text
               style={[styles.actionSheetTitle, { color: colors.textPrimary }]}
             >
-              {state.language === 'id'
-                ? 'Pilih Dompet Pengirim'
-                : 'Select Source Wallet'}
+              {state.t.transactions.selectSourceWallet}
             </Text>
             <Pressable
-              accessibilityLabel={
-                state.language === 'id'
-                  ? 'Tutup pemilih dompet asal'
-                  : 'Close source wallet picker'
-              }
+              accessibilityLabel={state.t.transactions.closeSourceWalletPicker}
               accessibilityRole="button"
               hitSlop={12}
               onPress={() => actions.setPicker(null)}
@@ -534,15 +504,11 @@ export function ManualTransactionScreen({
             <Text
               style={[styles.actionSheetTitle, { color: colors.textPrimary }]}
             >
-              {state.language === 'id'
-                ? 'Pilih Dompet Penerima'
-                : 'Select Destination Wallet'}
+              {state.t.transactions.selectDestinationWallet}
             </Text>
             <Pressable
               accessibilityLabel={
-                state.language === 'id'
-                  ? 'Tutup pemilih dompet tujuan'
-                  : 'Close destination wallet picker'
+                state.t.transactions.closeDestinationWalletPicker
               }
               accessibilityRole="button"
               hitSlop={12}
@@ -579,16 +545,10 @@ export function ManualTransactionScreen({
             <Text
               style={[styles.actionSheetTitle, { color: colors.textPrimary }]}
             >
-              {state.language === 'id'
-                ? 'Kategori Biaya Transfer'
-                : 'Transfer Fee Category'}
+              {state.t.transactions.transferFeeCategory}
             </Text>
             <Pressable
-              accessibilityLabel={
-                state.language === 'id'
-                  ? 'Tutup pemilih kategori biaya'
-                  : 'Close fee category picker'
-              }
+              accessibilityLabel={state.t.transactions.closeFeeCategoryPicker}
               accessibilityRole="button"
               hitSlop={12}
               onPress={() => actions.setPicker(null)}

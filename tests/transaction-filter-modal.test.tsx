@@ -54,15 +54,15 @@ describe('transaction filter modal', () => {
     await fireEvent.press(screen.getByRole('radio', { name: /Pemasukan/ }));
     await fireEvent.press(screen.getByRole('radio', { name: 'Salary' }));
     await fireEvent.changeText(
-      screen.getByLabelText('Dari Tanggal'),
+      screen.getByLabelText('Dari tanggal'),
       '2026-08-31',
     );
     await fireEvent.changeText(
-      screen.getByLabelText('Sampai Tanggal'),
+      screen.getByLabelText('Sampai tanggal'),
       '2026-08-01',
     );
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Terapkan Filter' }),
+      screen.getByRole('button', { name: 'Terapkan filter' }),
     );
     expect(
       screen.getByText(
@@ -72,18 +72,18 @@ describe('transaction filter modal', () => {
     expect(onApply).not.toHaveBeenCalled();
 
     await fireEvent.changeText(
-      screen.getByLabelText('Dari Tanggal'),
+      screen.getByLabelText('Dari tanggal'),
       '2026-08-01',
     );
     await fireEvent.changeText(
-      screen.getByLabelText('Sampai Tanggal'),
+      screen.getByLabelText('Sampai tanggal'),
       '2026-08-31',
     );
     await fireEvent.press(screen.getByRole('radio', { name: 'Cash' }));
-    await fireEvent.press(screen.getByRole('radio', { name: 'Klaim Kantor' }));
-    await fireEvent.press(screen.getByRole('radio', { name: 'Ada Struk' }));
+    await fireEvent.press(screen.getByRole('radio', { name: 'Klaim kantor' }));
+    await fireEvent.press(screen.getByRole('radio', { name: 'Ada struk' }));
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Terapkan Filter' }),
+      screen.getByRole('button', { name: 'Terapkan filter' }),
     );
 
     expect(onApply).toHaveBeenCalledWith({

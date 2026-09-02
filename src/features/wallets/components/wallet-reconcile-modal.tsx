@@ -45,7 +45,7 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
 }: WalletReconcileModalProps) {
   const database = useSQLiteContext();
   const { colors, isDark } = useTheme();
-  const { language, t } = useLanguage();
+  const { t } = useLanguage();
   const savingRef = useRef(false);
 
   const [actualBalanceInput, setActualBalanceInput] = useState('');
@@ -78,11 +78,7 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
   async function handleSave() {
     if (savingRef.current) return;
     if (parsedActual === null) {
-      setError(
-        language === 'id'
-          ? 'Saldo aktual tidak valid.'
-          : 'The actual balance is invalid.',
-      );
+      setError(t.wallets.invalidActualBalance);
       return;
     }
     savingRef.current = true;
@@ -103,7 +99,11 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
       if (__DEV__) {
         console.error('Reconciliation save error:', caughtError);
       }
-      const mapped = mapError(caughtError, 'DATABASE_WRITE_FAILED');
+      const mapped = mapError(
+        caughtError,
+        'DATABASE_WRITE_FAILED',
+        t.appErrors,
+      );
       setError(mapped.message);
     } finally {
       savingRef.current = false;
@@ -147,7 +147,9 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
                     backgroundColor: isDark
                       ? `${walletColor}25`
                       : `${walletColor}15`,
-                    borderColor: isDark ? `${walletColor}44` : `${walletColor}33`,
+                    borderColor: isDark
+                      ? `${walletColor}44`
+                      : `${walletColor}33`,
                   },
                 ]}
               >
@@ -164,7 +166,10 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
                   {t.wallets.reconcileTitle}
                 </Text>
                 <Text
-                  style={[styles.sheetSubtitle, { color: colors.textSecondary }]}
+                  style={[
+                    styles.sheetSubtitle,
+                    { color: colors.textSecondary },
+                  ]}
                 >
                   {wallet.name}
                 </Text>
@@ -172,7 +177,7 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
             </View>
 
             <Pressable
-              accessibilityLabel={language === 'id' ? 'Tutup' : 'Close'}
+              accessibilityLabel={t.common.close}
               accessibilityRole="button"
               disabled={saving}
               hitSlop={8}
@@ -209,7 +214,10 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
               ]}
             >
               <Text
-                style={[styles.balanceCardLabel, { color: colors.textSecondary }]}
+                style={[
+                  styles.balanceCardLabel,
+                  { color: colors.textSecondary },
+                ]}
               >
                 {t.wallets.recordedBalance}
               </Text>
@@ -222,7 +230,9 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
 
             {/* 2. Actual Balance Input */}
             <View style={styles.inputSection}>
-              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
+              <Text
+                style={[styles.fieldLabel, { color: colors.textSecondary }]}
+              >
                 {t.wallets.actualBalanceLabel}
               </Text>
               <View
@@ -331,22 +341,18 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
                 {difference > 0 ? '+ ' : difference < 0 ? '− ' : ''}
                 {formatMoney(Math.abs(difference), currencyCode)}
                 {difference > 0
-                  ? language === 'id'
-                    ? ' (Pemasukan Penyesuaian)'
-                    : ' (Adjustment income)'
+                  ? t.wallets.adjustmentIncome
                   : difference < 0
-                    ? language === 'id'
-                      ? ' (Pengeluaran Penyesuaian)'
-                      : ' (Adjustment expense)'
-                    : language === 'id'
-                      ? ' (Saldo Pas)'
-                      : ' (Balance matched)'}
+                    ? t.wallets.adjustmentExpense
+                    : t.wallets.adjustmentBalanced}
               </Text>
             </View>
 
             {/* 4. Note Input */}
             <View style={styles.inputSection}>
-              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
+              <Text
+                style={[styles.fieldLabel, { color: colors.textSecondary }]}
+              >
                 {t.wallets.reconcileNoteLabel}
               </Text>
               <TextInput

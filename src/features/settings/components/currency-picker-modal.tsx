@@ -36,7 +36,7 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
   visible,
 }: CurrencyPickerModalProps) {
   const { colors, isDark } = useTheme();
-  const { language, t } = useLanguage();
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredCurrencies = useMemo(() => {
@@ -70,16 +70,10 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
           ]}
         >
           <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
-            {language === 'id'
-              ? 'Pilih Mata Uang Utama'
-              : 'Select Base Currency'}
+            {t.settings.selectBaseCurrency}
           </Text>
           <Pressable
-            accessibilityLabel={
-              language === 'id'
-                ? 'Tutup pemilih mata uang'
-                : 'Close currency picker'
-            }
+            accessibilityLabel={t.settings.closeCurrencyPicker}
             accessibilityRole="button"
             hitSlop={12}
             onPress={handleClose}
@@ -119,9 +113,7 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
                 { color: isDark ? colors.textSecondary : '#1E40AF' },
               ]}
             >
-              {language === 'id'
-                ? 'Mata uang berlaku global. Angka nominal lama tetap sama tanpa konversi kurs; hanya kode, simbol, dan format yang diperbarui.'
-                : 'Currency is global. Existing nominal amounts stay the same without exchange-rate conversion; only their currency code, symbol, and formatting are updated.'}
+              {t.settings.currencyChangeDescription}
             </Text>
           </View>
 
@@ -150,9 +142,7 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
             />
             {searchQuery ? (
               <Pressable
-                accessibilityLabel={
-                  language === 'id' ? 'Hapus pencarian' : 'Clear search'
-                }
+                accessibilityLabel={t.settings.clearSearch}
                 accessibilityRole="button"
                 hitSlop={8}
                 onPress={() => setSearchQuery('')}

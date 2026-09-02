@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import type { AuthUser } from '@/features/auth/auth-types';
+import { useLanguage } from '@/lib/i18n/language-context';
 import type { Language } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -36,16 +37,15 @@ export function SettingsAccountCard({
   user,
 }: SettingsAccountCardProps) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const [failedPhotoUrl, setFailedPhotoUrl] = useState<string | null>(null);
 
   const initial = (user.name?.trim() || user.email).charAt(0).toUpperCase();
-  const offlineLabel =
-    language === 'id' ? 'Siap digunakan offline' : 'Ready for offline use';
 
   return (
     <View style={styles.section}>
       <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-        {language === 'id' ? 'AKUN' : 'ACCOUNT'}
+        {t.settings.accountSection}
       </Text>
       <View
         style={[
@@ -90,7 +90,7 @@ export function SettingsAccountCard({
                 size={14}
               />
               <Text style={[styles.offline, { color: colors.positive }]}>
-                {offlineLabel}
+                {t.settings.offlineReady}
               </Text>
             </View>
           </View>
@@ -113,9 +113,7 @@ export function SettingsAccountCard({
               size={20}
             />
             <Text style={[styles.actionLabel, { color: colors.primary }]}>
-              {language === 'id'
-                ? 'Hubungkan data perangkat lama'
-                : 'Connect legacy device data'}
+              {t.settings.connectLegacyData}
             </Text>
             {claimingLegacy ? (
               <ActivityIndicator color={colors.primary} size="small" />
@@ -145,7 +143,7 @@ export function SettingsAccountCard({
             size={20}
           />
           <Text style={[styles.actionLabel, { color: colors.destructive }]}>
-            {language === 'id' ? 'Keluar' : 'Sign out'}
+            {t.settings.signOut}
           </Text>
           {isBusy ? (
             <ActivityIndicator color={colors.destructive} size="small" />

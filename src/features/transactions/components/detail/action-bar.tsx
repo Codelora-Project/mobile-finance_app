@@ -23,7 +23,6 @@ export type DetailActionBarProps = {
 
 export const DetailActionBar = memo(function DetailActionBar({
   claimMembership,
-  language,
   onShareSlip,
   t,
   transaction,
@@ -35,12 +34,8 @@ export const DetailActionBar = memo(function DetailActionBar({
     claimMembership && claimMembership.claimStatus !== 'draft';
 
   const shareLabel = transaction.receipt
-    ? language === 'id'
-      ? 'Bagikan Struk'
-      : 'Share Receipt'
-    : language === 'id'
-      ? 'Bagikan Slip'
-      : 'Share Slip';
+    ? t.transactions.shareReceipt
+    : t.transactions.shareSlip;
 
   return (
     <View style={styles.container}>
@@ -61,9 +56,9 @@ export const DetailActionBar = memo(function DetailActionBar({
             size={18}
           />
           <Text style={[styles.lockedBannerText, { color: colors.warning }]}>
-            {language === 'id'
-              ? `Transaksi ini terkunci oleh klaim "${claimMembership.claimTitle}" (${claimMembership.claimStatus}).`
-              : `This transaction is locked by claim "${claimMembership.claimTitle}" (${claimMembership.claimStatus}).`}
+            {t.transactions.lockedByClaimDetail
+              .replace('{title}', claimMembership.claimTitle)
+              .replace('{status}', claimMembership.claimStatus)}
           </Text>
         </View>
       ) : null}
@@ -80,7 +75,7 @@ export const DetailActionBar = memo(function DetailActionBar({
         {/* Edit Button (hidden if locked) */}
         {!isLockedByClaim ? (
           <Pressable
-            accessibilityLabel="Ubah Transaksi"
+            accessibilityLabel={t.transactions.editTransactionAccessibility}
             accessibilityRole="button"
             onPress={() => router.push(`/transactions/${transaction.id}/edit`)}
             style={({ pressed }) => [

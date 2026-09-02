@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 
 import type { TranslationSchema } from '@/lib/i18n/translations';
-import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
@@ -51,8 +50,6 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
   visible,
 }: HomeDisplaySettingsModalProps) {
   const { colors, isDark } = useTheme();
-  const { language } = useLanguage();
-  const isIndonesian = language === 'id';
 
   return (
     <Modal
@@ -71,11 +68,7 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
           ]}
         >
           <Pressable
-            accessibilityLabel={
-              isIndonesian
-                ? 'Tutup dialog pengaturan'
-                : 'Close display settings'
-            }
+            accessibilityLabel={t.home.closeDisplaySettings}
             accessibilityRole="button"
             onPress={onClose}
             style={StyleSheet.absoluteFill}
@@ -110,10 +103,10 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
           {/* Header */}
           <View style={styles.headerRow}>
             <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
-              {isIndonesian ? 'Pengaturan Tampilan' : 'Display Settings'}
+              {t.home.displaySettingsTitle}
             </Text>
             <Pressable
-              accessibilityLabel={isIndonesian ? 'Tutup' : 'Close'}
+              accessibilityLabel={t.common.close}
               accessibilityRole="button"
               hitSlop={8}
               onPress={onClose}
@@ -134,7 +127,7 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
           >
             {/* Section Header */}
             <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>
-              {isIndonesian ? 'TAMPILAN BERANDA' : 'HOME DISPLAY'}
+              {t.home.homeDisplaySection}
             </Text>
 
             {/* 1. Toggle Daftar Dompet */}
@@ -167,14 +160,12 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
                 <Text
                   style={[styles.settingTitle, { color: colors.textPrimary }]}
                 >
-                  {isIndonesian ? 'Daftar Dompet' : 'Wallet List'}
+                  {t.home.walletList}
                 </Text>
                 <Text
                   style={[styles.settingDesc, { color: colors.textSecondary }]}
                 >
-                  {isIndonesian
-                    ? 'Tampilkan filter cepat per dompet di bawah kartu'
-                    : 'Show wallet filters below the summary card'}
+                  {t.home.walletListDescription}
                 </Text>
               </View>
               <Switch
@@ -223,9 +214,7 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
                 <Text
                   style={[styles.settingDesc, { color: colors.textSecondary }]}
                 >
-                  {isIndonesian
-                    ? 'Tampilkan barisan kategori favorit di Beranda'
-                    : 'Show favorite categories on Home'}
+                  {t.home.quickLogDescription}
                 </Text>
               </View>
               <Switch
@@ -269,14 +258,12 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
                 <Text
                   style={[styles.settingTitle, { color: colors.textPrimary }]}
                 >
-                  {isIndonesian ? 'Sensor Saldo' : 'Hide Balance'}
+                  {t.home.balancePrivacy}
                 </Text>
                 <Text
                   style={[styles.settingDesc, { color: colors.textSecondary }]}
                 >
-                  {isIndonesian
-                    ? 'Sembunyikan nominal saldo demi privasi'
-                    : 'Hide balance amounts for privacy'}
+                  {t.home.balancePrivacyDescription}
                 </Text>
               </View>
               <Switch
@@ -297,7 +284,7 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
                 { color: colors.textMuted, marginTop: spacing.md },
               ]}
             >
-              {isIndonesian ? 'KUSTOMISASI' : 'CUSTOMIZATION'}
+              {t.home.customizationSection}
             </Text>
 
             {/* Button to customize quick log categories */}

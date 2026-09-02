@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { contentMaxWidth } from '@/theme/layout';
 import { radius } from '@/theme/radius';
@@ -20,22 +21,22 @@ export const TransactionPeriodSegmentedControl = memo(
   function TransactionPeriodSegmentedControl({
     activePeriod,
     embedded = false,
-    language,
     onChangePeriod,
   }: TransactionPeriodSegmentedControlProps) {
     const { colors, isDark } = useTheme();
+    const { t } = useLanguage();
 
     const options: { label: string; value: HistoryPeriod }[] = [
       {
-        label: language === 'id' ? 'Harian' : 'Daily',
+        label: t.home.periodDaily,
         value: 'daily',
       },
       {
-        label: language === 'id' ? 'Mingguan' : 'Weekly',
+        label: t.home.periodWeekly,
         value: 'weekly',
       },
       {
-        label: language === 'id' ? 'Bulanan' : 'Monthly',
+        label: t.home.periodMonthly,
         value: 'monthly',
       },
     ];

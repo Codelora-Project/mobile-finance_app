@@ -6,6 +6,7 @@ import type {
   Transaction,
 } from '@/features/transactions/transaction-repository';
 import type { Wallet } from '@/features/wallets';
+import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
@@ -26,7 +27,6 @@ type TransferReviewModalProps = {
 export function TransferReviewModal({
   currencyCode,
   input,
-  language,
   onCancel,
   onConfirm,
   originalTransaction,
@@ -34,6 +34,7 @@ export function TransferReviewModal({
   wallets,
 }: TransferReviewModalProps) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   if (!input || input.type !== 'transfer') return null;
 
   const source = wallets.find((wallet) => wallet.id === input.paymentMethodId);
@@ -61,7 +62,6 @@ export function TransferReviewModal({
     return balance;
   };
 
-  const title = language === 'id' ? 'Tinjau transfer' : 'Review transfer';
   const transferFeeMinor = input.transferFeeMinor ?? 0;
   const totalDebit = input.amountMinor + transferFeeMinor;
 
@@ -92,25 +92,19 @@ export function TransferReviewModal({
               accessibilityRole="header"
               style={[styles.title, { color: colors.textPrimary }]}
             >
-              {title}
+              {t.transactions.reviewTransfer}
             </Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              {language === 'id'
-                ? 'Pastikan dompet dan nominal sudah benar.'
-                : 'Make sure the wallets and amount are correct.'}
+              {t.transactions.reviewTransferDescription}
             </Text>
           </View>
 
           <View style={[styles.flow, { borderColor: colors.border }]}>
             <WalletBalance
               balance={source ? balanceAfter(source) : null}
-              balanceLabel={
-                language === 'id'
-                  ? 'Saldo setelah transfer'
-                  : 'Balance after transfer'
-              }
+              balanceLabel={t.transactions.balanceAfterTransfer}
               currencyCode={currencyCode}
-              label={language === 'id' ? 'Dari' : 'From'}
+              label={t.transactions.fromLabel}
               name={source?.name ?? '—'}
             />
             <MaterialCommunityIcons
@@ -120,24 +114,20 @@ export function TransferReviewModal({
             />
             <WalletBalance
               balance={destination ? balanceAfter(destination) : null}
-              balanceLabel={
-                language === 'id'
-                  ? 'Saldo setelah transfer'
-                  : 'Balance after transfer'
-              }
+              balanceLabel={t.transactions.balanceAfterTransfer}
               currencyCode={currencyCode}
-              label={language === 'id' ? 'Ke' : 'To'}
+              label={t.transactions.toLabel}
               name={destination?.name ?? '—'}
             />
           </View>
 
           <View style={styles.summary}>
             <SummaryRow
-              label={language === 'id' ? 'Nominal' : 'Amount'}
+              label={t.transactions.amountLabel}
               value={formatMoney(input.amountMinor, currencyCode)}
             />
             <SummaryRow
-              label={language === 'id' ? 'Biaya transfer' : 'Transfer fee'}
+              label={t.transactions.transferFee}
               value={formatMoney(transferFeeMinor, currencyCode)}
             />
             <View
@@ -145,7 +135,7 @@ export function TransferReviewModal({
             />
             <SummaryRow
               emphasized
-              label={language === 'id' ? 'Total berkurang' : 'Total debit'}
+              label={t.transactions.totalDebit}
               value={formatMoney(totalDebit, currencyCode)}
             />
           </View>
@@ -158,7 +148,7 @@ export function TransferReviewModal({
               style={[styles.button, { borderColor: colors.border }]}
             >
               <Text style={[styles.buttonText, { color: colors.textPrimary }]}>
-                {language === 'id' ? 'Kembali' : 'Back'}
+                {t.common.back}
               </Text>
             </Pressable>
             <Pressable
@@ -170,12 +160,8 @@ export function TransferReviewModal({
             >
               <Text style={[styles.buttonText, { color: colors.onPrimary }]}>
                 {saving
-                  ? language === 'id'
-                    ? 'Menyimpan…'
-                    : 'Saving…'
-                  : language === 'id'
-                    ? 'Konfirmasi transfer'
-                    : 'Confirm transfer'}
+                  ? t.transactions.savingTransfer
+                  : t.transactions.confirmTransfer}
               </Text>
             </Pressable>
           </View>

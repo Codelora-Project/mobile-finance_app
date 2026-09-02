@@ -175,8 +175,7 @@ export function useTransactionHistoryViewModel() {
         dateFrom: startStr,
         dateTo: endStr,
         primaryLabel: `${startMonth} – ${endMonth}`,
-        secondaryLabel:
-          language === 'id' ? 'Ketuk untuk Semua Waktu' : 'Tap for All Time',
+        secondaryLabel: t.transactions.tapForAllTime,
       };
     }
 
@@ -196,10 +195,9 @@ export function useTransactionHistoryViewModel() {
       dateFrom: startStr,
       dateTo: endStr,
       primaryLabel: monthYear,
-      secondaryLabel:
-        language === 'id' ? 'Ketuk untuk Semua Waktu' : 'Tap for All Time',
+      secondaryLabel: t.transactions.tapForAllTime,
     };
-  }, [language, period, selectedDate]);
+  }, [language, period, selectedDate, t.transactions.tapForAllTime]);
 
   // Calculate effective filters combining period range and custom filters
   const effectiveFilters = useMemo<TransactionFilters>(() => {
@@ -367,10 +365,8 @@ export function useTransactionHistoryViewModel() {
     if (exporting) return;
     if (transactions.length === 0) {
       Alert.alert(
-        language === 'id' ? 'Ekspor Transaksi' : 'Export Transactions',
-        language === 'id'
-          ? 'Tidak ada transaksi yang cocok untuk diekspor.'
-          : 'No matching transactions to export.',
+        t.transactions.exportTransactions,
+        t.transactions.noMatchingExport,
       );
       return;
     }
@@ -398,18 +394,10 @@ export function useTransactionHistoryViewModel() {
       }
 
       const { uri } = await exportTransactionsToCsv(allMatching, language);
-      await shareTransactionCsv(
-        uri,
-        language === 'id'
-          ? 'Ekspor Riwayat Transaksi'
-          : 'Export Transaction History',
-      );
+      await shareTransactionCsv(uri, t.transactions.exportHistory);
     } catch (err) {
-      const mapped = mapError(err, 'FILE_OPERATION_FAILED');
-      Alert.alert(
-        language === 'id' ? 'Gagal Mengekspor' : 'Export Failed',
-        mapped.message,
-      );
+      const mapped = mapError(err, 'FILE_OPERATION_FAILED', t.appErrors);
+      Alert.alert(t.transactions.exportFailedTitle, mapped.message);
     } finally {
       setExporting(false);
     }
@@ -419,6 +407,7 @@ export function useTransactionHistoryViewModel() {
     effectiveFilters,
     exporting,
     language,
+    t,
     transactions.length,
   ]);
 
@@ -455,27 +444,25 @@ export function useTransactionHistoryViewModel() {
     (tx: TransactionListItem) => {
       Alert.alert(
         tx.counterparty || tx.categoryName,
-        language === 'id'
-          ? 'Pilih aksi untuk transaksi ini:'
-          : 'Choose an action for this transaction:',
+        t.transactions.chooseAction,
         [
           {
-            text: language === 'id' ? 'Batal' : 'Cancel',
+            text: t.common.cancel,
             style: 'cancel',
           },
           {
-            text: language === 'id' ? 'Edit Transaksi' : 'Edit Transaction',
+            text: t.transactions.editTransaction,
             onPress: () => router.push(`/transactions/${tx.id}/edit`),
           },
           {
-            text: language === 'id' ? 'Hapus' : 'Delete',
+            text: t.common.delete,
             style: 'destructive',
             onPress: () => handleDeleteTransaction(tx),
           },
         ],
       );
     },
-    [handleDeleteTransaction, language, router],
+    [handleDeleteTransaction, router, t],
   );
 
   const handleOpenDetail = useCallback(

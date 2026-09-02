@@ -31,7 +31,7 @@ export function ClaimsScreen() {
   const database = useSQLiteContext();
   const router = useRouter();
   const { colors } = useTheme();
-  const { language, t } = useLanguage();
+  const { t } = useLanguage();
   const params = useLocalSearchParams<{ feedback?: string | string[] }>();
   const feedback = Array.isArray(params.feedback)
     ? params.feedback[0]
@@ -112,10 +112,10 @@ export function ClaimsScreen() {
       {/* 1. Header with Title & New Claim Button */}
       <ClaimsHeader
         backLabel={t.common.back}
-        newClaimLabel={language === 'id' ? 'Klaim baru' : 'New claim'}
+        newClaimLabel={t.claims.newClaim}
         onBack={() => router.back()}
         onNewClaim={claims.length > 0 ? handleNewClaim : undefined}
-        title={language === 'id' ? 'Klaim' : 'Claims'}
+        title={t.claims.title}
       />
 
       {/* 2. Horizontal Status Filter Bar */}
@@ -142,16 +142,15 @@ export function ClaimsScreen() {
           />
           <View style={styles.priorityText}>
             <Text style={[styles.priorityTitle, { color: colors.textPrimary }]}>
-              {language === 'id'
-                ? `${actionRequiredCount} klaim perlu tindakan`
-                : `${actionRequiredCount} ${actionRequiredCount === 1 ? 'claim needs' : 'claims need'} attention`}
+              {t.claims.attentionCount.replace(
+                '{count}',
+                String(actionRequiredCount),
+              )}
             </Text>
             <Text
               style={[styles.prioritySubtitle, { color: colors.textSecondary }]}
             >
-              {language === 'id'
-                ? 'Draf dan klaim ditolak ditampilkan lebih dahulu.'
-                : 'Draft and rejected claims are shown first.'}
+              {t.claims.attentionDescription}
             </Text>
           </View>
         </View>
@@ -190,7 +189,7 @@ export function ClaimsScreen() {
         <View style={styles.state}>
           <ActivityIndicator color={colors.primary} size="large" />
           <Text style={[styles.stateText, { color: colors.textSecondary }]}>
-            {language === 'id' ? 'Memuat klaim…' : 'Loading claims…'}
+            {t.claims.loading}
           </Text>
         </View>
       ) : (
@@ -203,20 +202,12 @@ export function ClaimsScreen() {
           keyExtractor={(claim) => String(claim.id)}
           ListEmptyComponent={
             <ClaimsEmptyState
-              createLabel={language === 'id' ? 'Buat klaim' : 'Create claim'}
-              description={
-                language === 'id'
-                  ? 'Kelompokkan transaksi kantor yang akan diajukan untuk penggantian biaya.'
-                  : 'Group work expenses that you want to submit for reimbursement.'
-              }
-              filteredDescription={
-                language === 'id'
-                  ? 'Pilih status lain untuk melihat klaim.'
-                  : 'Select a different status to view other claims.'
-              }
+              createLabel={t.claims.createClaim}
+              description={t.claims.emptyDescription}
+              filteredDescription={t.claims.emptyFilteredDescription}
               hasStatusFilter={Boolean(status)}
               onCreateClaim={handleNewClaim}
-              title={language === 'id' ? 'Belum ada klaim' : 'No claims found'}
+              title={t.claims.emptyTitle}
             />
           }
           onRefresh={() => void load()}

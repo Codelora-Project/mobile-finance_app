@@ -61,7 +61,7 @@ export const AnalyticsPeriodSummary = memo(function AnalyticsPeriodSummary({
           netFlowMinor,
           currencyCode,
         )}`}
-        minimumFontScale={0.7}
+        minimumFontScale={0.85}
         numberOfLines={1}
         style={[
           styles.netValue,
@@ -124,7 +124,7 @@ export const AnalyticsPeriodSummary = memo(function AnalyticsPeriodSummary({
           </View>
           <Text
             adjustsFontSizeToFit
-            minimumFontScale={0.75}
+            minimumFontScale={0.85}
             numberOfLines={1}
             style={[styles.metricValue, { color: colors.textPrimary }]}
           >
@@ -144,7 +144,10 @@ export const AnalyticsPeriodSummary = memo(function AnalyticsPeriodSummary({
         <View style={styles.metricCol}>
           <View style={styles.metricLabelRow}>
             <View
-              style={[styles.metricDot, { backgroundColor: colors.destructive }]}
+              style={[
+                styles.metricDot,
+                { backgroundColor: colors.destructive },
+              ]}
             />
             <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>
               {t.analytics.totalExpense}
@@ -152,7 +155,7 @@ export const AnalyticsPeriodSummary = memo(function AnalyticsPeriodSummary({
           </View>
           <Text
             adjustsFontSizeToFit
-            minimumFontScale={0.75}
+            minimumFontScale={0.85}
             numberOfLines={1}
             style={[styles.metricValue, { color: colors.textPrimary }]}
           >
