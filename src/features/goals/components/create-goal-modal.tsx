@@ -16,20 +16,10 @@ import { GOAL_ICONS } from '@/features/goals/goal-icons';
 import { useCurrency } from '@/lib/currency/currency-context';
 import type { TranslationSchema } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors, goalColorOptions } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
-
-const COLOR_OPTIONS = [
-  '#3B82F6',
-  '#10B981',
-  '#F59E0B',
-  '#EC4899',
-  '#8B5CF6',
-  '#06B6D4',
-  '#EF4444',
-  '#14B8A6',
-];
 
 const ICON_KEYS = Object.keys(GOAL_ICONS);
 
@@ -103,8 +93,15 @@ export const CreateGoalModal = memo(function CreateGoalModal({
 
         <ScrollView contentContainerStyle={styles.modalFormContent}>
           {formError ? (
-            <View style={styles.errorPanel}>
-              <Text style={styles.errorText}>{formError}</Text>
+            <View
+              style={[
+                styles.errorPanel,
+                { backgroundColor: colors.expenseBackground },
+              ]}
+            >
+              <Text style={[styles.errorText, { color: colors.destructive }]}>
+                {formError}
+              </Text>
             </View>
           ) : null}
 
@@ -144,7 +141,11 @@ export const CreateGoalModal = memo(function CreateGoalModal({
                 },
               ]}
             >
-              <Text style={styles.amountPrefix}>{currencySymbol}</Text>
+              <Text
+                style={[styles.amountPrefix, { color: colors.textSecondary }]}
+              >
+                {currencySymbol}
+              </Text>
               <TextInput
                 keyboardType="decimal-pad"
                 onChangeText={onChangeTargetAmount}
@@ -170,7 +171,11 @@ export const CreateGoalModal = memo(function CreateGoalModal({
                 },
               ]}
             >
-              <Text style={styles.amountPrefix}>{currencySymbol}</Text>
+              <Text
+                style={[styles.amountPrefix, { color: colors.textSecondary }]}
+              >
+                {currencySymbol}
+              </Text>
               <TextInput
                 keyboardType="decimal-pad"
                 onChangeText={onChangeInitialDeposit}
@@ -211,7 +216,7 @@ export const CreateGoalModal = memo(function CreateGoalModal({
                     ]}
                   >
                     <MaterialCommunityIcons
-                      color={isSelected ? '#FFFFFF' : colors.textPrimary}
+                      color={isSelected ? colors.onPrimary : colors.textPrimary}
                       name={iconName}
                       size={22}
                     />
@@ -227,7 +232,7 @@ export const CreateGoalModal = memo(function CreateGoalModal({
               {t.goals.chooseThemeColor}
             </Text>
             <View style={styles.colorsRow}>
-              {COLOR_OPTIONS.map((c) => {
+              {goalColorOptions.map((c) => {
                 const isSelected = selectedColor === c;
                 return (
                   <Pressable
@@ -246,7 +251,7 @@ export const CreateGoalModal = memo(function CreateGoalModal({
                   >
                     {isSelected ? (
                       <MaterialCommunityIcons
-                        color="#FFFFFF"
+                        color={fixedSemanticColors.contentOnStrong}
                         name="check"
                         size={18}
                       />
@@ -283,7 +288,6 @@ const styles = StyleSheet.create({
   },
   amountPrefix: {
     ...typography.body,
-    color: '#64748B',
     fontSize: 16,
     fontWeight: '700',
   },
@@ -315,13 +319,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   errorPanel: {
-    backgroundColor: '#FEE2E2',
     borderRadius: radius.md,
     padding: spacing.md,
   },
   errorText: {
     ...typography.metadata,
-    color: '#EF4444',
     fontWeight: '600',
   },
   fieldLabel: {

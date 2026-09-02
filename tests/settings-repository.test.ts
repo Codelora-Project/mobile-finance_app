@@ -10,10 +10,12 @@ import {
   clearTemporaryCache,
   formatStorageSize,
   getHomeDisplayPreferences,
+  getQuickLogCategoryIds,
   getRecommendedShortcuts,
   getSettingsOverview,
   getStorageStats,
   resetApplicationData,
+  resolveDefaultQuickLogCategoryIds,
   setHomeDisplayPreferences,
 } from '@/features/settings/settings-repository';
 
@@ -234,5 +236,42 @@ describe('settings repository', () => {
     expect(database.settings.get('home_hide_balance')).toBe('1');
     expect(database.settings.get('home_show_quick_log')).toBe('0');
     expect(database.settings.get('home_show_wallet_chips')).toBe('1');
+  });
+
+  it('resolves default quick-log categories by stable system key', () => {
+    expect(
+      resolveDefaultQuickLogCategoryIds([
+        { id: 91, systemKey: 'expense_shopping', type: 'expense' },
+        { id: 42, systemKey: 'expense_food', type: 'expense' },
+        {
+          id: 77,
+          systemKey: 'expense_transportation',
+          type: 'expense',
+        },
+        { id: 12, systemKey: 'income_salary', type: 'income' },
+      ]),
+    ).toEqual([42, 77, 91]);
+  });
+
+  it('loads quick-log defaults from database system keys instead of row IDs', async () => {
+    const database = {
+      getAllAsync: jest.fn(async () => [
+        { id: 880, system_key: 'expense_bills', type: 'expense' },
+        { id: 120, system_key: 'expense_food', type: 'expense' },
+      ]),
+      getFirstAsync: jest.fn(async () => null),
+    } as unknown as SQLiteDatabase;
+
+    await expect(getQuickLogCategoryIds(database)).resolves.toEqual([120, 880]);
+  });
+
+  it('falls back to the first expense categories if system keys are absent', () => {
+    expect(
+      resolveDefaultQuickLogCategoryIds([
+        { id: 501, systemKey: null, type: 'expense' },
+        { id: 502, systemKey: null, type: 'expense' },
+        { id: 503, systemKey: null, type: 'income' },
+      ]),
+    ).toEqual([501, 502]);
   });
 });

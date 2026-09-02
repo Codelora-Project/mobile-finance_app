@@ -27,7 +27,7 @@ import { contentMaxWidth } from '@/theme/layout';
 import { spacing } from '@/theme/spacing';
 
 export function TransactionHistoryScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { handleScroll } = useTabBarVisibility();
   const { actions, state } = useTransactionHistoryViewModel();
   const initialLoading = state.loading && state.dateGroups.length === 0;
@@ -39,7 +39,7 @@ export function TransactionHistoryScreen() {
           styles.dateGroupCard,
           {
             backgroundColor: colors.surface,
-            borderColor: isDark ? '#27272A' : '#E2E8F0',
+            borderColor: colors.border,
             shadowColor: colors.shadow,
           },
         ]}
@@ -65,7 +65,7 @@ export function TransactionHistoryScreen() {
         </View>
       </View>
     ),
-    [actions, colors, isDark, state.t],
+    [actions, colors, state.t],
   );
 
   return (

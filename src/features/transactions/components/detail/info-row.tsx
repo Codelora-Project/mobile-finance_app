@@ -30,7 +30,7 @@ export const DetailInfoRow = memo(function DetailInfoRow({
   value,
   valueColor,
 }: DetailInfoRowProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   const content = (
     <View
@@ -40,9 +40,7 @@ export const DetailInfoRow = memo(function DetailInfoRow({
           ? [
               styles.rowDivider,
               {
-                borderBottomColor: isDark
-                  ? 'rgba(255, 255, 255, 0.06)'
-                  : 'rgba(0, 0, 0, 0.05)',
+                borderBottomColor: colors.pressedOverlay,
               },
             ]
           : null,
@@ -52,7 +50,7 @@ export const DetailInfoRow = memo(function DetailInfoRow({
         style={[
           styles.iconCircle,
           {
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F1F5F9',
+            backgroundColor: colors.surfaceSecondary,
           },
         ]}
       >

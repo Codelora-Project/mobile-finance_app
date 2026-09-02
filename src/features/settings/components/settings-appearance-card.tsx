@@ -111,9 +111,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
             style={[
               styles.themeSegmentTrack,
               {
-                backgroundColor: isDark
-                  ? colors.surfaceSecondary
-                  : colors.surfaceSecondary,
+                backgroundColor: colors.surfaceSecondary,
               },
             ]}
           >
@@ -253,9 +251,7 @@ export const SettingsAppearanceCard = memo(function SettingsAppearanceCard({
                         : 'transparent',
                       borderColor: isSelected
                         ? BRAND_PRESETS[swatch.id].primary
-                        : isDark
-                          ? colors.border
-                          : colors.border,
+                        : colors.border,
                     },
                     isSelected ? styles.colorSwatchBtnActive : null,
                   ]}

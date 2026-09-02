@@ -27,7 +27,7 @@ export const WalletNetWorthCard = memo(function WalletNetWorthCard({
   totalNetWorth,
   trackingAssets,
 }: WalletNetWorthCardProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { t } = useLanguage();
 
   const formattedNetWorth = hideBalance
@@ -48,7 +48,7 @@ export const WalletNetWorthCard = memo(function WalletNetWorthCard({
         styles.netWorthCard,
         {
           backgroundColor: colors.surface,
-          borderColor: isDark ? '#27272A' : '#E2E8F0',
+          borderColor: colors.border,
           shadowColor: colors.shadow,
         },
       ]}
@@ -77,8 +77,8 @@ export const WalletNetWorthCard = memo(function WalletNetWorthCard({
             style={({ pressed }) => [
               styles.eyeBtn,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
-                borderColor: isDark ? '#3F3F46' : '#E2E8F0',
+                backgroundColor: colors.surfaceSecondary,
+                borderColor: colors.border,
               },
               pressed ? styles.btnPressed : null,
             ]}
@@ -103,12 +103,7 @@ export const WalletNetWorthCard = memo(function WalletNetWorthCard({
       </Text>
 
       {/* 3. Sleek Horizontal Divider */}
-      <View
-        style={[
-          styles.divider,
-          { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
-        ]}
-      />
+      <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
       {/* 4. Split Metric Columns (Dana Operasional vs Aset Tracking) */}
       <View style={styles.breakdownRow}>
@@ -137,10 +132,7 @@ export const WalletNetWorthCard = memo(function WalletNetWorthCard({
 
         {/* Center Vertical Divider */}
         <View
-          style={[
-            styles.verticalDivider,
-            { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
-          ]}
+          style={[styles.verticalDivider, { backgroundColor: colors.border }]}
         />
 
         {/* Tracked Assets Column */}

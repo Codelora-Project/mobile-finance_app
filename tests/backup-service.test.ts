@@ -313,6 +313,17 @@ describe('Backup Service', () => {
     expect(result.fileName).toMatch(/^laporan_transaksi_\d+_\d+\.csv$/);
   });
 
+  it('does not create a temporary CSV when there are no transactions', async () => {
+    const mockDb = {
+      getAllAsync: jest.fn(async () => []),
+    } as unknown as SQLiteDatabase;
+
+    await expect(exportTransactionsCsvFile(mockDb)).resolves.toMatchObject({
+      count: 0,
+      uri: '',
+    });
+  });
+
   it('exports CSV filtered by this_month scope', async () => {
     const mockDb = {
       getAllAsync: jest.fn(async () => [

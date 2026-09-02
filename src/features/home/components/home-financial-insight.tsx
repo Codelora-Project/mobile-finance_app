@@ -90,7 +90,7 @@ export const HomeFinancialInsight = memo(function HomeFinancialInsight({
       style={[
         styles.card,
         {
-          backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+          backgroundColor: colors.surfaceMuted,
           borderColor: colors.border,
         },
       ]}

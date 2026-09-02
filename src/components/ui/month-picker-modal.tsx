@@ -4,6 +4,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -204,7 +205,7 @@ const styles = StyleSheet.create({
   },
   modalRoot: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.62)',
+    backgroundColor: fixedSemanticColors.modalBackdrop,
     flex: 1,
     justifyContent: 'center',
   },

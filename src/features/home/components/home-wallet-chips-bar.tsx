@@ -6,6 +6,7 @@ import type { Wallet } from '@/features/wallets';
 import { useLanguage } from '@/lib/i18n/language-context';
 import type { Language } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -49,12 +50,10 @@ export const HomeWalletChipsBar = memo(function HomeWalletChipsBar({
             styles.chip,
             {
               backgroundColor: isAllSelected
-                ? isDark
-                  ? '#1E3A8A'
-                  : '#EFF6FF'
+                ? colors.primaryLight
                 : isDark
                   ? colors.surface
-                  : '#FFFFFF',
+                  : colors.onPrimary,
               borderColor: isAllSelected ? colors.primary : colors.border,
             },
             pressed ? { opacity: 0.75 } : null,
@@ -94,7 +93,7 @@ export const HomeWalletChipsBar = memo(function HomeWalletChipsBar({
                       : `${walletColor}12`
                     : isDark
                       ? colors.surface
-                      : '#FFFFFF',
+                      : colors.onPrimary,
                   borderColor: isSelected ? walletColor : colors.border,
                 },
                 pressed ? { opacity: 0.75 } : null,
@@ -127,7 +126,7 @@ export const HomeWalletChipsBar = memo(function HomeWalletChipsBar({
               styles.chip,
               styles.addChip,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+                backgroundColor: colors.surfaceMuted,
                 borderColor: colors.border,
               },
               pressed ? { opacity: 0.75 } : null,
@@ -160,7 +159,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: spacing.md,
     paddingVertical: 7,
-    shadowColor: '#000000',
+    shadowColor: fixedSemanticColors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 2,

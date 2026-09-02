@@ -21,7 +21,7 @@ export const DetailReceiptCard = memo(function DetailReceiptCard({
   transaction,
 }: DetailReceiptCardProps) {
   const router = useRouter();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   if (!transaction.receipt) return null;
 
@@ -40,7 +40,7 @@ export const DetailReceiptCard = memo(function DetailReceiptCard({
           style={[
             styles.receiptIconCircle,
             {
-              backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#EFF6FF',
+              backgroundColor: colors.primaryLight,
             },
           ]}
         >
@@ -70,7 +70,7 @@ export const DetailReceiptCard = memo(function DetailReceiptCard({
         style={({ pressed }) => [
           styles.viewReceiptButton,
           {
-            backgroundColor: isDark ? 'rgba(59, 130, 246, 0.12)' : '#EFF6FF',
+            backgroundColor: colors.primaryLight,
             borderColor: colors.primary,
           },
           pressed && styles.pressed,

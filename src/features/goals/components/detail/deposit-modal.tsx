@@ -13,6 +13,7 @@ import { AppButton } from '@/components/ui/app-button';
 import { useCurrency } from '@/lib/currency/currency-context';
 import type { TranslationSchema } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -110,8 +111,8 @@ export const GoalDetailModal = memo(function GoalDetailModal({
                 styles.amountInputRow,
                 {
                   backgroundColor: isDark
-                    ? 'rgba(255, 255, 255, 0.05)'
-                    : '#F8FAFC',
+                    ? colors.subtleOverlay
+                    : colors.surfaceMuted,
                   borderColor: colors.border,
                 },
               ]}
@@ -145,8 +146,8 @@ export const GoalDetailModal = memo(function GoalDetailModal({
                 styles.textInput,
                 {
                   backgroundColor: isDark
-                    ? 'rgba(255, 255, 255, 0.05)'
-                    : '#F8FAFC',
+                    ? colors.subtleOverlay
+                    : colors.surfaceMuted,
                   borderColor: colors.border,
                   color: colors.textPrimary,
                 },
@@ -229,7 +230,7 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    backgroundColor: fixedSemanticColors.modalBackdrop,
     flex: 1,
     justifyContent: 'center',
     padding: spacing.md,

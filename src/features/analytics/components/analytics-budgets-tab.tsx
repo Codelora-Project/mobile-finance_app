@@ -89,7 +89,7 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
                       ? colors.expenseBackground
                       : isDark
                         ? colors.surfaceSecondary
-                        : '#EFF6FF',
+                        : colors.primaryLight,
                 },
               ]}
             >
@@ -98,7 +98,9 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
                   styles.overallPercentText,
                   {
                     color:
-                      overallSpentPercent > 100 ? '#EF4444' : colors.primary,
+                      overallSpentPercent > 100
+                        ? colors.destructive
+                        : colors.primary,
                   },
                 ]}
               >
@@ -111,7 +113,7 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
             style={[
               styles.overallBarTrack,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+                backgroundColor: colors.surfaceSecondary,
               },
             ]}
           >
@@ -121,9 +123,9 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
                 {
                   backgroundColor:
                     overallSpentPercent > 100
-                      ? '#EF4444'
+                      ? colors.destructive
                       : overallSpentPercent >= 70
-                        ? '#F59E0B'
+                        ? colors.warning
                         : colors.positive,
                   width: `${Math.min(100, Math.max(overallSpentPercent, 4))}%`,
                 },
@@ -169,7 +171,7 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
             style={[
               styles.emptyHeroIconBadge,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#EFF6FF',
+                backgroundColor: colors.primaryLight,
               },
             ]}
           >
@@ -242,14 +244,12 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
                     style={[
                       styles.unbudgetedIconCircle,
                       {
-                        backgroundColor: isDark
-                          ? colors.surfaceSecondary
-                          : '#F1F5F9',
+                        backgroundColor: colors.surfaceSecondary,
                       },
                     ]}
                   >
                     <MaterialCommunityIcons
-                      color={isDark ? colors.textSecondary : '#475569'}
+                      color={colors.textSecondary}
                       name={meta.icon}
                       size={18}
                     />
@@ -298,8 +298,8 @@ export const AnalyticsBudgetsTab = memo(function AnalyticsBudgetsTab({
                       {
                         backgroundColor: isDark
                           ? colors.surfaceSecondary
-                          : '#EFF6FF',
-                        borderColor: isDark ? colors.border : '#DBEAFE',
+                          : colors.primaryLight,
+                        borderColor: colors.primaryBorder,
                       },
                     ]}
                   >

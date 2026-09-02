@@ -21,7 +21,7 @@ export const AnalyticsPeriodSummary = memo(function AnalyticsPeriodSummary({
   currencyCode,
   t,
 }: AnalyticsPeriodSummaryProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const netFlowMinor = analytics.totalIncomeMinor - analytics.totalExpenseMinor;
   const previousFlow = analytics.monthlyCashFlow.at(-2);
   const currentFlow = analytics.monthlyCashFlow.at(-1);
@@ -44,7 +44,7 @@ export const AnalyticsPeriodSummary = memo(function AnalyticsPeriodSummary({
         styles.card,
         {
           backgroundColor: colors.surface,
-          borderColor: isDark ? '#27272A' : '#E2E8F0',
+          borderColor: colors.border,
           shadowColor: colors.shadow,
         },
       ]}
@@ -103,12 +103,7 @@ export const AnalyticsPeriodSummary = memo(function AnalyticsPeriodSummary({
       ) : null}
 
       {/* 4. Sleek Horizontal Divider */}
-      <View
-        style={[
-          styles.divider,
-          { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
-        ]}
-      />
+      <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
       {/* 5. Bottom Split Metrics with Clean Monochromatic Values & Subtle Color Dots */}
       <View style={styles.metricsRow}>
@@ -134,10 +129,7 @@ export const AnalyticsPeriodSummary = memo(function AnalyticsPeriodSummary({
 
         {/* Center Vertical Hairline Divider */}
         <View
-          style={[
-            styles.verticalDivider,
-            { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
-          ]}
+          style={[styles.verticalDivider, { backgroundColor: colors.border }]}
         />
 
         {/* Expense Column */}

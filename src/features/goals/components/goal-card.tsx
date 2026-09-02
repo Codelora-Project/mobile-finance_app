@@ -7,6 +7,7 @@ import { useCurrency } from '@/lib/currency/currency-context';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 
@@ -37,7 +38,7 @@ export function GoalCard({
 
   // Translucent tint from the goal's chosen accent color
   const accentBg = isDark ? `${goal.colorKey}22` : `${goal.colorKey}18`;
-  const completedBorderColor = isDark ? '#065F46' : '#6EE7B7';
+  const completedBorderColor = colors.positiveBorder;
   // Shorten "Nabung / Setor" ? "Nabung" for the button label
   const depositLabel = t.goals.deposit.split('/')[0]?.trim() ?? t.goals.deposit;
 
@@ -103,7 +104,7 @@ export function GoalCard({
             style={[
               styles.percentBadge,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#EFF6FF',
+                backgroundColor: colors.primaryLight,
               },
             ]}
           >
@@ -118,7 +119,7 @@ export function GoalCard({
       <View
         style={[
           styles.progressTrack,
-          { backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9' },
+          { backgroundColor: colors.surfaceSecondary },
         ]}
       >
         <View
@@ -190,7 +191,11 @@ export function GoalCard({
               pressed && { opacity: 0.85 },
             ]}
           >
-            <MaterialCommunityIcons color="#FFFFFF" name="plus" size={14} />
+            <MaterialCommunityIcons
+              color={fixedSemanticColors.contentOnStrong}
+              name="plus"
+              size={14}
+            />
             <Text style={styles.quickDepositText}>{depositLabel}</Text>
           </Pressable>
         ) : null}
@@ -307,7 +312,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   quickDepositText: {
-    color: '#FFFFFF',
+    color: fixedSemanticColors.contentOnStrong,
     fontSize: 12,
     fontWeight: '800',
   },

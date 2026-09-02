@@ -222,11 +222,11 @@ export function WalletsScreen({
                 styles.transferBtn,
                 {
                   backgroundColor: isDark
-                    ? 'rgba(59, 130, 246, 0.16)'
+                    ? colors.primaryOverlay
                     : colors.primaryLight,
                   borderColor: isDark
-                    ? 'rgba(59, 130, 246, 0.3)'
-                    : 'rgba(37, 99, 235, 0.2)',
+                    ? colors.primaryOverlayStrong
+                    : colors.primaryOverlay,
                 },
                 pressed && styles.pressed,
               ]}

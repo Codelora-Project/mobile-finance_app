@@ -128,7 +128,7 @@ export function GoalsScreen() {
                           styles.filterTabText,
                           {
                             color: isSelected
-                              ? '#FFFFFF'
+                              ? colors.onPrimary
                               : colors.textSecondary,
                             fontWeight: isSelected ? '800' : '600',
                           },

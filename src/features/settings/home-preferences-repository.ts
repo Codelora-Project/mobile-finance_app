@@ -4,6 +4,62 @@ import { withIntegrityCheckedTransaction } from '@/db/transactions';
 import { runSerializedDatabaseWrite } from '@/db/write-coordinator';
 import { createCodedError } from '@/lib/errors';
 
+export const DEFAULT_QUICK_LOG_SYSTEM_KEYS = [
+  'expense_food',
+  'expense_transportation',
+  'expense_shopping',
+  'expense_bills',
+  'expense_entertainment',
+] as const;
+
+type QuickLogCategoryReference = Readonly<{
+  id: number;
+  systemKey: string | null;
+  type: 'expense' | 'income';
+}>;
+
+export function resolveDefaultQuickLogCategoryIds(
+  categories: readonly QuickLogCategoryReference[],
+): number[] {
+  const expenseCategories = categories.filter(
+    (category) => category.type === 'expense',
+  );
+  const idsBySystemKey = new Map(
+    expenseCategories
+      .filter((category) => category.systemKey !== null)
+      .map((category) => [category.systemKey, category.id]),
+  );
+  const resolved = DEFAULT_QUICK_LOG_SYSTEM_KEYS.flatMap((systemKey) => {
+    const id = idsBySystemKey.get(systemKey);
+    return id === undefined ? [] : [id];
+  });
+  return resolved.length > 0
+    ? resolved
+    : expenseCategories.slice(0, 5).map((category) => category.id);
+}
+
+async function getDefaultQuickLogCategoryIds(
+  database: SQLiteDatabase,
+): Promise<number[]> {
+  const rows = await database.getAllAsync<{
+    id: number;
+    system_key: string | null;
+    type: 'expense' | 'income';
+  }>(
+    `SELECT id, system_key, type
+     FROM categories
+     WHERE type = 'expense'
+     ORDER BY is_default DESC, sort_order, name COLLATE NOCASE`,
+  );
+  return resolveDefaultQuickLogCategoryIds(
+    rows.map((row) => ({
+      id: row.id,
+      systemKey: row.system_key,
+      type: row.type,
+    })),
+  );
+}
+
 function isValidQuickLogCategoryIds(value: unknown): value is number[] {
   return (
     Array.isArray(value) &&
@@ -21,7 +77,7 @@ export async function getQuickLogCategoryIds(
     "SELECT value FROM app_settings WHERE key = 'quick_log_category_ids'",
   );
   if (!row?.value) {
-    return [1, 2, 3, 4, 5];
+    return getDefaultQuickLogCategoryIds(database);
   }
   try {
     const parsed = JSON.parse(row.value);
@@ -31,7 +87,7 @@ export async function getQuickLogCategoryIds(
   } catch {
     // fallback
   }
-  return [1, 2, 3, 4, 5];
+  return getDefaultQuickLogCategoryIds(database);
 }
 
 export async function setQuickLogCategoryIds(

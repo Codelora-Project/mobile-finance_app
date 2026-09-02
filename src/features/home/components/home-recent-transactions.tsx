@@ -46,7 +46,7 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
         styles.integratedCard,
         {
           backgroundColor: colors.surface,
-          borderColor: isDark ? '#27272A' : '#E2E8F0',
+          borderColor: colors.border,
           shadowColor: colors.shadow,
         },
       ]}
@@ -99,7 +99,7 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
               styles.emptyIconCircle,
               {
                 backgroundColor: isDark
-                  ? 'rgba(59, 130, 246, 0.12)'
+                  ? colors.primaryOverlay
                   : colors.primaryLight,
               },
             ]}
@@ -138,8 +138,8 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
-                      : '#F8FAFC',
-                    borderColor: isDark ? '#27272A' : '#F1F5F9',
+                      : colors.surfaceMuted,
+                    borderColor: colors.surfaceSecondary,
                   },
                 ]}
               >
@@ -218,9 +218,7 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
                         accessibilityRole="button"
                         android_ripple={{
                           borderless: false,
-                          color: isDark
-                            ? 'rgba(255, 255, 255, 0.08)'
-                            : 'rgba(0, 0, 0, 0.04)',
+                          color: colors.raisedOverlay,
                         }}
                         onPress={() => onPressTransaction(item.id)}
                         style={({ pressed }) => [
@@ -238,12 +236,12 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
                               backgroundColor:
                                 item.type === 'income'
                                   ? isDark
-                                    ? 'rgba(74, 222, 128, 0.16)'
-                                    : '#DCFCE7'
+                                    ? colors.positiveOverlay
+                                    : colors.incomeBackground
                                   : item.type === 'transfer'
                                     ? isDark
-                                      ? 'rgba(59, 130, 246, 0.16)'
-                                      : '#DBEAFE'
+                                      ? colors.primaryOverlay
+                                      : colors.primaryBorder
                                     : meta.backgroundColor,
                             },
                           ]}
@@ -306,21 +304,23 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
                                 style={[
                                   styles.receiptPill,
                                   {
-                                    backgroundColor: isDark
-                                      ? 'rgba(124, 58, 237, 0.18)'
-                                      : '#EDE9FE',
-                                    borderColor: isDark
-                                      ? 'rgba(124, 58, 237, 0.3)'
-                                      : '#DDD6FE',
+                                    backgroundColor:
+                                      colors.accentPurpleBackground,
+                                    borderColor: colors.accentPurpleBorder,
                                   },
                                 ]}
                               >
                                 <MaterialCommunityIcons
-                                  color="#7C3AED"
+                                  color={colors.accentPurple}
                                   name="receipt-outline"
                                   size={10}
                                 />
-                                <Text style={styles.receiptPillText}>
+                                <Text
+                                  style={[
+                                    styles.receiptPillText,
+                                    { color: colors.accentPurple },
+                                  ]}
+                                >
                                   {t.home.receiptBadge}
                                 </Text>
                               </View>
@@ -334,9 +334,7 @@ export const HomeRecentTransactions = memo(function HomeRecentTransactions({
                           style={[
                             styles.rowDivider,
                             {
-                              backgroundColor: isDark
-                                ? '#27272A'
-                                : '#F1F5F9',
+                              backgroundColor: colors.surfaceSecondary,
                             },
                           ]}
                         />
@@ -444,7 +442,6 @@ const styles = StyleSheet.create({
   },
   receiptPillText: {
     ...typography.metadata,
-    color: '#7C3AED',
     fontSize: 10,
     fontWeight: '700',
     lineHeight: 12,

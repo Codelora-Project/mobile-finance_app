@@ -54,9 +54,7 @@ export const WalletArchivedSection = memo(function WalletArchivedSection({
                 ? [
                     styles.rowBorder,
                     {
-                      borderBottomColor: isDark
-                        ? 'rgba(255, 255, 255, 0.06)'
-                        : 'rgba(0, 0, 0, 0.05)',
+                      borderBottomColor: colors.pressedOverlay,
                     },
                   ]
                 : null,
@@ -86,8 +84,8 @@ export const WalletArchivedSection = memo(function WalletArchivedSection({
                 styles.unarchiveBtn,
                 {
                   backgroundColor: isDark
-                    ? 'rgba(59, 130, 246, 0.15)'
-                    : '#EFF6FF',
+                    ? colors.primaryOverlay
+                    : colors.primaryLight,
                 },
                 pressed && styles.pressed,
               ]}

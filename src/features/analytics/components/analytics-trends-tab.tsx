@@ -141,7 +141,7 @@ export const AnalyticsTrendsTab = memo(function AnalyticsTrendsTab({
                   Math.round((flow.expenseMinor / maxFlowOverall) * 100),
                 )
               : 3;
-            const inactiveColor = isDark ? '#52525B' : '#CBD5E1';
+            const inactiveColor = colors.borderStrong;
 
             return (
               <View key={flow.monthStart} style={styles.chartColumn}>

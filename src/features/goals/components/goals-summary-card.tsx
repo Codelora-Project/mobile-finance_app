@@ -20,7 +20,7 @@ export const GoalsSummaryCard = memo(function GoalsSummaryCard({
   summary,
   t,
 }: GoalsSummaryCardProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { currencyCode } = useCurrency();
 
   const progressPercent =
@@ -69,7 +69,9 @@ export const GoalsSummaryCard = memo(function GoalsSummaryCard({
             },
           ]}
         >
-          <Text style={styles.percentPillText}>{progressPercent}%</Text>
+          <Text style={[styles.percentPillText, { color: colors.positive }]}>
+            {progressPercent}%
+          </Text>
         </View>
       </View>
 
@@ -78,7 +80,7 @@ export const GoalsSummaryCard = memo(function GoalsSummaryCard({
         style={[
           styles.progressBarTrack,
           {
-            backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+            backgroundColor: colors.surfaceSecondary,
           },
         ]}
       >
@@ -131,7 +133,6 @@ const styles = StyleSheet.create({
   },
   percentPillText: {
     ...typography.metadata,
-    color: '#16A34A',
     fontWeight: '800',
   },
   progressBarFill: {

@@ -34,7 +34,7 @@ export const GoalDetailTransactionRow = memo(function GoalDetailTransactionRow({
   item,
   language,
 }: GoalDetailTransactionRowProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { t } = useLanguage();
 
   const isDeposit = item.type === 'deposit';
@@ -47,9 +47,7 @@ export const GoalDetailTransactionRow = memo(function GoalDetailTransactionRow({
           ? [
               styles.txRowBorder,
               {
-                borderBottomColor: isDark
-                  ? 'rgba(255, 255, 255, 0.06)'
-                  : 'rgba(0, 0, 0, 0.05)',
+                borderBottomColor: colors.pressedOverlay,
               },
             ]
           : null,

@@ -46,8 +46,8 @@ export const ManualAmountInput = memo(function ManualAmountInput({
             borderColor: error
               ? colors.destructive
               : isDark
-                ? '#27272A'
-                : '#E2E8F0',
+                ? colors.surfaceSecondary
+                : colors.border,
             shadowColor: colors.shadow,
           },
         ]}

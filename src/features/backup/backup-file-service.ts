@@ -1,5 +1,5 @@
 import * as DocumentPicker from 'expo-document-picker';
-import { Directory, File, Paths } from 'expo-file-system';
+import { File } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import type { SQLiteDatabase } from 'expo-sqlite';
 
@@ -16,6 +16,10 @@ import type {
 } from '@/features/backup/backup-types';
 import type { ReceiptStorage } from '@/features/receipts/receipt-storage';
 import { createCodedError } from '@/lib/errors';
+import {
+  removeManagedCacheFile,
+  resetManagedCacheDirectory,
+} from '@/lib/storage/managed-cache';
 
 const BACKUP_DIRECTORY = 'backups';
 
@@ -36,8 +40,7 @@ export async function exportBackupToJsonFile(
       'Ukuran backup melebihi batas 50 MB. Kurangi jumlah lampiran struk lalu coba lagi.',
     );
   }
-  const directory = new Directory(Paths.cache, BACKUP_DIRECTORY);
-  directory.create({ idempotent: true, intermediates: true });
+  const directory = resetManagedCacheDirectory(BACKUP_DIRECTORY);
 
   const fileName = `backup_finance_${formatTimestampForFilename()}.json`;
   const file = new File(directory, fileName);
@@ -64,6 +67,9 @@ export async function shareFile(
       'Fitur berbagi tidak tersedia di perangkat ini.',
     );
   }
+  // Keep the latest file available after the chooser closes. On Android the
+  // receiving app may still be reading it after shareAsync resolves. The next
+  // export, explicit cache clearing, or sensitive-cache cleanup removes it.
   await Sharing.shareAsync(fileUri, { dialogTitle, mimeType, UTI: uti });
 }
 
@@ -71,7 +77,6 @@ export async function pickBackupFile(): Promise<{
   fileName: string;
   payload: BackupPayload;
   stats: BackupStats;
-  uri: string;
 } | null> {
   const result = await DocumentPicker.getDocumentAsync({
     type: ['application/json', 'text/json', '*/*'],
@@ -94,20 +99,26 @@ export async function pickBackupFile(): Promise<{
     );
   }
 
-  let textContent: string;
+  let payload: BackupPayload;
   try {
-    textContent = await file.text();
+    const textContent = await file.text();
+    payload = parseBackupPayload(textContent);
   } catch (error) {
     if (__DEV__) console.warn('Failed to read backup file:', error);
+    if (error && typeof error === 'object' && 'code' in error) throw error;
     throw createCodedError(
       'VALIDATION_FAILED',
       'Gagal membaca isi file backup. Pastikan file berformat teks JSON.',
     );
+  } finally {
+    try {
+      removeManagedCacheFile(asset.uri);
+    } catch (error) {
+      if (__DEV__) console.warn('Imported backup cache cleanup failed:', error);
+    }
   }
 
-  const payload = parseBackupPayload(textContent);
   return {
-    uri: asset.uri,
     fileName: asset.name,
     payload,
     stats: getBackupPayloadStats(payload),

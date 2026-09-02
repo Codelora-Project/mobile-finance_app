@@ -2,6 +2,10 @@ import { Directory, File, Paths } from 'expo-file-system';
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import type { ReceiptStorage } from '@/features/receipts/receipt-storage';
+import {
+  clearManagedCache,
+  getManagedCacheSizeBytes,
+} from '@/lib/storage/managed-cache';
 
 export type StorageStats = Readonly<{
   transactionsCount: number;
@@ -48,15 +52,7 @@ export async function getStorageStats(
 
   let cacheSizeBytes = 0;
   try {
-    const exportsDir = new Directory(Paths.cache, 'exports');
-    if (exportsDir.exists) {
-      const items = exportsDir.list();
-      for (const item of items) {
-        if (item instanceof File && item.exists) {
-          cacheSizeBytes += item.size || 0;
-        }
-      }
-    }
+    cacheSizeBytes = getManagedCacheSizeBytes();
   } catch {
     // Fallback if cache access fails
   }
@@ -71,22 +67,12 @@ export async function getStorageStats(
 }
 
 export async function clearTemporaryCache(): Promise<{ freedBytes: number }> {
-  let freedBytes = 0;
   try {
-    const exportsDir = new Directory(Paths.cache, 'exports');
-    if (exportsDir.exists) {
-      const items = exportsDir.list();
-      for (const item of items) {
-        if (item instanceof File && item.exists) {
-          freedBytes += item.size || 0;
-        }
-      }
-      exportsDir.delete();
-    }
+    return clearManagedCache();
   } catch (err) {
     if (__DEV__) console.warn('Cache clearing error:', err);
+    return { freedBytes: 0 };
   }
-  return { freedBytes };
 }
 
 export function formatStorageSize(bytes: number): string {

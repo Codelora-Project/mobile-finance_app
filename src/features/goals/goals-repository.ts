@@ -4,6 +4,7 @@ import { withIntegrityCheckedTransaction } from '@/db/transactions';
 import { runSerializedDatabaseWrite } from '@/db/write-coordinator';
 import { createCodedError } from '@/lib/errors';
 import { normalizeOptionalText } from '@/lib/strings';
+import { defaultGoalColor } from '@/theme/colors';
 
 export type SavingsGoal = Readonly<{
   id: number;
@@ -179,7 +180,7 @@ export async function createSavingsGoal(
 
   const now = Date.now();
   const iconKey = input.iconKey || 'target';
-  const colorKey = input.colorKey || '#3B82F6';
+  const colorKey = input.colorKey || defaultGoalColor;
   const isCompleted = initialDeposit >= input.targetAmountMinor ? 1 : 0;
 
   const goalId = await withIntegrityCheckedTransaction(

@@ -43,6 +43,7 @@ import {
 import {
   getHomeDisplayPreferences,
   getQuickLogCategoryIds,
+  resolveDefaultQuickLogCategoryIds,
   setHomeDisplayPreferences,
   setQuickLogCategoryIds,
 } from '@/features/settings/settings-repository';
@@ -57,8 +58,6 @@ import { radius } from '@/theme/radius';
 import { contentMaxWidth } from '@/theme/layout';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
-
-const DEFAULT_QUICK_LOG_IDS = [1, 2, 3, 4, 5];
 
 export function HomeScreen() {
   const database = useSQLiteContext();
@@ -78,12 +77,8 @@ export function HomeScreen() {
   const [habitStats, setHabitStats] = useState<HabitStats | null>(null);
   const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [budgets, setBudgets] = useState<readonly CategoryBudget[]>([]);
-  const [pinnedCategoryIds, setPinnedCategoryIds] = useState<number[]>(
-    DEFAULT_QUICK_LOG_IDS,
-  );
-  const [selectedIdsInModal, setSelectedIdsInModal] = useState<number[]>(
-    DEFAULT_QUICK_LOG_IDS,
-  );
+  const [pinnedCategoryIds, setPinnedCategoryIds] = useState<number[]>([]);
+  const [selectedIdsInModal, setSelectedIdsInModal] = useState<number[]>([]);
 
   // Home Display Preferences
   const [showWalletChips, setShowWalletChips] = useState(true);
@@ -268,8 +263,8 @@ export function HomeScreen() {
   }, [database, handleCloseCustomizeModal, selectedIdsInModal, t]);
 
   const handleResetQuickLogCategories = useCallback(() => {
-    setSelectedIdsInModal(DEFAULT_QUICK_LOG_IDS);
-  }, []);
+    setSelectedIdsInModal(resolveDefaultQuickLogCategoryIds(allCategories));
+  }, [allCategories]);
 
   const persistDisplayPreference = useCallback(
     async (

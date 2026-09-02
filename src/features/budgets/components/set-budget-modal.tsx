@@ -16,6 +16,7 @@ import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney, formatMoneyInput, parseMoneyInput } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 
@@ -39,7 +40,7 @@ export function SetBudgetModal({
   onDelete,
 }: SetBudgetModalProps) {
   const { t } = useLanguage();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { currencySymbol } = useCurrency();
   const savingRef = useRef(false);
   const [amountStr, setAmountStr] = useState('');
@@ -157,7 +158,7 @@ export function SetBudgetModal({
             style={[
               styles.infoBanner,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+                backgroundColor: colors.surfaceMuted,
                 borderColor: colors.border,
               },
             ]}
@@ -179,8 +180,8 @@ export function SetBudgetModal({
               style={[
                 styles.inputWrapper,
                 {
-                  backgroundColor: isDark ? colors.surfaceSecondary : '#FFFFFF',
-                  borderColor: error ? '#EF4444' : colors.border,
+                  backgroundColor: colors.surface,
+                  borderColor: error ? colors.destructive : colors.border,
                 },
               ]}
             >
@@ -201,7 +202,11 @@ export function SetBudgetModal({
                 value={amountStr}
               />
             </View>
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            {error ? (
+              <Text style={[styles.errorText, { color: colors.destructive }]}>
+                {error}
+              </Text>
+            ) : null}
           </View>
 
           {/* Shortcut Chips */}
@@ -216,9 +221,7 @@ export function SetBudgetModal({
                     backgroundColor:
                       amountStr === String(amount)
                         ? colors.primary
-                        : isDark
-                          ? colors.surfaceSecondary
-                          : '#F1F5F9',
+                        : colors.surfaceSecondary,
                     borderColor:
                       amountStr === String(amount)
                         ? colors.primary
@@ -233,7 +236,7 @@ export function SetBudgetModal({
                     {
                       color:
                         amountStr === String(amount)
-                          ? '#FFFFFF'
+                          ? colors.onPrimary
                           : colors.textPrimary,
                     },
                   ]}
@@ -277,7 +280,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   backdrop: {
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: fixedSemanticColors.modalBackdrop,
     flex: 1,
     justifyContent: 'flex-end',
   },
@@ -286,7 +289,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   errorText: {
-    color: '#EF4444',
     fontSize: 12,
     marginTop: 4,
   },

@@ -35,7 +35,7 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
   selectedCode,
   visible,
 }: CurrencyPickerModalProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -97,8 +97,8 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
             style={[
               styles.infoBanner,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#EFF6FF',
-                borderColor: isDark ? colors.border : '#BFDBFE',
+                backgroundColor: colors.primaryLight,
+                borderColor: colors.border,
               },
             ]}
           >
@@ -107,12 +107,7 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
               name="information-outline"
               size={20}
             />
-            <Text
-              style={[
-                styles.infoText,
-                { color: isDark ? colors.textSecondary : '#1E40AF' },
-              ]}
-            >
+            <Text style={[styles.infoText, { color: colors.primary }]}>
               {t.settings.currencyChangeDescription}
             </Text>
           </View>
@@ -122,7 +117,7 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
             style={[
               styles.searchBarContainer,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+                backgroundColor: colors.surfaceSecondary,
                 borderColor: colors.border,
               },
             ]}
@@ -183,9 +178,7 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
                       styles.currencyRow,
                       isSelected
                         ? {
-                            backgroundColor: isDark
-                              ? colors.surfaceSecondary
-                              : '#F0FDF4',
+                            backgroundColor: colors.incomeBackground,
                           }
                         : null,
                       !isLast
@@ -202,9 +195,7 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
                         style={[
                           styles.symbolBadge,
                           {
-                            backgroundColor: isDark
-                              ? colors.surface
-                              : '#EEF2FF',
+                            backgroundColor: colors.accentIndigoBackground,
                           },
                         ]}
                       >
@@ -230,9 +221,7 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
                           style={[
                             styles.currencyCode,
                             {
-                              backgroundColor: isDark
-                                ? colors.surfaceSecondary
-                                : '#F1F5F9',
+                              backgroundColor: colors.surfaceSecondary,
                               color: colors.textSecondary,
                             },
                           ]}
@@ -252,7 +241,7 @@ export const CurrencyPickerModal = memo(function CurrencyPickerModal({
 
                     {isSelected ? (
                       <MaterialCommunityIcons
-                        color="#10B981"
+                        color={colors.positive}
                         name="check-circle"
                         size={22}
                       />

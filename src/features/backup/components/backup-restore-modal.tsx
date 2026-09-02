@@ -22,7 +22,6 @@ export type BackupRestoreModalProps = {
     fileName: string;
     payload: BackupPayload;
     stats: BackupStats;
-    uri: string;
   } | null;
   t: TranslationSchema;
   visible: boolean;
@@ -36,7 +35,7 @@ export const BackupRestoreModal = memo(function BackupRestoreModal({
   t,
   visible,
 }: BackupRestoreModalProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <Modal
@@ -146,7 +145,9 @@ export const BackupRestoreModal = memo(function BackupRestoreModal({
                   </View>
 
                   <View style={styles.modalStatItem}>
-                    <Text style={[styles.modalStatNum, { color: '#0284C7' }]}>
+                    <Text
+                      style={[styles.modalStatNum, { color: colors.accentSky }]}
+                    >
                       {selectedBackup.stats.categoriesCount}
                     </Text>
                     <Text
@@ -160,7 +161,12 @@ export const BackupRestoreModal = memo(function BackupRestoreModal({
                   </View>
 
                   <View style={styles.modalStatItem}>
-                    <Text style={[styles.modalStatNum, { color: '#7C3AED' }]}>
+                    <Text
+                      style={[
+                        styles.modalStatNum,
+                        { color: colors.accentPurple },
+                      ]}
+                    >
                       {selectedBackup.stats.paymentMethodsCount}
                     </Text>
                     <Text
@@ -174,7 +180,9 @@ export const BackupRestoreModal = memo(function BackupRestoreModal({
                   </View>
 
                   <View style={styles.modalStatItem}>
-                    <Text style={[styles.modalStatNum, { color: '#16A34A' }]}>
+                    <Text
+                      style={[styles.modalStatNum, { color: colors.positive }]}
+                    >
                       {selectedBackup.stats.goalsCount}
                     </Text>
                     <Text
@@ -188,7 +196,12 @@ export const BackupRestoreModal = memo(function BackupRestoreModal({
                   </View>
 
                   <View style={styles.modalStatItem}>
-                    <Text style={[styles.modalStatNum, { color: '#EA580C' }]}>
+                    <Text
+                      style={[
+                        styles.modalStatNum,
+                        { color: colors.accentOrange },
+                      ]}
+                    >
                       {selectedBackup.stats.budgetsCount}
                     </Text>
                     <Text
@@ -202,7 +215,9 @@ export const BackupRestoreModal = memo(function BackupRestoreModal({
                   </View>
 
                   <View style={styles.modalStatItem}>
-                    <Text style={[styles.modalStatNum, { color: '#D97706' }]}>
+                    <Text
+                      style={[styles.modalStatNum, { color: colors.warning }]}
+                    >
                       {selectedBackup.stats.claimsCount}
                     </Text>
                     <Text
@@ -245,7 +260,7 @@ export const BackupRestoreModal = memo(function BackupRestoreModal({
                   <Text
                     style={[
                       styles.dangerAlertDesc,
-                      { color: isDark ? '#FECACA' : '#B91C1C' },
+                      { color: colors.destructive },
                     ]}
                   >
                     Seluruh riwayat dan pengaturan lokal saat ini akan dihapus

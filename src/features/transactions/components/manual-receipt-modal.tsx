@@ -5,6 +5,7 @@ import { AppButton } from '@/components/ui/app-button';
 import type { ManualReceiptSource } from '@/features/transactions/manual-receipt-picker';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -96,7 +97,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: fixedSemanticColors.modalBackdrop,
     flex: 1,
     justifyContent: 'flex-end',
     paddingBottom: spacing.xl,

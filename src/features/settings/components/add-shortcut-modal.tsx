@@ -11,6 +11,7 @@ import {
 import { AppButton } from '@/components/ui/app-button';
 import type { TranslationSchema } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -38,7 +39,7 @@ export const AddShortcutModal = memo(function AddShortcutModal({
   t,
   visible,
 }: AddShortcutModalProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <Modal
@@ -68,12 +69,16 @@ export const AddShortcutModal = memo(function AddShortcutModal({
             style={[
               styles.modalInputWrap,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+                backgroundColor: colors.surfaceSecondary,
                 borderColor: colors.border,
               },
             ]}
           >
-            <Text style={styles.modalInputPrefix}>{currencySymbol}</Text>
+            <Text
+              style={[styles.modalInputPrefix, { color: colors.textSecondary }]}
+            >
+              {currencySymbol}
+            </Text>
             <TextInput
               autoFocus
               keyboardType="decimal-pad"
@@ -85,7 +90,11 @@ export const AddShortcutModal = memo(function AddShortcutModal({
             />
           </View>
 
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {error ? (
+            <Text style={[styles.errorText, { color: colors.destructive }]}>
+              {error}
+            </Text>
+          ) : null}
 
           <View style={styles.modalActionsRow}>
             <View style={{ flex: 1 }}>
@@ -112,7 +121,6 @@ export const AddShortcutModal = memo(function AddShortcutModal({
 const styles = StyleSheet.create({
   errorText: {
     ...typography.metadata,
-    color: '#EF4444',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -139,7 +147,6 @@ const styles = StyleSheet.create({
   },
   modalInputPrefix: {
     ...typography.body,
-    color: '#64748B',
     fontSize: 16,
     fontWeight: '700',
   },
@@ -154,7 +161,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    backgroundColor: fixedSemanticColors.modalBackdrop,
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,

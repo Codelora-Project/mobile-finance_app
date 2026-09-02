@@ -86,7 +86,7 @@ export const ManualTransferSection = memo(function ManualTransferSection({
             style={({ pressed }) => [
               styles.walletPickerBtn,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+                backgroundColor: colors.surfaceMuted,
                 borderColor: errorSource ? colors.destructive : colors.border,
               },
               pressed ? { opacity: 0.75 } : null,
@@ -97,10 +97,10 @@ export const ManualTransferSection = memo(function ManualTransferSection({
                 styles.walletIconBadge,
                 {
                   backgroundColor: sourceWallet
-                    ? 'rgba(37, 99, 235, 0.15)'
+                    ? colors.primaryOverlay
                     : isDark
                       ? colors.surfaceSecondary
-                      : '#E2E8F0',
+                      : colors.border,
                 },
               ]}
             >
@@ -142,7 +142,7 @@ export const ManualTransferSection = memo(function ManualTransferSection({
             style={({ pressed }) => [
               styles.swapButton,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#EFF6FF',
+                backgroundColor: colors.primaryLight,
                 borderColor: colors.primary,
               },
               pressed ? { transform: [{ scale: 0.92 }] } : null,
@@ -169,7 +169,7 @@ export const ManualTransferSection = memo(function ManualTransferSection({
             style={({ pressed }) => [
               styles.walletPickerBtn,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+                backgroundColor: colors.surfaceMuted,
                 borderColor: errorDestination
                   ? colors.destructive
                   : colors.border,
@@ -182,15 +182,15 @@ export const ManualTransferSection = memo(function ManualTransferSection({
                 styles.walletIconBadge,
                 {
                   backgroundColor: destinationWallet
-                    ? 'rgba(16, 185, 129, 0.15)'
+                    ? colors.positiveOverlay
                     : isDark
                       ? colors.surfaceSecondary
-                      : '#E2E8F0',
+                      : colors.border,
                 },
               ]}
             >
               <MaterialCommunityIcons
-                color={destinationWallet ? '#10B981' : colors.textMuted}
+                color={destinationWallet ? colors.positive : colors.textMuted}
                 name="bank-transfer-in"
                 size={20}
               />
@@ -239,10 +239,10 @@ export const ManualTransferSection = memo(function ManualTransferSection({
               styles.feeIconBadge,
               {
                 backgroundColor: hasTransferFee
-                  ? 'rgba(239, 68, 68, 0.15)'
+                  ? colors.destructiveOverlay
                   : isDark
                     ? colors.surfaceSecondary
-                    : '#E2E8F0',
+                    : colors.border,
               },
             ]}
           >
@@ -267,8 +267,10 @@ export const ManualTransferSection = memo(function ManualTransferSection({
           <Switch
             accessibilityLabel={t.transactions.transferFeeToggle}
             onValueChange={onToggleTransferFee}
-            thumbColor={hasTransferFee ? '#FFFFFF' : '#F1F5F9'}
-            trackColor={{ false: '#CBD5E1', true: colors.primary }}
+            thumbColor={
+              hasTransferFee ? colors.onPrimary : colors.surfaceSecondary
+            }
+            trackColor={{ false: colors.borderStrong, true: colors.primary }}
             value={hasTransferFee}
           />
         </View>
@@ -280,7 +282,7 @@ export const ManualTransferSection = memo(function ManualTransferSection({
               styles.feeDetailsContainer,
               {
                 borderTopColor: colors.border,
-                backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+                backgroundColor: colors.surfaceMuted,
               },
             ]}
           >
@@ -347,7 +349,7 @@ export const ManualTransferSection = memo(function ManualTransferSection({
                       {
                         color:
                           transferFeeAmount === fee
-                            ? '#FFFFFF'
+                            ? colors.onPrimary
                             : colors.textPrimary,
                       },
                     ]}

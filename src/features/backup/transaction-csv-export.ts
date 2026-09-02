@@ -1,7 +1,8 @@
-import { Directory, File, Paths } from 'expo-file-system';
+import { File } from 'expo-file-system';
 import type { SQLiteBindValue, SQLiteDatabase } from 'expo-sqlite';
 
 import { formatTimestampForFilename } from '@/features/backup/backup-utils';
+import { resetManagedCacheDirectory } from '@/lib/storage/managed-cache';
 
 const EXPORT_DIRECTORY = 'exports';
 
@@ -147,12 +148,13 @@ export async function exportTransactionsCsvFile(
     );
   }
 
-  const directory = new Directory(Paths.cache, EXPORT_DIRECTORY);
-  directory.create({ idempotent: true, intermediates: true });
   const fileName =
     options.scope === 'this_month'
       ? `${filenamePrefix}.csv`
       : `${filenamePrefix}_${formatTimestampForFilename()}.csv`;
+  if (rows.length === 0) return { count: 0, fileName, uri: '' };
+
+  const directory = resetManagedCacheDirectory(EXPORT_DIRECTORY);
   const file = new File(directory, fileName);
   if (file.exists) file.delete();
   await file.write(`\uFEFF${csvLines.join('\r\n')}`);

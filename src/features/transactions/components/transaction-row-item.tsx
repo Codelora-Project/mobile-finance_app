@@ -15,6 +15,7 @@ import { toLocalDateTimeInput } from '@/lib/dates';
 import { formatMoney } from '@/lib/money';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -163,7 +164,7 @@ export const TransactionRowItem = memo(function TransactionRowItem({
           style={[
             styles.swipeActionLeft,
             {
-              backgroundColor: isDark ? '#1E3A8A' : '#2563EB',
+              backgroundColor: isDark ? colors.primaryLight : colors.primary,
             },
           ]}
         >
@@ -177,7 +178,7 @@ export const TransactionRowItem = memo(function TransactionRowItem({
             style={styles.swipeActionButton}
           >
             <MaterialCommunityIcons
-              color="#FFFFFF"
+              color={fixedSemanticColors.contentOnStrong}
               name="pencil-outline"
               size={18}
             />
@@ -206,7 +207,7 @@ export const TransactionRowItem = memo(function TransactionRowItem({
             style={styles.swipeActionButton}
           >
             <MaterialCommunityIcons
-              color="#FFFFFF"
+              color={fixedSemanticColors.contentOnStrong}
               name="trash-can-outline"
               size={18}
             />
@@ -221,9 +222,7 @@ export const TransactionRowItem = memo(function TransactionRowItem({
           styles.animatedRow,
           {
             backgroundColor: colors.surface,
-            borderBottomColor: isDark
-              ? 'rgba(255, 255, 255, 0.06)'
-              : 'rgba(0, 0, 0, 0.05)',
+            borderBottomColor: colors.pressedOverlay,
             borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth,
             transform: [{ translateX }],
           },
@@ -326,9 +325,7 @@ export const TransactionRowItem = memo(function TransactionRowItem({
                     style={[
                       styles.pillBadge,
                       {
-                        backgroundColor: isDark
-                          ? 'rgba(255,255,255,0.06)'
-                          : 'rgba(0,0,0,0.04)',
+                        backgroundColor: colors.subtleOverlay,
                       },
                     ]}
                   >
@@ -353,9 +350,7 @@ export const TransactionRowItem = memo(function TransactionRowItem({
                     style={[
                       styles.pillBadge,
                       {
-                        backgroundColor: isDark
-                          ? 'rgba(255,255,255,0.06)'
-                          : 'rgba(0,0,0,0.04)',
+                        backgroundColor: colors.subtleOverlay,
                       },
                     ]}
                   >
@@ -493,7 +488,7 @@ const styles = StyleSheet.create({
   },
   swipeActionText: {
     ...typography.metadata,
-    color: '#FFFFFF',
+    color: fixedSemanticColors.contentOnStrong,
     fontSize: 10,
     fontWeight: '700',
   },

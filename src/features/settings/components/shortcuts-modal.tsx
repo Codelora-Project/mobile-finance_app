@@ -115,8 +115,8 @@ export const ShortcutsModal = memo(function ShortcutsModal({
             style={[
               styles.infoBanner,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#EFF6FF',
-                borderColor: isDark ? colors.border : '#BFDBFE',
+                backgroundColor: colors.primaryLight,
+                borderColor: colors.border,
               },
             ]}
           >
@@ -125,12 +125,7 @@ export const ShortcutsModal = memo(function ShortcutsModal({
               name="information-outline"
               size={20}
             />
-            <Text
-              style={[
-                styles.infoText,
-                { color: isDark ? colors.textSecondary : '#1E40AF' },
-              ]}
-            >
+            <Text style={[styles.infoText, { color: colors.primary }]}>
               {t.settings.shortcutsDesc}
             </Text>
           </View>
@@ -148,11 +143,13 @@ export const ShortcutsModal = memo(function ShortcutsModal({
             <View style={styles.sectionHeaderRow}>
               <View style={styles.sectionBadge}>
                 <MaterialCommunityIcons
-                  color="#059669"
+                  color={colors.positive}
                   name="eye-outline"
                   size={14}
                 />
-                <Text style={styles.sectionBadgeText}>
+                <Text
+                  style={[styles.sectionBadgeText, { color: colors.positive }]}
+                >
                   {t.settings.shortcutLivePreview}
                 </Text>
               </View>
@@ -214,8 +211,8 @@ export const ShortcutsModal = memo(function ShortcutsModal({
                     {
                       backgroundColor: isDark
                         ? colors.surfaceSecondary
-                        : '#EFF6FF',
-                      borderColor: isDark ? colors.border : '#BFDBFE',
+                        : colors.primaryLight,
+                      borderColor: colors.border,
                     },
                   ]}
                 >
@@ -235,7 +232,7 @@ export const ShortcutsModal = memo(function ShortcutsModal({
                     style={styles.shortcutRemoveIcon}
                   >
                     <MaterialCommunityIcons
-                      color="#EF4444"
+                      color={colors.destructive}
                       name="close-circle"
                       size={16}
                     />
@@ -255,7 +252,7 @@ export const ShortcutsModal = memo(function ShortcutsModal({
                     {
                       backgroundColor: isDark
                         ? colors.surfaceSecondary
-                        : '#F8FAFC',
+                        : colors.surfaceMuted,
                       borderColor: colors.border,
                     },
                   ]}
@@ -280,10 +277,8 @@ export const ShortcutsModal = memo(function ShortcutsModal({
                 style={[
                   styles.resetRecommendedBtn,
                   {
-                    backgroundColor: isDark
-                      ? colors.surfaceSecondary
-                      : '#EEF2FF',
-                    borderColor: isDark ? colors.border : '#C7D2FE',
+                    backgroundColor: colors.accentIndigoBackground,
+                    borderColor: colors.accentIndigoBorder,
                   },
                 ]}
               >
@@ -422,7 +417,6 @@ const styles = StyleSheet.create({
   },
   sectionBadgeText: {
     ...typography.metadata,
-    color: '#059669',
     fontSize: 11,
     fontWeight: '700',
   },

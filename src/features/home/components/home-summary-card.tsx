@@ -93,7 +93,7 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
         styles.summaryCard,
         {
           backgroundColor: colors.surface,
-          borderColor: isDark ? '#27272A' : '#E2E8F0',
+          borderColor: colors.border,
           shadowColor: colors.shadow,
         },
       ]}
@@ -122,11 +122,11 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
               styles.periodDropdownPill,
               {
                 backgroundColor: isDark
-                  ? 'rgba(59, 130, 246, 0.14)'
+                  ? colors.primaryOverlay
                   : colors.primaryLight,
                 borderColor: isDark
-                  ? 'rgba(59, 130, 246, 0.28)'
-                  : 'rgba(37, 99, 235, 0.2)',
+                  ? colors.primaryOverlayStrong
+                  : colors.primaryOverlay,
               },
               pressed ? styles.pillPressed : null,
             ]}
@@ -153,8 +153,8 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
               style={({ pressed }) => [
                 styles.settingsBtn,
                 {
-                  backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
-                  borderColor: isDark ? '#3F3F46' : '#E2E8F0',
+                  backgroundColor: colors.surfaceSecondary,
+                  borderColor: colors.border,
                 },
                 pressed ? styles.pillPressed : null,
               ]}
@@ -201,8 +201,8 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
               style={({ pressed }) => [
                 styles.eyeBtn,
                 {
-                  backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
-                  borderColor: isDark ? '#3F3F46' : '#E2E8F0',
+                  backgroundColor: colors.surfaceSecondary,
+                  borderColor: colors.border,
                 },
                 pressed ? styles.pillPressed : null,
               ]}
@@ -252,12 +252,7 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
       </View>
 
       {/* 3. Sleek Horizontal Divider */}
-      <View
-        style={[
-          styles.divider,
-          { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
-        ]}
-      />
+      <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
       {/* 4. Bottom Split Metrics with Clean White Text & Subtle Color Dots */}
       <View style={styles.metricsRow}>
@@ -286,10 +281,7 @@ export const HomeSummaryCard = memo(function HomeSummaryCard({
 
         {/* Center Vertical Divider */}
         <View
-          style={[
-            styles.verticalDivider,
-            { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
-          ]}
+          style={[styles.verticalDivider, { backgroundColor: colors.border }]}
         />
 
         {/* Expense Column */}

@@ -70,7 +70,7 @@ export const WalletRowItem = memo(function WalletRowItem({
         styles.walletCard,
         {
           backgroundColor: colors.surface,
-          borderColor: isDark ? '#27272A' : '#E2E8F0',
+          borderColor: colors.border,
           shadowColor: colors.shadow,
         },
         pressed ? styles.cardPressed : null,
@@ -109,11 +109,11 @@ export const WalletRowItem = memo(function WalletRowItem({
                   styles.badgePill,
                   {
                     backgroundColor: isDark
-                      ? 'rgba(59, 130, 246, 0.16)'
+                      ? colors.primaryOverlay
                       : colors.primaryLight,
                     borderColor: isDark
-                      ? 'rgba(59, 130, 246, 0.3)'
-                      : 'rgba(37, 99, 235, 0.2)',
+                      ? colors.primaryOverlayStrong
+                      : colors.primaryOverlay,
                   },
                 ]}
               >
@@ -127,9 +127,9 @@ export const WalletRowItem = memo(function WalletRowItem({
                   styles.badgePill,
                   {
                     backgroundColor: isDark
-                      ? 'rgba(255, 255, 255, 0.08)'
-                      : '#F1F5F9',
-                    borderColor: isDark ? '#3F3F46' : '#E2E8F0',
+                      ? colors.raisedOverlay
+                      : colors.surfaceSecondary,
+                    borderColor: colors.border,
                   },
                 ]}
               >

@@ -9,6 +9,7 @@ import type {
 } from '@/features/transactions/transaction-repository';
 import type { TranslationSchema } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -82,8 +83,8 @@ export const DetailActionBar = memo(function DetailActionBar({
               styles.actionBtn,
               {
                 backgroundColor: isDark
-                  ? 'rgba(255, 255, 255, 0.08)'
-                  : '#F1F5F9',
+                  ? colors.raisedOverlay
+                  : colors.surfaceSecondary,
                 borderColor: colors.border,
               },
               pressed && styles.pressed,
@@ -113,7 +114,7 @@ export const DetailActionBar = memo(function DetailActionBar({
           ]}
         >
           <MaterialCommunityIcons
-            color="#FFFFFF"
+            color={fixedSemanticColors.contentOnStrong}
             name="share-variant-outline"
             size={18}
           />
@@ -177,6 +178,6 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   shareBtnText: {
-    color: '#FFFFFF',
+    color: fixedSemanticColors.contentOnStrong,
   },
 });

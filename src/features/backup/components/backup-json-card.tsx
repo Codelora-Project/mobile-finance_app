@@ -20,7 +20,7 @@ export const BackupJsonCard = memo(function BackupJsonCard({
   onCreateBackup,
   t,
 }: BackupJsonCardProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <View style={styles.sectionGroup}>
@@ -44,7 +44,7 @@ export const BackupJsonCard = memo(function BackupJsonCard({
             style={[
               styles.cardIconBadge,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#EFF6FF',
+                backgroundColor: colors.primaryLight,
               },
             ]}
           >

@@ -63,7 +63,7 @@ export const ManualCategoryGrid = memo(function ManualCategoryGrid({
 
           const badgeBg = isSelected
             ? isDark
-              ? 'rgba(59, 130, 246, 0.2)'
+              ? colors.primaryOverlay
               : colors.primaryLight
             : isDark
               ? colors.surfaceSecondary
@@ -72,8 +72,8 @@ export const ManualCategoryGrid = memo(function ManualCategoryGrid({
           const badgeBorder = isSelected
             ? colors.primary
             : isDark
-              ? '#27272A'
-              : '#E2E8F0';
+              ? colors.surfaceSecondary
+              : colors.border;
 
           const iconColor = isSelected
             ? colors.primary

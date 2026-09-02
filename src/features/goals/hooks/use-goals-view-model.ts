@@ -18,6 +18,7 @@ import { useCurrency } from '@/lib/currency/currency-context';
 import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { parseMoneyInput } from '@/lib/money';
+import { defaultGoalColor } from '@/theme/colors';
 
 export type GoalsFilterTab = 'active' | 'all' | 'completed';
 
@@ -42,7 +43,7 @@ export function useGoalsViewModel() {
   const [targetAmount, setTargetAmount] = useState('');
   const [initialDeposit, setInitialDeposit] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('target');
-  const [selectedColor, setSelectedColor] = useState('#3B82F6');
+  const [selectedColor, setSelectedColor] = useState<string>(defaultGoalColor);
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -147,7 +148,7 @@ export function useGoalsViewModel() {
       setTargetAmount('');
       setInitialDeposit('');
       setSelectedIcon('target');
-      setSelectedColor('#3B82F6');
+      setSelectedColor(defaultGoalColor);
       setNewGoalModalVisible(false);
       await load();
     } catch (err) {

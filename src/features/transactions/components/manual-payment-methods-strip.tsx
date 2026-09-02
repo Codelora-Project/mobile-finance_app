@@ -54,14 +54,12 @@ export const ManualPaymentMethodsStrip = memo(
                   {
                     backgroundColor: isSelected
                       ? colors.primary
-                      : isDark
-                        ? colors.surfaceSecondary
-                        : '#F1F5F9',
+                      : colors.surfaceSecondary,
                     borderColor: isSelected
                       ? colors.primary
                       : isDark
-                        ? '#27272A'
-                        : '#E2E8F0',
+                        ? colors.surfaceSecondary
+                        : colors.border,
                   },
                   isSelected ? styles.paymentMethodChipSelected : null,
                   pressed ? styles.chipPressed : null,
@@ -70,10 +68,10 @@ export const ManualPaymentMethodsStrip = memo(
                 <MaterialCommunityIcons
                   color={
                     isSelected
-                      ? '#FFFFFF'
+                      ? colors.onPrimary
                       : isDark
                         ? colors.textSecondary
-                        : '#475569'
+                        : colors.borderStrong
                   }
                   name={
                     pm.name.toLowerCase().includes('cash') ||
@@ -92,10 +90,10 @@ export const ManualPaymentMethodsStrip = memo(
                     styles.paymentMethodChipText,
                     {
                       color: isSelected
-                        ? '#FFFFFF'
+                        ? colors.onPrimary
                         : isDark
                           ? colors.textPrimary
-                          : '#475569',
+                          : colors.borderStrong,
                     },
                     isSelected ? styles.paymentMethodChipTextSelected : null,
                   ]}

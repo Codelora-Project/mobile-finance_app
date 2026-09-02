@@ -37,7 +37,7 @@ export const TransactionHistorySearchToolbar = memo(
             styles.searchWrap,
             {
               backgroundColor: colors.surface,
-              borderColor: isDark ? '#27272A' : '#E2E8F0',
+              borderColor: colors.border,
               shadowColor: colors.shadow,
             },
           ]}
@@ -90,8 +90,8 @@ export const TransactionHistorySearchToolbar = memo(
                 activeFiltersCount > 0
                   ? colors.primary
                   : isDark
-                    ? '#27272A'
-                    : '#E2E8F0',
+                    ? colors.surfaceSecondary
+                    : colors.border,
               shadowColor: colors.shadow,
             },
             pressed && styles.pressed,

@@ -18,6 +18,7 @@ import { useAuth } from '@/features/auth/auth-context';
 import { useReduceMotion } from '@/lib/accessibility/use-reduce-motion';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -280,11 +281,9 @@ export function LoginScreen() {
                 styles.brandBadge,
                 {
                   backgroundColor: isDark
-                    ? 'rgba(59, 130, 246, 0.12)'
+                    ? colors.primaryOverlay
                     : colors.primaryLight,
-                  borderColor: isDark
-                    ? 'rgba(59, 130, 246, 0.28)'
-                    : 'rgba(37, 99, 235, 0.2)',
+                  borderColor: colors.primaryOverlayStrong,
                   opacity: entryBrandOp,
                   transform: [{ translateY: entryBrandTY }],
                 },
@@ -356,9 +355,7 @@ export function LoginScreen() {
                 style={[
                   styles.ambientGlow,
                   {
-                    backgroundColor: isDark
-                      ? 'rgba(59, 130, 246, 0.08)'
-                      : 'rgba(37, 99, 235, 0.06)',
+                    backgroundColor: colors.primaryOverlaySubtle,
                   },
                 ]}
               />
@@ -369,7 +366,7 @@ export function LoginScreen() {
                   styles.floatingChipTop,
                   {
                     backgroundColor: colors.surface,
-                    borderColor: isDark ? '#27272A' : '#E2E8F0',
+                    borderColor: colors.border,
                     shadowColor: colors.shadow,
                     transform: [
                       { translateY: topTranslateY },
@@ -382,14 +379,12 @@ export function LoginScreen() {
                   style={[
                     styles.chipIconWrap,
                     {
-                      backgroundColor: isDark
-                        ? 'rgba(234, 88, 12, 0.2)'
-                        : '#FFEDD5',
+                      backgroundColor: colors.accentOrangeBackground,
                     },
                   ]}
                 >
                   <MaterialCommunityIcons
-                    color={isDark ? '#FB923C' : '#EA580C'}
+                    color={colors.accentOrange}
                     name="food-fork-drink"
                     size={13}
                   />
@@ -413,7 +408,7 @@ export function LoginScreen() {
                   styles.mainCard,
                   {
                     backgroundColor: colors.surface,
-                    borderColor: isDark ? '#27272A' : '#E2E8F0',
+                    borderColor: colors.border,
                     shadowColor: colors.shadow,
                     transform: [{ translateY: mainTranslateY }],
                   },
@@ -441,11 +436,9 @@ export function LoginScreen() {
                       styles.speedBadge,
                       {
                         backgroundColor: isDark
-                          ? 'rgba(59, 130, 246, 0.16)'
+                          ? colors.primaryOverlay
                           : colors.primaryLight,
-                        borderColor: isDark
-                          ? 'rgba(59, 130, 246, 0.3)'
-                          : 'rgba(37, 99, 235, 0.2)',
+                        borderColor: colors.primaryBorder,
                       },
                     ]}
                   >
@@ -476,7 +469,7 @@ export function LoginScreen() {
                 <View
                   style={[
                     styles.cardDivider,
-                    { backgroundColor: isDark ? '#27272A' : '#F1F5F9' },
+                    { backgroundColor: colors.surfaceSecondary },
                   ]}
                 />
 
@@ -516,7 +509,7 @@ export function LoginScreen() {
                   <View
                     style={[
                       styles.verticalDivider,
-                      { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
+                      { backgroundColor: colors.border },
                     ]}
                   />
 
@@ -555,7 +548,7 @@ export function LoginScreen() {
                 <View
                   style={[
                     styles.cardDivider,
-                    { backgroundColor: isDark ? '#27272A' : '#F1F5F9' },
+                    { backgroundColor: colors.surfaceSecondary },
                   ]}
                 />
 
@@ -591,7 +584,7 @@ export function LoginScreen() {
                   <View
                     style={[
                       styles.budgetTrack,
-                      { backgroundColor: isDark ? '#27272A' : '#F1F5F9' },
+                      { backgroundColor: colors.surfaceSecondary },
                     ]}
                   >
                     <View
@@ -619,7 +612,7 @@ export function LoginScreen() {
                   styles.floatingChipBottom,
                   {
                     backgroundColor: colors.surface,
-                    borderColor: isDark ? '#27272A' : '#E2E8F0',
+                    borderColor: colors.border,
                     shadowColor: colors.shadow,
                     transform: [
                       { translateY: bottomTranslateY },
@@ -632,9 +625,7 @@ export function LoginScreen() {
                   style={[
                     styles.chipIconWrap,
                     {
-                      backgroundColor: isDark
-                        ? 'rgba(74, 222, 128, 0.2)'
-                        : '#DCFCE7',
+                      backgroundColor: colors.positiveOverlay,
                     },
                   ]}
                 >
@@ -667,7 +658,7 @@ export function LoginScreen() {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
                       : colors.surface,
-                    borderColor: isDark ? '#27272A' : '#E2E8F0',
+                    borderColor: colors.border,
                   },
                 ]}
               >
@@ -689,7 +680,7 @@ export function LoginScreen() {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
                       : colors.surface,
-                    borderColor: isDark ? '#27272A' : '#E2E8F0',
+                    borderColor: colors.border,
                   },
                 ]}
               >
@@ -711,7 +702,7 @@ export function LoginScreen() {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
                       : colors.surface,
-                    borderColor: isDark ? '#27272A' : '#E2E8F0',
+                    borderColor: colors.border,
                   },
                 ]}
               >
@@ -746,7 +737,7 @@ export function LoginScreen() {
                   styles.alertBanner,
                   {
                     backgroundColor: colors.warningBackground,
-                    borderColor: isDark ? '#78350F' : '#FDE68A',
+                    borderColor: colors.warningBorder,
                   },
                 ]}
               >
@@ -777,7 +768,7 @@ export function LoginScreen() {
                   styles.alertBanner,
                   {
                     backgroundColor: colors.expenseBackground,
-                    borderColor: isDark ? '#7F1D1D' : '#FECACA',
+                    borderColor: colors.destructiveBorder,
                   },
                 ]}
               >
@@ -814,17 +805,15 @@ export function LoginScreen() {
               accessibilityState={{ busy: isBusy, disabled: isBusy }}
               android_ripple={{
                 borderless: false,
-                color: isDark
-                  ? 'rgba(255, 255, 255, 0.12)'
-                  : 'rgba(0, 0, 0, 0.08)',
+                color: colors.pressedOverlay,
               }}
               disabled={isBusy}
               onPress={() => void signInWithGoogle()}
               style={({ pressed }) => [
                 styles.googleButton,
                 {
-                  backgroundColor: isDark ? colors.surface : '#FFFFFF',
-                  borderColor: isDark ? '#3F3F46' : '#D1D5DB',
+                  backgroundColor: colors.surface,
+                  borderColor: colors.borderStrong,
                   shadowColor: colors.shadow,
                 },
                 pressed && Platform.OS === 'ios' ? styles.buttonPressed : null,
@@ -846,7 +835,7 @@ export function LoginScreen() {
               ) : (
                 <>
                   <MaterialCommunityIcons
-                    color="#4285F4"
+                    color={fixedSemanticColors.googleBrand}
                     name="google"
                     size={22}
                   />

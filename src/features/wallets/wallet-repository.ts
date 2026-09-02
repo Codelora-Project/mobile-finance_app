@@ -16,6 +16,7 @@ import type {
 import { getTimezoneOffsetMinutes, toLocalDate } from '@/lib/dates';
 import { createCodedError } from '@/lib/errors';
 import { normalizeOptionalText } from '@/lib/strings';
+import { defaultWalletColor } from '@/theme/colors';
 
 type WalletRow = {
   account_number: string | null;
@@ -40,7 +41,7 @@ function mapWalletRow(row: WalletRow): Wallet {
   return {
     accountNumber: row.account_number,
     accountType: (row.account_type as AccountType) || 'cash',
-    color: row.color ?? '#2563EB',
+    color: row.color ?? defaultWalletColor,
     createdAt: Number(row.created_at ?? 0),
     currentBalanceMinor: Number(row.current_balance_minor ?? 0),
     iconKey: row.icon_key ?? 'wallet',
@@ -181,17 +182,17 @@ export async function createWallet(
       updated_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?);`,
       [
-      trimmedName,
-      input.accountType,
-      normalizeOptionalText(input.accountNumber),
-      input.color ?? '#2563EB',
-      input.iconKey ?? 'wallet',
-      initialBalanceMinor,
-      input.includeInCashflow !== false ? 1 : 0,
-      input.isDefault ? 1 : 0,
-      nextOrder,
-      now,
-      now,
+        trimmedName,
+        input.accountType,
+        normalizeOptionalText(input.accountNumber),
+        input.color ?? defaultWalletColor,
+        input.iconKey ?? 'wallet',
+        initialBalanceMinor,
+        input.includeInCashflow !== false ? 1 : 0,
+        input.isDefault ? 1 : 0,
+        nextOrder,
+        now,
+        now,
       ],
     ),
   );
@@ -260,38 +261,38 @@ export async function updateWallet(
       updated_at = ?
     WHERE id = ?;`,
       [
-      name,
-      input.accountType ?? existing.accountType,
-      input.accountNumber !== undefined
-        ? normalizeOptionalText(input.accountNumber)
-        : existing.accountNumber,
-      input.color ?? existing.color,
-      input.iconKey ?? existing.iconKey,
-      input.initialBalanceMinor ?? existing.initialBalanceMinor,
-      input.includeInCashflow !== undefined
-        ? input.includeInCashflow
-          ? 1
-          : 0
-        : existing.includeInCashflow
-          ? 1
-          : 0,
-      input.isDefault !== undefined
-        ? input.isDefault
-          ? 1
-          : 0
-        : existing.isDefault
-          ? 1
-          : 0,
-      input.isArchived !== undefined
-        ? input.isArchived
-          ? 1
-          : 0
-        : existing.isArchived
-          ? 1
-          : 0,
-      input.sortOrder ?? existing.sortOrder,
-      now,
-      id,
+        name,
+        input.accountType ?? existing.accountType,
+        input.accountNumber !== undefined
+          ? normalizeOptionalText(input.accountNumber)
+          : existing.accountNumber,
+        input.color ?? existing.color,
+        input.iconKey ?? existing.iconKey,
+        input.initialBalanceMinor ?? existing.initialBalanceMinor,
+        input.includeInCashflow !== undefined
+          ? input.includeInCashflow
+            ? 1
+            : 0
+          : existing.includeInCashflow
+            ? 1
+            : 0,
+        input.isDefault !== undefined
+          ? input.isDefault
+            ? 1
+            : 0
+          : existing.isDefault
+            ? 1
+            : 0,
+        input.isArchived !== undefined
+          ? input.isArchived
+            ? 1
+            : 0
+          : existing.isArchived
+            ? 1
+            : 0,
+        input.sortOrder ?? existing.sortOrder,
+        now,
+        id,
       ],
     ),
   );

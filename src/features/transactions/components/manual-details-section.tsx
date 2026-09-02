@@ -65,7 +65,7 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
           style={[
             styles.counterpartyInputWrap,
             {
-              backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+              backgroundColor: colors.surfaceMuted,
               borderColor: colors.border,
             },
           ]}
@@ -95,11 +95,9 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
               {
                 backgroundColor: receipt
                   ? isDark
-                    ? '#312E81'
-                    : '#EFF6FF'
-                  : isDark
-                    ? colors.surfaceSecondary
-                    : '#F1F5F9',
+                    ? colors.accentIndigoBackground
+                    : colors.primaryLight
+                  : colors.surfaceSecondary,
                 borderColor: receipt ? colors.primary : colors.border,
               },
               receipt ? styles.receiptActionChipActive : null,
@@ -127,7 +125,7 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
       </View>
 
       {claimMembership ? (
-        <Text style={styles.claimMembershipNotice}>
+        <Text style={[styles.claimMembershipNotice, { color: colors.warning }]}>
           {t.transactions.claimMembership
             .replace('{id}', String(claimMembership.claimId))
             .replace('{status}', claimMembership.claimStatus)}
@@ -153,7 +151,7 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
           style={[
             styles.advancedFieldsPanel,
             {
-              backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+              backgroundColor: colors.surfaceMuted,
               borderColor: colors.border,
             },
           ]}
@@ -207,7 +205,10 @@ export const ManualDetailsSection = memo(function ManualDetailsSection({
               <Switch
                 accessibilityLabel={t.transactions.claimableLabel}
                 onValueChange={onChangeReimbursable}
-                trackColor={{ false: '#CBD5E1', true: colors.primary }}
+                trackColor={{
+                  false: colors.borderStrong,
+                  true: colors.primary,
+                }}
                 value={isReimbursable}
               />
             </View>
@@ -245,7 +246,6 @@ const styles = StyleSheet.create({
   },
   claimMembershipNotice: {
     ...typography.metadata,
-    color: '#D97706',
     fontWeight: '700',
     paddingHorizontal: spacing.xs,
   },

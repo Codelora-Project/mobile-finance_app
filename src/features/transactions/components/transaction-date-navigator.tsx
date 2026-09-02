@@ -32,7 +32,7 @@ export const TransactionDateNavigator = memo(function TransactionDateNavigator({
   primaryLabel,
   secondaryLabel,
 }: TransactionDateNavigatorProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { t } = useLanguage();
 
   return (
@@ -58,7 +58,7 @@ export const TransactionDateNavigator = memo(function TransactionDateNavigator({
           style={({ pressed }) => [
             styles.navBtn,
             {
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC',
+              backgroundColor: colors.surfaceMuted,
             },
             pressed ? { opacity: 0.6 } : null,
           ]}
@@ -102,7 +102,7 @@ export const TransactionDateNavigator = memo(function TransactionDateNavigator({
           style={({ pressed }) => [
             styles.navBtn,
             {
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC',
+              backgroundColor: colors.surfaceMuted,
             },
             pressed ? { opacity: 0.6 } : null,
           ]}

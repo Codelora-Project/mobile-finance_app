@@ -43,7 +43,7 @@ export const TransactionHistorySummaryBar = memo(
             styles.summaryBarRoot,
             {
               backgroundColor: colors.surface,
-              borderColor: isDark ? '#27272A' : '#E2E8F0',
+              borderColor: colors.border,
               shadowColor: colors.shadow,
             },
           ]}
@@ -61,8 +61,8 @@ export const TransactionHistorySummaryBar = memo(
               styles.statCol,
               activeTypeFilter === 'expense' && {
                 backgroundColor: isDark
-                  ? 'rgba(251, 113, 133, 0.14)'
-                  : '#FEE2E2',
+                  ? colors.destructiveOverlay
+                  : colors.expenseBackground,
                 borderRadius: radius.md,
               },
               pressed ? { opacity: 0.75 } : null,
@@ -73,8 +73,8 @@ export const TransactionHistorySummaryBar = memo(
                 styles.iconCircle,
                 {
                   backgroundColor: isDark
-                    ? 'rgba(251, 113, 133, 0.16)'
-                    : '#FEE2E2',
+                    ? colors.destructiveOverlay
+                    : colors.expenseBackground,
                 },
               ]}
             >
@@ -103,10 +103,7 @@ export const TransactionHistorySummaryBar = memo(
           </Pressable>
 
           <View
-            style={[
-              styles.verticalDivider,
-              { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
-            ]}
+            style={[styles.verticalDivider, { backgroundColor: colors.border }]}
           />
 
           {/* 2. Income Stat (Masuk) */}
@@ -122,8 +119,8 @@ export const TransactionHistorySummaryBar = memo(
               styles.statCol,
               activeTypeFilter === 'income' && {
                 backgroundColor: isDark
-                  ? 'rgba(74, 222, 128, 0.14)'
-                  : '#DCFCE7',
+                  ? colors.positiveOverlay
+                  : colors.incomeBackground,
                 borderRadius: radius.md,
               },
               pressed ? { opacity: 0.75 } : null,
@@ -134,8 +131,8 @@ export const TransactionHistorySummaryBar = memo(
                 styles.iconCircle,
                 {
                   backgroundColor: isDark
-                    ? 'rgba(74, 222, 128, 0.16)'
-                    : '#DCFCE7',
+                    ? colors.positiveOverlay
+                    : colors.incomeBackground,
                 },
               ]}
             >
@@ -164,10 +161,7 @@ export const TransactionHistorySummaryBar = memo(
           </Pressable>
 
           <View
-            style={[
-              styles.verticalDivider,
-              { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
-            ]}
+            style={[styles.verticalDivider, { backgroundColor: colors.border }]}
           />
 
           {/* 3. Net Flow Stat */}
@@ -178,11 +172,11 @@ export const TransactionHistorySummaryBar = memo(
                 {
                   backgroundColor: isDark
                     ? isNetPositive
-                      ? 'rgba(74, 222, 128, 0.16)'
-                      : 'rgba(251, 113, 133, 0.16)'
+                      ? colors.positiveOverlay
+                      : colors.destructiveOverlay
                     : isNetPositive
-                      ? '#DCFCE7'
-                      : '#FEE2E2',
+                      ? colors.incomeBackground
+                      : colors.expenseBackground,
                 },
               ]}
             >

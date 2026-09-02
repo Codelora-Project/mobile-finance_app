@@ -73,7 +73,6 @@ export function BackupScreen() {
     payload: BackupPayload;
     source?: 'cloud' | 'file';
     stats: BackupStats;
-    uri: string;
   } | null>(null);
 
   const loadStats = useCallback(async () => {
@@ -168,7 +167,6 @@ export function BackupScreen() {
         payload: downloaded.payload,
         source: 'cloud',
         stats: downloaded.stats,
-        uri: `gdrive://${downloaded.file.id}`,
       });
       setPreviewModalVisible(true);
     } catch (err) {

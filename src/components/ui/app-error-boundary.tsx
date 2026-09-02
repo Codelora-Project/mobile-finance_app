@@ -5,6 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { AppButton } from '@/components/ui/app-button';
 import { Screen } from '@/components/ui/screen';
 import { useLanguage } from '@/lib/i18n/language-context';
+import { useTheme } from '@/lib/theme/theme-context';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -28,13 +29,19 @@ function DefaultErrorFallback({
   onReset: () => void;
 }) {
   const { t } = useLanguage();
+  const { colors } = useTheme();
 
   return (
     <Screen>
       <View style={styles.container}>
-        <View style={styles.iconCircle}>
+        <View
+          style={[
+            styles.iconCircle,
+            { backgroundColor: colors.expenseBackground },
+          ]}
+        >
           <MaterialCommunityIcons
-            color="#EF4444"
+            color={colors.destructive}
             name="alert-circle-outline"
             size={48}
           />
@@ -44,7 +51,7 @@ function DefaultErrorFallback({
           {t.errorBoundary.title}
         </Text>
 
-        <Text style={styles.message}>
+        <Text style={[styles.message, { color: colors.textSecondary }]}>
           {__DEV__ && error.message
             ? error.message
             : t.errorBoundary.description}
@@ -128,7 +135,6 @@ const styles = StyleSheet.create({
   },
   iconCircle: {
     alignItems: 'center',
-    backgroundColor: '#FEE2E2',
     borderRadius: radius.pill,
     height: 80,
     justifyContent: 'center',
@@ -137,7 +143,6 @@ const styles = StyleSheet.create({
   },
   message: {
     ...typography.metadata,
-    color: '#64748B',
     fontSize: 13,
     lineHeight: 20,
     maxWidth: 280,

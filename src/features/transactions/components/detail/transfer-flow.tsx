@@ -6,6 +6,7 @@ import type { Transaction } from '@/features/transactions/transaction-repository
 import type { TranslationSchema } from '@/lib/i18n/translations';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -43,7 +44,7 @@ export const DetailTransferFlow = memo(function DetailTransferFlow({
             style={[
               styles.transferNodeIcon,
               {
-                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2',
+                backgroundColor: colors.expenseBackground,
               },
             ]}
           >
@@ -75,7 +76,7 @@ export const DetailTransferFlow = memo(function DetailTransferFlow({
             ]}
           >
             <MaterialCommunityIcons
-              color="#FFFFFF"
+              color={fixedSemanticColors.contentOnStrong}
               name="arrow-right"
               size={16}
             />
@@ -89,8 +90,8 @@ export const DetailTransferFlow = memo(function DetailTransferFlow({
               styles.transferNodeIcon,
               {
                 backgroundColor: isDark
-                  ? 'rgba(16, 185, 129, 0.15)'
-                  : '#DCFCE7',
+                  ? colors.positiveOverlay
+                  : colors.incomeBackground,
               },
             ]}
           >
@@ -120,7 +121,7 @@ export const DetailTransferFlow = memo(function DetailTransferFlow({
           style={[
             styles.transferFeeRow,
             {
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC',
+              backgroundColor: colors.surfaceMuted,
               borderColor: colors.border,
             },
           ]}

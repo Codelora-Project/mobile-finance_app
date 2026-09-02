@@ -31,14 +31,14 @@ function getTransactionTypeVisuals(
   switch (type) {
     case 'transfer':
       return {
-        bgColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#EFF6FF',
+        bgColor: colors.primaryLight,
         color: colors.primary,
         icon: 'swap-horizontal' as const,
         sign: '',
       };
     case 'income':
       return {
-        bgColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5',
+        bgColor: colors.incomeBackground,
         color: colors.positive,
         icon: 'arrow-down-left' as const,
         sign: '+',
@@ -46,7 +46,7 @@ function getTransactionTypeVisuals(
     case 'expense':
     default:
       return {
-        bgColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2',
+        bgColor: colors.expenseBackground,
         color: colors.destructive,
         icon: 'arrow-up-right' as const,
         sign: '−',
@@ -113,8 +113,8 @@ export const DetailHeroCard = memo(function DetailHeroCard({
           {
             backgroundColor: isTransfer
               ? isDark
-                ? 'rgba(59, 130, 246, 0.15)'
-                : '#DBEAFE'
+                ? colors.primaryOverlay
+                : colors.primaryBorder
               : isDark
                 ? `${colors.primary}22`
                 : `${colors.primary}15`,
@@ -152,17 +152,17 @@ export const DetailHeroCard = memo(function DetailHeroCard({
               styles.heroAuxPill,
               {
                 backgroundColor: isDark
-                  ? 'rgba(245, 158, 11, 0.15)'
-                  : '#FEF3C7',
+                  ? colors.warningOverlay
+                  : colors.warningBackground,
               },
             ]}
           >
             <MaterialCommunityIcons
-              color="#D97706"
+              color={colors.warning}
               name="briefcase-outline"
               size={13}
             />
-            <Text style={[styles.heroAuxPillText, { color: '#D97706' }]}>
+            <Text style={[styles.heroAuxPillText, { color: colors.warning }]}>
               {t.transactions.reimbursableBadge}
             </Text>
           </View>
@@ -174,8 +174,8 @@ export const DetailHeroCard = memo(function DetailHeroCard({
               styles.heroAuxPill,
               {
                 backgroundColor: isDark
-                  ? 'rgba(59, 130, 246, 0.15)'
-                  : '#EFF6FF',
+                  ? colors.primaryOverlay
+                  : colors.primaryLight,
               },
             ]}
           >

@@ -8,6 +8,7 @@ import type { Language } from '@/lib/i18n/translations';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -87,7 +88,9 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
             style={({ pressed }) => [
               styles.resetFilterBtn,
               {
-                backgroundColor: isDark ? 'rgba(37, 99, 235, 0.2)' : '#EFF6FF',
+                backgroundColor: isDark
+                  ? colors.primaryOverlay
+                  : colors.primaryLight,
                 borderColor: colors.primary,
               },
               pressed ? { opacity: 0.75 } : null,
@@ -140,12 +143,10 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
             styles.miniCard,
             {
               backgroundColor: isAllSelected
-                ? isDark
-                  ? '#1E3A8A'
-                  : '#EFF6FF'
+                ? colors.primaryLight
                 : isDark
                   ? colors.surface
-                  : '#FFFFFF',
+                  : colors.onPrimary,
               borderColor: isAllSelected ? colors.primary : colors.border,
             },
             isAllSelected ? styles.cardActiveGlow : null,
@@ -157,12 +158,10 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
               styles.iconBadge,
               {
                 backgroundColor: isAllSelected
-                  ? isDark
-                    ? '#2563EB'
-                    : '#DBEAFE'
+                  ? colors.primaryBorder
                   : isDark
-                    ? 'rgba(37, 99, 235, 0.2)'
-                    : '#EFF6FF',
+                    ? colors.primaryOverlay
+                    : colors.primaryLight,
               },
             ]}
           >
@@ -229,7 +228,7 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
                       : `${walletColor}10`
                     : isDark
                       ? colors.surface
-                      : '#FFFFFF',
+                      : colors.onPrimary,
                   borderColor: isSelected ? walletColor : colors.border,
                 },
                 isSelected ? styles.cardActiveGlow : null,
@@ -302,7 +301,7 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
               styles.miniCard,
               styles.addMiniCard,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+                backgroundColor: colors.surfaceMuted,
                 borderColor: colors.border,
               },
               pressed ? { opacity: 0.75 } : null,
@@ -311,7 +310,11 @@ export const HomeWalletCarousel = memo(function HomeWalletCarousel({
             <View
               style={[
                 styles.addIconBadge,
-                { backgroundColor: isDark ? colors.surface : '#EFF6FF' },
+                {
+                  backgroundColor: isDark
+                    ? colors.surface
+                    : colors.primaryLight,
+                },
               ]}
             >
               <MaterialCommunityIcons
@@ -356,7 +359,7 @@ const styles = StyleSheet.create({
   },
   cardActiveGlow: {
     elevation: 3,
-    shadowColor: '#000000',
+    shadowColor: fixedSemanticColors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 5,
@@ -405,7 +408,7 @@ const styles = StyleSheet.create({
     minWidth: 155,
     paddingHorizontal: spacing.sm + 4,
     paddingVertical: spacing.xs,
-    shadowColor: '#000000',
+    shadowColor: fixedSemanticColors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 3,

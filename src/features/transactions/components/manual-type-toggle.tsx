@@ -20,15 +20,15 @@ export const ManualTypeToggle = memo(function ManualTypeToggle({
   selectedType,
   t,
 }: ManualTypeToggleProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <View
       style={[
         styles.typeToggleTrack,
         {
-          backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
-          borderColor: isDark ? '#27272A' : '#E2E8F0',
+          backgroundColor: colors.surfaceSecondary,
+          borderColor: colors.border,
         },
       ]}
     >
@@ -54,11 +54,7 @@ export const ManualTypeToggle = memo(function ManualTypeToggle({
       >
         <MaterialCommunityIcons
           color={
-            selectedType === 'expense'
-              ? '#FFFFFF'
-              : isDark
-                ? colors.textSecondary
-                : '#64748B'
+            selectedType === 'expense' ? colors.onPrimary : colors.textSecondary
           }
           name="arrow-down-bold-circle-outline"
           size={16}
@@ -70,10 +66,8 @@ export const ManualTypeToggle = memo(function ManualTypeToggle({
             {
               color:
                 selectedType === 'expense'
-                  ? '#FFFFFF'
-                  : isDark
-                    ? colors.textSecondary
-                    : '#64748B',
+                  ? colors.onPrimary
+                  : colors.textSecondary,
             },
             selectedType === 'expense' ? styles.typeTabTextActive : null,
           ]}
@@ -104,11 +98,7 @@ export const ManualTypeToggle = memo(function ManualTypeToggle({
       >
         <MaterialCommunityIcons
           color={
-            selectedType === 'income'
-              ? '#FFFFFF'
-              : isDark
-                ? colors.textSecondary
-                : '#64748B'
+            selectedType === 'income' ? colors.onPrimary : colors.textSecondary
           }
           name="arrow-up-bold-circle-outline"
           size={16}
@@ -120,10 +110,8 @@ export const ManualTypeToggle = memo(function ManualTypeToggle({
             {
               color:
                 selectedType === 'income'
-                  ? '#FFFFFF'
-                  : isDark
-                    ? colors.textSecondary
-                    : '#64748B',
+                  ? colors.onPrimary
+                  : colors.textSecondary,
             },
             selectedType === 'income' ? styles.typeTabTextActive : null,
           ]}
@@ -155,10 +143,8 @@ export const ManualTypeToggle = memo(function ManualTypeToggle({
         <MaterialCommunityIcons
           color={
             selectedType === 'transfer'
-              ? '#FFFFFF'
-              : isDark
-                ? colors.textSecondary
-                : '#64748B'
+              ? colors.onPrimary
+              : colors.textSecondary
           }
           name="swap-horizontal"
           size={17}
@@ -170,10 +156,8 @@ export const ManualTypeToggle = memo(function ManualTypeToggle({
             {
               color:
                 selectedType === 'transfer'
-                  ? '#FFFFFF'
-                  : isDark
-                    ? colors.textSecondary
-                    : '#64748B',
+                  ? colors.onPrimary
+                  : colors.textSecondary,
             },
             selectedType === 'transfer' ? styles.typeTabTextActive : null,
           ]}

@@ -112,8 +112,8 @@ export function WalletPicker({
                 {
                   backgroundColor: noneSelected
                     ? isDark
-                      ? 'rgba(37, 99, 235, 0.15)'
-                      : '#EFF6FF'
+                      ? colors.primaryOverlay
+                      : colors.primaryLight
                     : colors.surface,
                   borderColor: noneSelected ? colors.primary : colors.border,
                 },
@@ -126,7 +126,7 @@ export function WalletPicker({
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
-                      : '#E2E8F0',
+                      : colors.border,
                   },
                 ]}
               >
@@ -173,8 +173,8 @@ export function WalletPicker({
               {
                 backgroundColor: isSelected
                   ? isDark
-                    ? 'rgba(37, 99, 235, 0.15)'
-                    : '#EFF6FF'
+                    ? colors.primaryOverlay
+                    : colors.primaryLight
                   : colors.surface,
                 borderColor: isSelected ? colors.primary : colors.border,
               },
@@ -212,7 +212,7 @@ export function WalletPicker({
                       {
                         backgroundColor: isDark
                           ? colors.surfaceSecondary
-                          : '#E2E8F0',
+                          : colors.border,
                       },
                     ]}
                   >
@@ -235,9 +235,7 @@ export function WalletPicker({
 
             {/* Checkmark indicator */}
             <MaterialCommunityIcons
-              color={
-                isSelected ? colors.primary : isDark ? '#52525B' : '#CBD5E1'
-              }
+              color={isSelected ? colors.primary : colors.borderStrong}
               name={
                 isSelected
                   ? 'checkbox-marked-circle'

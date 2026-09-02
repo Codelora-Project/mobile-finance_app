@@ -38,7 +38,7 @@ export function WeeklyBarChart({
         styles.container,
         {
           backgroundColor: colors.surface,
-          borderColor: isDark ? '#27272A' : '#E2E8F0',
+          borderColor: colors.border,
           shadowColor: colors.shadow,
         },
       ]}
@@ -67,11 +67,11 @@ export function WeeklyBarChart({
             {
               backgroundColor: isFrugal
                 ? isDark
-                  ? 'rgba(74, 222, 128, 0.14)'
-                  : '#DCFCE7'
+                  ? colors.positiveOverlay
+                  : colors.incomeBackground
                 : isDark
-                  ? 'rgba(251, 113, 133, 0.14)'
-                  : '#FEE2E2',
+                  ? colors.destructiveOverlay
+                  : colors.expenseBackground,
             },
           ]}
         >
@@ -109,10 +109,7 @@ export function WeeklyBarChart({
 
         <View style={styles.legendItem}>
           <View
-            style={[
-              styles.legendDot,
-              { backgroundColor: isDark ? '#52525B' : '#CBD5E1' },
-            ]}
+            style={[styles.legendDot, { backgroundColor: colors.borderStrong }]}
           />
           <Text style={[styles.legendLabel, { color: colors.textSecondary }]}>
             {t.analytics.lastWeek}:{' '}
@@ -148,7 +145,7 @@ export function WeeklyBarChart({
                   style={[
                     styles.barPill,
                     {
-                      backgroundColor: isDark ? '#3F3F46' : '#CBD5E1',
+                      backgroundColor: colors.borderStrong,
                       height: `${lastWeekHeightPercent}%`,
                     },
                   ]}

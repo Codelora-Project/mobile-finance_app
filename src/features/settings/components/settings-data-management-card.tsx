@@ -85,14 +85,12 @@ export const SettingsDataManagementCard = memo(
                 style={[
                   styles.itemIconBadge,
                   {
-                    backgroundColor: isDark
-                      ? colors.surfaceSecondary
-                      : '#FFEDD5',
+                    backgroundColor: colors.accentOrangeBackground,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
-                  color="#EA580C"
+                  color={colors.accentOrange}
                   name="tag-multiple-outline"
                   size={19}
                 />
@@ -144,12 +142,12 @@ export const SettingsDataManagementCard = memo(
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
-                      : '#EFF6FF',
+                      : colors.primaryLight,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
-                  color="#2563EB"
+                  color={colors.primary}
                   name="wallet-outline"
                   size={19}
                 />
@@ -199,14 +197,12 @@ export const SettingsDataManagementCard = memo(
                 style={[
                   styles.itemIconBadge,
                   {
-                    backgroundColor: isDark
-                      ? colors.surfaceSecondary
-                      : '#DBEAFE',
+                    backgroundColor: colors.primaryLight,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
-                  color="#2563EB"
+                  color={colors.primary}
                   name="database-sync-outline"
                   size={19}
                 />
@@ -260,12 +256,12 @@ export const SettingsDataManagementCard = memo(
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
-                      : '#DCFCE7',
+                      : colors.incomeBackground,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
-                  color="#16A34A"
+                  color={colors.positive}
                   name="file-delimited-outline"
                   size={19}
                 />
@@ -315,12 +311,12 @@ export const SettingsDataManagementCard = memo(
                     {
                       backgroundColor: isDark
                         ? colors.surfaceSecondary
-                        : '#FEF3C7',
+                        : colors.warningBackground,
                     },
                   ]}
                 >
                   <MaterialCommunityIcons
-                    color="#D97706"
+                    color={colors.warning}
                     name="folder-sync-outline"
                     size={19}
                   />
@@ -363,8 +359,8 @@ export const SettingsDataManagementCard = memo(
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
-                      : '#EFF6FF',
-                    borderColor: isDark ? colors.border : '#BFDBFE',
+                      : colors.primaryLight,
+                    borderColor: colors.border,
                   },
                   pressed && styles.rowPressed,
                   clearingCache && { opacity: 0.6 },
@@ -400,21 +396,21 @@ export const SettingsDataManagementCard = memo(
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
-                      : '#E2E8F0',
+                      : colors.border,
                   },
                 ]}
               >
                 <View
                   style={[
                     styles.progressSegment,
-                    { backgroundColor: '#3B82F6', flex: 3 },
+                    { backgroundColor: colors.primary, flex: 3 },
                   ]}
                 />
                 <View
                   style={[
                     styles.progressSegment,
                     {
-                      backgroundColor: '#8B5CF6',
+                      backgroundColor: colors.accentPurple,
                       flex: storageStats.receiptsSizeBytes > 0 ? 5 : 1,
                     },
                   ]}
@@ -423,7 +419,7 @@ export const SettingsDataManagementCard = memo(
                   style={[
                     styles.progressSegment,
                     {
-                      backgroundColor: '#F59E0B',
+                      backgroundColor: colors.warning,
                       flex: storageStats.cacheSizeBytes > 0 ? 2 : 1,
                     },
                   ]}
@@ -441,7 +437,7 @@ export const SettingsDataManagementCard = memo(
                     {
                       backgroundColor: isDark
                         ? colors.surfaceSecondary
-                        : '#F8FAFC',
+                        : colors.surfaceMuted,
                       borderColor: colors.border,
                     },
                   ]}
@@ -450,7 +446,7 @@ export const SettingsDataManagementCard = memo(
                     <View
                       style={[
                         styles.indicatorDot,
-                        { backgroundColor: '#3B82F6' },
+                        { backgroundColor: colors.primary },
                       ]}
                     />
                     <Text
@@ -481,7 +477,7 @@ export const SettingsDataManagementCard = memo(
                     {
                       backgroundColor: isDark
                         ? colors.surfaceSecondary
-                        : '#F8FAFC',
+                        : colors.surfaceMuted,
                       borderColor: colors.border,
                     },
                   ]}
@@ -490,7 +486,7 @@ export const SettingsDataManagementCard = memo(
                     <View
                       style={[
                         styles.indicatorDot,
-                        { backgroundColor: '#8B5CF6' },
+                        { backgroundColor: colors.accentPurple },
                       ]}
                     />
                     <Text
@@ -521,7 +517,7 @@ export const SettingsDataManagementCard = memo(
                     {
                       backgroundColor: isDark
                         ? colors.surfaceSecondary
-                        : '#F8FAFC',
+                        : colors.surfaceMuted,
                       borderColor: colors.border,
                     },
                   ]}
@@ -530,7 +526,7 @@ export const SettingsDataManagementCard = memo(
                     <View
                       style={[
                         styles.indicatorDot,
-                        { backgroundColor: '#F59E0B' },
+                        { backgroundColor: colors.warning },
                       ]}
                     />
                     <Text
@@ -550,7 +546,7 @@ export const SettingsDataManagementCard = memo(
                       {
                         color:
                           storageStats.cacheSizeBytes > 0
-                            ? '#D97706'
+                            ? colors.warning
                             : colors.textPrimary,
                       },
                     ]}

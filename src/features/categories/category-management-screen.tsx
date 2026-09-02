@@ -252,7 +252,10 @@ export function CategoryManagementScreen() {
           accessibilityLiveRegion="assertive"
           style={[
             styles.errorBanner,
-            { backgroundColor: '#FEE2E2', borderColor: '#FCA5A5' },
+            {
+              backgroundColor: colors.expenseBackground,
+              borderColor: colors.destructiveBorder,
+            },
           ]}
         >
           <Text style={[styles.errorText, { color: colors.destructive }]}>

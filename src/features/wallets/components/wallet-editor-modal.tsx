@@ -24,6 +24,7 @@ import { useLanguage } from '@/lib/i18n/language-context';
 import type { MaterialCommunityIconName } from '@/lib/material-community-icons';
 import { formatMoneyInput, parseSignedMoneyInput } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors, walletColorOptions } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -36,17 +37,6 @@ export type WalletEditorModalProps = {
   visible: boolean;
   wallet: Wallet | 'new' | null;
 };
-
-const PRESET_COLORS = [
-  '#2563EB', // Blue
-  '#10B981', // Emerald
-  '#8B5CF6', // Purple
-  '#00AED6', // Cyan GoPay
-  '#F59E0B', // Amber
-  '#EF4444', // Red
-  '#4F46E5', // Indigo
-  '#64748B', // Slate
-];
 
 const DEFAULT_WALLET_ICON: MaterialCommunityIconName = 'bank';
 
@@ -95,7 +85,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
   const [name, setName] = useState('');
   const [accountType, setAccountType] = useState<AccountType>('bank');
   const [accountNumber, setAccountNumber] = useState('');
-  const [color, setColor] = useState(PRESET_COLORS[0]);
+  const [color, setColor] = useState<string>(walletColorOptions[0]);
   const [icon, setIcon] =
     useState<MaterialCommunityIconName>(DEFAULT_WALLET_ICON);
   const [initialBalance, setInitialBalance] = useState('');
@@ -109,7 +99,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
       setName('');
       setInitialBalance('');
       setAccountNumber('');
-      setColor(PRESET_COLORS[0]);
+      setColor(walletColorOptions[0]);
       setIcon(DEFAULT_WALLET_ICON);
       setAccountType('bank');
       setExcludeNetWorth(false);
@@ -118,7 +108,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
       setName(wallet.name);
       setAccountType(wallet.accountType);
       setAccountNumber(wallet.accountNumber || '');
-      setColor(wallet.color || PRESET_COLORS[0]);
+      setColor(wallet.color || walletColorOptions[0]);
       setIcon(getWalletIconName(wallet));
       setInitialBalance(
         formatMoneyInput(wallet.initialBalanceMinor, currencyCode),
@@ -248,7 +238,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
-                      : '#F8FAFC',
+                      : colors.surfaceMuted,
                     borderColor: colors.border,
                     color: colors.textPrimary,
                   },
@@ -284,10 +274,10 @@ export const WalletEditorModal = memo(function WalletEditorModal({
                           backgroundColor: isSelected
                             ? isDark
                               ? `${colors.primary}30`
-                              : '#EFF6FF'
+                              : colors.primaryLight
                             : isDark
                               ? colors.surfaceSecondary
-                              : '#F8FAFC',
+                              : colors.surfaceMuted,
                           borderColor: isSelected
                             ? colors.primary
                             : colors.border,
@@ -333,7 +323,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
                     {
                       backgroundColor: isDark
                         ? colors.surfaceSecondary
-                        : '#F8FAFC',
+                        : colors.surfaceMuted,
                       borderColor: colors.border,
                     },
                   ]}
@@ -371,7 +361,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
-                      : '#F8FAFC',
+                      : colors.surfaceMuted,
                     borderColor: colors.border,
                     color: colors.textPrimary,
                   },
@@ -386,7 +376,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
                 {t.wallets.colorThemeLabel}
               </Text>
               <View style={styles.colorPaletteRow}>
-                {PRESET_COLORS.map((c) => {
+                {walletColorOptions.map((c) => {
                   const isSelected = color === c;
                   return (
                     <Pressable
@@ -405,7 +395,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
                     >
                       {isSelected ? (
                         <MaterialCommunityIcons
-                          color="#FFFFFF"
+                          color={fixedSemanticColors.contentOnStrong}
                           name="check"
                           size={16}
                         />
@@ -421,7 +411,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
               style={[
                 styles.toggleCard,
                 {
-                  backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+                  backgroundColor: colors.surfaceMuted,
                   borderColor: colors.border,
                 },
               ]}
@@ -443,7 +433,7 @@ export const WalletEditorModal = memo(function WalletEditorModal({
               </View>
               <Switch
                 onValueChange={setExcludeNetWorth}
-                thumbColor={excludeNetWorth ? colors.primary : '#FFFFFF'}
+                thumbColor={excludeNetWorth ? colors.primary : colors.onPrimary}
                 trackColor={{
                   false: colors.border,
                   true: `${colors.primary}60`,
@@ -487,7 +477,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   backdrop: {
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    backgroundColor: fixedSemanticColors.modalBackdrop,
     flex: 1,
     justifyContent: 'flex-end',
   },
@@ -503,7 +493,7 @@ const styles = StyleSheet.create({
   },
   colorCircleSelected: {
     borderWidth: 2.5,
-    borderColor: '#FFFFFF',
+    borderColor: fixedSemanticColors.contentOnStrong,
     transform: [{ scale: 1.1 }],
   },
   colorPaletteRow: {
@@ -555,7 +545,7 @@ const styles = StyleSheet.create({
   sheetHeader: {
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderColor: 'rgba(150, 150, 150, 0.15)',
+    borderColor: fixedSemanticColors.neutralHairline,
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,

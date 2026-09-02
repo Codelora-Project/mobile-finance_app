@@ -25,7 +25,7 @@ export const TransactionMonthSelector = memo(function TransactionMonthSelector({
   onToggleAllTime,
   year,
 }: TransactionMonthSelectorProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { t } = useLanguage();
 
   const dateObj = new Date(year, month - 1, 1);
@@ -99,9 +99,7 @@ export const TransactionMonthSelector = memo(function TransactionMonthSelector({
             style={[
               styles.modePill,
               {
-                backgroundColor: isDark
-                  ? 'rgba(255,255,255,0.06)'
-                  : 'rgba(0,0,0,0.04)',
+                backgroundColor: colors.subtleOverlay,
               },
             ]}
           >

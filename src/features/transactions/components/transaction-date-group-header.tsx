@@ -17,7 +17,7 @@ export const TransactionDateGroupHeader = memo(
     formattedDate,
     totalNetMinor,
   }: TransactionDateGroupHeaderProps) {
-    const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
     const { currencyCode } = useCurrency();
 
     const formattedDaily =
@@ -32,12 +32,8 @@ export const TransactionDateGroupHeader = memo(
         style={[
           styles.dateHeaderRow,
           {
-            backgroundColor: isDark
-              ? 'rgba(255, 255, 255, 0.025)'
-              : 'rgba(15, 23, 42, 0.025)',
-            borderBottomColor: isDark
-              ? 'rgba(255, 255, 255, 0.06)'
-              : 'rgba(0, 0, 0, 0.05)',
+            backgroundColor: colors.hairlineOverlay,
+            borderBottomColor: colors.pressedOverlay,
           },
         ]}
       >

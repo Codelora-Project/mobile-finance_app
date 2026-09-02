@@ -14,6 +14,7 @@ import {
 
 import type { TranslationSchema } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -93,8 +94,8 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
                 styles.dragHandle,
                 {
                   backgroundColor: isDark
-                    ? 'rgba(255, 255, 255, 0.25)'
-                    : '#CBD5E1',
+                    ? colors.primaryBorder
+                    : colors.borderStrong,
                 },
               ]}
             />
@@ -135,7 +136,7 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
               style={[
                 styles.settingRow,
                 {
-                  backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+                  backgroundColor: colors.surfaceMuted,
                   borderColor: colors.border,
                 },
               ]}
@@ -145,8 +146,8 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
                   styles.iconBox,
                   {
                     backgroundColor: isDark
-                      ? 'rgba(37, 99, 235, 0.2)'
-                      : '#EFF6FF',
+                      ? colors.primaryOverlay
+                      : colors.primaryLight,
                   },
                 ]}
               >
@@ -170,9 +171,9 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
               </View>
               <Switch
                 onValueChange={onShowWalletChipsChange}
-                thumbColor="#FFFFFF"
+                thumbColor={fixedSemanticColors.contentOnStrong}
                 trackColor={{
-                  false: isDark ? colors.surfaceSecondary : '#CBD5E1',
+                  false: isDark ? colors.surfaceSecondary : colors.borderStrong,
                   true: colors.primary,
                 }}
                 value={showWalletChips}
@@ -184,7 +185,7 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
               style={[
                 styles.settingRow,
                 {
-                  backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+                  backgroundColor: colors.surfaceMuted,
                   borderColor: colors.border,
                 },
               ]}
@@ -193,14 +194,12 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
                 style={[
                   styles.iconBox,
                   {
-                    backgroundColor: isDark
-                      ? 'rgba(234, 179, 8, 0.2)'
-                      : '#FEF9C3',
+                    backgroundColor: colors.accentYellowBackground,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
-                  color={isDark ? '#FACC15' : '#CA8A04'}
+                  color={colors.accentYellow}
                   name="lightning-bolt"
                   size={20}
                 />
@@ -219,9 +218,9 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
               </View>
               <Switch
                 onValueChange={onShowQuickLogChange}
-                thumbColor="#FFFFFF"
+                thumbColor={fixedSemanticColors.contentOnStrong}
                 trackColor={{
-                  false: isDark ? colors.surfaceSecondary : '#CBD5E1',
+                  false: isDark ? colors.surfaceSecondary : colors.borderStrong,
                   true: colors.primary,
                 }}
                 value={showQuickLog}
@@ -233,7 +232,7 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
               style={[
                 styles.settingRow,
                 {
-                  backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+                  backgroundColor: colors.surfaceMuted,
                   borderColor: colors.border,
                 },
               ]}
@@ -242,14 +241,12 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
                 style={[
                   styles.iconBox,
                   {
-                    backgroundColor: isDark
-                      ? 'rgba(168, 85, 247, 0.2)'
-                      : '#F3E8FF',
+                    backgroundColor: colors.accentPurpleBackground,
                   },
                 ]}
               >
                 <MaterialCommunityIcons
-                  color={isDark ? '#C084FC' : '#9333EA'}
+                  color={colors.accentPurple}
                   name={hideBalance ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
                 />
@@ -268,9 +265,9 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
               </View>
               <Switch
                 onValueChange={onHideBalanceChange}
-                thumbColor="#FFFFFF"
+                thumbColor={fixedSemanticColors.contentOnStrong}
                 trackColor={{
-                  false: isDark ? colors.surfaceSecondary : '#CBD5E1',
+                  false: isDark ? colors.surfaceSecondary : colors.borderStrong,
                   true: colors.primary,
                 }}
                 value={hideBalance}
@@ -298,7 +295,7 @@ export const HomeDisplaySettingsModal = memo(function HomeDisplaySettingsModal({
               style={({ pressed }) => [
                 styles.actionButton,
                 {
-                  backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+                  backgroundColor: colors.surfaceMuted,
                   borderColor: colors.border,
                 },
                 pressed ? { opacity: 0.75 } : null,
@@ -367,7 +364,7 @@ const styles = StyleSheet.create({
   headerRow: {
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderColor: 'rgba(150, 150, 150, 0.1)',
+    borderColor: fixedSemanticColors.neutralHairline,
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingBottom: spacing.sm,
@@ -386,7 +383,7 @@ const styles = StyleSheet.create({
     width: 38,
   },
   modalBackdrop: {
-    backgroundColor: '#000000',
+    backgroundColor: fixedSemanticColors.shadow,
   },
   modalRoot: {
     flex: 1,

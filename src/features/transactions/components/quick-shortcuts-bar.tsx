@@ -21,7 +21,7 @@ export const QuickShortcutsBar = memo(function QuickShortcutsBar({
   onReset,
   quickShortcuts,
 }: QuickShortcutsBarProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { t } = useLanguage();
 
   return (
@@ -42,17 +42,14 @@ export const QuickShortcutsBar = memo(function QuickShortcutsBar({
               style={({ pressed }) => [
                 styles.shortcutChip,
                 {
-                  backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
-                  borderColor: isDark ? '#27272A' : '#E2E8F0',
+                  backgroundColor: colors.surfaceMuted,
+                  borderColor: colors.border,
                 },
                 pressed && styles.shortcutChipPressed,
               ]}
             >
               <Text
-                style={[
-                  styles.shortcutChipText,
-                  { color: isDark ? colors.textPrimary : '#334155' },
-                ]}
+                style={[styles.shortcutChipText, { color: colors.textPrimary }]}
               >
                 {label}
               </Text>
@@ -67,8 +64,8 @@ export const QuickShortcutsBar = memo(function QuickShortcutsBar({
             styles.shortcutChip,
             styles.shortcutChipClear,
             {
-              backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
-              borderColor: isDark ? '#27272A' : '#CBD5E1',
+              backgroundColor: colors.surfaceSecondary,
+              borderColor: colors.borderStrong,
             },
             pressed && styles.shortcutChipPressed,
           ]}

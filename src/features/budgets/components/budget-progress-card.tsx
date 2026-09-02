@@ -82,12 +82,12 @@ export const BudgetProgressCard = memo(function BudgetProgressCard({
             style={[
               styles.iconCircle,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+                backgroundColor: colors.surfaceSecondary,
               },
             ]}
           >
             <MaterialCommunityIcons
-              color={isDark ? colors.textSecondary : '#475569'}
+              color={colors.textSecondary}
               name={meta.icon}
               size={20}
             />
@@ -131,7 +131,7 @@ export const BudgetProgressCard = memo(function BudgetProgressCard({
           style={[
             styles.barTrack,
             {
-              backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+              backgroundColor: colors.surfaceSecondary,
             },
           ]}
         >
@@ -186,7 +186,7 @@ export const BudgetProgressCard = memo(function BudgetProgressCard({
             style={[
               styles.allowanceBanner,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+                backgroundColor: colors.surfaceMuted,
               },
             ]}
           >
@@ -212,7 +212,7 @@ export const BudgetProgressCard = memo(function BudgetProgressCard({
             style={[
               styles.allowanceBannerOver,
               {
-                backgroundColor: isDark ? colors.expenseBackground : '#FEF2F2',
+                backgroundColor: colors.expenseBackground,
               },
             ]}
           >

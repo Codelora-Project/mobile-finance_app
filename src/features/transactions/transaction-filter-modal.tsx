@@ -29,6 +29,7 @@ import { isLocalDate } from '@/lib/dates';
 import { mapError } from '@/lib/errors';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 
@@ -80,7 +81,7 @@ function ChoiceChip({
   onPress: () => void;
   selected: boolean;
 }) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <Pressable
@@ -90,11 +91,7 @@ function ChoiceChip({
       style={({ pressed }) => [
         styles.chip,
         {
-          backgroundColor: selected
-            ? colors.primary
-            : isDark
-              ? colors.surfaceSecondary
-              : '#F1F5F9',
+          backgroundColor: selected ? colors.primary : colors.surfaceSecondary,
           borderColor: selected ? colors.primary : colors.border,
         },
         pressed ? styles.pressed : null,
@@ -104,7 +101,7 @@ function ChoiceChip({
         style={[
           styles.chipText,
           {
-            color: selected ? '#FFFFFF' : colors.textPrimary,
+            color: selected ? colors.onPrimary : colors.textPrimary,
             fontWeight: selected ? '700' : '600',
           },
         ]}
@@ -165,7 +162,7 @@ export function TransactionFilterModal({
 }: TransactionFilterModalProps) {
   const database = useSQLiteContext();
   const { t } = useLanguage();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   const [draft, setDraft] = useState(() => createDraft(filters));
   const [categories, setCategories] = useState<readonly Category[]>([]);
@@ -261,7 +258,7 @@ export function TransactionFilterModal({
           <View
             style={[
               styles.dragHandle,
-              { backgroundColor: isDark ? '#52525B' : '#CBD5E1' },
+              { backgroundColor: colors.borderStrong },
             ]}
           />
 
@@ -499,7 +496,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   backdrop: {
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: fixedSemanticColors.modalBackdrop,
     flex: 1,
     justifyContent: 'flex-end',
   },

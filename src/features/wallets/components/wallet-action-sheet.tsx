@@ -10,6 +10,7 @@ import {
 import { useLanguage } from '@/lib/i18n/language-context';
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -57,7 +58,7 @@ export const WalletActionSheet = memo(function WalletActionSheet({
             styles.sheetContainer,
             {
               backgroundColor: colors.surface,
-              borderColor: isDark ? '#27272A' : '#E2E8F0',
+              borderColor: colors.border,
             },
           ]}
         >
@@ -103,7 +104,7 @@ export const WalletActionSheet = memo(function WalletActionSheet({
               style={({ pressed }) => [
                 styles.closeBtn,
                 {
-                  backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+                  backgroundColor: colors.surfaceSecondary,
                 },
                 pressed ? styles.pressed : null,
               ]}
@@ -120,7 +121,7 @@ export const WalletActionSheet = memo(function WalletActionSheet({
           <View
             style={[
               styles.divider,
-              { backgroundColor: isDark ? '#27272A' : '#F1F5F9' },
+              { backgroundColor: colors.surfaceSecondary },
             ]}
           />
 
@@ -137,7 +138,7 @@ export const WalletActionSheet = memo(function WalletActionSheet({
               style={({ pressed }) => [
                 styles.actionRow,
                 {
-                  backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+                  backgroundColor: colors.surfaceMuted,
                 },
                 pressed ? styles.pressed : null,
               ]}
@@ -147,7 +148,7 @@ export const WalletActionSheet = memo(function WalletActionSheet({
                   styles.actionIconBox,
                   {
                     backgroundColor: isDark
-                      ? 'rgba(59, 130, 246, 0.16)'
+                      ? colors.primaryOverlay
                       : colors.primaryLight,
                   },
                 ]}
@@ -191,7 +192,7 @@ export const WalletActionSheet = memo(function WalletActionSheet({
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
-                      : '#F8FAFC',
+                      : colors.surfaceMuted,
                   },
                   pressed ? styles.pressed : null,
                 ]}
@@ -201,8 +202,8 @@ export const WalletActionSheet = memo(function WalletActionSheet({
                     styles.actionIconBox,
                     {
                       backgroundColor: isDark
-                        ? 'rgba(74, 222, 128, 0.16)'
-                        : '#DCFCE7',
+                        ? colors.positiveOverlay
+                        : colors.incomeBackground,
                     },
                   ]}
                 >
@@ -240,7 +241,7 @@ export const WalletActionSheet = memo(function WalletActionSheet({
               style={({ pressed }) => [
                 styles.actionRow,
                 {
-                  backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+                  backgroundColor: colors.surfaceMuted,
                 },
                 pressed ? styles.pressed : null,
               ]}
@@ -250,8 +251,8 @@ export const WalletActionSheet = memo(function WalletActionSheet({
                   styles.actionIconBox,
                   {
                     backgroundColor: isDark
-                      ? 'rgba(255, 255, 255, 0.08)'
-                      : '#F1F5F9',
+                      ? colors.raisedOverlay
+                      : colors.surfaceSecondary,
                   },
                 ]}
               >
@@ -289,8 +290,8 @@ export const WalletActionSheet = memo(function WalletActionSheet({
                 styles.actionRow,
                 {
                   backgroundColor: isDark
-                    ? 'rgba(251, 113, 133, 0.06)'
-                    : '#FEF2F2',
+                    ? colors.destructiveOverlaySubtle
+                    : colors.expenseBackground,
                 },
                 pressed ? styles.pressed : null,
               ]}
@@ -300,8 +301,8 @@ export const WalletActionSheet = memo(function WalletActionSheet({
                   styles.actionIconBox,
                   {
                     backgroundColor: isDark
-                      ? 'rgba(251, 113, 133, 0.16)'
-                      : '#FEE2E2',
+                      ? colors.destructiveOverlay
+                      : colors.expenseBackground,
                   },
                 ]}
               >
@@ -372,7 +373,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   backdrop: {
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    backgroundColor: fixedSemanticColors.modalBackdrop,
     flex: 1,
     justifyContent: 'flex-end',
   },

@@ -46,7 +46,7 @@ export function DonutBreakdownChart({
         styles.container,
         {
           backgroundColor: colors.surface,
-          borderColor: isDark ? '#27272A' : '#E2E8F0',
+          borderColor: colors.border,
           shadowColor: colors.shadow,
         },
       ]}
@@ -58,9 +58,9 @@ export function DonutBreakdownChart({
             styles.selectedIconCircle,
             {
               backgroundColor: isDark
-                ? 'rgba(59, 130, 246, 0.16)'
+                ? colors.primaryOverlay
                 : selectedMeta.backgroundColor,
-              borderColor: isDark ? '#3F3F46' : '#E2E8F0',
+              borderColor: colors.border,
             },
           ]}
         >
@@ -87,11 +87,11 @@ export function DonutBreakdownChart({
             styles.percentagePill,
             {
               backgroundColor: isDark
-                ? 'rgba(59, 130, 246, 0.16)'
+                ? colors.primaryOverlay
                 : colors.primaryLight,
               borderColor: isDark
-                ? 'rgba(59, 130, 246, 0.28)'
-                : 'rgba(37, 99, 235, 0.2)',
+                ? colors.primaryOverlayStrong
+                : colors.primaryOverlay,
             },
           ]}
         >
@@ -106,7 +106,7 @@ export function DonutBreakdownChart({
         style={[
           styles.segmentedBarTrack,
           {
-            backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
+            backgroundColor: colors.surfaceSecondary,
           },
         ]}
       >
@@ -154,16 +154,14 @@ export function DonutBreakdownChart({
                 {
                   backgroundColor: isSelected
                     ? isDark
-                      ? 'rgba(59, 130, 246, 0.12)'
-                      : '#F0F7FF'
+                      ? colors.primaryOverlay
+                      : colors.primaryLight
                     : isDark
                       ? colors.surfaceSecondary
-                      : '#F8FAFC',
+                      : colors.surfaceMuted,
                   borderColor: isSelected
                     ? colors.primary
-                    : isDark
-                      ? '#27272A'
-                      : '#F1F5F9',
+                    : colors.surfaceSecondary,
                 },
                 pressed ? styles.pressed : null,
               ]}
@@ -174,7 +172,7 @@ export function DonutBreakdownChart({
                     styles.rowIconBadge,
                     {
                       backgroundColor: isDark
-                        ? 'rgba(255, 255, 255, 0.06)'
+                        ? colors.pressedOverlay
                         : meta.backgroundColor,
                     },
                   ]}
@@ -214,11 +212,11 @@ export function DonutBreakdownChart({
                     {
                       backgroundColor: isSelected
                         ? isDark
-                          ? 'rgba(59, 130, 246, 0.2)'
+                          ? colors.primaryOverlay
                           : colors.primaryLight
                         : isDark
                           ? colors.surface
-                          : '#E2E8F0',
+                          : colors.border,
                     },
                   ]}
                 >

@@ -18,6 +18,7 @@ import {
   useTabBarVisibility,
 } from '@/lib/navigation/tab-bar-visibility-context';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 
@@ -71,7 +72,7 @@ function TabItem({
   name: string;
   onPress: () => void;
 }) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
   const [scaleAnim] = useState(() => new Animated.Value(focused ? 1 : 0.88));
 
@@ -88,7 +89,7 @@ function TabItem({
     }).start();
   }, [focused, reduceMotion, scaleAnim]);
 
-  const activeBg = isDark ? '#1E3A8A' : '#EFF6FF';
+  const activeBg = colors.primaryLight;
   const activeColor = colors.primary;
   const inactiveColor = colors.textSecondary;
   const iconName = getTabIcon(name, focused);
@@ -225,7 +226,7 @@ function FloatingActionButton({
       >
         <MaterialCommunityIcons
           accessibilityElementsHidden
-          color="#FFFFFF"
+          color={fixedSemanticColors.contentOnStrong}
           importantForAccessibility="no-hide-descendants"
           name="cash-plus"
           size={20}

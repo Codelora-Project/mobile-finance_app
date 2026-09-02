@@ -22,6 +22,7 @@ import {
   parseSignedMoneyInput,
 } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -128,7 +129,7 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
             styles.sheetContainer,
             {
               backgroundColor: colors.surface,
-              borderColor: isDark ? '#27272A' : '#E2E8F0',
+              borderColor: colors.border,
             },
           ]}
         >
@@ -136,7 +137,7 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
           <View
             style={[
               styles.sheetHeader,
-              { borderBottomColor: isDark ? '#27272A' : '#F1F5F9' },
+              { borderBottomColor: colors.surfaceSecondary },
             ]}
           >
             <View style={styles.headerLeft}>
@@ -208,8 +209,8 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
               style={[
                 styles.balanceCard,
                 {
-                  backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
-                  borderColor: isDark ? '#27272A' : '#E2E8F0',
+                  backgroundColor: colors.surfaceMuted,
+                  borderColor: colors.border,
                 },
               ]}
             >
@@ -240,7 +241,7 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
                   styles.inputRow,
                   {
                     backgroundColor: colors.surface,
-                    borderColor: isDark ? '#27272A' : '#CBD5E1',
+                    borderColor: colors.borderStrong,
                   },
                 ]}
               >
@@ -269,24 +270,20 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
                   backgroundColor:
                     difference > 0
                       ? isDark
-                        ? 'rgba(74, 222, 128, 0.12)'
-                        : '#DCFCE7'
+                        ? colors.positiveOverlay
+                        : colors.incomeBackground
                       : difference < 0
                         ? isDark
-                          ? 'rgba(251, 113, 133, 0.12)'
-                          : '#FEE2E2'
+                          ? colors.destructiveOverlay
+                          : colors.expenseBackground
                         : isDark
                           ? colors.surfaceSecondary
-                          : '#EFF6FF',
+                          : colors.primaryLight,
                   borderColor:
                     difference > 0
-                      ? isDark
-                        ? 'rgba(74, 222, 128, 0.3)'
-                        : '#86EFAC'
+                      ? colors.positiveBorder
                       : difference < 0
-                        ? isDark
-                          ? 'rgba(251, 113, 133, 0.3)'
-                          : '#FCA5A5'
+                        ? colors.destructiveBorder
                         : colors.primary,
                 },
               ]}
@@ -365,8 +362,8 @@ export const WalletReconcileModal = memo(function WalletReconcileModal({
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
-                      : '#F8FAFC',
-                    borderColor: isDark ? '#27272A' : '#E2E8F0',
+                      : colors.surfaceMuted,
+                    borderColor: colors.border,
                     color: colors.textPrimary,
                   },
                 ]}
@@ -416,7 +413,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   backdrop: {
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    backgroundColor: fixedSemanticColors.modalBackdrop,
     flex: 1,
     justifyContent: 'flex-end',
   },

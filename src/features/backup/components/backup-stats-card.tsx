@@ -58,7 +58,7 @@ export const BackupStatsCard = memo(function BackupStatsCard({
             <View style={styles.statDivider} />
 
             <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: '#0284C7' }]}>
+              <Text style={[styles.statNumber, { color: colors.accentSky }]}>
                 {currentStats?.categoriesCount ?? 0}
               </Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
@@ -69,7 +69,7 @@ export const BackupStatsCard = memo(function BackupStatsCard({
             <View style={styles.statDivider} />
 
             <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: '#7C3AED' }]}>
+              <Text style={[styles.statNumber, { color: colors.accentPurple }]}>
                 {currentStats?.paymentMethodsCount ?? 0}
               </Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
@@ -85,7 +85,7 @@ export const BackupStatsCard = memo(function BackupStatsCard({
             />
 
             <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: '#16A34A' }]}>
+              <Text style={[styles.statNumber, { color: colors.positive }]}>
                 {currentStats?.goalsCount ?? 0}
               </Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
@@ -96,7 +96,7 @@ export const BackupStatsCard = memo(function BackupStatsCard({
             <View style={styles.statDivider} />
 
             <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: '#EA580C' }]}>
+              <Text style={[styles.statNumber, { color: colors.accentOrange }]}>
                 {currentStats?.budgetsCount ?? 0}
               </Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
@@ -107,7 +107,7 @@ export const BackupStatsCard = memo(function BackupStatsCard({
             <View style={styles.statDivider} />
 
             <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: '#D97706' }]}>
+              <Text style={[styles.statNumber, { color: colors.warning }]}>
                 {currentStats?.claimsCount ?? 0}
               </Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>

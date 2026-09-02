@@ -49,7 +49,7 @@ export const ClaimsStatusFilterBar = memo(function ClaimsStatusFilterBar({
               style={[
                 styles.filterText,
                 {
-                  color: isSelected ? '#FFFFFF' : colors.textPrimary,
+                  color: isSelected ? colors.onPrimary : colors.textPrimary,
                   fontWeight: isSelected ? '700' : '400',
                 },
               ]}

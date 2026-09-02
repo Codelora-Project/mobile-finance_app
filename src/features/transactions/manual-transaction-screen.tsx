@@ -30,6 +30,7 @@ import {
 import { formatMoney } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
 import { contentMaxWidth } from '@/theme/layout';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -39,7 +40,7 @@ export { type ManualTransactionScreenProps };
 export function ManualTransactionScreen({
   transactionId: propTransactionId,
 }: ManualTransactionScreenProps = {}) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   const { actions, refs, state } = useManualTransactionViewModel({
     propTransactionId,
@@ -112,9 +113,7 @@ export function ManualTransactionScreen({
             style={[
               styles.dragHandle,
               {
-                backgroundColor: isDark
-                  ? 'rgba(255, 255, 255, 0.25)'
-                  : '#CBD5E1',
+                backgroundColor: colors.borderStrong,
               },
             ]}
           />
@@ -311,7 +310,13 @@ export function ManualTransactionScreen({
           {state.errors.submit ? (
             <Text
               accessibilityLiveRegion="assertive"
-              style={styles.errorBanner}
+              style={[
+                styles.errorBanner,
+                {
+                  backgroundColor: colors.destructiveOverlay,
+                  color: colors.destructive,
+                },
+              ]}
             >
               {state.errors.submit}
             </Text>
@@ -353,7 +358,10 @@ export function ManualTransactionScreen({
               testID="save-transaction"
             >
               {state.saving ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
+                <ActivityIndicator
+                  color={fixedSemanticColors.contentOnStrong}
+                  size="small"
+                />
               ) : (
                 <Text style={styles.saveBigButtonText}>{saveLabel}</Text>
               )}
@@ -390,7 +398,11 @@ export function ManualTransactionScreen({
               onPress={() => actions.setPicker(null)}
               style={styles.closeIconButton}
             >
-              <MaterialCommunityIcons color="#64748B" name="close" size={24} />
+              <MaterialCommunityIcons
+                color={colors.textSecondary}
+                name="close"
+                size={24}
+              />
             </Pressable>
           </View>
           <CategoryPicker
@@ -432,7 +444,11 @@ export function ManualTransactionScreen({
               onPress={() => actions.setPicker(null)}
               style={styles.closeIconButton}
             >
-              <MaterialCommunityIcons color="#64748B" name="close" size={24} />
+              <MaterialCommunityIcons
+                color={colors.textSecondary}
+                name="close"
+                size={24}
+              />
             </Pressable>
           </View>
           <PaymentMethodPicker
@@ -475,7 +491,11 @@ export function ManualTransactionScreen({
               onPress={() => actions.setPicker(null)}
               style={styles.closeIconButton}
             >
-              <MaterialCommunityIcons color="#64748B" name="close" size={24} />
+              <MaterialCommunityIcons
+                color={colors.textSecondary}
+                name="close"
+                size={24}
+              />
             </Pressable>
           </View>
           <WalletPicker
@@ -515,7 +535,11 @@ export function ManualTransactionScreen({
               onPress={() => actions.setPicker(null)}
               style={styles.closeIconButton}
             >
-              <MaterialCommunityIcons color="#64748B" name="close" size={24} />
+              <MaterialCommunityIcons
+                color={colors.textSecondary}
+                name="close"
+                size={24}
+              />
             </Pressable>
           </View>
           <WalletPicker
@@ -554,7 +578,11 @@ export function ManualTransactionScreen({
               onPress={() => actions.setPicker(null)}
               style={styles.closeIconButton}
             >
-              <MaterialCommunityIcons color="#64748B" name="close" size={24} />
+              <MaterialCommunityIcons
+                color={colors.textSecondary}
+                name="close"
+                size={24}
+              />
             </Pressable>
           </View>
           <CategoryPicker
@@ -607,7 +635,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   backdrop: {
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    backgroundColor: fixedSemanticColors.modalBackdrop,
   },
   closeIconButton: {
     padding: spacing.xs,
@@ -625,9 +653,7 @@ const styles = StyleSheet.create({
   },
   errorBanner: {
     ...typography.metadata,
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
     borderRadius: radius.md,
-    color: '#EF4444',
     fontSize: 13,
     fontWeight: '600',
     marginTop: spacing.xs,
@@ -689,7 +715,7 @@ const styles = StyleSheet.create({
   },
   saveBigButtonText: {
     ...typography.body,
-    color: '#FFFFFF',
+    color: fixedSemanticColors.contentOnStrong,
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.5,
@@ -708,7 +734,7 @@ const styles = StyleSheet.create({
     elevation: 24,
     maxHeight: '92%',
     maxWidth: contentMaxWidth,
-    shadowColor: '#000000',
+    shadowColor: fixedSemanticColors.shadow,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.15,
     shadowRadius: 16,

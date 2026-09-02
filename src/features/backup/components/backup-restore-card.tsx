@@ -20,7 +20,7 @@ export const BackupRestoreCard = memo(function BackupRestoreCard({
   restoring,
   t,
 }: BackupRestoreCardProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <View style={styles.sectionGroup}>
@@ -44,12 +44,12 @@ export const BackupRestoreCard = memo(function BackupRestoreCard({
             style={[
               styles.cardIconBadge,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#FEF3C7',
+                backgroundColor: colors.warningBackground,
               },
             ]}
           >
             <MaterialCommunityIcons
-              color="#D97706"
+              color={colors.warning}
               name="backup-restore"
               size={22}
             />

@@ -25,6 +25,7 @@ Dokumen ini adalah panduan desain resmi (_Design System & UX Guidelines_) untuk 
 | `background`       | `#F8FAFC`                | `#09090B`             | Latar belakang layar utama                     |
 | `surface`          | `#FFFFFF`                | `#18181B`             | Kartu konten, popup modal, input wrap          |
 | `surfaceSecondary` | `#F1F5F9`                | `#27272A`             | Chip shortcut, segmented toggle                |
+| `surfaceMuted`     | `#F8FAFC`                | `#27272A`             | Isi kontrol dan area berpenekanan rendah       |
 | `border`           | `#E2E8F0`                | `#303034`             | Garis batas kartu, divider                     |
 | `borderSubtle`     | `#CBD5E1`                | `#475569`             | Garis pemisah kontras tinggi                   |
 | `overlayBackdrop`  | `rgba(15, 23, 42, 0.65)` | `rgba(0, 0, 0, 0.75)` | Latar belakang redup pada _Bottom Sheet Modal_ |
@@ -46,6 +47,8 @@ Dokumen ini adalah panduan desain resmi (_Design System & UX Guidelines_) untuk 
 | `positive`     | `#15803D`   | `#4ADE80`  | Pemasukan (Income), saldo surplus, status sukses |
 | `destructive`  | `#B42318`   | `#FB7185`  | Pengeluaran (Expense), tombol hapus, badge error |
 | `warning`      | `#B54708`   | `#FBBF24`  | Status peringatan, klaim draft/pending           |
+
+Komponen wajib menggunakan token semantic dari `ColorPalette`. Nilai warna mentah hanya boleh berada di sumber token, metadata kategori/dompet pihak ketiga, atau generator dokumen yang tidak berjalan di dalam theme React.
 
 ### D. Category Pastel System (`category-meta.ts`)
 

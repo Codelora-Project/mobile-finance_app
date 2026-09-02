@@ -20,7 +20,7 @@ export const BackupCsvCard = memo(function BackupCsvCard({
   onExportCsv,
   t,
 }: BackupCsvCardProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <View style={styles.sectionGroup}>
@@ -44,12 +44,12 @@ export const BackupCsvCard = memo(function BackupCsvCard({
             style={[
               styles.cardIconBadge,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#ECFDF5',
+                backgroundColor: colors.incomeBackground,
               },
             ]}
           >
             <MaterialCommunityIcons
-              color="#059669"
+              color={colors.positive}
               name="file-excel-outline"
               size={22}
             />

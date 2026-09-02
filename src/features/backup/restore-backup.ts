@@ -18,6 +18,7 @@ import {
   writeReceiptBase64ToStorage,
 } from '@/features/receipts/receipt-storage';
 import { createCodedError } from '@/lib/errors';
+import { defaultWalletColor } from '@/theme/colors';
 
 async function stageReceiptFiles(
   payload: BackupPayload,
@@ -138,7 +139,7 @@ async function replaceDatabaseData(
           wallet.initial_balance_minor ?? 0,
           wallet.account_type ?? 'cash',
           wallet.account_number ?? null,
-          wallet.color ?? '#2563EB',
+          wallet.color ?? defaultWalletColor,
           wallet.icon_key ?? 'wallet',
           wallet.include_in_cashflow ?? 1,
           wallet.is_archived ?? 0,

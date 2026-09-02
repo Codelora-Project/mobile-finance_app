@@ -30,50 +30,50 @@ type MenuSection = {
 export function MoreScreen() {
   const router = useRouter();
   const { t } = useLanguage();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   const goalsItem: MenuItem = {
-    bgColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#D1FAE5',
-    borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#A7F3D0',
+    bgColor: colors.incomeBackground,
+    borderColor: colors.positiveBorder,
     description: t.more.goalsDescription,
     icon: 'bullseye-arrow',
-    iconColor: isDark ? '#34D399' : '#059669',
+    iconColor: colors.positive,
     label: t.more.goalsLabel,
     route: '/goals',
   };
   const categoriesItem: MenuItem = {
-    bgColor: isDark ? 'rgba(139, 92, 246, 0.15)' : '#EDE9FE',
-    borderColor: isDark ? 'rgba(139, 92, 246, 0.3)' : '#DDD6FE',
+    bgColor: colors.accentPurpleBackground,
+    borderColor: colors.accentPurpleBorder,
     description: t.more.categoriesDescription,
     icon: 'tag-multiple-outline',
-    iconColor: isDark ? '#A78BFA' : '#7C3AED',
+    iconColor: colors.accentPurple,
     label: t.more.categoriesLabel,
     route: '/categories',
   };
   const claimsItem: MenuItem = {
-    bgColor: isDark ? 'rgba(245, 158, 11, 0.15)' : '#FEF3C7',
-    borderColor: isDark ? 'rgba(245, 158, 11, 0.3)' : '#FDE68A',
+    bgColor: colors.warningBackground,
+    borderColor: colors.warningBorder,
     description: t.more.claimsDescription,
     icon: 'briefcase-outline',
-    iconColor: isDark ? '#FBBF24' : '#D97706',
+    iconColor: colors.warning,
     label: t.more.claimsLabel,
     route: '/claims',
   };
   const settingsItem: MenuItem = {
-    bgColor: isDark ? 'rgba(99, 102, 241, 0.15)' : '#EEF2FF',
-    borderColor: isDark ? 'rgba(99, 102, 241, 0.3)' : '#C7D2FE',
+    bgColor: colors.accentIndigoBackground,
+    borderColor: colors.accentIndigoBorder,
     description: t.more.settingsDescription,
     icon: 'cog-outline',
-    iconColor: isDark ? '#818CF8' : '#4F46E5',
+    iconColor: colors.accentIndigo,
     label: t.more.settingsLabel,
     route: '/settings',
   };
   const backupItem: MenuItem = {
-    bgColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#DBEAFE',
-    borderColor: isDark ? 'rgba(59, 130, 246, 0.3)' : '#BFDBFE',
+    bgColor: colors.primaryLight,
+    borderColor: colors.primaryBorder,
     description: t.more.backupDescription,
     icon: 'cloud-sync-outline',
-    iconColor: isDark ? '#60A5FA' : '#2563EB',
+    iconColor: colors.accentSky,
     label: t.more.backupLabel,
     route: '/settings/backup',
   };

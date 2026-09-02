@@ -43,7 +43,7 @@ export const HomeQuickCategoryLog = memo(function HomeQuickCategoryLog({
         styles.quickLogCard,
         {
           backgroundColor: colors.surface,
-          borderColor: isDark ? '#27272A' : '#E2E8F0',
+          borderColor: colors.border,
           shadowColor: colors.shadow,
         },
       ]}
@@ -76,8 +76,8 @@ export const HomeQuickCategoryLog = memo(function HomeQuickCategoryLog({
           style={({ pressed }) => [
             styles.customizeQuickLogBtn,
             {
-              backgroundColor: isDark ? colors.surfaceSecondary : '#F1F5F9',
-              borderColor: isDark ? '#3F3F46' : '#E2E8F0',
+              backgroundColor: colors.surfaceSecondary,
+              borderColor: colors.border,
             },
             pressed && styles.pressed,
           ]}
@@ -121,7 +121,7 @@ export const HomeQuickCategoryLog = memo(function HomeQuickCategoryLog({
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
                       : meta.backgroundColor,
-                    borderColor: isDark ? colors.border : '#E2E8F0',
+                    borderColor: colors.border,
                   },
                 ]}
               >
@@ -156,8 +156,8 @@ export const HomeQuickCategoryLog = memo(function HomeQuickCategoryLog({
             style={[
               styles.quickLogIconCircle,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
-                borderColor: isDark ? colors.border : '#CBD5E1',
+                backgroundColor: colors.surfaceMuted,
+                borderColor: colors.borderStrong,
                 borderStyle: 'dashed',
                 borderWidth: 1.5,
               },

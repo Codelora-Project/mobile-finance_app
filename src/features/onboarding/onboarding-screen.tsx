@@ -19,9 +19,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { walletBrandColors } from '@/features/wallets/wallet-icons';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import type { ColorPalette } from '@/theme/colors';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -301,7 +303,7 @@ export function OnboardingScreen({ mode, onFinish }: OnboardingScreenProps) {
           }
           accessibilityRole="button"
           accessibilityState={{ busy: finishing, disabled: finishing }}
-          android_ripple={{ color: 'rgba(255, 255, 255, 0.16)' }}
+          android_ripple={{ color: fixedSemanticColors.rippleOnStrong }}
           disabled={finishing}
           onPress={handlePrimaryAction}
           style={({ pressed }) => [
@@ -388,7 +390,7 @@ function RecordPage({
           styles.demoStage,
           {
             backgroundColor: colors.surface,
-            borderColor: isDark ? '#27272A' : '#E2E8F0',
+            borderColor: colors.border,
             shadowColor: colors.shadow,
             transform: [{ translateY: floatTranslateY }],
           },
@@ -410,11 +412,9 @@ function RecordPage({
               styles.savedBadge,
               {
                 backgroundColor: isDark
-                  ? 'rgba(74, 222, 128, 0.16)'
+                  ? colors.positiveOverlay
                   : colors.incomeBackground,
-                borderColor: isDark
-                  ? 'rgba(74, 222, 128, 0.3)'
-                  : 'rgba(34, 197, 94, 0.2)',
+                borderColor: colors.positiveBorder,
                 transform: [{ scale: badgeAnim }],
               },
             ]}
@@ -460,8 +460,8 @@ function RecordPage({
           <DemoField
             colors={colors}
             icon="food-fork-drink"
-            iconBackground={isDark ? '#3A2416' : '#FFEDD5'}
-            iconColor={isDark ? '#FB923C' : '#EA580C'}
+            iconBackground={colors.accentOrangeBackground}
+            iconColor={colors.accentOrange}
             label={t.demoCategoryLabel}
             value={t.demoCategory}
           />
@@ -470,7 +470,7 @@ function RecordPage({
         <View
           style={[
             styles.demoDivider,
-            { backgroundColor: isDark ? '#27272A' : '#F1F5F9' },
+            { backgroundColor: colors.surfaceSecondary },
           ]}
         />
 
@@ -491,8 +491,8 @@ function RecordPage({
           <DemoField
             colors={colors}
             icon="cash"
-            iconBackground={isDark ? 'rgba(16, 185, 129, 0.16)' : '#DCFCE7'}
-            iconColor="#10B981"
+            iconBackground={colors.positiveOverlay}
+            iconColor={walletBrandColors.cash}
             label={t.demoWalletLabel}
             value={t.demoWallet}
           />
@@ -545,7 +545,7 @@ function ImpactPage({
           styles.demoStage,
           {
             backgroundColor: colors.surface,
-            borderColor: isDark ? '#27272A' : '#E2E8F0',
+            borderColor: colors.border,
             shadowColor: colors.shadow,
             transform: [{ translateY: floatTranslateY }],
           },
@@ -565,7 +565,7 @@ function ImpactPage({
               styles.impactIcon,
               {
                 backgroundColor: isDark
-                  ? 'rgba(59, 130, 246, 0.16)'
+                  ? colors.primaryOverlay
                   : colors.primaryLight,
               },
             ]}
@@ -591,7 +591,7 @@ function ImpactPage({
           <View
             style={[
               styles.progressBarTrack,
-              { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
+              { backgroundColor: colors.border },
             ]}
           >
             <Animated.View
@@ -609,7 +609,7 @@ function ImpactPage({
         <View
           style={[
             styles.demoDivider,
-            { backgroundColor: isDark ? '#27272A' : '#F1F5F9' },
+            { backgroundColor: colors.surfaceSecondary },
           ]}
         />
 
@@ -624,10 +624,7 @@ function ImpactPage({
             </Text>
           </View>
           <View
-            style={[
-              styles.verticalDivider,
-              { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
-            ]}
+            style={[styles.verticalDivider, { backgroundColor: colors.border }]}
           />
           <View style={styles.impactStatCol}>
             <Text style={[styles.statTitle, { color: colors.textSecondary }]}>
@@ -691,7 +688,7 @@ function WalletsPage({
           styles.demoStage,
           {
             backgroundColor: colors.surface,
-            borderColor: isDark ? '#27272A' : '#E2E8F0',
+            borderColor: colors.border,
             shadowColor: colors.shadow,
             transform: [{ translateY: floatTranslateY }],
           },
@@ -711,11 +708,9 @@ function WalletsPage({
               styles.savedBadge,
               {
                 backgroundColor: isDark
-                  ? 'rgba(59, 130, 246, 0.16)'
+                  ? colors.primaryOverlay
                   : colors.primaryLight,
-                borderColor: isDark
-                  ? 'rgba(59, 130, 246, 0.3)'
-                  : 'rgba(37, 99, 235, 0.2)',
+                borderColor: colors.primaryBorder,
               },
             ]}
           >
@@ -748,7 +743,7 @@ function WalletsPage({
             amount="Rp 10.000.000"
             colors={colors}
             icon="bank"
-            iconColor="#0066AE"
+            iconColor={walletBrandColors.bca}
             isDark={isDark}
             name="Bank BCA"
             subtitle={t.demoOperationalAccount}
@@ -773,7 +768,7 @@ function WalletsPage({
             amount="Rp 450.000"
             colors={colors}
             icon="cellphone"
-            iconColor="#00AED6"
+            iconColor={walletBrandColors.gopay}
             isDark={isDark}
             name="GoPay"
             subtitle={t.demoDigitalWallet}
@@ -798,7 +793,7 @@ function WalletsPage({
             amount="Rp 125.000"
             colors={colors}
             icon="cash"
-            iconColor="#10B981"
+            iconColor={walletBrandColors.cash}
             isDark={isDark}
             name={t.demoWallet}
             subtitle={t.demoCashWallet}

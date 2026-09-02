@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLanguage } from '@/lib/i18n/language-context';
 import { useTheme } from '@/lib/theme/theme-context';
 import { contentMaxWidth } from '@/theme/layout';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -47,9 +48,7 @@ export const TransactionPeriodSegmentedControl = memo(
           styles.container,
           embedded ? styles.embeddedContainer : null,
           {
-            backgroundColor: isDark
-              ? 'rgba(255, 255, 255, 0.06)'
-              : 'rgba(0, 0, 0, 0.05)',
+            backgroundColor: colors.pressedOverlay,
           },
         ]}
       >
@@ -69,8 +68,8 @@ export const TransactionPeriodSegmentedControl = memo(
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
-                      : '#FFFFFF',
-                    shadowColor: '#000000',
+                      : colors.onPrimary,
+                    shadowColor: fixedSemanticColors.shadow,
                   },
                 ],
               ]}

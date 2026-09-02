@@ -15,6 +15,7 @@ import { useCurrency } from '@/lib/currency/currency-context';
 import type { TranslationSchema } from '@/lib/i18n/translations';
 import { formatMoney, formatShortcutLabel } from '@/lib/money';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -93,7 +94,11 @@ export const DepositGoalModal = memo(function DepositGoalModal({
           </Text>
 
           {depositError ? (
-            <Text style={styles.depositErrorText}>{depositError}</Text>
+            <Text
+              style={[styles.depositErrorText, { color: colors.destructive }]}
+            >
+              {depositError}
+            </Text>
           ) : null}
 
           {/* Quick Shortcut Pills */}
@@ -107,8 +112,8 @@ export const DepositGoalModal = memo(function DepositGoalModal({
                   {
                     backgroundColor: isDark
                       ? colors.surfaceSecondary
-                      : '#EFF6FF',
-                    borderColor: isDark ? colors.border : '#BFDBFE',
+                      : colors.primaryLight,
+                    borderColor: colors.border,
                   },
                 ]}
               >
@@ -125,12 +130,16 @@ export const DepositGoalModal = memo(function DepositGoalModal({
             style={[
               styles.amountInputRow,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+                backgroundColor: colors.surfaceMuted,
                 borderColor: colors.border,
               },
             ]}
           >
-            <Text style={styles.amountPrefix}>{currencySymbol}</Text>
+            <Text
+              style={[styles.amountPrefix, { color: colors.textSecondary }]}
+            >
+              {currencySymbol}
+            </Text>
             <TextInput
               autoFocus
               keyboardType="decimal-pad"
@@ -149,7 +158,7 @@ export const DepositGoalModal = memo(function DepositGoalModal({
             style={[
               styles.noteInput,
               {
-                backgroundColor: isDark ? colors.surfaceSecondary : '#F8FAFC',
+                backgroundColor: colors.surfaceMuted,
                 borderColor: colors.border,
                 color: colors.textPrimary,
               },
@@ -193,7 +202,6 @@ const styles = StyleSheet.create({
   },
   amountPrefix: {
     ...typography.body,
-    color: '#64748B',
     fontSize: 16,
     fontWeight: '700',
   },
@@ -221,7 +229,6 @@ const styles = StyleSheet.create({
   },
   depositErrorText: {
     ...typography.metadata,
-    color: '#EF4444',
     fontWeight: '600',
   },
   depositModalCard: {
@@ -235,7 +242,7 @@ const styles = StyleSheet.create({
   },
   depositModalOverlay: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    backgroundColor: fixedSemanticColors.modalBackdrop,
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,

@@ -25,6 +25,12 @@ const SUPPORTED_WALLET_ICONS = new Set<string>([
   'wallet',
 ]);
 
+export const walletBrandColors = {
+  bca: '#0066AE',
+  cash: '#10B981',
+  gopay: '#00AED6',
+} as const;
+
 export function getWalletIconName(
   wallet: Pick<Wallet, 'accountType' | 'iconKey'>,
 ): MaterialCommunityIconName {
@@ -35,25 +41,33 @@ export function getWalletIconName(
   );
 }
 
-export function getWalletBrandColor(wallet: Pick<Wallet, 'color' | 'name' | 'accountType'>): string {
+export function getWalletBrandColor(
+  wallet: Pick<Wallet, 'color' | 'name' | 'accountType'>,
+): string {
   if (wallet.color) return wallet.color;
   const name = wallet.name.toLowerCase();
-  if (name.includes('bca')) return '#0066AE';
+  if (name.includes('bca')) return walletBrandColors.bca;
   if (name.includes('mandiri')) return '#003D79';
   if (name.includes('bni')) return '#F15A24';
   if (name.includes('bri')) return '#00529C';
   if (name.includes('jago')) return '#FF6B00';
   if (name.includes('jenius')) return '#00A3E0';
-  if (name.includes('gopay')) return '#00AED6';
+  if (name.includes('gopay')) return walletBrandColors.gopay;
   if (name.includes('ovo')) return '#4C2A86';
   if (name.includes('dana')) return '#118EEA';
   if (name.includes('shopee')) return '#EE4D2D';
-  if (name.includes('tunai') || name.includes('cash')) return '#10B981';
-  if (name.includes('bibit') || name.includes('reksa') || name.includes('saham')) return '#8B5CF6';
+  if (name.includes('tunai') || name.includes('cash'))
+    return walletBrandColors.cash;
+  if (
+    name.includes('bibit') ||
+    name.includes('reksa') ||
+    name.includes('saham')
+  )
+    return '#8B5CF6';
 
   switch (wallet.accountType) {
     case 'cash':
-      return '#10B981';
+      return walletBrandColors.cash;
     case 'bank':
       return '#2563EB';
     case 'ewallet':

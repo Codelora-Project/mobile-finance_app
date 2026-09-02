@@ -16,6 +16,7 @@ import { getCategoryMeta } from '@/features/categories/category-meta';
 import type { Category } from '@/features/categories/category-repository';
 import type { TranslationSchema } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/theme-context';
+import { fixedSemanticColors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -147,12 +148,10 @@ export const HomeQuickLogModal = memo(function HomeQuickLogModal({
                     styles.categorySelectRow,
                     {
                       backgroundColor: isSelected
-                        ? isDark
-                          ? '#1E3A8A'
-                          : '#EFF6FF'
+                        ? colors.primaryLight
                         : isDark
                           ? colors.surfaceSecondary
-                          : '#F8FAFC',
+                          : colors.surfaceMuted,
                       borderColor: isSelected ? colors.primary : colors.border,
                     },
                     pressed && styles.pressed,
@@ -267,7 +266,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xs,
   },
   modalBackdrop: {
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    backgroundColor: fixedSemanticColors.modalBackdrop,
   },
   modalCloseBtn: {
     padding: 4,

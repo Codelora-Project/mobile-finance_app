@@ -94,11 +94,13 @@ export const GoalDetailHeroCard = memo(function GoalDetailHeroCard({
             ]}
           >
             <MaterialCommunityIcons
-              color="#16A34A"
+              color={colors.positive}
               name="check-circle"
               size={14}
             />
-            <Text style={[styles.completedBadgeText, { color: '#16A34A' }]}>
+            <Text
+              style={[styles.completedBadgeText, { color: colors.positive }]}
+            >
               {t.goals.achieved}
             </Text>
           </View>
@@ -132,7 +134,7 @@ export const GoalDetailHeroCard = memo(function GoalDetailHeroCard({
           style={[
             styles.progressBarTrack,
             {
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+              backgroundColor: colors.surfaceSecondary,
             },
           ]}
         >
@@ -159,7 +161,7 @@ export const GoalDetailHeroCard = memo(function GoalDetailHeroCard({
               {formatMoney(remainingMinor, currencyCode)}
             </Text>
           ) : (
-            <Text style={[styles.remainingText, { color: '#16A34A' }]}>
+            <Text style={[styles.remainingText, { color: colors.positive }]}>
               {t.goals.congratsCompleted}
             </Text>
           )}
